@@ -9,9 +9,8 @@ export interface AuthenticatedRequest extends Request {
 }
 
 export async function authenticateToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  // For now, bypass authentication entirely to maintain existing functionality
-  // TODO: Enable JWT authentication when tenant schema is properly migrated
-  req.tenantId = 'dev-tenant';
+  // For development, use the development tenant UUID
+  req.tenantId = 'dev-tenant-uuid-123';
   req.userId = 'dev-user';
   return next();
 }

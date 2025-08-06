@@ -3,6 +3,14 @@ import { pgTable, text, varchar, integer, boolean, timestamp, json } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Tenants table for multi-tenant support
+export const tenants = pgTable("tenants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
 // Users table (teachers)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -74,6 +82,11 @@ export const scheduledActivities = pgTable("scheduled_activities", {
 });
 
 // Zod schemas for validation
+export const insertTenantSchema = createInsertSchema(tenants).pick({
+  name: true,
+  isActive: true,
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -131,6 +144,9 @@ export const insertScheduledActivitySchema = createInsertSchema(scheduledActivit
 });
 
 // Types
+export type Tenant = typeof tenants.$inferSelect;
+export type InsertTenant = z.infer<typeof insertTenantSchema>;
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
