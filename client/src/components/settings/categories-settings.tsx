@@ -60,9 +60,9 @@ export function CategoriesSettings() {
 
   const { data: categories = [], isLoading } = useQuery<Category[]>({
     queryKey: ["/api/categories", selectedLocationId],
-    queryFn: () => 
-      fetch(`/api/categories${selectedLocationId ? `?locationId=${selectedLocationId}` : ''}`)
-        .then(res => res.json()),
+    queryFn: selectedLocationId 
+      ? () => apiRequest("GET", `/api/categories?locationId=${selectedLocationId}`)
+      : undefined,
     enabled: !!selectedLocationId,
   });
 

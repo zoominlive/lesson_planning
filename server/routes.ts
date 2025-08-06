@@ -369,7 +369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Settings API Routes - Categories
-  app.get("/api/categories", async (req, res) => {
+  app.get("/api/categories", async (req: AuthenticatedRequest, res) => {
     try {
       const { locationId } = req.query;
       const categories = await storage.getCategories(locationId as string);
@@ -420,7 +420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Settings API Routes - Age Groups
-  app.get("/api/age-groups", async (req, res) => {
+  app.get("/api/age-groups", async (req: AuthenticatedRequest, res) => {
     try {
       const { locationId } = req.query;
       const ageGroups = await storage.getAgeGroups(locationId as string);
