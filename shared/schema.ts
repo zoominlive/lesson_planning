@@ -11,6 +11,15 @@ export const tenants = pgTable("tenants", {
   isActive: boolean("is_active").default(true).notNull(),
 });
 
+// Token secrets table - separate from tenants for security
+export const tokenSecrets = pgTable("token_secrets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  jwtSecret: text("jwt_secret").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
 // Users table (teachers)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -87,6 +96,12 @@ export const insertTenantSchema = createInsertSchema(tenants).pick({
   isActive: true,
 });
 
+export const insertTokenSecretSchema = createInsertSchema(tokenSecrets).pick({
+  tenantId: true,
+  jwtSecret: true,
+  isActive: true,
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -146,6 +161,9 @@ export const insertScheduledActivitySchema = createInsertSchema(scheduledActivit
 // Types
 export type Tenant = typeof tenants.$inferSelect;
 export type InsertTenant = z.infer<typeof insertTenantSchema>;
+
+export type TokenSecret = typeof tokenSecrets.$inferSelect;
+export type InsertTokenSecret = z.infer<typeof insertTokenSecretSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
