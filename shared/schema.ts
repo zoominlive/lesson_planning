@@ -3,9 +3,19 @@ import { pgTable, text, varchar, integer, boolean, timestamp, json } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Tenants table for multi-tenant JWT authentication
+export const tenants = pgTable("tenants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  jwtSecret: text("jwt_secret").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
 // Users table (teachers)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   name: text("name").notNull(),
@@ -74,7 +84,14 @@ export const scheduledActivities = pgTable("scheduled_activities", {
 });
 
 // Zod schemas for validation
+export const insertTenantSchema = createInsertSchema(tenants).pick({
+  name: true,
+  jwtSecret: true,
+  isActive: true,
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
+  tenantId: true,
   username: true,
   password: true,
   name: true,
@@ -131,6 +148,9 @@ export const insertScheduledActivitySchema = createInsertSchema(scheduledActivit
 });
 
 // Types
+export type Tenant = typeof tenants.$inferSelect;
+export type InsertTenant = z.infer<typeof insertTenantSchema>;
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 

@@ -1,7 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { authenticateToken, generateJwtSecret, type AuthenticatedRequest } from "./auth-middleware";
 import { 
+  insertTenantSchema,
   insertMilestoneSchema, 
   insertMaterialSchema, 
   insertActivitySchema, 
@@ -11,10 +13,38 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Milestones routes
-  app.get("/api/milestones", async (req, res) => {
+  // Tenant management routes (unprotected - for initial setup)
+  app.post("/api/tenants", async (req, res) => {
     try {
-      const milestones = await storage.getMilestones();
+      const data = insertTenantSchema.parse({
+        ...req.body,
+        jwtSecret: generateJwtSecret()
+      });
+      const tenant = await storage.createTenant(data);
+      res.status(201).json(tenant);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid tenant data" });
+    }
+  });
+
+  app.get("/api/tenants", async (req, res) => {
+    try {
+      const tenants = await storage.getTenants();
+      // Don't expose JWT secrets in the response
+      const safeTenants = tenants.map(({ jwtSecret, ...tenant }) => tenant);
+      res.json(safeTenants);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tenants" });
+    }
+  });
+
+  // Apply authentication middleware to all API routes below
+  app.use("/api", authenticateToken);
+  
+  // Milestones routes
+  app.get("/api/milestones", async (req: AuthenticatedRequest, res) => {
+    try {
+      const milestones = await storage.getMilestones(req.tenantId);
       res.json(milestones);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch milestones" });
@@ -153,10 +183,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Lesson Plans routes
-  app.get("/api/lesson-plans", async (req, res) => {
+  app.get("/api/lesson-plans", async (req: AuthenticatedRequest, res) => {
     try {
       const { teacherId } = req.query;
-      const lessonPlans = await storage.getLessonPlans(teacherId as string);
+      const lessonPlans = await storage.getLessonPlans(teacherId as string, req.tenantId);
       res.json(lessonPlans);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch lesson plans" });

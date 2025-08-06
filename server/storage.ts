@@ -16,10 +16,15 @@ import {
   materials,
   activities,
   lessonPlans,
-  scheduledActivities
+  scheduledActivities,
+  tenants, // Assuming tenants are defined in schema
+  insertTenantSchema // Assuming insertTenantSchema is available
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
+
+// Re-importing schema to use it within the class
+import * as schema from "@shared/schema";
 
 export interface IStorage {
   // Users
@@ -28,7 +33,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
 
   // Milestones
-  getMilestones(): Promise<Milestone[]>;
+  getMilestones(tenantId?: string): Promise<Milestone[]>; // Added tenantId
   getMilestone(id: string): Promise<Milestone | undefined>;
   createMilestone(milestone: InsertMilestone): Promise<Milestone>;
   updateMilestone(id: string, milestone: Partial<InsertMilestone>): Promise<Milestone | undefined>;
@@ -49,7 +54,7 @@ export interface IStorage {
   deleteActivity(id: string): Promise<boolean>;
 
   // Lesson Plans
-  getLessonPlans(teacherId?: string): Promise<LessonPlan[]>;
+  getLessonPlans(teacherId?: string, tenantId?: string): Promise<LessonPlan[]>; // Added tenantId
   getLessonPlan(id: string): Promise<LessonPlan | undefined>;
   createLessonPlan(lessonPlan: InsertLessonPlan): Promise<LessonPlan>;
   updateLessonPlan(id: string, lessonPlan: Partial<InsertLessonPlan>): Promise<LessonPlan | undefined>;
@@ -60,23 +65,30 @@ export interface IStorage {
   createScheduledActivity(scheduledActivity: InsertScheduledActivity): Promise<ScheduledActivity>;
   updateScheduledActivity(id: string, scheduledActivity: Partial<InsertScheduledActivity>): Promise<ScheduledActivity | undefined>;
   deleteScheduledActivity(id: string): Promise<boolean>;
+
+  // Tenant Management
+  createTenant(data: typeof insertTenantSchema._type): Promise<any>; // Using 'any' for simplicity if Tenant type is not explicitly defined for return
+  getTenant(id: string): Promise<any | undefined>; // Using 'any'
+  getTenants(): Promise<any[]>; // Using 'any'
+  updateTenant(id: string, data: Partial<typeof insertTenantSchema._type>): Promise<any | undefined>; // Using 'any'
 }
 
 export class DatabaseStorage implements IStorage {
+  private db = db; // Make db accessible within the class
 
   // Users
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await this.db.select().from(users).where(eq(users.id, id));
     return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await this.db.select().from(users).where(eq(users.username, username));
     return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
+    const [user] = await this.db
       .insert(users)
       .values(insertUser)
       .returning();
@@ -84,17 +96,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Milestones
-  async getMilestones(): Promise<Milestone[]> {
-    return await db.select().from(milestones);
+  async getMilestones(tenantId?: string): Promise<Milestone[]> {
+    // Milestones might be shared across tenants or tenant-specific
+    // For now, returning all milestones as per the original logic, but a tenantId filter could be added here if needed.
+    return await this.db.select().from(milestones);
   }
 
   async getMilestone(id: string): Promise<Milestone | undefined> {
-    const [milestone] = await db.select().from(milestones).where(eq(milestones.id, id));
+    const [milestone] = await this.db.select().from(milestones).where(eq(milestones.id, id));
     return milestone || undefined;
   }
 
   async createMilestone(insertMilestone: InsertMilestone): Promise<Milestone> {
-    const [milestone] = await db
+    const [milestone] = await this.db
       .insert(milestones)
       .values(insertMilestone)
       .returning();
@@ -102,7 +116,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateMilestone(id: string, updates: Partial<InsertMilestone>): Promise<Milestone | undefined> {
-    const [milestone] = await db
+    const [milestone] = await this.db
       .update(milestones)
       .set(updates)
       .where(eq(milestones.id, id))
@@ -111,22 +125,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteMilestone(id: string): Promise<boolean> {
-    const result = await db.delete(milestones).where(eq(milestones.id, id));
+    const result = await this.db.delete(milestones).where(eq(milestones.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 
   // Materials
   async getMaterials(): Promise<Material[]> {
-    return await db.select().from(materials);
+    return await this.db.select().from(materials);
   }
 
   async getMaterial(id: string): Promise<Material | undefined> {
-    const [material] = await db.select().from(materials).where(eq(materials.id, id));
+    const [material] = await this.db.select().from(materials).where(eq(materials.id, id));
     return material || undefined;
   }
 
   async createMaterial(insertMaterial: InsertMaterial): Promise<Material> {
-    const [material] = await db
+    const [material] = await this.db
       .insert(materials)
       .values(insertMaterial)
       .returning();
@@ -134,7 +148,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateMaterial(id: string, updates: Partial<InsertMaterial>): Promise<Material | undefined> {
-    const [material] = await db
+    const [material] = await this.db
       .update(materials)
       .set(updates)
       .where(eq(materials.id, id))
@@ -143,22 +157,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteMaterial(id: string): Promise<boolean> {
-    const result = await db.delete(materials).where(eq(materials.id, id));
+    const result = await this.db.delete(materials).where(eq(materials.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 
   // Activities
   async getActivities(): Promise<Activity[]> {
-    return await db.select().from(activities);
+    return await this.db.select().from(activities);
   }
 
   async getActivity(id: string): Promise<Activity | undefined> {
-    const [activity] = await db.select().from(activities).where(eq(activities.id, id));
+    const [activity] = await this.db.select().from(activities).where(eq(activities.id, id));
     return activity || undefined;
   }
 
   async createActivity(insertActivity: InsertActivity): Promise<Activity> {
-    const [activity] = await db
+    const [activity] = await this.db
       .insert(activities)
       .values(insertActivity)
       .returning();
@@ -166,7 +180,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateActivity(id: string, updates: Partial<InsertActivity>): Promise<Activity | undefined> {
-    const [activity] = await db
+    const [activity] = await this.db
       .update(activities)
       .set(updates)
       .where(eq(activities.id, id))
@@ -175,25 +189,61 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteActivity(id: string): Promise<boolean> {
-    const result = await db.delete(activities).where(eq(activities.id, id));
+    const result = await this.db.delete(activities).where(eq(activities.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 
   // Lesson Plans
-  async getLessonPlans(teacherId?: string): Promise<LessonPlan[]> {
-    if (teacherId) {
-      return await db.select().from(lessonPlans).where(eq(lessonPlans.teacherId, teacherId));
+  async getLessonPlans(teacherId?: string, tenantId?: string): Promise<LessonPlan[]> {
+    let query = this.db.select().from(lessonPlans);
+
+    if (tenantId) {
+      // Assuming lessonPlans table or a related table has a tenantId or can be joined to filter by tenant.
+      // This join assumes there's a way to link lesson plans to a tenant, possibly through the teacher.
+      // If lessonPlans directly has a tenantId column, the join would be simpler or unnecessary.
+      // For this example, we'll assume a join via users table.
+      query = query.innerJoin(users, eq(lessonPlans.teacherId, users.id));
+      query = query.where(eq(users.tenantId, tenantId));
     }
-    return await db.select().from(lessonPlans);
+
+    if (teacherId) {
+      // If tenantId was also provided, we need to combine conditions.
+      // If tenantId was not provided, this is the primary filter.
+      if (tenantId) {
+        // If both tenantId and teacherId are provided, the conditions are implicitly ANDed by Drizzle's where.
+        // However, if the join was done, we need to ensure the teacherId filter is applied correctly with the join.
+        // The previous join already filtered by tenantId for users. Now we filter by teacherId.
+        query = query.where(eq(lessonPlans.teacherId, teacherId));
+      } else {
+        query = query.where(eq(lessonPlans.teacherId, teacherId));
+      }
+    }
+
+    // If no tenantId or teacherId is provided, it returns all lesson plans.
+    // If tenantId is provided, it filters lesson plans associated with that tenant via their teachers.
+    // If teacherId is provided (and tenantId is not), it filters by teacherId.
+    // If both are provided, it filters by tenant and then by teacher within that tenant.
+
+    // Note: If lessonPlans directly had a tenantId column, the query would look like:
+    // let query = this.db.select().from(schema.lessonPlans);
+    // if (tenantId) {
+    //   query = query.where(eq(schema.lessonPlans.tenantId, tenantId));
+    // }
+    // if (teacherId) {
+    //   query = query.where(eq(schema.lessonPlans.teacherId, teacherId));
+    // }
+
+
+    return await query;
   }
 
   async getLessonPlan(id: string): Promise<LessonPlan | undefined> {
-    const [lessonPlan] = await db.select().from(lessonPlans).where(eq(lessonPlans.id, id));
+    const [lessonPlan] = await this.db.select().from(lessonPlans).where(eq(lessonPlans.id, id));
     return lessonPlan || undefined;
   }
 
   async createLessonPlan(insertLessonPlan: InsertLessonPlan): Promise<LessonPlan> {
-    const [lessonPlan] = await db
+    const [lessonPlan] = await this.db
       .insert(lessonPlans)
       .values(insertLessonPlan)
       .returning();
@@ -201,7 +251,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateLessonPlan(id: string, updates: Partial<InsertLessonPlan>): Promise<LessonPlan | undefined> {
-    const [lessonPlan] = await db
+    const [lessonPlan] = await this.db
       .update(lessonPlans)
       .set(updates)
       .where(eq(lessonPlans.id, id))
@@ -210,17 +260,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteLessonPlan(id: string): Promise<boolean> {
-    const result = await db.delete(lessonPlans).where(eq(lessonPlans.id, id));
+    const result = await this.db.delete(lessonPlans).where(eq(lessonPlans.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 
   // Scheduled Activities
   async getScheduledActivities(lessonPlanId: string): Promise<ScheduledActivity[]> {
-    return await db.select().from(scheduledActivities).where(eq(scheduledActivities.lessonPlanId, lessonPlanId));
+    return await this.db.select().from(scheduledActivities).where(eq(scheduledActivities.lessonPlanId, lessonPlanId));
   }
 
   async createScheduledActivity(insertScheduledActivity: InsertScheduledActivity): Promise<ScheduledActivity> {
-    const [scheduledActivity] = await db
+    const [scheduledActivity] = await this.db
       .insert(scheduledActivities)
       .values(insertScheduledActivity)
       .returning();
@@ -228,7 +278,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateScheduledActivity(id: string, updates: Partial<InsertScheduledActivity>): Promise<ScheduledActivity | undefined> {
-    const [scheduledActivity] = await db
+    const [scheduledActivity] = await this.db
       .update(scheduledActivities)
       .set(updates)
       .where(eq(scheduledActivities.id, id))
@@ -237,8 +287,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteScheduledActivity(id: string): Promise<boolean> {
-    const result = await db.delete(scheduledActivities).where(eq(scheduledActivities.id, id));
+    const result = await this.db.delete(scheduledActivities).where(eq(scheduledActivities.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Tenant Management Methods
+  async createTenant(data: typeof insertTenantSchema._type) {
+    const [tenant] = await this.db.insert(schema.tenants).values(data).returning();
+    return tenant;
+  }
+
+  async getTenant(id: string) {
+    const [tenant] = await this.db.select().from(schema.tenants).where(eq(schema.tenants.id, id));
+    return tenant;
+  }
+
+  async getTenants() {
+    return await this.db.select().from(schema.tenants).where(eq(schema.tenants.isActive, true));
+  }
+
+  async updateTenant(id: string, data: Partial<typeof insertTenantSchema._type>) {
+    const [tenant] = await this.db.update(schema.tenants).set(data).where(eq(schema.tenants.id, id)).returning();
+    return tenant;
   }
 }
 
