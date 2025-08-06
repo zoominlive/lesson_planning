@@ -51,7 +51,7 @@ The application uses a PostgreSQL database with Drizzle ORM, successfully integr
 - DatabaseStorage class implemented replacing in-memory storage
 - Sample data seeded for milestones, materials, and activities
 - All API endpoints validated and working with persistent data
-- Development tenant added (UUID: dev-tenant-uuid-123) for JWT multi-tenant support
+- Development tenant added (UUID: 7cb6c28d-164c-49fa-b461-dfc47a8a3fed) for JWT multi-tenant support
 
 ### Core Data Models
 - **Users**: Teacher profiles with classroom assignments
