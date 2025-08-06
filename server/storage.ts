@@ -15,6 +15,14 @@ import {
   type InsertTenant,
   type TokenSecret,
   type InsertTokenSecret,
+  type Location,
+  type InsertLocation,
+  type Room,
+  type InsertRoom,
+  type Category,
+  type InsertCategory,
+  type AgeGroup,
+  type InsertAgeGroup,
   users,
   milestones,
   materials,
@@ -22,7 +30,11 @@ import {
   lessonPlans,
   scheduledActivities,
   tenants,
-  tokenSecrets
+  tokenSecrets,
+  locations,
+  rooms,
+  categories,
+  ageGroups
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -73,6 +85,37 @@ export interface IStorage {
   // JWT/Tenant Management
   getTenant(id: string): Promise<Tenant | undefined>;
   getTokenSecret(tenantId: string): Promise<TokenSecret | undefined>;
+
+  // Settings Management
+  // Locations
+  getLocations(): Promise<Location[]>;
+  getLocation(id: string): Promise<Location | undefined>;
+  createLocation(location: InsertLocation): Promise<Location>;
+  updateLocation(id: string, location: Partial<InsertLocation>): Promise<Location | undefined>;
+  deleteLocation(id: string): Promise<boolean>;
+
+  // Rooms
+  getRooms(): Promise<Room[]>;
+  getRoomsByLocation(locationId: string): Promise<Room[]>;
+  getRoom(id: string): Promise<Room | undefined>;
+  createRoom(room: InsertRoom): Promise<Room>;
+  updateRoom(id: string, room: Partial<InsertRoom>): Promise<Room | undefined>;
+  deleteRoom(id: string): Promise<boolean>;
+
+  // Categories
+  getCategories(): Promise<Category[]>;
+  getCategoriesByType(type: string): Promise<Category[]>;
+  getCategory(id: string): Promise<Category | undefined>;
+  createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(id: string, category: Partial<InsertCategory>): Promise<Category | undefined>;
+  deleteCategory(id: string): Promise<boolean>;
+
+  // Age Groups
+  getAgeGroups(): Promise<AgeGroup[]>;
+  getAgeGroup(id: string): Promise<AgeGroup | undefined>;
+  createAgeGroup(ageGroup: InsertAgeGroup): Promise<AgeGroup>;
+  updateAgeGroup(id: string, ageGroup: Partial<InsertAgeGroup>): Promise<AgeGroup | undefined>;
+  deleteAgeGroup(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -355,8 +398,203 @@ export class DatabaseStorage implements IStorage {
 
   async getTokenSecret(tenantId: string): Promise<TokenSecret | undefined> {
     const [tokenSecret] = await this.db.select().from(tokenSecrets)
-      .where(and(eq(tokenSecrets.tenantId, tenantId), eq(tokenSecrets.isActive, true)));
+      .where(eq(tokenSecrets.tenantId, tenantId));
     return tokenSecret;
+  }
+
+  // Settings Management Implementation
+  // Locations
+  async getLocations(): Promise<Location[]> {
+    const conditions = [];
+    if (this.tenantId) conditions.push(eq(locations.tenantId, this.tenantId));
+    
+    return await this.db.select().from(locations).where(conditions.length ? and(...conditions) : undefined);
+  }
+
+  async getLocation(id: string): Promise<Location | undefined> {
+    const conditions = [eq(locations.id, id)];
+    if (this.tenantId) conditions.push(eq(locations.tenantId, this.tenantId));
+    
+    const [location] = await this.db.select().from(locations).where(and(...conditions));
+    return location || undefined;
+  }
+
+  async createLocation(insertLocation: InsertLocation): Promise<Location> {
+    const locationData = this.tenantId ? { ...insertLocation, tenantId: this.tenantId } : insertLocation;
+    const [location] = await this.db
+      .insert(locations)
+      .values(locationData)
+      .returning();
+    return location;
+  }
+
+  async updateLocation(id: string, updates: Partial<InsertLocation>): Promise<Location | undefined> {
+    const conditions = [eq(locations.id, id)];
+    if (this.tenantId) conditions.push(eq(locations.tenantId, this.tenantId));
+    
+    const [location] = await this.db
+      .update(locations)
+      .set(updates)
+      .where(and(...conditions))
+      .returning();
+    return location || undefined;
+  }
+
+  async deleteLocation(id: string): Promise<boolean> {
+    const conditions = [eq(locations.id, id)];
+    if (this.tenantId) conditions.push(eq(locations.tenantId, this.tenantId));
+    
+    const result = await this.db.delete(locations).where(and(...conditions));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Rooms
+  async getRooms(): Promise<Room[]> {
+    const conditions = [];
+    if (this.tenantId) conditions.push(eq(rooms.tenantId, this.tenantId));
+    
+    return await this.db.select().from(rooms).where(conditions.length ? and(...conditions) : undefined);
+  }
+
+  async getRoomsByLocation(locationId: string): Promise<Room[]> {
+    const conditions = [eq(rooms.locationId, locationId)];
+    if (this.tenantId) conditions.push(eq(rooms.tenantId, this.tenantId));
+    
+    return await this.db.select().from(rooms).where(and(...conditions));
+  }
+
+  async getRoom(id: string): Promise<Room | undefined> {
+    const conditions = [eq(rooms.id, id)];
+    if (this.tenantId) conditions.push(eq(rooms.tenantId, this.tenantId));
+    
+    const [room] = await this.db.select().from(rooms).where(and(...conditions));
+    return room || undefined;
+  }
+
+  async createRoom(insertRoom: InsertRoom): Promise<Room> {
+    const roomData = this.tenantId ? { ...insertRoom, tenantId: this.tenantId } : insertRoom;
+    const [room] = await this.db
+      .insert(rooms)
+      .values(roomData)
+      .returning();
+    return room;
+  }
+
+  async updateRoom(id: string, updates: Partial<InsertRoom>): Promise<Room | undefined> {
+    const conditions = [eq(rooms.id, id)];
+    if (this.tenantId) conditions.push(eq(rooms.tenantId, this.tenantId));
+    
+    const [room] = await this.db
+      .update(rooms)
+      .set(updates)
+      .where(and(...conditions))
+      .returning();
+    return room || undefined;
+  }
+
+  async deleteRoom(id: string): Promise<boolean> {
+    const conditions = [eq(rooms.id, id)];
+    if (this.tenantId) conditions.push(eq(rooms.tenantId, this.tenantId));
+    
+    const result = await this.db.delete(rooms).where(and(...conditions));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Categories
+  async getCategories(): Promise<Category[]> {
+    const conditions = [];
+    if (this.tenantId) conditions.push(eq(categories.tenantId, this.tenantId));
+    
+    return await this.db.select().from(categories).where(conditions.length ? and(...conditions) : undefined);
+  }
+
+  async getCategoriesByType(type: string): Promise<Category[]> {
+    const conditions = [eq(categories.type, type)];
+    if (this.tenantId) conditions.push(eq(categories.tenantId, this.tenantId));
+    
+    return await this.db.select().from(categories).where(and(...conditions));
+  }
+
+  async getCategory(id: string): Promise<Category | undefined> {
+    const conditions = [eq(categories.id, id)];
+    if (this.tenantId) conditions.push(eq(categories.tenantId, this.tenantId));
+    
+    const [category] = await this.db.select().from(categories).where(and(...conditions));
+    return category || undefined;
+  }
+
+  async createCategory(insertCategory: InsertCategory): Promise<Category> {
+    const categoryData = this.tenantId ? { ...insertCategory, tenantId: this.tenantId } : insertCategory;
+    const [category] = await this.db
+      .insert(categories)
+      .values(categoryData)
+      .returning();
+    return category;
+  }
+
+  async updateCategory(id: string, updates: Partial<InsertCategory>): Promise<Category | undefined> {
+    const conditions = [eq(categories.id, id)];
+    if (this.tenantId) conditions.push(eq(categories.tenantId, this.tenantId));
+    
+    const [category] = await this.db
+      .update(categories)
+      .set(updates)
+      .where(and(...conditions))
+      .returning();
+    return category || undefined;
+  }
+
+  async deleteCategory(id: string): Promise<boolean> {
+    const conditions = [eq(categories.id, id)];
+    if (this.tenantId) conditions.push(eq(categories.tenantId, this.tenantId));
+    
+    const result = await this.db.delete(categories).where(and(...conditions));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Age Groups
+  async getAgeGroups(): Promise<AgeGroup[]> {
+    const conditions = [];
+    if (this.tenantId) conditions.push(eq(ageGroups.tenantId, this.tenantId));
+    
+    return await this.db.select().from(ageGroups).where(conditions.length ? and(...conditions) : undefined);
+  }
+
+  async getAgeGroup(id: string): Promise<AgeGroup | undefined> {
+    const conditions = [eq(ageGroups.id, id)];
+    if (this.tenantId) conditions.push(eq(ageGroups.tenantId, this.tenantId));
+    
+    const [ageGroup] = await this.db.select().from(ageGroups).where(and(...conditions));
+    return ageGroup || undefined;
+  }
+
+  async createAgeGroup(insertAgeGroup: InsertAgeGroup): Promise<AgeGroup> {
+    const ageGroupData = this.tenantId ? { ...insertAgeGroup, tenantId: this.tenantId } : insertAgeGroup;
+    const [ageGroup] = await this.db
+      .insert(ageGroups)
+      .values(ageGroupData)
+      .returning();
+    return ageGroup;
+  }
+
+  async updateAgeGroup(id: string, updates: Partial<InsertAgeGroup>): Promise<AgeGroup | undefined> {
+    const conditions = [eq(ageGroups.id, id)];
+    if (this.tenantId) conditions.push(eq(ageGroups.tenantId, this.tenantId));
+    
+    const [ageGroup] = await this.db
+      .update(ageGroups)
+      .set(updates)
+      .where(and(...conditions))
+      .returning();
+    return ageGroup || undefined;
+  }
+
+  async deleteAgeGroup(id: string): Promise<boolean> {
+    const conditions = [eq(ageGroups.id, id)];
+    if (this.tenantId) conditions.push(eq(ageGroups.tenantId, this.tenantId));
+    
+    const result = await this.db.delete(ageGroups).where(and(...conditions));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async updateTokenSecret(tenantId: string, data: Partial<InsertTokenSecret>): Promise<TokenSecret | undefined> {

@@ -7,7 +7,15 @@ import {
   insertMaterialSchema, 
   insertActivitySchema, 
   insertLessonPlanSchema,
-  insertScheduledActivitySchema 
+  insertScheduledActivitySchema,
+  type InsertLocation,
+  insertLocationSchema,
+  type InsertRoom,
+  insertRoomSchema,
+  type InsertCategory,
+  insertCategorySchema,
+  type InsertAgeGroup,
+  insertAgeGroupSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -261,6 +269,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete scheduled activity" });
+    }
+  });
+
+  // Settings API Routes - Locations
+  app.get("/api/locations", async (req, res) => {
+    try {
+      const locations = await storage.getLocations();
+      res.json(locations);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch locations" });
+    }
+  });
+
+  app.post("/api/locations", async (req: AuthenticatedRequest, res) => {
+    try {
+      const data = insertLocationSchema.parse(req.body);
+      const { tenantId, ...locationData } = data;
+      const location = await storage.createLocation(locationData);
+      res.status(201).json(location);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid location data" });
+    }
+  });
+
+  app.put("/api/locations/:id", async (req, res) => {
+    try {
+      const data = insertLocationSchema.partial().parse(req.body);
+      const location = await storage.updateLocation(req.params.id, data);
+      if (location) {
+        res.json(location);
+      } else {
+        res.status(404).json({ error: "Location not found" });
+      }
+    } catch (error) {
+      res.status(400).json({ error: "Invalid location data" });
+    }
+  });
+
+  app.delete("/api/locations/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteLocation(req.params.id);
+      if (success) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ error: "Location not found" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete location" });
+    }
+  });
+
+  // Settings API Routes - Rooms  
+  app.get("/api/rooms", async (req, res) => {
+    try {
+      const rooms = await storage.getRooms();
+      res.json(rooms);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rooms" });
+    }
+  });
+
+  app.post("/api/rooms", async (req: AuthenticatedRequest, res) => {
+    try {
+      const data = insertRoomSchema.parse(req.body);
+      const { tenantId, ...roomData } = data;
+      const room = await storage.createRoom(roomData);
+      res.status(201).json(room);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid room data" });
+    }
+  });
+
+  // Settings API Routes - Categories
+  app.get("/api/categories", async (req, res) => {
+    try {
+      const { type } = req.query;
+      const categories = type 
+        ? await storage.getCategoriesByType(type as string)
+        : await storage.getCategories();
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch categories" });
+    }
+  });
+
+  app.post("/api/categories", async (req: AuthenticatedRequest, res) => {
+    try {
+      const data = insertCategorySchema.parse(req.body);
+      const { tenantId, ...categoryData } = data;
+      const category = await storage.createCategory(categoryData);
+      res.status(201).json(category);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid category data" });
+    }
+  });
+
+  // Settings API Routes - Age Groups
+  app.get("/api/age-groups", async (req, res) => {
+    try {
+      const ageGroups = await storage.getAgeGroups();
+      res.json(ageGroups);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch age groups" });
+    }
+  });
+
+  app.post("/api/age-groups", async (req: AuthenticatedRequest, res) => {
+    try {
+      const data = insertAgeGroupSchema.parse(req.body);
+      const { tenantId, ...ageGroupData } = data;
+      const ageGroup = await storage.createAgeGroup(ageGroupData);
+      res.status(201).json(ageGroup);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid age group data" });
     }
   });
 

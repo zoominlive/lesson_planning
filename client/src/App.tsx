@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { initializeIframeAuth } from "./lib/auth";
 import LessonPlanner from "@/pages/lesson-planner";
+import { Settings } from "@/pages/Settings";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -12,6 +13,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={LessonPlanner} />
+      <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );

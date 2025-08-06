@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql, relations } from "drizzle-orm";
 import { pgTable, text, varchar, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -105,7 +105,6 @@ export const insertTenantSchema = createInsertSchema(tenants).pick({
 export const insertTokenSecretSchema = createInsertSchema(tokenSecrets).pick({
   tenantId: true,
   jwtSecret: true,
-  isActive: true,
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -170,6 +169,92 @@ export const insertScheduledActivitySchema = createInsertSchema(scheduledActivit
   notes: true,
 });
 
+// Settings-related tables
+export const locations = pgTable("locations", {
+  id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  address: text("address"),
+  capacity: integer("capacity"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const rooms = pgTable("rooms", {
+  id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  locationId: varchar("location_id").references(() => locations.id).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  capacity: integer("capacity"),
+  ageRangeStart: integer("age_range_start"),
+  ageRangeEnd: integer("age_range_end"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const categories = pgTable("categories", {
+  id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  type: varchar("type", { length: 50 }).notNull(), // 'activity', 'material', 'milestone'
+  color: varchar("color", { length: 7 }), // hex color code
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const ageGroups = pgTable("age_groups", {
+  id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  ageRangeStart: integer("age_range_start").notNull(),
+  ageRangeEnd: integer("age_range_end").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Settings schemas
+export const insertLocationSchema = createInsertSchema(locations).pick({
+  tenantId: true,
+  name: true,
+  description: true,
+  address: true,
+  capacity: true,
+  isActive: true,
+});
+
+export const insertRoomSchema = createInsertSchema(rooms).pick({
+  tenantId: true,
+  locationId: true,
+  name: true,
+  description: true,
+  capacity: true,
+  ageRangeStart: true,
+  ageRangeEnd: true,
+  isActive: true,
+});
+
+export const insertCategorySchema = createInsertSchema(categories).pick({
+  tenantId: true,
+  name: true,
+  description: true,
+  type: true,
+  color: true,
+  isActive: true,
+});
+
+export const insertAgeGroupSchema = createInsertSchema(ageGroups).pick({
+  tenantId: true,
+  name: true,
+  description: true,
+  ageRangeStart: true,
+  ageRangeEnd: true,
+  isActive: true,
+});
+
 // Types
 export type Tenant = typeof tenants.$inferSelect;
 export type InsertTenant = z.infer<typeof insertTenantSchema>;
@@ -194,3 +279,35 @@ export type InsertLessonPlan = z.infer<typeof insertLessonPlanSchema>;
 
 export type ScheduledActivity = typeof scheduledActivities.$inferSelect;
 export type InsertScheduledActivity = z.infer<typeof insertScheduledActivitySchema>;
+
+// Settings types
+export type Location = typeof locations.$inferSelect;
+export type InsertLocation = z.infer<typeof insertLocationSchema>;
+
+export type Room = typeof rooms.$inferSelect;
+export type InsertRoom = z.infer<typeof insertRoomSchema>;
+
+export type Category = typeof categories.$inferSelect;
+export type InsertCategory = z.infer<typeof insertCategorySchema>;
+
+export type AgeGroup = typeof ageGroups.$inferSelect;
+export type InsertAgeGroup = z.infer<typeof insertAgeGroupSchema>;
+
+// Relations for settings tables
+export const locationsRelations = relations(locations, ({ one, many }) => ({
+  tenant: one(tenants, { fields: [locations.tenantId], references: [tenants.id] }),
+  rooms: many(rooms),
+}));
+
+export const roomsRelations = relations(rooms, ({ one }) => ({
+  tenant: one(tenants, { fields: [rooms.tenantId], references: [tenants.id] }),
+  location: one(locations, { fields: [rooms.locationId], references: [locations.id] }),
+}));
+
+export const categoriesRelations = relations(categories, ({ one }) => ({
+  tenant: one(tenants, { fields: [categories.tenantId], references: [tenants.id] }),
+}));
+
+export const ageGroupsRelations = relations(ageGroups, ({ one }) => ({
+  tenant: one(tenants, { fields: [ageGroups.tenantId], references: [tenants.id] }),
+}));
