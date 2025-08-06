@@ -68,30 +68,6 @@ export function initializeIframeAuth() {
     }
   });
   
-  // For development: get a real JWT token from the server if none exists or if we have the old placeholder
-  const currentToken = getAuthToken();
-  if ((!currentToken || currentToken === 'dev-token-placeholder') && (window.location.hostname.includes('localhost') || window.location.hostname.includes('replit.dev'))) {
-    console.log('Development mode: fetching JWT token from server');
-    clearAuthToken(); // Clear any old placeholder token
-    fetchDevelopmentToken();
-  }
+  console.log('Iframe auth initialized. Waiting for token via URL parameter or postMessage.');
 }
 
-// Fetch development JWT token from server
-async function fetchDevelopmentToken() {
-  try {
-    console.log('Fetching development token from server...');
-    const response = await fetch('/api/dev-token');
-    if (response.ok) {
-      const data = await response.json();
-      if (data.token) {
-        console.log('Development mode: received JWT token from server, reloading page...');
-        setAuthToken(data.token);
-        // Trigger a page reload to ensure all components re-fetch with the new token
-        setTimeout(() => window.location.reload(), 100);
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to fetch development token:', error);
-  }
-}

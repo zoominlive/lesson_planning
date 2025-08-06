@@ -20,17 +20,7 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Development token generation endpoint
-  if (process.env.NODE_ENV === 'development') {
-    app.get("/api/dev-token", (req, res) => {
-      try {
-        const token = generateDevelopmentToken();
-        res.json({ token });
-      } catch (error) {
-        res.status(500).json({ error: "Failed to generate development token" });
-      }
-    });
-  }
+
 
   // Add a route to get current user information
   app.get("/api/user", async (req: AuthenticatedRequest, res) => {
