@@ -4,6 +4,7 @@ import { Calendar, School, Package, Trophy } from "lucide-react";
 import ActivityLibrary from "./activity-library";
 import MaterialsLibrary from "./materials-library";
 import MilestonesLibrary from "./milestones-library";
+import { UserInfo } from "./user-info";
 
 interface NavigationTabsProps {
   children: React.ReactNode; // Calendar content
@@ -14,6 +15,10 @@ export function NavigationTabs({ children }: NavigationTabsProps) {
     <Tabs defaultValue="calendar" className="space-y-6">
       <Card className="material-shadow">
         <CardContent className="p-2">
+          <div className="flex items-center justify-between mb-2">
+            <div></div>
+            <UserInfo />
+          </div>
           <TabsList className="grid w-full grid-cols-4 bg-white dark:bg-gray-800 p-1 rounded-lg h-12">
             <TabsTrigger 
               value="calendar" 

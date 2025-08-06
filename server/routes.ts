@@ -14,6 +14,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // TODO: Tenant management routes will be added when JWT is implemented
 
+  // Add a route to get current user information
+  app.get("/api/user", async (req: AuthenticatedRequest, res) => {
+    try {
+      res.json({
+        tenantId: req.tenantId,
+        userId: req.userId,
+        userFirstName: req.userFirstName,
+        userLastName: req.userLastName,
+        username: req.username,
+        role: req.role
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get user information" });
+    }
+  });
+
   // TODO: Apply authentication middleware when JWT is properly implemented
   // app.use("/api", authenticateToken);
   

@@ -6,6 +6,10 @@ import { storage } from './storage';
 export interface AuthenticatedRequest extends Request {
   tenantId?: string;
   userId?: string;
+  userFirstName?: string;
+  userLastName?: string;
+  username?: string;
+  role?: string;
 }
 
 export async function authenticateToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
@@ -14,6 +18,10 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
     // Set a default tenant for development
     req.tenantId = '7cb6c28d-164c-49fa-b461-dfc47a8a3fed';
     req.userId = 'dev-user';
+    req.userFirstName = 'Dev';
+    req.userLastName = 'User';
+    req.username = 'dev-user';
+    req.role = 'teacher';
     return next();
   }
 
@@ -47,9 +55,13 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
     // Verify the token with the tenant's secret
     const verified = jwt.verify(token, tokenSecret.jwtSecret) as any;
     
-    // Set tenant context for all subsequent operations
+    // Set tenant context and user information for all subsequent operations
     req.tenantId = verified.tenantId;
-    req.userId = verified.userId; // Optional: if you want to track specific users
+    req.userId = verified.userId;
+    req.userFirstName = verified.userFirstName;
+    req.userLastName = verified.userLastName;
+    req.username = verified.username;
+    req.role = verified.role;
     
     next();
   } catch (err) {

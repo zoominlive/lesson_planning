@@ -53,6 +53,7 @@ The application uses a PostgreSQL database with Drizzle ORM, successfully integr
 - All API endpoints validated and working with persistent data
 - Development tenant added (UUID: 7cb6c28d-164c-49fa-b461-dfc47a8a3fed) for JWT multi-tenant support
 - JWT secret created for development tenant in token_secrets table
+- JWT authentication supports query parameter integration with user context (userFirstName, userLastName, username, role)
 
 ### Core Data Models
 - **Users**: Teacher profiles with classroom assignments
