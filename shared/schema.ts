@@ -217,42 +217,24 @@ export const ageGroups = pgTable("age_groups", {
 });
 
 // Settings schemas
-export const insertLocationSchema = createInsertSchema(locations).pick({
-  tenantId: true,
-  name: true,
-  description: true,
-  address: true,
-  capacity: true,
-  isActive: true,
+export const insertLocationSchema = createInsertSchema(locations).omit({
+  id: true,
+  createdAt: true,
 });
 
-export const insertRoomSchema = createInsertSchema(rooms).pick({
-  tenantId: true,
-  locationId: true,
-  name: true,
-  description: true,
-  capacity: true,
-  ageRangeStart: true,
-  ageRangeEnd: true,
-  isActive: true,
+export const insertRoomSchema = createInsertSchema(rooms).omit({
+  id: true,
+  createdAt: true,
 });
 
-export const insertCategorySchema = createInsertSchema(categories).pick({
-  tenantId: true,
-  name: true,
-  description: true,
-  type: true,
-  color: true,
-  isActive: true,
+export const insertCategorySchema = createInsertSchema(categories).omit({
+  id: true,
+  createdAt: true,
 });
 
-export const insertAgeGroupSchema = createInsertSchema(ageGroups).pick({
-  tenantId: true,
-  name: true,
-  description: true,
-  ageRangeStart: true,
-  ageRangeEnd: true,
-  isActive: true,
+export const insertAgeGroupSchema = createInsertSchema(ageGroups).omit({
+  id: true,
+  createdAt: true,
 });
 
 // Types

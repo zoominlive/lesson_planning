@@ -59,11 +59,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/milestones", async (req: AuthenticatedRequest, res) => {
     try {
       const data = insertMilestoneSchema.parse(req.body);
-      // Remove tenantId from request body if present - it's set by middleware
-      const { tenantId, ...milestoneData } = data;
-      const milestone = await storage.createMilestone(milestoneData);
+      const milestone = await storage.createMilestone(data);
       res.status(201).json(milestone);
     } catch (error) {
+      console.error("Milestone creation error:", error);
       res.status(400).json({ error: "Invalid milestone data" });
     }
   });
@@ -285,10 +284,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/locations", async (req: AuthenticatedRequest, res) => {
     try {
       const data = insertLocationSchema.parse(req.body);
-      const { tenantId, ...locationData } = data;
-      const location = await storage.createLocation(locationData);
+      const location = await storage.createLocation(data);
       res.status(201).json(location);
     } catch (error) {
+      console.error("Location creation error:", error);
       res.status(400).json({ error: "Invalid location data" });
     }
   });
@@ -333,10 +332,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/rooms", async (req: AuthenticatedRequest, res) => {
     try {
       const data = insertRoomSchema.parse(req.body);
-      const { tenantId, ...roomData } = data;
-      const room = await storage.createRoom(roomData);
+      const room = await storage.createRoom(data);
       res.status(201).json(room);
     } catch (error) {
+      console.error("Room creation error:", error);
       res.status(400).json({ error: "Invalid room data" });
     }
   });
@@ -357,10 +356,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/categories", async (req: AuthenticatedRequest, res) => {
     try {
       const data = insertCategorySchema.parse(req.body);
-      const { tenantId, ...categoryData } = data;
-      const category = await storage.createCategory(categoryData);
+      const category = await storage.createCategory(data);
       res.status(201).json(category);
     } catch (error) {
+      console.error("Category creation error:", error);
       res.status(400).json({ error: "Invalid category data" });
     }
   });
@@ -378,11 +377,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/age-groups", async (req: AuthenticatedRequest, res) => {
     try {
       const data = insertAgeGroupSchema.parse(req.body);
-      const { tenantId, ...ageGroupData } = data;
-      const ageGroup = await storage.createAgeGroup(ageGroupData);
+      const ageGroup = await storage.createAgeGroup(data);
       res.status(201).json(ageGroup);
     } catch (error) {
-      res.status(400).json({ error: "Invalid age group data" });
+      console.error("Age group creation error:", error);
+      res.status(400).json({ error: "Invalid age group data", details: error });
     }
   });
 

@@ -51,21 +51,36 @@ export function AgeGroupsSettings() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: AgeGroupFormData) => apiRequest("/api/age-groups", { method: "POST", body: data }),
+    mutationFn: (data: AgeGroupFormData) => 
+      fetch("/api/age-groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then(res => {
+        if (!res.ok) throw new Error('Failed to create age group');
+        return res.json();
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/age-groups"] });
       setIsDialogOpen(false);
       form.reset();
       toast({ title: "Age group created successfully" });
     },
-    onError: () => {
-      toast({ title: "Failed to create age group", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: `Failed to create age group: ${error.message}`, variant: "destructive" });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: AgeGroupFormData }) =>
-      apiRequest(`/api/age-groups/${id}`, { method: "PUT", body: data }),
+      fetch(`/api/age-groups/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then(res => {
+        if (!res.ok) throw new Error('Failed to update age group');
+        return res.json();
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/age-groups"] });
       setEditingAgeGroup(null);
@@ -79,7 +94,13 @@ export function AgeGroupsSettings() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/age-groups/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => 
+      fetch(`/api/age-groups/${id}`, {
+        method: "DELETE",
+      }).then(res => {
+        if (!res.ok) throw new Error('Failed to delete age group');
+        return res.json();
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/age-groups"] });
       toast({ title: "Age group deleted successfully" });
