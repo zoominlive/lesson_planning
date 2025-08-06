@@ -51,7 +51,7 @@ export const materials = pgTable("materials", {
   locationId: varchar("location_id").notNull().references(() => locations.id),
   name: text("name").notNull(),
   description: text("description").notNull(),
-  categories: json("categories").$type<string[]>().notNull().default([]), // Multi-select categories
+  ageGroups: json("age_groups").$type<string[]>().notNull().default([]), // Multi-select age groups for safety
   quantity: integer("quantity").notNull().default(0),
   location: text("location").notNull(),
   photoUrl: text("photo_url"), // URL to uploaded photo

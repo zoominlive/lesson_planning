@@ -24,7 +24,7 @@ interface MaterialFormProps {
 
 export default function MaterialForm({ material, onSuccess, onCancel, selectedLocationId }: MaterialFormProps) {
   const { toast } = useToast();
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(material?.categories || []);
+  const [selectedAgeGroups, setSelectedAgeGroups] = useState<string[]>(material?.ageGroups || []);
   const [photoUrl, setPhotoUrl] = useState<string>(material?.photoUrl || "");
 
   const { register, handleSubmit, formState: { errors }, setValue, control } = useForm({
@@ -32,7 +32,7 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
     defaultValues: {
       name: material?.name || "",
       description: material?.description || "",
-      categories: material?.categories || [],
+      ageGroups: material?.ageGroups || [],
       quantity: material?.quantity || 1,
       location: material?.location || "",
       locationId: selectedLocationId,
@@ -41,17 +41,17 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
     },
   });
 
-  // Fetch available categories for multi-select
-  const { data: categories = [] } = useQuery({
-    queryKey: ["/api/categories", selectedLocationId],
-    queryFn: () => apiRequest("GET", `/api/categories?locationId=${selectedLocationId}`),
+  // Fetch available age groups for multi-select
+  const { data: ageGroups = [] } = useQuery({
+    queryKey: ["/api/age-groups", selectedLocationId],
+    queryFn: () => apiRequest("GET", `/api/age-groups?locationId=${selectedLocationId}`),
     enabled: !!selectedLocationId,
   });
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/materials", { 
       ...data, 
-      categories: selectedCategories, 
+      ageGroups: selectedAgeGroups, 
       photoUrl 
     }),
     onSuccess: () => {
@@ -67,7 +67,7 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
   const updateMutation = useMutation({
     mutationFn: (data: any) => apiRequest("PUT", `/api/materials/${material!.id}`, { 
       ...data, 
-      categories: selectedCategories, 
+      ageGroups: selectedAgeGroups, 
       photoUrl 
     }),
     onSuccess: () => {
@@ -110,18 +110,18 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
     }
   };
 
-  const handleCategoryToggle = (categoryId: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(categoryId) 
-        ? prev.filter(id => id !== categoryId)
-        : [...prev, categoryId]
+  const handleAgeGroupToggle = (ageGroupId: string) => {
+    setSelectedAgeGroups(prev => 
+      prev.includes(ageGroupId) 
+        ? prev.filter(id => id !== ageGroupId)
+        : [...prev, ageGroupId]
     );
   };
 
   const onSubmit = (data: any) => {
     const submissionData = { 
       ...data, 
-      categories: selectedCategories, 
+      ageGroups: selectedAgeGroups, 
       photoUrl,
       locationId: selectedLocationId 
     };
@@ -157,31 +157,32 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
       </div>
 
       <div>
-        <Label>Categories *</Label>
+        <Label>Age Groups * (for safety)</Label>
+        <p className="text-sm text-gray-600 mb-2">Select which age groups can safely use this material</p>
         <div className="flex flex-wrap gap-2 p-3 border rounded-md min-h-[40px]">
-          {Array.isArray(categories) && categories.map((category: any) => {
-            const isSelected = selectedCategories.includes(category.id);
+          {Array.isArray(ageGroups) && ageGroups.map((ageGroup: any) => {
+            const isSelected = selectedAgeGroups.includes(ageGroup.id);
             return (
               <Badge
-                key={category.id}
+                key={ageGroup.id}
                 variant={isSelected ? "default" : "outline"}
                 className={`cursor-pointer hover:scale-105 transition-transform ${
-                  isSelected ? "bg-turquoise text-white" : "hover:bg-gray-100"
+                  isSelected ? "bg-coral-red text-white" : "hover:bg-gray-100"
                 }`}
-                onClick={() => handleCategoryToggle(category.id)}
-                data-testid={`badge-category-${category.id}`}
+                onClick={() => handleAgeGroupToggle(ageGroup.id)}
+                data-testid={`badge-age-group-${ageGroup.id}`}
               >
-                {category.name}
+                {ageGroup.name}
                 {isSelected && <X className="w-3 h-3 ml-1" />}
               </Badge>
             );
           })}
-          {selectedCategories.length === 0 && (
-            <span className="text-gray-500 text-sm">Click categories to select</span>
+          {selectedAgeGroups.length === 0 && (
+            <span className="text-gray-500 text-sm">Click age groups to select</span>
           )}
         </div>
-        {selectedCategories.length === 0 && (
-          <p className="text-red-500 text-sm">At least one category is required</p>
+        {selectedAgeGroups.length === 0 && (
+          <p className="text-red-500 text-sm">At least one age group is required for safety</p>
         )}
       </div>
 
