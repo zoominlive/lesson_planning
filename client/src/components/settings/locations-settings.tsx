@@ -48,7 +48,7 @@ export function LocationsSettings() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: LocationFormData) => apiRequest("/api/locations", { method: "POST", body: data }),
+    mutationFn: (data: LocationFormData) => apiRequest("POST", "/api/locations", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/locations"] });
       setIsDialogOpen(false);
@@ -62,7 +62,7 @@ export function LocationsSettings() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: LocationFormData }) =>
-      apiRequest(`/api/locations/${id}`, { method: "PUT", body: data }),
+      apiRequest("PUT", `/api/locations/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/locations"] });
       setEditingLocation(null);
@@ -76,7 +76,7 @@ export function LocationsSettings() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/locations/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/locations/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/locations"] });
       toast({ title: "Location deleted successfully" });
@@ -87,10 +87,16 @@ export function LocationsSettings() {
   });
 
   const handleSubmit = (data: LocationFormData) => {
+    // Add tenantId to the data for proper multi-tenant support
+    const dataWithTenant = {
+      ...data,
+      tenantId: "7cb6c28d-164c-49fa-b461-dfc47a8a3fed" // This should come from auth context in production
+    };
+    
     if (editingLocation) {
-      updateMutation.mutate({ id: editingLocation.id, data });
+      updateMutation.mutate({ id: editingLocation.id, data: dataWithTenant });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(dataWithTenant);
     }
   };
 
