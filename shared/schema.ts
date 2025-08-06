@@ -23,7 +23,8 @@ export const tokenSecrets = pgTable("token_secrets", {
 // Users table (teachers)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  username: text("username").notNull(),
   password: text("password").notNull(),
   name: text("name").notNull(),
   email: text("email").notNull(),
@@ -33,6 +34,7 @@ export const users = pgTable("users", {
 // Developmental milestones
 export const milestones = pgTable("milestones", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
   title: text("title").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull(), // Social, Emotional, Cognitive, Physical
@@ -44,6 +46,7 @@ export const milestones = pgTable("milestones", {
 // Materials
 export const materials = pgTable("materials", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
   name: text("name").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull(),
@@ -55,6 +58,7 @@ export const materials = pgTable("materials", {
 // Activities
 export const activities = pgTable("activities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
   title: text("title").notNull(),
   description: text("description").notNull(),
   duration: integer("duration").notNull(), // in minutes
@@ -72,6 +76,7 @@ export const activities = pgTable("activities", {
 // Lesson plans
 export const lessonPlans = pgTable("lesson_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
   teacherId: varchar("teacher_id").notNull().references(() => users.id),
   weekStart: text("week_start").notNull(), // ISO date string
   room: text("room").notNull(),
@@ -83,6 +88,7 @@ export const lessonPlans = pgTable("lesson_plans", {
 // Scheduled activities (activities placed in calendar slots)
 export const scheduledActivities = pgTable("scheduled_activities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
   lessonPlanId: varchar("lesson_plan_id").notNull().references(() => lessonPlans.id),
   activityId: varchar("activity_id").notNull().references(() => activities.id),
   dayOfWeek: integer("day_of_week").notNull(), // 0-4 (Monday-Friday)
@@ -103,6 +109,7 @@ export const insertTokenSecretSchema = createInsertSchema(tokenSecrets).pick({
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
+  tenantId: true,
   username: true,
   password: true,
   name: true,
@@ -111,6 +118,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 });
 
 export const insertMilestoneSchema = createInsertSchema(milestones).pick({
+  tenantId: true,
   title: true,
   description: true,
   category: true,
@@ -120,6 +128,7 @@ export const insertMilestoneSchema = createInsertSchema(milestones).pick({
 });
 
 export const insertMaterialSchema = createInsertSchema(materials).pick({
+  tenantId: true,
   name: true,
   description: true,
   category: true,
@@ -129,6 +138,7 @@ export const insertMaterialSchema = createInsertSchema(materials).pick({
 });
 
 export const insertActivitySchema = createInsertSchema(activities).pick({
+  tenantId: true,
   title: true,
   description: true,
   duration: true,
@@ -144,6 +154,7 @@ export const insertActivitySchema = createInsertSchema(activities).pick({
 });
 
 export const insertLessonPlanSchema = createInsertSchema(lessonPlans).pick({
+  tenantId: true,
   teacherId: true,
   weekStart: true,
   room: true,
@@ -151,6 +162,7 @@ export const insertLessonPlanSchema = createInsertSchema(lessonPlans).pick({
 });
 
 export const insertScheduledActivitySchema = createInsertSchema(scheduledActivities).pick({
+  tenantId: true,
   lessonPlanId: true,
   activityId: true,
   dayOfWeek: true,

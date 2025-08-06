@@ -76,184 +76,254 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  private db = db; // Make db accessible within the class
+  private db = db;
+  private tenantId: string | null = null;
+
+  setTenantContext(tenantId: string) {
+    this.tenantId = tenantId;
+  }
 
   // Users
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await this.db.select().from(users).where(eq(users.id, id));
+    const conditions = [eq(users.id, id)];
+    if (this.tenantId) conditions.push(eq(users.tenantId, this.tenantId));
+    
+    const [user] = await this.db.select().from(users).where(and(...conditions));
     return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await this.db.select().from(users).where(eq(users.username, username));
+    const conditions = [eq(users.username, username)];
+    if (this.tenantId) conditions.push(eq(users.tenantId, this.tenantId));
+    
+    const [user] = await this.db.select().from(users).where(and(...conditions));
     return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
+    const userData = this.tenantId ? { ...insertUser, tenantId: this.tenantId } : insertUser;
     const [user] = await this.db
       .insert(users)
-      .values(insertUser)
+      .values(userData)
       .returning();
     return user;
   }
 
   // Milestones
-  async getMilestones(tenantId?: string): Promise<Milestone[]> {
-    // Milestones might be shared across tenants or tenant-specific
-    // For now, returning all milestones as per the original logic, but a tenantId filter could be added here if needed.
-    return await this.db.select().from(milestones);
+  async getMilestones(): Promise<Milestone[]> {
+    const conditions = [];
+    if (this.tenantId) conditions.push(eq(milestones.tenantId, this.tenantId));
+    
+    return await this.db.select().from(milestones).where(conditions.length ? and(...conditions) : undefined);
   }
 
   async getMilestone(id: string): Promise<Milestone | undefined> {
-    const [milestone] = await this.db.select().from(milestones).where(eq(milestones.id, id));
+    const conditions = [eq(milestones.id, id)];
+    if (this.tenantId) conditions.push(eq(milestones.tenantId, this.tenantId));
+    
+    const [milestone] = await this.db.select().from(milestones).where(and(...conditions));
     return milestone || undefined;
   }
 
   async createMilestone(insertMilestone: InsertMilestone): Promise<Milestone> {
+    const milestoneData = this.tenantId ? { ...insertMilestone, tenantId: this.tenantId } : insertMilestone;
     const [milestone] = await this.db
       .insert(milestones)
-      .values(insertMilestone)
+      .values(milestoneData)
       .returning();
     return milestone;
   }
 
   async updateMilestone(id: string, updates: Partial<InsertMilestone>): Promise<Milestone | undefined> {
+    const conditions = [eq(milestones.id, id)];
+    if (this.tenantId) conditions.push(eq(milestones.tenantId, this.tenantId));
+    
     const [milestone] = await this.db
       .update(milestones)
       .set(updates)
-      .where(eq(milestones.id, id))
+      .where(and(...conditions))
       .returning();
     return milestone || undefined;
   }
 
   async deleteMilestone(id: string): Promise<boolean> {
-    const result = await this.db.delete(milestones).where(eq(milestones.id, id));
+    const conditions = [eq(milestones.id, id)];
+    if (this.tenantId) conditions.push(eq(milestones.tenantId, this.tenantId));
+    
+    const result = await this.db.delete(milestones).where(and(...conditions));
     return (result.rowCount ?? 0) > 0;
   }
 
   // Materials
   async getMaterials(): Promise<Material[]> {
-    return await this.db.select().from(materials);
+    const conditions = [];
+    if (this.tenantId) conditions.push(eq(materials.tenantId, this.tenantId));
+    
+    return await this.db.select().from(materials).where(conditions.length ? and(...conditions) : undefined);
   }
 
   async getMaterial(id: string): Promise<Material | undefined> {
-    const [material] = await this.db.select().from(materials).where(eq(materials.id, id));
+    const conditions = [eq(materials.id, id)];
+    if (this.tenantId) conditions.push(eq(materials.tenantId, this.tenantId));
+    
+    const [material] = await this.db.select().from(materials).where(and(...conditions));
     return material || undefined;
   }
 
   async createMaterial(insertMaterial: InsertMaterial): Promise<Material> {
+    const materialData = this.tenantId ? { ...insertMaterial, tenantId: this.tenantId } : insertMaterial;
     const [material] = await this.db
       .insert(materials)
-      .values(insertMaterial)
+      .values(materialData)
       .returning();
     return material;
   }
 
   async updateMaterial(id: string, updates: Partial<InsertMaterial>): Promise<Material | undefined> {
+    const conditions = [eq(materials.id, id)];
+    if (this.tenantId) conditions.push(eq(materials.tenantId, this.tenantId));
+    
     const [material] = await this.db
       .update(materials)
       .set(updates)
-      .where(eq(materials.id, id))
+      .where(and(...conditions))
       .returning();
     return material || undefined;
   }
 
   async deleteMaterial(id: string): Promise<boolean> {
-    const result = await this.db.delete(materials).where(eq(materials.id, id));
+    const conditions = [eq(materials.id, id)];
+    if (this.tenantId) conditions.push(eq(materials.tenantId, this.tenantId));
+    
+    const result = await this.db.delete(materials).where(and(...conditions));
     return (result.rowCount ?? 0) > 0;
   }
 
   // Activities
   async getActivities(): Promise<Activity[]> {
-    return await this.db.select().from(activities);
+    const conditions = [];
+    if (this.tenantId) conditions.push(eq(activities.tenantId, this.tenantId));
+    
+    return await this.db.select().from(activities).where(conditions.length ? and(...conditions) : undefined);
   }
 
   async getActivity(id: string): Promise<Activity | undefined> {
-    const [activity] = await this.db.select().from(activities).where(eq(activities.id, id));
+    const conditions = [eq(activities.id, id)];
+    if (this.tenantId) conditions.push(eq(activities.tenantId, this.tenantId));
+    
+    const [activity] = await this.db.select().from(activities).where(and(...conditions));
     return activity || undefined;
   }
 
   async createActivity(insertActivity: InsertActivity): Promise<Activity> {
+    const activityData = this.tenantId ? { ...insertActivity, tenantId: this.tenantId } : insertActivity;
     const [activity] = await this.db
       .insert(activities)
-      .values(insertActivity)
+      .values(activityData)
       .returning();
     return activity;
   }
 
   async updateActivity(id: string, updates: Partial<InsertActivity>): Promise<Activity | undefined> {
+    const conditions = [eq(activities.id, id)];
+    if (this.tenantId) conditions.push(eq(activities.tenantId, this.tenantId));
+    
     const [activity] = await this.db
       .update(activities)
       .set(updates)
-      .where(eq(activities.id, id))
+      .where(and(...conditions))
       .returning();
     return activity || undefined;
   }
 
   async deleteActivity(id: string): Promise<boolean> {
-    const result = await this.db.delete(activities).where(eq(activities.id, id));
+    const conditions = [eq(activities.id, id)];
+    if (this.tenantId) conditions.push(eq(activities.tenantId, this.tenantId));
+    
+    const result = await this.db.delete(activities).where(and(...conditions));
     return (result.rowCount ?? 0) > 0;
   }
 
   // Lesson Plans
   async getLessonPlans(teacherId?: string): Promise<LessonPlan[]> {
-    if (teacherId) {
-      return await this.db.select().from(lessonPlans).where(eq(lessonPlans.teacherId, teacherId));
-    }
-    return await this.db.select().from(lessonPlans);
+    const conditions = [];
+    if (teacherId) conditions.push(eq(lessonPlans.teacherId, teacherId));
+    if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
+    
+    return await this.db.select().from(lessonPlans).where(conditions.length ? and(...conditions) : undefined);
   }
 
   async getLessonPlan(id: string): Promise<LessonPlan | undefined> {
-    const [lessonPlan] = await this.db.select().from(lessonPlans).where(eq(lessonPlans.id, id));
+    const conditions = [eq(lessonPlans.id, id)];
+    if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
+    
+    const [lessonPlan] = await this.db.select().from(lessonPlans).where(and(...conditions));
     return lessonPlan || undefined;
   }
 
   async createLessonPlan(insertLessonPlan: InsertLessonPlan): Promise<LessonPlan> {
+    const lessonPlanData = this.tenantId ? { ...insertLessonPlan, tenantId: this.tenantId } : insertLessonPlan;
     const [lessonPlan] = await this.db
       .insert(lessonPlans)
-      .values(insertLessonPlan)
+      .values(lessonPlanData)
       .returning();
     return lessonPlan;
   }
 
   async updateLessonPlan(id: string, updates: Partial<InsertLessonPlan>): Promise<LessonPlan | undefined> {
+    const conditions = [eq(lessonPlans.id, id)];
+    if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
+    
     const [lessonPlan] = await this.db
       .update(lessonPlans)
       .set(updates)
-      .where(eq(lessonPlans.id, id))
+      .where(and(...conditions))
       .returning();
     return lessonPlan || undefined;
   }
 
   async deleteLessonPlan(id: string): Promise<boolean> {
-    const result = await this.db.delete(lessonPlans).where(eq(lessonPlans.id, id));
+    const conditions = [eq(lessonPlans.id, id)];
+    if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
+    
+    const result = await this.db.delete(lessonPlans).where(and(...conditions));
     return (result.rowCount ?? 0) > 0;
   }
 
   // Scheduled Activities
   async getScheduledActivities(lessonPlanId: string): Promise<ScheduledActivity[]> {
-    return await this.db.select().from(scheduledActivities).where(eq(scheduledActivities.lessonPlanId, lessonPlanId));
+    const conditions = [eq(scheduledActivities.lessonPlanId, lessonPlanId)];
+    if (this.tenantId) conditions.push(eq(scheduledActivities.tenantId, this.tenantId));
+    
+    return await this.db.select().from(scheduledActivities).where(and(...conditions));
   }
 
   async createScheduledActivity(insertScheduledActivity: InsertScheduledActivity): Promise<ScheduledActivity> {
+    const scheduledActivityData = this.tenantId ? { ...insertScheduledActivity, tenantId: this.tenantId } : insertScheduledActivity;
     const [scheduledActivity] = await this.db
       .insert(scheduledActivities)
-      .values(insertScheduledActivity)
+      .values(scheduledActivityData)
       .returning();
     return scheduledActivity;
   }
 
   async updateScheduledActivity(id: string, updates: Partial<InsertScheduledActivity>): Promise<ScheduledActivity | undefined> {
+    const conditions = [eq(scheduledActivities.id, id)];
+    if (this.tenantId) conditions.push(eq(scheduledActivities.tenantId, this.tenantId));
+    
     const [scheduledActivity] = await this.db
       .update(scheduledActivities)
       .set(updates)
-      .where(eq(scheduledActivities.id, id))
+      .where(and(...conditions))
       .returning();
     return scheduledActivity || undefined;
   }
 
   async deleteScheduledActivity(id: string): Promise<boolean> {
-    const result = await this.db.delete(scheduledActivities).where(eq(scheduledActivities.id, id));
+    const conditions = [eq(scheduledActivities.id, id)];
+    if (this.tenantId) conditions.push(eq(scheduledActivities.tenantId, this.tenantId));
+    
+    const result = await this.db.delete(scheduledActivities).where(and(...conditions));
     return (result.rowCount ?? 0) > 0;
   }
 

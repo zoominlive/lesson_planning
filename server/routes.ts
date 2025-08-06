@@ -30,8 +30,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // TODO: Apply authentication middleware when JWT is properly implemented
-  // app.use("/api", authenticateToken);
+  // Apply tenant context middleware to all API routes
+  app.use("/api", (req: AuthenticatedRequest, res, next) => {
+    if (req.tenantId) {
+      storage.setTenantContext(req.tenantId);
+    }
+    next();
+  });
   
   // Milestones routes
   app.get("/api/milestones", async (req, res) => {
@@ -43,10 +48,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/milestones", async (req, res) => {
+  app.post("/api/milestones", async (req: AuthenticatedRequest, res) => {
     try {
       const data = insertMilestoneSchema.parse(req.body);
-      const milestone = await storage.createMilestone(data);
+      // Remove tenantId from request body if present - it's set by middleware
+      const { tenantId, ...milestoneData } = data;
+      const milestone = await storage.createMilestone(milestoneData);
       res.status(201).json(milestone);
     } catch (error) {
       res.status(400).json({ error: "Invalid milestone data" });
