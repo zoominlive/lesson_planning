@@ -422,7 +422,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Settings API Routes - Age Groups
   app.get("/api/age-groups", async (req, res) => {
     try {
-      const ageGroups = await storage.getAgeGroups();
+      const { locationId } = req.query;
+      const ageGroups = await storage.getAgeGroups(locationId as string);
       res.json(ageGroups);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch age groups" });
@@ -437,6 +438,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Age group creation error:", error);
       res.status(400).json({ error: "Invalid age group data", details: error });
+    }
+  });
+
+  app.put("/api/age-groups/:id", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { locationId } = req.query;
+      const updates = req.body;
+      const ageGroup = await storage.updateAgeGroup(id, updates, locationId as string);
+      if (!ageGroup) {
+        return res.status(404).json({ error: "Age group not found" });
+      }
+      res.json(ageGroup);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update age group" });
+    }
+  });
+
+  app.delete("/api/age-groups/:id", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { locationId } = req.query;
+      const success = await storage.deleteAgeGroup(id, locationId as string);
+      if (!success) {
+        return res.status(404).json({ error: "Age group not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete age group" });
     }
   });
 

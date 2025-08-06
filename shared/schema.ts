@@ -181,6 +181,7 @@ export const categories = pgTable("categories", {
 export const ageGroups = pgTable("age_groups", {
   id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  locationId: varchar("location_id").references(() => locations.id).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   ageRangeStart: integer("age_range_start").notNull(),

@@ -559,16 +559,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Age Groups
-  async getAgeGroups(): Promise<AgeGroup[]> {
+  async getAgeGroups(locationId?: string): Promise<AgeGroup[]> {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(ageGroups.tenantId, this.tenantId));
+    if (locationId) conditions.push(eq(ageGroups.locationId, locationId));
     
     return await this.db.select().from(ageGroups).where(conditions.length ? and(...conditions) : undefined);
   }
 
-  async getAgeGroup(id: string): Promise<AgeGroup | undefined> {
+  async getAgeGroup(id: string, locationId?: string): Promise<AgeGroup | undefined> {
     const conditions = [eq(ageGroups.id, id)];
     if (this.tenantId) conditions.push(eq(ageGroups.tenantId, this.tenantId));
+    if (locationId) conditions.push(eq(ageGroups.locationId, locationId));
     
     const [ageGroup] = await this.db.select().from(ageGroups).where(and(...conditions));
     return ageGroup || undefined;
@@ -583,9 +585,10 @@ export class DatabaseStorage implements IStorage {
     return ageGroup;
   }
 
-  async updateAgeGroup(id: string, updates: Partial<InsertAgeGroup>): Promise<AgeGroup | undefined> {
+  async updateAgeGroup(id: string, updates: Partial<InsertAgeGroup>, locationId?: string): Promise<AgeGroup | undefined> {
     const conditions = [eq(ageGroups.id, id)];
     if (this.tenantId) conditions.push(eq(ageGroups.tenantId, this.tenantId));
+    if (locationId) conditions.push(eq(ageGroups.locationId, locationId));
     
     const [ageGroup] = await this.db
       .update(ageGroups)
@@ -595,9 +598,10 @@ export class DatabaseStorage implements IStorage {
     return ageGroup || undefined;
   }
 
-  async deleteAgeGroup(id: string): Promise<boolean> {
+  async deleteAgeGroup(id: string, locationId?: string): Promise<boolean> {
     const conditions = [eq(ageGroups.id, id)];
     if (this.tenantId) conditions.push(eq(ageGroups.tenantId, this.tenantId));
+    if (locationId) conditions.push(eq(ageGroups.locationId, locationId));
     
     const result = await this.db.delete(ageGroups).where(and(...conditions));
     return (result.rowCount ?? 0) > 0;
