@@ -62,6 +62,7 @@ export function CategoriesSettings() {
   useEffect(() => {
     if (locations.length > 0 && !selectedLocationId) {
       const mainCampus = locations.find(loc => loc.name === "Main Campus") || locations[0];
+      console.log("Auto-selecting location:", mainCampus.name, mainCampus.id);
       setSelectedLocationId(mainCampus.id);
     }
   }, [locations, selectedLocationId]);
@@ -73,6 +74,13 @@ export function CategoriesSettings() {
       : undefined,
     enabled: !!selectedLocationId,
   });
+
+  // Debug log for categories data
+  useEffect(() => {
+    console.log("Categories data:", categories);
+    console.log("Selected location ID:", selectedLocationId);
+    console.log("Is loading:", isLoading);
+  }, [categories, selectedLocationId, isLoading]);
 
   const createMutation = useMutation({
     mutationFn: (data: CategoryFormData) => apiRequest("POST", "/api/categories", data),
