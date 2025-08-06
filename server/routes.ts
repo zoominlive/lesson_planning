@@ -2,6 +2,10 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { type AuthenticatedRequest, generateDevelopmentToken, authenticateToken } from "./auth-middleware";
+import {
+  ObjectStorageService,
+  ObjectNotFoundError,
+} from "./objectStorage";
 import { 
   insertMilestoneSchema, 
   insertMaterialSchema, 
@@ -156,6 +160,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete material" });
+    }
+  });
+
+  // Object storage routes for material photos
+  app.post("/api/objects/upload", async (req: AuthenticatedRequest, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  app.get("/objects/:objectPath(*)", async (req: AuthenticatedRequest, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(
+        req.path,
+      );
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error checking object access:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
+    }
+  });
+
+  app.put("/api/materials/:id/photo", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { photoURL } = req.body;
+      
+      if (!photoURL) {
+        return res.status(400).json({ error: "photoURL is required" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        photoURL,
+        {
+          owner: req.userId || "anonymous",
+          visibility: "public", // Material photos are public
+        },
+      );
+
+      // Update the material with the photo URL
+      const material = await storage.updateMaterial(id, { photoUrl: objectPath });
+      if (!material) {
+        return res.status(404).json({ error: "Material not found" });
+      }
+
+      res.json({ objectPath });
+    } catch (error) {
+      console.error("Error setting material photo:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 

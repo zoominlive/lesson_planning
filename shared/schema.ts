@@ -51,10 +51,10 @@ export const materials = pgTable("materials", {
   locationId: varchar("location_id").notNull().references(() => locations.id),
   name: text("name").notNull(),
   description: text("description").notNull(),
-  category: text("category").notNull(),
+  categories: json("categories").$type<string[]>().notNull().default([]), // Multi-select categories
   quantity: integer("quantity").notNull().default(0),
   location: text("location").notNull(),
-  status: text("status").notNull().default("in_stock"), // in_stock, low_stock, out_of_stock, on_order
+  photoUrl: text("photo_url"), // URL to uploaded photo
 });
 
 // Activities
