@@ -68,10 +68,10 @@ export default function LessonPlanner() {
       <Tabs defaultValue="calendar" className="space-y-6">
         <Card className="material-shadow">
           <CardContent className="p-2">
-            <TabsList className="grid w-full grid-cols-4 bg-gray-100 dark:bg-gray-800">
+            <TabsList className="grid w-full grid-cols-4 bg-white dark:bg-gray-800 p-1 rounded-lg">
               <TabsTrigger 
                 value="calendar" 
-                className="flex items-center justify-center py-3 px-6 rounded-lg font-semibold transition-all duration-300 text-gray-600 dark:text-gray-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-coral-red data-[state=active]:to-turquoise data-[state=active]:text-white data-[state=active]:shadow-md"
+                className="flex items-center justify-center py-3 px-6 rounded-md font-semibold transition-all duration-300 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white data-[state=active]:!bg-coral-red data-[state=active]:!text-white data-[state=active]:shadow-lg"
                 data-testid="tab-calendar"
               >
                 <Calendar className="mr-2 h-4 w-4" />
@@ -79,7 +79,7 @@ export default function LessonPlanner() {
               </TabsTrigger>
               <TabsTrigger 
                 value="activities" 
-                className="flex items-center justify-center py-3 px-6 rounded-lg font-semibold transition-all duration-300 text-gray-600 dark:text-gray-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-coral-red data-[state=active]:to-turquoise data-[state=active]:text-white data-[state=active]:shadow-md"
+                className="flex items-center justify-center py-3 px-6 rounded-md font-semibold transition-all duration-300 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white data-[state=active]:!bg-turquoise data-[state=active]:!text-white data-[state=active]:shadow-lg"
                 data-testid="tab-activities"
               >
                 <School className="mr-2 h-4 w-4" />
@@ -87,7 +87,7 @@ export default function LessonPlanner() {
               </TabsTrigger>
               <TabsTrigger 
                 value="materials" 
-                className="flex items-center justify-center py-3 px-6 rounded-lg font-semibold transition-all duration-300 text-gray-600 dark:text-gray-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-coral-red data-[state=active]:to-turquoise data-[state=active]:text-white data-[state=active]:shadow-md"
+                className="flex items-center justify-center py-3 px-6 rounded-md font-semibold transition-all duration-300 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white data-[state=active]:!bg-sky-blue data-[state=active]:!text-white data-[state=active]:shadow-lg"
                 data-testid="tab-materials"
               >
                 <Package className="mr-2 h-4 w-4" />
@@ -95,7 +95,7 @@ export default function LessonPlanner() {
               </TabsTrigger>
               <TabsTrigger 
                 value="milestones" 
-                className="flex items-center justify-center py-3 px-6 rounded-lg font-semibold transition-all duration-300 text-gray-600 dark:text-gray-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-coral-red data-[state=active]:to-turquoise data-[state=active]:text-white data-[state=active]:shadow-md"
+                className="flex items-center justify-center py-3 px-6 rounded-md font-semibold transition-all duration-300 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white data-[state=active]:!bg-mint-green data-[state=active]:!text-white data-[state=active]:shadow-lg"
                 data-testid="tab-milestones"
               >
                 <Trophy className="mr-2 h-4 w-4" />
