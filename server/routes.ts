@@ -20,30 +20,8 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-
-
-  // Add a route to get current user information
-  app.get("/api/user", async (req: AuthenticatedRequest, res) => {
-    try {
-      res.json({
-        tenantId: req.tenantId,
-        userId: req.userId,
-        userFirstName: req.userFirstName,
-        userLastName: req.userLastName,
-        username: req.username,
-        role: req.role
-      });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to get user information" });
-    }
-  });
-
-  // Apply authentication middleware to all API routes except dev-token
+  // Apply authentication middleware to all API routes first
   app.use("/api", (req, res, next) => {
-    // Skip auth for development token endpoint
-    if (req.path === '/dev-token' && process.env.NODE_ENV === 'development') {
-      return next();
-    }
     return authenticateToken(req as AuthenticatedRequest, res, next);
   });
 
@@ -55,6 +33,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
   
+  // Add a route to get current user information
+  app.get("/api/user", async (req: AuthenticatedRequest, res) => {
+    try {
+      console.log('User endpoint called with auth data:', {
+        tenantId: req.tenantId,
+        userId: req.userId,
+        userFirstName: req.userFirstName,
+        userLastName: req.userLastName,
+        username: req.username,
+        role: req.role
+      });
+      
+      const userData = {
+        tenantId: req.tenantId,
+        userId: req.userId,
+        userFirstName: req.userFirstName,
+        userLastName: req.userLastName,
+        username: req.username,
+        role: req.role
+      };
+      
+      res.set('Cache-Control', 'no-cache');
+      res.json(userData);
+    } catch (error) {
+      console.error('Error in /api/user:', error);
+      res.status(500).json({ error: "Failed to get user information" });
+    }
+  });
+
   // Milestones routes
   app.get("/api/milestones", async (req, res) => {
     try {
