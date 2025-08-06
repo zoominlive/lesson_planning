@@ -10,9 +10,16 @@ import {
   type LessonPlan,
   type InsertLessonPlan,
   type ScheduledActivity,
-  type InsertScheduledActivity
+  type InsertScheduledActivity,
+  users,
+  milestones,
+  materials,
+  activities,
+  lessonPlans,
+  scheduledActivities
 } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -55,297 +62,184 @@ export interface IStorage {
   deleteScheduledActivity(id: string): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User> = new Map();
-  private milestones: Map<string, Milestone> = new Map();
-  private materials: Map<string, Material> = new Map();
-  private activities: Map<string, Activity> = new Map();
-  private lessonPlans: Map<string, LessonPlan> = new Map();
-  private scheduledActivities: Map<string, ScheduledActivity> = new Map();
-
-  constructor() {
-    this.seedData();
-  }
-
-  private seedData() {
-    // Seed sample milestones
-    const sampleMilestones: Milestone[] = [
-      {
-        id: "milestone-1",
-        title: "Shares toys with peers",
-        description: "Child willingly shares toys and materials with classmates during play activities, demonstrating early cooperation skills.",
-        category: "Social",
-        ageRangeStart: 36,
-        ageRangeEnd: 48,
-        learningObjective: "Develop cooperation and social interaction skills"
-      },
-      {
-        id: "milestone-2",
-        title: "Expresses feelings verbally",
-        description: "Uses words to communicate basic emotions like happy, sad, angry, or excited instead of only physical reactions.",
-        category: "Emotional",
-        ageRangeStart: 36,
-        ageRangeEnd: 48,
-        learningObjective: "Develop emotional vocabulary and self-expression"
-      },
-      {
-        id: "milestone-3",
-        title: "Sorts objects by attributes",
-        description: "Groups objects by color, size, shape, or function, demonstrating classification skills.",
-        category: "Cognitive",
-        ageRangeStart: 36,
-        ageRangeEnd: 48,
-        learningObjective: "Develop logical thinking and categorization skills"
-      },
-      {
-        id: "milestone-4",
-        title: "Uses scissors to cut shapes",
-        description: "Controls scissors to cut along lines and create simple shapes, showing fine motor development.",
-        category: "Physical",
-        ageRangeStart: 48,
-        ageRangeEnd: 60,
-        learningObjective: "Develop fine motor control and hand-eye coordination"
-      }
-    ];
-
-    sampleMilestones.forEach(milestone => this.milestones.set(milestone.id, milestone));
-
-    // Seed sample materials
-    const sampleMaterials: Material[] = [
-      {
-        id: "material-1",
-        name: "Washable Crayons Set",
-        description: "Set of 24 washable crayons in assorted colors, perfect for young children's art activities.",
-        category: "Art Supplies",
-        quantity: 15,
-        location: "Art Cabinet A",
-        status: "in_stock"
-      },
-      {
-        id: "material-2",
-        name: "Picture Book Collection",
-        description: "Diverse collection of age-appropriate picture books for story time and independent reading.",
-        category: "Books & Reading",
-        quantity: 45,
-        location: "Reading Corner",
-        status: "in_stock"
-      },
-      {
-        id: "material-3",
-        name: "Wooden Building Blocks",
-        description: "Natural wooden blocks in various shapes and sizes for construction and creative play.",
-        category: "Building Materials",
-        quantity: 3,
-        location: "Block Area",
-        status: "low_stock"
-      }
-    ];
-
-    sampleMaterials.forEach(material => this.materials.set(material.id, material));
-
-    // Seed sample activities
-    const sampleActivities: Activity[] = [
-      {
-        id: "activity-1",
-        title: "Morning Circle",
-        description: "Interactive circle time where children share experiences, sing songs, and learn about the day ahead.",
-        duration: 25,
-        ageRangeStart: 36,
-        ageRangeEnd: 60,
-        teachingObjectives: ["Develop listening skills", "Practice social interaction", "Build routine awareness"],
-        milestoneIds: ["milestone-1", "milestone-2"],
-        materialIds: ["material-2"],
-        instructions: ["Gather children in circle", "Lead welcome song", "Discuss daily activities", "Share and listen time"],
-        category: "Social Development",
-        videoUrl: null,
-        imageUrl: null
-      },
-      {
-        id: "activity-2",
-        title: "Finger Painting",
-        description: "Children explore colors and textures while developing fine motor skills through guided finger painting activities.",
-        duration: 45,
-        ageRangeStart: 36,
-        ageRangeEnd: 48,
-        teachingObjectives: ["Develop fine motor control", "Learn color recognition", "Express creativity"],
-        milestoneIds: ["milestone-3", "milestone-4"],
-        materialIds: ["material-1"],
-        instructions: ["Set up painting area", "Distribute materials", "Demonstrate techniques", "Guide exploration", "Clean up together"],
-        category: "Art & Creativity",
-        videoUrl: null,
-        imageUrl: null
-      }
-    ];
-
-    sampleActivities.forEach(activity => this.activities.set(activity.id, activity));
-  }
+export class DatabaseStorage implements IStorage {
 
   // Users
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
   // Milestones
   async getMilestones(): Promise<Milestone[]> {
-    return Array.from(this.milestones.values());
+    return await db.select().from(milestones);
   }
 
   async getMilestone(id: string): Promise<Milestone | undefined> {
-    return this.milestones.get(id);
+    const [milestone] = await db.select().from(milestones).where(eq(milestones.id, id));
+    return milestone || undefined;
   }
 
   async createMilestone(insertMilestone: InsertMilestone): Promise<Milestone> {
-    const id = randomUUID();
-    const milestone: Milestone = { ...insertMilestone, id };
-    this.milestones.set(id, milestone);
+    const [milestone] = await db
+      .insert(milestones)
+      .values(insertMilestone)
+      .returning();
     return milestone;
   }
 
   async updateMilestone(id: string, updates: Partial<InsertMilestone>): Promise<Milestone | undefined> {
-    const milestone = this.milestones.get(id);
-    if (!milestone) return undefined;
-    
-    const updatedMilestone = { ...milestone, ...updates };
-    this.milestones.set(id, updatedMilestone);
-    return updatedMilestone;
+    const [milestone] = await db
+      .update(milestones)
+      .set(updates)
+      .where(eq(milestones.id, id))
+      .returning();
+    return milestone || undefined;
   }
 
   async deleteMilestone(id: string): Promise<boolean> {
-    return this.milestones.delete(id);
+    const result = await db.delete(milestones).where(eq(milestones.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Materials
   async getMaterials(): Promise<Material[]> {
-    return Array.from(this.materials.values());
+    return await db.select().from(materials);
   }
 
   async getMaterial(id: string): Promise<Material | undefined> {
-    return this.materials.get(id);
+    const [material] = await db.select().from(materials).where(eq(materials.id, id));
+    return material || undefined;
   }
 
   async createMaterial(insertMaterial: InsertMaterial): Promise<Material> {
-    const id = randomUUID();
-    const material: Material = { ...insertMaterial, id };
-    this.materials.set(id, material);
+    const [material] = await db
+      .insert(materials)
+      .values(insertMaterial)
+      .returning();
     return material;
   }
 
   async updateMaterial(id: string, updates: Partial<InsertMaterial>): Promise<Material | undefined> {
-    const material = this.materials.get(id);
-    if (!material) return undefined;
-    
-    const updatedMaterial = { ...material, ...updates };
-    this.materials.set(id, updatedMaterial);
-    return updatedMaterial;
+    const [material] = await db
+      .update(materials)
+      .set(updates)
+      .where(eq(materials.id, id))
+      .returning();
+    return material || undefined;
   }
 
   async deleteMaterial(id: string): Promise<boolean> {
-    return this.materials.delete(id);
+    const result = await db.delete(materials).where(eq(materials.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Activities
   async getActivities(): Promise<Activity[]> {
-    return Array.from(this.activities.values());
+    return await db.select().from(activities);
   }
 
   async getActivity(id: string): Promise<Activity | undefined> {
-    return this.activities.get(id);
+    const [activity] = await db.select().from(activities).where(eq(activities.id, id));
+    return activity || undefined;
   }
 
   async createActivity(insertActivity: InsertActivity): Promise<Activity> {
-    const id = randomUUID();
-    const activity: Activity = { ...insertActivity, id };
-    this.activities.set(id, activity);
+    const [activity] = await db
+      .insert(activities)
+      .values(insertActivity)
+      .returning();
     return activity;
   }
 
   async updateActivity(id: string, updates: Partial<InsertActivity>): Promise<Activity | undefined> {
-    const activity = this.activities.get(id);
-    if (!activity) return undefined;
-    
-    const updatedActivity = { ...activity, ...updates };
-    this.activities.set(id, updatedActivity);
-    return updatedActivity;
+    const [activity] = await db
+      .update(activities)
+      .set(updates)
+      .where(eq(activities.id, id))
+      .returning();
+    return activity || undefined;
   }
 
   async deleteActivity(id: string): Promise<boolean> {
-    return this.activities.delete(id);
+    const result = await db.delete(activities).where(eq(activities.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Lesson Plans
   async getLessonPlans(teacherId?: string): Promise<LessonPlan[]> {
-    let plans = Array.from(this.lessonPlans.values());
     if (teacherId) {
-      plans = plans.filter(plan => plan.teacherId === teacherId);
+      return await db.select().from(lessonPlans).where(eq(lessonPlans.teacherId, teacherId));
     }
-    return plans;
+    return await db.select().from(lessonPlans);
   }
 
   async getLessonPlan(id: string): Promise<LessonPlan | undefined> {
-    return this.lessonPlans.get(id);
+    const [lessonPlan] = await db.select().from(lessonPlans).where(eq(lessonPlans.id, id));
+    return lessonPlan || undefined;
   }
 
   async createLessonPlan(insertLessonPlan: InsertLessonPlan): Promise<LessonPlan> {
-    const id = randomUUID();
-    const lessonPlan: LessonPlan = { 
-      ...insertLessonPlan, 
-      id,
-      submittedAt: null,
-      approvedAt: null
-    };
-    this.lessonPlans.set(id, lessonPlan);
+    const [lessonPlan] = await db
+      .insert(lessonPlans)
+      .values(insertLessonPlan)
+      .returning();
     return lessonPlan;
   }
 
   async updateLessonPlan(id: string, updates: Partial<InsertLessonPlan>): Promise<LessonPlan | undefined> {
-    const lessonPlan = this.lessonPlans.get(id);
-    if (!lessonPlan) return undefined;
-    
-    const updatedLessonPlan = { ...lessonPlan, ...updates };
-    this.lessonPlans.set(id, updatedLessonPlan);
-    return updatedLessonPlan;
+    const [lessonPlan] = await db
+      .update(lessonPlans)
+      .set(updates)
+      .where(eq(lessonPlans.id, id))
+      .returning();
+    return lessonPlan || undefined;
   }
 
   async deleteLessonPlan(id: string): Promise<boolean> {
-    return this.lessonPlans.delete(id);
+    const result = await db.delete(lessonPlans).where(eq(lessonPlans.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Scheduled Activities
   async getScheduledActivities(lessonPlanId: string): Promise<ScheduledActivity[]> {
-    return Array.from(this.scheduledActivities.values())
-      .filter(sa => sa.lessonPlanId === lessonPlanId);
+    return await db.select().from(scheduledActivities).where(eq(scheduledActivities.lessonPlanId, lessonPlanId));
   }
 
   async createScheduledActivity(insertScheduledActivity: InsertScheduledActivity): Promise<ScheduledActivity> {
-    const id = randomUUID();
-    const scheduledActivity: ScheduledActivity = { ...insertScheduledActivity, id };
-    this.scheduledActivities.set(id, scheduledActivity);
+    const [scheduledActivity] = await db
+      .insert(scheduledActivities)
+      .values(insertScheduledActivity)
+      .returning();
     return scheduledActivity;
   }
 
   async updateScheduledActivity(id: string, updates: Partial<InsertScheduledActivity>): Promise<ScheduledActivity | undefined> {
-    const scheduledActivity = this.scheduledActivities.get(id);
-    if (!scheduledActivity) return undefined;
-    
-    const updatedScheduledActivity = { ...scheduledActivity, ...updates };
-    this.scheduledActivities.set(id, updatedScheduledActivity);
-    return updatedScheduledActivity;
+    const [scheduledActivity] = await db
+      .update(scheduledActivities)
+      .set(updates)
+      .where(eq(scheduledActivities.id, id))
+      .returning();
+    return scheduledActivity || undefined;
   }
 
   async deleteScheduledActivity(id: string): Promise<boolean> {
-    return this.scheduledActivities.delete(id);
+    const result = await db.delete(scheduledActivities).where(eq(scheduledActivities.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
