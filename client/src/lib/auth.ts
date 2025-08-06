@@ -63,7 +63,7 @@ export function initializeIframeAuth() {
   });
   
   // For development: get a real JWT token from the server if none exists
-  if (!getAuthToken() && window.location.hostname.includes('localhost')) {
+  if (!getAuthToken() && (window.location.hostname.includes('localhost') || window.location.hostname.includes('replit.dev'))) {
     console.log('Development mode: fetching JWT token from server');
     fetchDevelopmentToken();
   }
@@ -78,6 +78,8 @@ async function fetchDevelopmentToken() {
       if (data.token) {
         console.log('Development mode: received JWT token from server');
         setAuthToken(data.token);
+        // Trigger a page reload to ensure all components re-fetch with the new token
+        window.location.reload();
       }
     }
   } catch (error) {
