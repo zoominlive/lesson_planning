@@ -6,6 +6,22 @@ This is a comprehensive lesson planning application for early childhood educator
 
 Preferred communication style: Simple, everyday language.
 
+# Recent Changes
+
+## JWT Authentication Implementation (August 6, 2025)
+- ✅ **JWT Token System**: Implemented proper JWT authentication for iframe integration
+- ✅ **Multi-tenant Support**: Tokens include tenantId, userFirstName, userLastName, username, role
+- ✅ **URL Parameter Method**: Tokens passed via `?token=` query parameter for testing
+- ✅ **PostMessage Support**: Ready for iframe communication via postMessage
+- ✅ **User Display**: Header shows authenticated user name and role
+- ✅ **Admin Access**: Settings gear icon appears for Admin role users
+- ✅ **Clean Navigation**: Removed redundant user info from navigation tabs
+
+## Current Issues
+- User reports seeing "John Doe" and "admin" in header but missing avatar and settings gear
+- Need to ensure localStorage is cleared for fresh token testing
+- Role comparison needs to match exactly: "Admin" (not "admin")
+
 # System Architecture
 
 ## Frontend Architecture

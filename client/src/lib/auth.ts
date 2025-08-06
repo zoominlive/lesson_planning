@@ -5,6 +5,15 @@ export function setAuthToken(token: string) {
   console.log('Setting auth token:', token.substring(0, 20) + '...');
   authToken = token;
   localStorage.setItem('authToken', token);
+  
+  // Also decode and store user info for debugging
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    console.log('Token payload:', payload);
+    localStorage.setItem('userInfo', JSON.stringify(payload));
+  } catch (e) {
+    console.warn('Could not decode token payload:', e);
+  }
 }
 
 export function getAuthToken(): string | null {
@@ -28,6 +37,8 @@ export function getAuthToken(): string | null {
 export function clearAuthToken() {
   authToken = null;
   localStorage.removeItem('authToken');
+  localStorage.removeItem('userInfo');
+  console.log('Cleared auth token and user info from storage');
 }
 
 // Get JWT token from URL query parameters
