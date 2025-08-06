@@ -4,6 +4,7 @@ import { NavigationTabs } from "@/components/navigation-tabs";
 import { CalendarControls } from "@/components/calendar-controls";
 import { FloatingActionButton } from "@/components/floating-action-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import WeeklyCalendar from "@/components/weekly-calendar";
 
 export default function LessonPlanner() {
   const [currentWeek, setCurrentWeek] = useState("Week of March 13-17, 2024");
