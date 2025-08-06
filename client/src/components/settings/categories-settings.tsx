@@ -70,7 +70,10 @@ export function CategoriesSettings() {
   const { data: categories = [], isLoading, error } = useQuery<Category[]>({
     queryKey: ["/api/categories", selectedLocationId],
     queryFn: selectedLocationId 
-      ? () => apiRequest("GET", `/api/categories?locationId=${selectedLocationId}`)
+      ? async () => {
+          const response = await apiRequest("GET", `/api/categories?locationId=${selectedLocationId}`);
+          return await response.json();
+        }
       : undefined,
     enabled: !!selectedLocationId,
   });
@@ -78,12 +81,18 @@ export function CategoriesSettings() {
   // Debug log for categories data
   useEffect(() => {
     console.log("Categories data:", categories);
+    console.log("Categories type:", typeof categories);
+    console.log("Is array:", Array.isArray(categories));
     console.log("Selected location ID:", selectedLocationId);
     console.log("Is loading:", isLoading);
-  }, [categories, selectedLocationId, isLoading]);
+    console.log("Error:", error);
+  }, [categories, selectedLocationId, isLoading, error]);
 
   const createMutation = useMutation({
-    mutationFn: (data: CategoryFormData) => apiRequest("POST", "/api/categories", data),
+    mutationFn: async (data: CategoryFormData) => {
+      const response = await apiRequest("POST", "/api/categories", data);
+      return await response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories", selectedLocationId] });
       setIsDialogOpen(false);
@@ -97,8 +106,10 @@ export function CategoriesSettings() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: CategoryFormData }) =>
-      apiRequest("PUT", `/api/categories/${id}?locationId=${selectedLocationId}`, data),
+    mutationFn: async ({ id, data }: { id: string; data: CategoryFormData }) => {
+      const response = await apiRequest("PUT", `/api/categories/${id}?locationId=${selectedLocationId}`, data);
+      return await response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories", selectedLocationId] });
       setEditingCategory(null);
@@ -113,7 +124,9 @@ export function CategoriesSettings() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/categories/${id}?locationId=${selectedLocationId}`),
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/categories/${id}?locationId=${selectedLocationId}`);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories", selectedLocationId] });
       toast({ title: "Category deleted successfully" });
@@ -124,7 +137,13 @@ export function CategoriesSettings() {
   });
 
   const handleSubmit = (data: CategoryFormData) => {
-    const submissionData = { ...data, color: selectedColor || data.color };
+    console.log("Form submitted with data:", data);
+    const submissionData = { 
+      ...data, 
+      locationId: selectedLocationId,
+      color: selectedColor || data.color 
+    };
+    console.log("Final submission data:", submissionData);
     if (editingCategory) {
       updateMutation.mutate({ id: editingCategory.id, data: submissionData });
     } else {
