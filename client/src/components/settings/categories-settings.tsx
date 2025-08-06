@@ -58,7 +58,7 @@ export function CategoriesSettings() {
     queryKey: ["/api/locations"],
   });
 
-  const { data: categories = [], isLoading } = useQuery<Category[]>({
+  const { data: categories = [], isLoading, error } = useQuery<Category[]>({
     queryKey: ["/api/categories", selectedLocationId],
     queryFn: selectedLocationId 
       ? () => apiRequest("GET", `/api/categories?locationId=${selectedLocationId}`)
@@ -147,14 +147,29 @@ export function CategoriesSettings() {
 
 
 
+  // Auto-select first location if none selected
+  if (locations.length > 0 && !selectedLocationId) {
+    setSelectedLocationId(locations[0].id);
+    return <div>Loading categories...</div>;
+  }
+
+  // Show loading state if no location selected
+  if (!selectedLocationId) {
+    return <div>Loading categories...</div>;
+  }
+
+  // Show loading state while fetching categories
   if (isLoading) {
     return <div>Loading categories...</div>;
   }
 
-  // Auto-select first location if none selected
-  if (locations.length > 0 && !selectedLocationId) {
-    setSelectedLocationId(locations[0].id);
+  // Show error state if query failed
+  if (error) {
+    return <div>Error loading categories. Please try again.</div>;
   }
+
+  // Ensure categories is always an array
+  const categoryList = Array.isArray(categories) ? categories : [];
 
   return (
     <div className="space-y-4">
@@ -292,7 +307,7 @@ export function CategoriesSettings() {
       </div>
 
       <div className="grid gap-4">
-        {categories.map((category) => (
+        {categoryList.map((category) => (
           <Card key={category.id} data-testid={`card-category-${category.id}`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="flex items-center gap-2">
@@ -347,7 +362,7 @@ export function CategoriesSettings() {
             )}
           </Card>
         ))}
-        {categories.length === 0 && (
+        {categoryList.length === 0 && (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground">
               No categories found. Create your first category to get started.
