@@ -69,7 +69,7 @@ export default function LessonPlanner() {
                   {userInfo ? `${userInfo.userFirstName} ${userInfo.userLastName}` : "Teacher"}
                 </p>
                 <p className="text-sm text-gray-500" data-testid="classroom-name">
-                  {userInfo?.role ? `${userInfo.role} User` : "Loading..."}
+                  {userInfo?.role ? userInfo.role : "Loading..."}
                 </p>
               </div>
               <div className="flex items-center gap-2">
