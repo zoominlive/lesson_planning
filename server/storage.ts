@@ -515,12 +515,7 @@ export class DatabaseStorage implements IStorage {
     return await this.db.select().from(categories).where(conditions.length ? and(...conditions) : undefined);
   }
 
-  async getCategoriesByType(type: string): Promise<Category[]> {
-    const conditions = [eq(categories.type, type)];
-    if (this.tenantId) conditions.push(eq(categories.tenantId, this.tenantId));
-    
-    return await this.db.select().from(categories).where(and(...conditions));
-  }
+
 
   async getCategory(id: string): Promise<Category | undefined> {
     const conditions = [eq(categories.id, id)];

@@ -172,7 +172,6 @@ export const categories = pgTable("categories", {
   tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
-  type: varchar("type", { length: 50 }).notNull(), // 'activity', 'material', 'milestone'
   color: varchar("color", { length: 7 }), // hex color code
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),

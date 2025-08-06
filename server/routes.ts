@@ -371,10 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Settings API Routes - Categories
   app.get("/api/categories", async (req, res) => {
     try {
-      const { type } = req.query;
-      const categories = type 
-        ? await storage.getCategoriesByType(type as string)
-        : await storage.getCategories();
+      const categories = await storage.getCategories();
       res.json(categories);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch categories" });

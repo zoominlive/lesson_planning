@@ -19,9 +19,6 @@ import { apiRequest } from "@/lib/queryClient";
 const categorySchema = z.object({
   name: z.string().min(1, "Category name is required"),
   description: z.string().optional(),
-  type: z.enum(["activity", "material", "milestone"], {
-    required_error: "Please select a category type",
-  }),
   color: z.string().regex(/^#[0-9A-F]{6}$/i, "Please enter a valid hex color").optional(),
   isActive: z.boolean().default(true),
 });
@@ -29,11 +26,7 @@ const categorySchema = z.object({
 type CategoryFormData = z.infer<typeof categorySchema>;
 type Category = CategoryFormData & { id: string; createdAt: string; tenantId: string };
 
-const categoryTypes = [
-  { value: "activity", label: "Activity" },
-  { value: "material", label: "Material" }, 
-  { value: "milestone", label: "Milestone" },
-];
+
 
 const defaultColors = [
   "#ef4444", "#f97316", "#eab308", "#22c55e", 
@@ -52,7 +45,6 @@ export function CategoriesSettings() {
     defaultValues: {
       name: "",
       description: "",
-      type: undefined,
       color: "",
       isActive: true,
     },
@@ -63,7 +55,7 @@ export function CategoriesSettings() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: CategoryFormData) => apiRequest("/api/categories", { method: "POST", body: data }),
+    mutationFn: (data: CategoryFormData) => apiRequest("POST", "/api/categories", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
       setIsDialogOpen(false);
@@ -78,7 +70,7 @@ export function CategoriesSettings() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: CategoryFormData }) =>
-      apiRequest(`/api/categories/${id}`, { method: "PUT", body: data }),
+      apiRequest("PUT", `/api/categories/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
       setEditingCategory(null);
@@ -93,7 +85,7 @@ export function CategoriesSettings() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/categories/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/categories/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
       toast({ title: "Category deleted successfully" });
@@ -118,7 +110,6 @@ export function CategoriesSettings() {
     form.reset({
       name: category.name,
       description: category.description || "",
-      type: category.type,
       color: category.color || "",
       isActive: category.isActive,
     });
@@ -135,15 +126,12 @@ export function CategoriesSettings() {
     form.reset({
       name: "",
       description: "",
-      type: undefined,
       color: "",
       isActive: true,
     });
   };
 
-  const getCategoryTypeLabel = (type: string) => {
-    return categoryTypes.find(ct => ct.value === type)?.label || type;
-  };
+
 
   if (isLoading) {
     return <div>Loading categories...</div>;
@@ -182,30 +170,7 @@ export function CategoriesSettings() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Type</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} data-testid="select-category-type">
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select category type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {categoryTypes.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
                 <FormField
                   control={form.control}
                   name="description"
@@ -270,9 +235,6 @@ export function CategoriesSettings() {
                 )}
               </CardTitle>
               <div className="flex items-center gap-2">
-                <Badge variant="secondary" data-testid={`badge-category-type-${category.id}`}>
-                  {getCategoryTypeLabel(category.type)}
-                </Badge>
                 <Button
                   variant="ghost"
                   size="sm"
