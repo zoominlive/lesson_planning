@@ -11,20 +11,12 @@ import {
   type InsertLessonPlan,
   type ScheduledActivity,
   type InsertScheduledActivity,
-  type Tenant,
-  type InsertTenant,
-  type TokenSecret,
-  type InsertTokenSecret,
   users,
   milestones,
   materials,
   activities,
   lessonPlans,
-  scheduledActivities,
-  tenants,
-  tokenSecrets,
-  insertTenantSchema,
-  insertTokenSecretSchema
+  scheduledActivities
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -39,7 +31,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
 
   // Milestones
-  getMilestones(tenantId?: string): Promise<Milestone[]>;
+  getMilestones(): Promise<Milestone[]>;
   getMilestone(id: string): Promise<Milestone | undefined>;
   createMilestone(milestone: InsertMilestone): Promise<Milestone>;
   updateMilestone(id: string, milestone: Partial<InsertMilestone>): Promise<Milestone | undefined>;
@@ -60,7 +52,7 @@ export interface IStorage {
   deleteActivity(id: string): Promise<boolean>;
 
   // Lesson Plans
-  getLessonPlans(teacherId?: string, tenantId?: string): Promise<LessonPlan[]>;
+  getLessonPlans(teacherId?: string): Promise<LessonPlan[]>;
   getLessonPlan(id: string): Promise<LessonPlan | undefined>;
   createLessonPlan(lessonPlan: InsertLessonPlan): Promise<LessonPlan>;
   updateLessonPlan(id: string, lessonPlan: Partial<InsertLessonPlan>): Promise<LessonPlan | undefined>;
@@ -72,16 +64,7 @@ export interface IStorage {
   updateScheduledActivity(id: string, scheduledActivity: Partial<InsertScheduledActivity>): Promise<ScheduledActivity | undefined>;
   deleteScheduledActivity(id: string): Promise<boolean>;
 
-  // Tenant Management
-  createTenant(data: InsertTenant): Promise<Tenant>;
-  getTenant(id: string): Promise<Tenant | undefined>;
-  getTenants(): Promise<Tenant[]>;
-  updateTenant(id: string, data: Partial<InsertTenant>): Promise<Tenant | undefined>;
-
-  // Token Secrets Management
-  createTokenSecret(data: InsertTokenSecret): Promise<TokenSecret>;
-  getTokenSecret(tenantId: string): Promise<TokenSecret | undefined>;
-  updateTokenSecret(tenantId: string, data: Partial<InsertTokenSecret>): Promise<TokenSecret | undefined>;
+  // TODO: JWT/Tenant Management will be added later
 }
 
 export class DatabaseStorage implements IStorage {
@@ -205,19 +188,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Lesson Plans
-  async getLessonPlans(teacherId?: string, tenantId?: string): Promise<LessonPlan[]> {
-    let query = this.db.select().from(lessonPlans);
-
-    // lessonPlans table has direct tenantId column, so filter directly
-    if (tenantId) {
-      query = query.where(eq(lessonPlans.tenantId, tenantId));
-    }
-
+  async getLessonPlans(teacherId?: string): Promise<LessonPlan[]> {
     if (teacherId) {
-      query = query.where(eq(lessonPlans.teacherId, teacherId));
+      return await this.db.select().from(lessonPlans).where(eq(lessonPlans.teacherId, teacherId));
     }
-
-    return await query;
+    return await this.db.select().from(lessonPlans);
   }
 
   async getLessonPlan(id: string): Promise<LessonPlan | undefined> {

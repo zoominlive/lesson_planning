@@ -3,27 +3,9 @@ import { pgTable, text, varchar, integer, boolean, timestamp, json } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Tenants table for multi-tenant authentication
-export const tenants = pgTable("tenants", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  isActive: boolean("is_active").default(true).notNull(),
-});
-
-// Token secrets table - separate from tenants for security
-export const tokenSecrets = pgTable("token_secrets", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
-  jwtSecret: text("jwt_secret").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  isActive: boolean("is_active").default(true).notNull(),
-});
-
 // Users table (teachers)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   name: text("name").notNull(),
@@ -31,10 +13,9 @@ export const users = pgTable("users", {
   classroom: text("classroom"),
 });
 
-// Developmental milestones - can be shared across tenants or tenant-specific
+// Developmental milestones
 export const milestones = pgTable("milestones", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id), // nullable for shared milestones
   title: text("title").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull(), // Social, Emotional, Cognitive, Physical
@@ -43,10 +24,9 @@ export const milestones = pgTable("milestones", {
   learningObjective: text("learning_objective").notNull(),
 });
 
-// Materials - tenant-specific
+// Materials
 export const materials = pgTable("materials", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
   name: text("name").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull(),
@@ -55,10 +35,9 @@ export const materials = pgTable("materials", {
   status: text("status").notNull().default("in_stock"), // in_stock, low_stock, out_of_stock, on_order
 });
 
-// Activities - can be shared across tenants or tenant-specific
+// Activities
 export const activities = pgTable("activities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id), // nullable for shared activities
   title: text("title").notNull(),
   description: text("description").notNull(),
   duration: integer("duration").notNull(), // in minutes
@@ -73,10 +52,9 @@ export const activities = pgTable("activities", {
   category: text("category").notNull(),
 });
 
-// Lesson plans - always tenant-specific
+// Lesson plans
 export const lessonPlans = pgTable("lesson_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
   teacherId: varchar("teacher_id").notNull().references(() => users.id),
   weekStart: text("week_start").notNull(), // ISO date string
   room: text("room").notNull(),
@@ -88,7 +66,6 @@ export const lessonPlans = pgTable("lesson_plans", {
 // Scheduled activities (activities placed in calendar slots)
 export const scheduledActivities = pgTable("scheduled_activities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
   lessonPlanId: varchar("lesson_plan_id").notNull().references(() => lessonPlans.id),
   activityId: varchar("activity_id").notNull().references(() => activities.id),
   dayOfWeek: integer("day_of_week").notNull(), // 0-4 (Monday-Friday)
@@ -97,19 +74,7 @@ export const scheduledActivities = pgTable("scheduled_activities", {
 });
 
 // Zod schemas for validation
-export const insertTenantSchema = createInsertSchema(tenants).pick({
-  name: true,
-  isActive: true,
-});
-
-export const insertTokenSecretSchema = createInsertSchema(tokenSecrets).pick({
-  tenantId: true,
-  jwtSecret: true,
-  isActive: true,
-});
-
 export const insertUserSchema = createInsertSchema(users).pick({
-  tenantId: true,
   username: true,
   password: true,
   name: true,
@@ -166,12 +131,6 @@ export const insertScheduledActivitySchema = createInsertSchema(scheduledActivit
 });
 
 // Types
-export type Tenant = typeof tenants.$inferSelect;
-export type InsertTenant = z.infer<typeof insertTenantSchema>;
-
-export type TokenSecret = typeof tokenSecrets.$inferSelect;
-export type InsertTokenSecret = z.infer<typeof insertTokenSecretSchema>;
-
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
