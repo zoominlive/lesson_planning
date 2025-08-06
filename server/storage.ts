@@ -39,7 +39,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
 
   // Milestones
-  getMilestones(tenantId?: string): Promise<Milestone[]>; // Added tenantId
+  getMilestones(tenantId?: string): Promise<Milestone[]>;
   getMilestone(id: string): Promise<Milestone | undefined>;
   createMilestone(milestone: InsertMilestone): Promise<Milestone>;
   updateMilestone(id: string, milestone: Partial<InsertMilestone>): Promise<Milestone | undefined>;
@@ -60,7 +60,7 @@ export interface IStorage {
   deleteActivity(id: string): Promise<boolean>;
 
   // Lesson Plans
-  getLessonPlans(teacherId?: string, tenantId?: string): Promise<LessonPlan[]>; // Added tenantId
+  getLessonPlans(teacherId?: string, tenantId?: string): Promise<LessonPlan[]>;
   getLessonPlan(id: string): Promise<LessonPlan | undefined>;
   createLessonPlan(lessonPlan: InsertLessonPlan): Promise<LessonPlan>;
   updateLessonPlan(id: string, lessonPlan: Partial<InsertLessonPlan>): Promise<LessonPlan | undefined>;
@@ -208,42 +208,14 @@ export class DatabaseStorage implements IStorage {
   async getLessonPlans(teacherId?: string, tenantId?: string): Promise<LessonPlan[]> {
     let query = this.db.select().from(lessonPlans);
 
+    // lessonPlans table has direct tenantId column, so filter directly
     if (tenantId) {
-      // Assuming lessonPlans table or a related table has a tenantId or can be joined to filter by tenant.
-      // This join assumes there's a way to link lesson plans to a tenant, possibly through the teacher.
-      // If lessonPlans directly has a tenantId column, the join would be simpler or unnecessary.
-      // For this example, we'll assume a join via users table.
-      query = query.innerJoin(users, eq(lessonPlans.teacherId, users.id));
-      query = query.where(eq(users.tenantId, tenantId));
+      query = query.where(eq(lessonPlans.tenantId, tenantId));
     }
 
     if (teacherId) {
-      // If tenantId was also provided, we need to combine conditions.
-      // If tenantId was not provided, this is the primary filter.
-      if (tenantId) {
-        // If both tenantId and teacherId are provided, the conditions are implicitly ANDed by Drizzle's where.
-        // However, if the join was done, we need to ensure the teacherId filter is applied correctly with the join.
-        // The previous join already filtered by tenantId for users. Now we filter by teacherId.
-        query = query.where(eq(lessonPlans.teacherId, teacherId));
-      } else {
-        query = query.where(eq(lessonPlans.teacherId, teacherId));
-      }
+      query = query.where(eq(lessonPlans.teacherId, teacherId));
     }
-
-    // If no tenantId or teacherId is provided, it returns all lesson plans.
-    // If tenantId is provided, it filters lesson plans associated with that tenant via their teachers.
-    // If teacherId is provided (and tenantId is not), it filters by teacherId.
-    // If both are provided, it filters by tenant and then by teacher within that tenant.
-
-    // Note: If lessonPlans directly had a tenantId column, the query would look like:
-    // let query = this.db.select().from(schema.lessonPlans);
-    // if (tenantId) {
-    //   query = query.where(eq(schema.lessonPlans.tenantId, tenantId));
-    // }
-    // if (teacherId) {
-    //   query = query.where(eq(schema.lessonPlans.teacherId, teacherId));
-    // }
-
 
     return await query;
   }
@@ -300,12 +272,6 @@ export class DatabaseStorage implements IStorage {
   async deleteScheduledActivity(id: string): Promise<boolean> {
     const result = await this.db.delete(scheduledActivities).where(eq(scheduledActivities.id, id));
     return (result.rowCount ?? 0) > 0;
-  }
-
-  // Tenant Management Methods
-  async createTenant(data: typeof insertTenantSchema._type) {
-    const [tenant] = await this.db.insert(schema.tenants).values(data).returning();
-    return tenant;
   }
 
   // Tenant Management

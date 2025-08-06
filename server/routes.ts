@@ -36,9 +36,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/tenants", async (req, res) => {
     try {
       const tenants = await storage.getTenants();
-      // Don't expose JWT secrets in the response
-      const safeTenants = tenants.map(({ jwtSecret, ...tenant }) => tenant);
-      res.json(safeTenants);
+      res.json(tenants);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch tenants" });
     }
