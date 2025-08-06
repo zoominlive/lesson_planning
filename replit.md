@@ -19,6 +19,13 @@ The frontend is built with React 18 using TypeScript and follows a modern compon
 - **Form Management**: React Hook Form with Zod validation for type-safe form handling
 - **Build Tool**: Vite for fast development and optimized production builds
 
+### Component Structure
+✅ **REFACTORED**: Main components properly modularized
+- **NavigationTabs**: Tab navigation with integrated content areas
+- **CalendarControls**: Week navigation and room selection controls  
+- **FloatingActionButton**: Quick action button component
+- **LessonPlanner**: Clean main page component with proper separation of concerns
+
 ## Backend Architecture
 The backend follows a RESTful API pattern built with Express.js:
 
