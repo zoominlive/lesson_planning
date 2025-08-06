@@ -62,10 +62,25 @@ export function initializeIframeAuth() {
     }
   });
   
-  // For development: generate a mock token if none exists
-  if (process.env.NODE_ENV === 'development' && !getAuthToken()) {
-    console.log('Development mode: using mock token');
-    // This is a development-only mock token
-    setAuthToken('dev-token-placeholder');
+  // For development: get a real JWT token from the server if none exists
+  if (!getAuthToken() && window.location.hostname.includes('localhost')) {
+    console.log('Development mode: fetching JWT token from server');
+    fetchDevelopmentToken();
+  }
+}
+
+// Fetch development JWT token from server
+async function fetchDevelopmentToken() {
+  try {
+    const response = await fetch('/api/dev-token');
+    if (response.ok) {
+      const data = await response.json();
+      if (data.token) {
+        console.log('Development mode: received JWT token from server');
+        setAuthToken(data.token);
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to fetch development token:', error);
   }
 }

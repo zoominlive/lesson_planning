@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { type AuthenticatedRequest } from "./auth-middleware";
+import { type AuthenticatedRequest, generateDevelopmentToken, authenticateToken } from "./auth-middleware";
 import { 
   insertMilestoneSchema, 
   insertMaterialSchema, 
@@ -20,7 +20,17 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // TODO: Tenant management routes will be added when JWT is implemented
+  // Development token generation endpoint
+  if (process.env.NODE_ENV === 'development') {
+    app.get("/api/dev-token", (req, res) => {
+      try {
+        const token = generateDevelopmentToken();
+        res.json({ token });
+      } catch (error) {
+        res.status(500).json({ error: "Failed to generate development token" });
+      }
+    });
+  }
 
   // Add a route to get current user information
   app.get("/api/user", async (req: AuthenticatedRequest, res) => {
@@ -36,6 +46,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ error: "Failed to get user information" });
     }
+  });
+
+  // Apply authentication middleware to all API routes except dev-token
+  app.use("/api", (req, res, next) => {
+    // Skip auth for development token endpoint
+    if (req.path === '/dev-token' && process.env.NODE_ENV === 'development') {
+      return next();
+    }
+    return authenticateToken(req as AuthenticatedRequest, res, next);
   });
 
   // Apply tenant context middleware to all API routes
