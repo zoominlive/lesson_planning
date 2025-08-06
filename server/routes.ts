@@ -371,7 +371,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Settings API Routes - Categories
   app.get("/api/categories", async (req, res) => {
     try {
-      const categories = await storage.getCategories();
+      const { locationId } = req.query;
+      const categories = await storage.getCategories(locationId as string);
       res.json(categories);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch categories" });
@@ -386,6 +387,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Category creation error:", error);
       res.status(400).json({ error: "Invalid category data" });
+    }
+  });
+
+  app.put("/api/categories/:id", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { locationId } = req.query;
+      const updates = req.body;
+      const category = await storage.updateCategory(id, updates, locationId as string);
+      if (!category) {
+        return res.status(404).json({ error: "Category not found" });
+      }
+      res.json(category);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update category" });
+    }
+  });
+
+  app.delete("/api/categories/:id", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { locationId } = req.query;
+      const success = await storage.deleteCategory(id, locationId as string);
+      if (!success) {
+        return res.status(404).json({ error: "Category not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete category" });
     }
   });
 

@@ -12,19 +12,21 @@ import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, Tag, Palette } from "lucide-react";
+import { Plus, Pencil, Trash2, Tag, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 const categorySchema = z.object({
   name: z.string().min(1, "Category name is required"),
   description: z.string().optional(),
+  locationId: z.string().min(1, "Location is required"),
   color: z.string().regex(/^#[0-9A-F]{6}$/i, "Please enter a valid hex color").optional(),
   isActive: z.boolean().default(true),
 });
 
 type CategoryFormData = z.infer<typeof categorySchema>;
 type Category = CategoryFormData & { id: string; createdAt: string; tenantId: string };
+type Location = { id: string; name: string; description?: string };
 
 
 
@@ -37,6 +39,7 @@ export function CategoriesSettings() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string>("");
+  const [selectedLocationId, setSelectedLocationId] = useState<string>("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -45,19 +48,28 @@ export function CategoriesSettings() {
     defaultValues: {
       name: "",
       description: "",
+      locationId: "",
       color: "",
       isActive: true,
     },
   });
 
+  const { data: locations = [] } = useQuery<Location[]>({
+    queryKey: ["/api/locations"],
+  });
+
   const { data: categories = [], isLoading } = useQuery<Category[]>({
-    queryKey: ["/api/categories"],
+    queryKey: ["/api/categories", selectedLocationId],
+    queryFn: () => 
+      fetch(`/api/categories${selectedLocationId ? `?locationId=${selectedLocationId}` : ''}`)
+        .then(res => res.json()),
+    enabled: !!selectedLocationId,
   });
 
   const createMutation = useMutation({
     mutationFn: (data: CategoryFormData) => apiRequest("POST", "/api/categories", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/categories", selectedLocationId] });
       setIsDialogOpen(false);
       form.reset();
       setSelectedColor("");
@@ -70,9 +82,9 @@ export function CategoriesSettings() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: CategoryFormData }) =>
-      apiRequest("PUT", `/api/categories/${id}`, data),
+      apiRequest("PUT", `/api/categories/${id}?locationId=${selectedLocationId}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/categories", selectedLocationId] });
       setEditingCategory(null);
       setIsDialogOpen(false);
       form.reset();
@@ -85,9 +97,9 @@ export function CategoriesSettings() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/categories/${id}`),
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/categories/${id}?locationId=${selectedLocationId}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/categories", selectedLocationId] });
       toast({ title: "Category deleted successfully" });
     },
     onError: () => {
@@ -110,6 +122,7 @@ export function CategoriesSettings() {
     form.reset({
       name: category.name,
       description: category.description || "",
+      locationId: category.locationId,
       color: category.color || "",
       isActive: category.isActive,
     });
@@ -126,6 +139,7 @@ export function CategoriesSettings() {
     form.reset({
       name: "",
       description: "",
+      locationId: selectedLocationId,
       color: "",
       isActive: true,
     });
@@ -137,16 +151,49 @@ export function CategoriesSettings() {
     return <div>Loading categories...</div>;
   }
 
+  // Auto-select first location if none selected
+  if (locations.length > 0 && !selectedLocationId) {
+    setSelectedLocationId(locations[0].id);
+  }
+
   return (
     <div className="space-y-4">
+      {/* Location Selector */}
+      <Card className="p-4">
+        <div className="flex items-center gap-4">
+          <MapPin className="h-5 w-5 text-muted-foreground" />
+          <div className="flex-1">
+            <label className="text-sm font-medium">Select Location</label>
+            <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Choose a location to manage categories" />
+              </SelectTrigger>
+              <SelectContent>
+                {locations.map((location) => (
+                  <SelectItem key={location.id} value={location.id}>
+                    {location.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </Card>
+
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Categories</h3>
+        <h3 className="text-lg font-medium">
+          Categories {selectedLocationId && locations.find(l => l.id === selectedLocationId)?.name && 
+          `for ${locations.find(l => l.id === selectedLocationId)?.name}`}
+        </h3>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
-            <Button data-testid="button-add-category">
+            <Button 
+              data-testid="button-add-category"
+              disabled={!selectedLocationId}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Category
             </Button>
@@ -166,6 +213,31 @@ export function CategoriesSettings() {
                       <FormControl>
                         <Input placeholder="Category name" {...field} data-testid="input-category-name" />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="locationId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-category-location">
+                            <SelectValue placeholder="Select location" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {locations.map((location) => (
+                            <SelectItem key={location.id} value={location.id}>
+                              {location.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

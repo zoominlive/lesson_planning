@@ -170,6 +170,7 @@ export const rooms = pgTable("rooms", {
 export const categories = pgTable("categories", {
   id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  locationId: varchar("location_id").references(() => locations.id).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   color: varchar("color", { length: 7 }), // hex color code

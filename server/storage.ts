@@ -508,18 +508,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Categories
-  async getCategories(): Promise<Category[]> {
+  async getCategories(locationId?: string): Promise<Category[]> {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(categories.tenantId, this.tenantId));
+    if (locationId) conditions.push(eq(categories.locationId, locationId));
     
     return await this.db.select().from(categories).where(conditions.length ? and(...conditions) : undefined);
   }
 
 
 
-  async getCategory(id: string): Promise<Category | undefined> {
+  async getCategory(id: string, locationId?: string): Promise<Category | undefined> {
     const conditions = [eq(categories.id, id)];
     if (this.tenantId) conditions.push(eq(categories.tenantId, this.tenantId));
+    if (locationId) conditions.push(eq(categories.locationId, locationId));
     
     const [category] = await this.db.select().from(categories).where(and(...conditions));
     return category || undefined;
@@ -534,9 +536,10 @@ export class DatabaseStorage implements IStorage {
     return category;
   }
 
-  async updateCategory(id: string, updates: Partial<InsertCategory>): Promise<Category | undefined> {
+  async updateCategory(id: string, updates: Partial<InsertCategory>, locationId?: string): Promise<Category | undefined> {
     const conditions = [eq(categories.id, id)];
     if (this.tenantId) conditions.push(eq(categories.tenantId, this.tenantId));
+    if (locationId) conditions.push(eq(categories.locationId, locationId));
     
     const [category] = await this.db
       .update(categories)
@@ -546,9 +549,10 @@ export class DatabaseStorage implements IStorage {
     return category || undefined;
   }
 
-  async deleteCategory(id: string): Promise<boolean> {
+  async deleteCategory(id: string, locationId?: string): Promise<boolean> {
     const conditions = [eq(categories.id, id)];
     if (this.tenantId) conditions.push(eq(categories.tenantId, this.tenantId));
+    if (locationId) conditions.push(eq(categories.locationId, locationId));
     
     const result = await this.db.delete(categories).where(and(...conditions));
     return (result.rowCount ?? 0) > 0;

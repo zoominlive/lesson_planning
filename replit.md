@@ -17,10 +17,17 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Admin Access**: Settings gear icon appears for Admin role users
 - ✅ **Clean Navigation**: Removed redundant user info from navigation tabs
 
+## Recent Changes
+
+### Location-Based Categories and Rooms (August 6, 2025)
+- ✅ **Categories Schema Update**: Added locationId field to categories table for location-specific organization
+- ✅ **Database Migration**: Successfully migrated existing categories to include location association
+- ✅ **API Enhancement**: Updated categories API endpoints to support location filtering via locationId query parameter
+- ✅ **Storage Layer**: Enhanced storage methods to filter categories by both tenant and location
+- ✅ **Multi-Location Architecture**: Both rooms and categories are now properly associated with specific locations for true multi-location support
+
 ## Current Issues
-- User reports seeing "John Doe" and "admin" in header but missing avatar and settings gear
-- Need to ensure localStorage is cleared for fresh token testing
-- Role comparison needs to match exactly: "Admin" (not "admin")
+- Categories UI needs to be updated to work with location context and display location-specific categories
 
 # System Architecture
 
