@@ -85,13 +85,20 @@
                                                 "method": "GET",
                                                 "header": [],
                                                 "url": {
-                                                        "raw": "{{base_url}}/api/milestones",
+                                                        "raw": "{{base_url}}/api/milestones?locationId={{location_id}}",
                                                         "host": [
                                                                 "{{base_url}}"
                                                         ],
                                                         "path": [
                                                                 "api",
                                                                 "milestones"
+                                                        ],
+                                                        "query": [
+                                                                {
+                                                                        "key": "locationId",
+                                                                        "value": "{{location_id}}",
+                                                                        "description": "Optional: Filter by location"
+                                                                }
                                                         ]
                                                 }
                                         },
@@ -104,7 +111,7 @@
                                                 "header": [],
                                                 "body": {
                                                         "mode": "raw",
-                                                        "raw": "{\n  \"title\": \"Can walk independently\",\n  \"description\": \"Child can walk without support for at least 10 steps\",\n  \"domain\": \"Physical\",\n  \"ageRangeStart\": 12,\n  \"ageRangeEnd\": 18\n}",
+                                                        "raw": "{\n  \"tenantId\": \"{{tenant_id}}\",\n  \"locationId\": \"{{location_id}}\",\n  \"title\": \"Can walk independently\",\n  \"description\": \"Child can walk without support for at least 10 steps\",\n  \"category\": \"Physical\",\n  \"ageRangeStart\": 12,\n  \"ageRangeEnd\": 18,\n  \"learningObjective\": \"Develop gross motor skills and balance\"\n}",
                                                         "options": {
                                                                 "raw": {
                                                                         "language": "json"
@@ -183,13 +190,20 @@
                                                 "method": "GET",
                                                 "header": [],
                                                 "url": {
-                                                        "raw": "{{base_url}}/api/materials",
+                                                        "raw": "{{base_url}}/api/materials?locationId={{location_id}}",
                                                         "host": [
                                                                 "{{base_url}}"
                                                         ],
                                                         "path": [
                                                                 "api",
                                                                 "materials"
+                                                        ],
+                                                        "query": [
+                                                                {
+                                                                        "key": "locationId",
+                                                                        "value": "{{location_id}}",
+                                                                        "description": "Optional: Filter by location"
+                                                                }
                                                         ]
                                                 }
                                         },
@@ -202,7 +216,7 @@
                                                 "header": [],
                                                 "body": {
                                                         "mode": "raw",
-                                                        "raw": "{\n  \"name\": \"Building Blocks\",\n  \"description\": \"Wooden building blocks for construction play\",\n  \"category\": \"Toys\",\n  \"quantity\": 50,\n  \"location\": \"Toy Shelf A\",\n  \"ageRangeStart\": 24,\n  \"ageRangeEnd\": 60\n}",
+                                                        "raw": "{\n  \"tenantId\": \"{{tenant_id}}\",\n  \"locationId\": \"{{location_id}}\",\n  \"name\": \"Building Blocks\",\n  \"description\": \"Wooden building blocks for construction play\",\n  \"category\": \"Toys\",\n  \"quantity\": 50,\n  \"location\": \"Toy Shelf A\",\n  \"status\": \"in_stock\"\n}",
                                                         "options": {
                                                                 "raw": {
                                                                         "language": "json"
@@ -281,13 +295,20 @@
                                                 "method": "GET",
                                                 "header": [],
                                                 "url": {
-                                                        "raw": "{{base_url}}/api/activities",
+                                                        "raw": "{{base_url}}/api/activities?locationId={{location_id}}",
                                                         "host": [
                                                                 "{{base_url}}"
                                                         ],
                                                         "path": [
                                                                 "api",
                                                                 "activities"
+                                                        ],
+                                                        "query": [
+                                                                {
+                                                                        "key": "locationId",
+                                                                        "value": "{{location_id}}",
+                                                                        "description": "Optional: Filter by location"
+                                                                }
                                                         ]
                                                 }
                                         },
