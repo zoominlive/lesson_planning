@@ -163,8 +163,6 @@ export const rooms = pgTable("rooms", {
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   capacity: integer("capacity"),
-  ageRangeStart: integer("age_range_start"),
-  ageRangeEnd: integer("age_range_end"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

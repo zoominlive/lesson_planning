@@ -20,8 +20,6 @@ const roomSchema = z.object({
   description: z.string().optional(),
   locationId: z.string().min(1, "Location is required"),
   capacity: z.number().min(1).optional(),
-  ageRangeStart: z.number().min(0).optional(),
-  ageRangeEnd: z.number().min(0).optional(),
   isActive: z.boolean().default(true),
 });
 
@@ -42,8 +40,6 @@ export function RoomsSettings() {
       description: "",
       locationId: "",
       capacity: undefined,
-      ageRangeStart: undefined,
-      ageRangeEnd: undefined,
       isActive: true,
     },
   });
@@ -57,7 +53,7 @@ export function RoomsSettings() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: RoomFormData) => apiRequest("/api/rooms", { method: "POST", body: data }),
+    mutationFn: (data: RoomFormData) => apiRequest("POST", "/api/rooms", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
       setIsDialogOpen(false);
@@ -71,7 +67,7 @@ export function RoomsSettings() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: RoomFormData }) =>
-      apiRequest(`/api/rooms/${id}`, { method: "PUT", body: data }),
+      apiRequest("PUT", `/api/rooms/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
       setEditingRoom(null);
@@ -85,7 +81,7 @@ export function RoomsSettings() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/rooms/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/rooms/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
       toast({ title: "Room deleted successfully" });
@@ -96,10 +92,16 @@ export function RoomsSettings() {
   });
 
   const handleSubmit = (data: RoomFormData) => {
+    // Add tenantId to the data for proper multi-tenant support
+    const dataWithTenant = {
+      ...data,
+      tenantId: "7cb6c28d-164c-49fa-b461-dfc47a8a3fed" // This should come from auth context in production
+    };
+    
     if (editingRoom) {
-      updateMutation.mutate({ id: editingRoom.id, data });
+      updateMutation.mutate({ id: editingRoom.id, data: dataWithTenant });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(dataWithTenant);
     }
   };
 
@@ -120,8 +122,6 @@ export function RoomsSettings() {
       description: "",
       locationId: "",
       capacity: undefined,
-      ageRangeStart: undefined,
-      ageRangeEnd: undefined,
       isActive: true,
     });
   };
@@ -204,70 +204,26 @@ export function RoomsSettings() {
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="capacity"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Capacity</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="Capacity" 
-                            {...field}
-                            value={field.value || ""}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                            data-testid="input-room-capacity"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="ageRangeStart"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Min Age (months)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="Min age" 
-                            {...field}
-                            value={field.value || ""}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                            data-testid="input-room-age-start"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="ageRangeEnd"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Max Age (months)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="Max age" 
-                            {...field}
-                            value={field.value || ""}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                            data-testid="input-room-age-end"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="capacity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Capacity</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="Capacity" 
+                          {...field}
+                          value={field.value || ""}
+                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                          data-testid="input-room-capacity"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} data-testid="button-cancel">
                     Cancel

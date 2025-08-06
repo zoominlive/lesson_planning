@@ -52,6 +52,7 @@ The application uses a PostgreSQL database with Drizzle ORM, successfully integr
 - Complete tenant isolation - all tables reference tenant_id foreign key
 - **Location-based filtering**: API endpoints support locationId query parameter for location-specific data filtering
 - **Room-based organization**: Lesson plans and scheduled activities now reference specific roomId for classroom-level organization
+- **Simplified room schema**: Removed age range requirements (ageRangeStart, ageRangeEnd) from rooms table for more flexible room management
 - DatabaseStorage class with composite tenant + location filtering for data isolation
 - Tenant-aware API endpoints automatically filter data by authenticated tenant and optional location
 - Sample data migrated with development tenant UUID (7cb6c28d-164c-49fa-b461-dfc47a8a3fed)
