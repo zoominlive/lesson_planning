@@ -67,8 +67,8 @@ export default function LessonPlanner() {
       {/* Navigation Tabs */}
       <Tabs defaultValue="calendar" className="space-y-6">
         <Card className="material-shadow">
-          <CardContent className="p-4">
-            <TabsList className="grid w-full grid-cols-4 bg-white dark:bg-gray-800 p-2 rounded-lg h-14">
+          <CardContent className="p-2">
+            <TabsList className="grid w-full grid-cols-4 bg-white dark:bg-gray-800 p-1 rounded-lg h-12">
               <TabsTrigger 
                 value="calendar" 
                 className="flex items-center justify-center h-10 px-4 rounded-md font-semibold transition-all duration-300 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white data-[state=active]:!bg-coral-red data-[state=active]:!text-white data-[state=active]:shadow-lg"
