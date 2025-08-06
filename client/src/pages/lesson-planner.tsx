@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import WeeklyCalendar from "@/components/weekly-calendar";
 import { NavigationTabs } from "@/components/navigation-tabs";
 import { CalendarControls } from "@/components/calendar-controls";
 import { FloatingActionButton } from "@/components/floating-action-button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function LessonPlanner() {
   const [currentWeek, setCurrentWeek] = useState("Week of March 13-17, 2024");
