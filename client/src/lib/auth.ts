@@ -24,10 +24,32 @@ export function clearAuthToken() {
   localStorage.removeItem('authToken');
 }
 
-// Listen for postMessage authentication tokens (for iframe use)
+// Get JWT token from URL query parameters
+function getTokenFromUrl(): string | null {
+  if (typeof window === 'undefined') return null;
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('token');
+}
+
+// Listen for postMessage authentication tokens and check URL parameters
 export function initializeIframeAuth() {
   if (typeof window === 'undefined') return;
   
+  // First, check for token in URL query parameters
+  const urlToken = getTokenFromUrl();
+  if (urlToken) {
+    console.log('Found auth token in URL parameters');
+    setAuthToken(urlToken);
+    
+    // Clean the token from URL for security
+    const url = new URL(window.location.href);
+    url.searchParams.delete('token');
+    window.history.replaceState({}, document.title, url.toString());
+    return;
+  }
+  
+  // Listen for postMessage authentication tokens as fallback
   window.addEventListener('message', (event) => {
     // Only accept messages from trusted origins in production
     // For development, accept from any origin

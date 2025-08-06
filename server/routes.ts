@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { authenticateToken, generateJwtSecret, type AuthenticatedRequest } from "./auth-middleware";
+import { type AuthenticatedRequest } from "./auth-middleware";
 import { 
   insertMilestoneSchema, 
   insertMaterialSchema, 

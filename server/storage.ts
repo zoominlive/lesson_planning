@@ -11,15 +11,21 @@ import {
   type InsertLessonPlan,
   type ScheduledActivity,
   type InsertScheduledActivity,
+  type Tenant,
+  type InsertTenant,
+  type TokenSecret,
+  type InsertTokenSecret,
   users,
   milestones,
   materials,
   activities,
   lessonPlans,
-  scheduledActivities
+  scheduledActivities,
+  tenants,
+  tokenSecrets
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 // Re-importing schema to use it within the class
 import * as schema from "@shared/schema";
@@ -64,7 +70,9 @@ export interface IStorage {
   updateScheduledActivity(id: string, scheduledActivity: Partial<InsertScheduledActivity>): Promise<ScheduledActivity | undefined>;
   deleteScheduledActivity(id: string): Promise<boolean>;
 
-  // TODO: JWT/Tenant Management will be added later
+  // JWT/Tenant Management
+  getTenant(id: string): Promise<Tenant | undefined>;
+  getTokenSecret(tenantId: string): Promise<TokenSecret | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -277,7 +285,7 @@ export class DatabaseStorage implements IStorage {
 
   async getTokenSecret(tenantId: string): Promise<TokenSecret | undefined> {
     const [tokenSecret] = await this.db.select().from(tokenSecrets)
-      .where(eq(tokenSecrets.tenantId, tenantId) && eq(tokenSecrets.isActive, true));
+      .where(and(eq(tokenSecrets.tenantId, tenantId), eq(tokenSecrets.isActive, true)));
     return tokenSecret;
   }
 
