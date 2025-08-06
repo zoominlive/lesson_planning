@@ -1,12 +1,39 @@
 import { db } from "../server/db";
-import { users, milestones, materials, activities } from "../shared/schema";
+import { tenants, tokenSecrets, milestones, materials, activities } from "../shared/schema";
+import { generateJwtSecret } from "../server/auth-middleware";
 
 async function seed() {
   console.log("🌱 Seeding database...");
 
-  // Seed sample milestones
+  // Seed sample tenants
+  const sampleTenants = await db.insert(tenants).values([
+    {
+      name: "Sunshine Daycare",
+      subdomain: "sunshine",
+      isActive: true
+    },
+    {
+      name: "Little Stars Academy", 
+      subdomain: "littlestars",
+      isActive: true
+    }
+  ]).returning();
+
+  // Create token secrets for each tenant
+  for (const tenant of sampleTenants) {
+    await db.insert(tokenSecrets).values({
+      tenantId: tenant.id,
+      jwtSecret: generateJwtSecret(),
+      isActive: true
+    });
+  }
+
+  const defaultTenantId = sampleTenants[0].id;
+
+  // Seed sample milestones (some shared, some tenant-specific)
   await db.insert(milestones).values([
     {
+      tenantId: null, // Shared milestone
       title: "Shares toys with peers",
       description: "Child willingly shares toys and materials with classmates during play activities, demonstrating early cooperation skills.",
       category: "Social",
@@ -15,6 +42,7 @@ async function seed() {
       learningObjective: "Develop cooperation and social interaction skills"
     },
     {
+      tenantId: null, // Shared milestone
       title: "Expresses feelings verbally",
       description: "Uses words to communicate basic emotions like happy, sad, angry, or excited instead of only physical reactions.",
       category: "Emotional",
@@ -23,6 +51,7 @@ async function seed() {
       learningObjective: "Develop emotional vocabulary and self-expression"
     },
     {
+      tenantId: null, // Shared milestone
       title: "Sorts objects by attributes",
       description: "Groups objects by color, size, shape, or function, demonstrating classification skills.",
       category: "Cognitive",
@@ -31,6 +60,7 @@ async function seed() {
       learningObjective: "Develop logical thinking and categorization skills"
     },
     {
+      tenantId: defaultTenantId, // Tenant-specific milestone
       title: "Uses scissors to cut shapes",
       description: "Controls scissors to cut along lines and create simple shapes, showing fine motor development.",
       category: "Physical",
@@ -40,9 +70,10 @@ async function seed() {
     }
   ]);
 
-  // Seed sample materials
+  // Seed sample materials (tenant-specific)
   await db.insert(materials).values([
     {
+      tenantId: defaultTenantId,
       name: "Washable Crayons Set",
       description: "Set of 24 washable crayons in assorted colors, perfect for young children's art activities.",
       category: "Art Supplies",
@@ -51,6 +82,7 @@ async function seed() {
       status: "in_stock"
     },
     {
+      tenantId: defaultTenantId,
       name: "Picture Book Collection",
       description: "Diverse collection of age-appropriate picture books for story time and independent reading.",
       category: "Books & Reading",
@@ -59,6 +91,7 @@ async function seed() {
       status: "in_stock"
     },
     {
+      tenantId: defaultTenantId,
       name: "Wooden Building Blocks",
       description: "Natural wooden blocks in various shapes and sizes for construction and creative play.",
       category: "Building Materials",
@@ -75,6 +108,7 @@ async function seed() {
   // Seed sample activities
   await db.insert(activities).values([
     {
+      tenantId: defaultTenantId,
       title: "Morning Circle",
       description: "Interactive circle time where children share experiences, sing songs, and learn about the day ahead.",
       duration: 25,
@@ -89,6 +123,7 @@ async function seed() {
       imageUrl: null
     },
     {
+      tenantId: defaultTenantId,
       title: "Finger Painting",
       description: "Children explore colors and textures while developing fine motor skills through guided finger painting activities.",
       duration: 45,
