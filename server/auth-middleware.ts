@@ -24,14 +24,20 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
       return res.status(401).json({ error: 'Invalid token format' });
     }
 
-    // Get the tenant's JWT secret from database
+    // Get the tenant and verify it's active
     const tenant = await storage.getTenant(decoded.tenantId);
     if (!tenant || !tenant.isActive) {
       return res.status(401).json({ error: 'Invalid tenant' });
     }
 
+    // Get the tenant's JWT secret from token secrets table
+    const tokenSecret = await storage.getTokenSecret(decoded.tenantId);
+    if (!tokenSecret || !tokenSecret.isActive) {
+      return res.status(401).json({ error: 'Invalid token secret' });
+    }
+
     // Verify the token with the tenant's secret
-    const verified = jwt.verify(token, tenant.jwtSecret) as any;
+    const verified = jwt.verify(token, tokenSecret.jwtSecret) as any;
     
     // Set tenant context for all subsequent operations
     req.tenantId = verified.tenantId;

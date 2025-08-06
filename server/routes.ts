@@ -16,11 +16,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Tenant management routes (unprotected - for initial setup)
   app.post("/api/tenants", async (req, res) => {
     try {
-      const data = insertTenantSchema.parse({
-        ...req.body,
-        jwtSecret: generateJwtSecret()
-      });
-      const tenant = await storage.createTenant(data);
+      const tenantData = insertTenantSchema.parse(req.body);
+      const tenant = await storage.createTenant(tenantData);
+      
+      // Create associated token secret
+      const tokenSecretData = {
+        tenantId: tenant.id,
+        jwtSecret: generateJwtSecret(),
+        isActive: true
+      };
+      await storage.createTokenSecret(tokenSecretData);
+      
       res.status(201).json(tenant);
     } catch (error) {
       res.status(400).json({ error: "Invalid tenant data" });

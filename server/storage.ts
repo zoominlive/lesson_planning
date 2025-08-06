@@ -11,14 +11,20 @@ import {
   type InsertLessonPlan,
   type ScheduledActivity,
   type InsertScheduledActivity,
+  type Tenant,
+  type InsertTenant,
+  type TokenSecret,
+  type InsertTokenSecret,
   users,
   milestones,
   materials,
   activities,
   lessonPlans,
   scheduledActivities,
-  tenants, // Assuming tenants are defined in schema
-  insertTenantSchema // Assuming insertTenantSchema is available
+  tenants,
+  tokenSecrets,
+  insertTenantSchema,
+  insertTokenSecretSchema
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -67,10 +73,15 @@ export interface IStorage {
   deleteScheduledActivity(id: string): Promise<boolean>;
 
   // Tenant Management
-  createTenant(data: typeof insertTenantSchema._type): Promise<any>; // Using 'any' for simplicity if Tenant type is not explicitly defined for return
-  getTenant(id: string): Promise<any | undefined>; // Using 'any'
-  getTenants(): Promise<any[]>; // Using 'any'
-  updateTenant(id: string, data: Partial<typeof insertTenantSchema._type>): Promise<any | undefined>; // Using 'any'
+  createTenant(data: InsertTenant): Promise<Tenant>;
+  getTenant(id: string): Promise<Tenant | undefined>;
+  getTenants(): Promise<Tenant[]>;
+  updateTenant(id: string, data: Partial<InsertTenant>): Promise<Tenant | undefined>;
+
+  // Token Secrets Management
+  createTokenSecret(data: InsertTokenSecret): Promise<TokenSecret>;
+  getTokenSecret(tenantId: string): Promise<TokenSecret | undefined>;
+  updateTokenSecret(tenantId: string, data: Partial<InsertTokenSecret>): Promise<TokenSecret | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -297,18 +308,42 @@ export class DatabaseStorage implements IStorage {
     return tenant;
   }
 
-  async getTenant(id: string) {
-    const [tenant] = await this.db.select().from(schema.tenants).where(eq(schema.tenants.id, id));
+  // Tenant Management
+  async createTenant(data: InsertTenant): Promise<Tenant> {
+    const [tenant] = await this.db.insert(tenants).values(data).returning();
     return tenant;
   }
 
-  async getTenants() {
-    return await this.db.select().from(schema.tenants).where(eq(schema.tenants.isActive, true));
+  async getTenant(id: string): Promise<Tenant | undefined> {
+    const [tenant] = await this.db.select().from(tenants).where(eq(tenants.id, id));
+    return tenant;
   }
 
-  async updateTenant(id: string, data: Partial<typeof insertTenantSchema._type>) {
-    const [tenant] = await this.db.update(schema.tenants).set(data).where(eq(schema.tenants.id, id)).returning();
+  async getTenants(): Promise<Tenant[]> {
+    return await this.db.select().from(tenants).where(eq(tenants.isActive, true));
+  }
+
+  async updateTenant(id: string, data: Partial<InsertTenant>): Promise<Tenant | undefined> {
+    const [tenant] = await this.db.update(tenants).set(data).where(eq(tenants.id, id)).returning();
     return tenant;
+  }
+
+  // Token Secrets Management
+  async createTokenSecret(data: InsertTokenSecret): Promise<TokenSecret> {
+    const [tokenSecret] = await this.db.insert(tokenSecrets).values(data).returning();
+    return tokenSecret;
+  }
+
+  async getTokenSecret(tenantId: string): Promise<TokenSecret | undefined> {
+    const [tokenSecret] = await this.db.select().from(tokenSecrets)
+      .where(eq(tokenSecrets.tenantId, tenantId) && eq(tokenSecrets.isActive, true));
+    return tokenSecret;
+  }
+
+  async updateTokenSecret(tenantId: string, data: Partial<InsertTokenSecret>): Promise<TokenSecret | undefined> {
+    const [tokenSecret] = await this.db.update(tokenSecrets).set(data)
+      .where(eq(tokenSecrets.tenantId, tenantId)).returning();
+    return tokenSecret;
   }
 }
 
