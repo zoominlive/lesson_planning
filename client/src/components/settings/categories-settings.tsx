@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,14 @@ export function CategoriesSettings() {
   const { data: locations = [] } = useQuery<Location[]>({
     queryKey: ["/api/locations"],
   });
+
+  // Auto-select Main Campus when locations are loaded
+  useEffect(() => {
+    if (locations.length > 0 && !selectedLocationId) {
+      const mainCampus = locations.find(loc => loc.name === "Main Campus") || locations[0];
+      setSelectedLocationId(mainCampus.id);
+    }
+  }, [locations, selectedLocationId]);
 
   const { data: categories = [], isLoading, error } = useQuery<Category[]>({
     queryKey: ["/api/categories", selectedLocationId],
@@ -147,15 +155,9 @@ export function CategoriesSettings() {
 
 
 
-  // Auto-select first location if none selected
-  if (locations.length > 0 && !selectedLocationId) {
-    setSelectedLocationId(locations[0].id);
-    return <div>Loading categories...</div>;
-  }
-
   // Show loading state if no location selected
   if (!selectedLocationId) {
-    return <div>Loading categories...</div>;
+    return <div>Loading locations and categories...</div>;
   }
 
   // Show loading state while fetching categories
