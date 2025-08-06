@@ -94,7 +94,14 @@ Once authenticated, the application displays user information and provides acces
 
 - **User Info Display**: Shows user name, username, and role in the navigation
 - **API Context**: All API requests include user context for data filtering
+- **Role-Based Access**: Admin users see additional settings management features
 - **Personalization**: User-specific settings and preferences
+
+#### Admin Features
+Users with "Admin" role in their JWT token have access to:
+- Settings management via gear icon in header
+- Location, room, category, and age group management
+- Organizational configuration tools
 
 ## API Endpoints
 
@@ -132,6 +139,34 @@ All API endpoints support tenant-based data isolation:
 - `POST /api/scheduled-activities` - Create a new scheduled activity
 - `PUT /api/scheduled-activities/:id` - Update existing scheduled activity
 - `DELETE /api/scheduled-activities/:id` - Delete scheduled activity
+
+### Settings Management (Admin Role Required)
+
+#### Locations
+- `GET /api/locations` - Retrieve all locations
+- `POST /api/locations` - Create a new location
+- `PUT /api/locations/:id` - Update existing location
+- `DELETE /api/locations/:id` - Delete location
+
+#### Rooms
+- `GET /api/rooms` - Retrieve all rooms
+- `GET /api/locations/:locationId/rooms` - Retrieve rooms by location
+- `POST /api/rooms` - Create a new room
+- `PUT /api/rooms/:id` - Update existing room
+- `DELETE /api/rooms/:id` - Delete room
+
+#### Categories
+- `GET /api/categories` - Retrieve all categories
+- `GET /api/categories?type=activity` - Retrieve categories by type (activity, material, milestone)
+- `POST /api/categories` - Create a new category
+- `PUT /api/categories/:id` - Update existing category
+- `DELETE /api/categories/:id` - Delete category
+
+#### Age Groups
+- `GET /api/age-groups` - Retrieve all age groups
+- `POST /api/age-groups` - Create a new age group
+- `PUT /api/age-groups/:id` - Update existing age group
+- `DELETE /api/age-groups/:id` - Delete age group
 
 ## Implementation Examples
 
@@ -224,6 +259,87 @@ function generateLessonPlannerToken($user) {
 For development and testing, the application runs with mock user data:
 - Tenant ID: `7cb6c28d-164c-49fa-b461-dfc47a8a3fed`
 - User: Dev User (@dev-user, teacher role)
+
+## Postman Collection
+
+A complete Postman collection with all API endpoints is available:
+
+**Files:**
+- `Lesson_Planning_API.postman_collection.json` - Complete API collection with examples
+- `Lesson_Planning_API.postman_environment.json` - Environment variables and configuration
+
+**Import Instructions:**
+1. Open Postman
+2. Click "Import" button
+3. Select both JSON files
+4. Update environment variables with your specific values:
+   - `base_url`: Your API base URL
+   - `jwt_token`: Your valid JWT token
+   - `tenant_id`: Your assigned tenant ID
+
+**Testing:**
+- All endpoints include example requests and response validation
+- Environment variables automatically populate IDs for chained requests
+- Authentication is pre-configured using bearer token
+
+## Data Models
+
+### Core Entities
+
+**Milestone:**
+```json
+{
+  "id": "uuid",
+  "tenantId": "uuid", 
+  "title": "string",
+  "description": "string",
+  "domain": "Physical|Social|Emotional|Cognitive",
+  "ageRangeStart": "number (months)",
+  "ageRangeEnd": "number (months)"
+}
+```
+
+**Activity:**
+```json
+{
+  "id": "uuid",
+  "tenantId": "uuid",
+  "name": "string",
+  "description": "string", 
+  "objectives": "string[]",
+  "materials": "string[]",
+  "ageRangeStart": "number (months)",
+  "ageRangeEnd": "number (months)",
+  "duration": "number (minutes)",
+  "groupSize": "number"
+}
+```
+
+**Location (Admin Only):**
+```json
+{
+  "id": "uuid",
+  "tenantId": "uuid",
+  "name": "string",
+  "description": "string",
+  "address": "string",
+  "capacity": "number"
+}
+```
+
+**Room (Admin Only):**
+```json
+{
+  "id": "uuid", 
+  "tenantId": "uuid",
+  "locationId": "uuid",
+  "name": "string",
+  "description": "string",
+  "capacity": "number",
+  "ageRangeStart": "number (months)",
+  "ageRangeEnd": "number (months)"
+}
+```
 
 ## Support
 

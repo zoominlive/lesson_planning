@@ -104,6 +104,24 @@ The application features a cohesive design system:
 - **Components**: Reusable UI components with consistent styling and behavior
 - **Accessibility**: Built on Radix UI primitives ensuring WCAG compliance
 
+# API Documentation
+
+## Postman Collection
+A comprehensive Postman collection is available with all API endpoints:
+- **Collection File**: `Lesson_Planning_API.postman_collection.json`
+- **Environment File**: `Lesson_Planning_API.postman_environment.json`
+- **Features**: Complete CRUD operations, authentication examples, response validation
+- **Coverage**: All entities including settings management APIs
+
+## Settings Management APIs
+✅ **COMPLETED**: Complete CRUD endpoints for organizational settings
+- Locations: Physical facility management with capacity tracking
+- Rooms: Classroom management within locations with age range specifications
+- Categories: Classification system for activities, materials, and milestones
+- Age Groups: Developmental age range definitions for content targeting
+- Role-based access control (Admin users only)
+- Full tenant isolation and data filtering
+
 # External Dependencies
 
 ## Database Services

@@ -1,0 +1,1019 @@
+{
+	"info": {
+		"_postman_id": "lesson-planning-api",
+		"name": "Lesson Planning API",
+		"description": "Complete API collection for the Lesson Planning Application with JWT authentication and multi-tenant support",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "lesson-planning-app"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"exec": [
+					"// Set common headers for all requests",
+					"pm.request.headers.add({",
+					"    key: 'Content-Type',",
+					"    value: 'application/json'",
+					"});"
+				],
+				"type": "text/javascript"
+			}
+		}
+	],
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Get User Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has user info\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('tenantId');",
+									"    pm.expect(jsonData).to.have.property('userId');",
+									"    pm.expect(jsonData).to.have.property('role');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			],
+			"description": "Authentication and user information endpoints"
+		},
+		{
+			"name": "Milestones",
+			"item": [
+				{
+					"name": "Get All Milestones",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/milestones",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"milestones"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Milestone",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Can walk independently\",\n  \"description\": \"Child can walk without support for at least 10 steps\",\n  \"domain\": \"Physical\",\n  \"ageRangeStart\": 12,\n  \"ageRangeEnd\": 18\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/milestones",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"milestones"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Milestone",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated milestone title\",\n  \"description\": \"Updated description\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/milestones/{{milestone_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"milestones",
+								"{{milestone_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Milestone",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/milestones/{{milestone_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"milestones",
+								"{{milestone_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Developmental milestones management"
+		},
+		{
+			"name": "Materials",
+			"item": [
+				{
+					"name": "Get All Materials",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/materials",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"materials"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Material",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Building Blocks\",\n  \"description\": \"Wooden building blocks for construction play\",\n  \"category\": \"Toys\",\n  \"quantity\": 50,\n  \"location\": \"Toy Shelf A\",\n  \"ageRangeStart\": 24,\n  \"ageRangeEnd\": 60\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/materials",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"materials"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Material",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"quantity\": 45,\n  \"location\": \"Updated location\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/materials/{{material_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"materials",
+								"{{material_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Material",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/materials/{{material_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"materials",
+								"{{material_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Classroom materials and inventory management"
+		},
+		{
+			"name": "Activities",
+			"item": [
+				{
+					"name": "Get All Activities",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/activities",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"activities"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Activity",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Block Building Challenge\",\n  \"description\": \"Children work together to build towers and structures\",\n  \"objectives\": [\"Develop fine motor skills\", \"Encourage creativity\", \"Practice counting\"],\n  \"materials\": [\"Building blocks\", \"Play mats\"],\n  \"ageRangeStart\": 24,\n  \"ageRangeEnd\": 48,\n  \"duration\": 30,\n  \"groupSize\": 4\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/activities",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"activities"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Activity",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"duration\": 45,\n  \"groupSize\": 6\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/activities/{{activity_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"activities",
+								"{{activity_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Activity",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/activities/{{activity_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"activities",
+								"{{activity_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Educational activities management"
+		},
+		{
+			"name": "Lesson Plans",
+			"item": [
+				{
+					"name": "Get All Lesson Plans",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/lesson-plans",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"lesson-plans"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Lesson Plan",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Spring Theme Week\",\n  \"description\": \"A week-long exploration of spring themes including plants, animals, and weather\",\n  \"weekStartDate\": \"2024-03-18\",\n  \"teacherId\": \"{{teacher_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/lesson-plans",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"lesson-plans"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Lesson Plan",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated Spring Theme Week\",\n  \"description\": \"Updated description with more activities\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/lesson-plans/{{lesson_plan_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"lesson-plans",
+								"{{lesson_plan_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Lesson Plan",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/lesson-plans/{{lesson_plan_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"lesson-plans",
+								"{{lesson_plan_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Weekly lesson plan management"
+		},
+		{
+			"name": "Scheduled Activities",
+			"item": [
+				{
+					"name": "Get Scheduled Activities",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/scheduled-activities?lessonPlanId={{lesson_plan_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"scheduled-activities"
+							],
+							"query": [
+								{
+									"key": "lessonPlanId",
+									"value": "{{lesson_plan_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Scheduled Activity",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"lessonPlanId\": \"{{lesson_plan_id}}\",\n  \"activityId\": \"{{activity_id}}\",\n  \"dayOfWeek\": \"monday\",\n  \"startTime\": \"09:00\",\n  \"endTime\": \"09:30\",\n  \"notes\": \"Morning circle time activity\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/scheduled-activities",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"scheduled-activities"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Scheduled Activity",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"startTime\": \"09:15\",\n  \"endTime\": \"09:45\",\n  \"notes\": \"Updated timing for better flow\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/scheduled-activities/{{scheduled_activity_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"scheduled-activities",
+								"{{scheduled_activity_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Scheduled Activity",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/scheduled-activities/{{scheduled_activity_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"scheduled-activities",
+								"{{scheduled_activity_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Time-slotted activities within lesson plans"
+		},
+		{
+			"name": "Settings - Locations",
+			"item": [
+				{
+					"name": "Get All Locations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/locations",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"locations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Location",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Main Building\",\n  \"description\": \"Primary childcare facility with multiple classrooms\",\n  \"address\": \"123 Learning Lane, Education City, EC 12345\",\n  \"capacity\": 150\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/locations",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"locations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Location",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"capacity\": 160,\n  \"description\": \"Updated facility description\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/locations/{{location_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"locations",
+								"{{location_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Location",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/locations/{{location_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"locations",
+								"{{location_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Physical location management (Admin only)"
+		},
+		{
+			"name": "Settings - Rooms",
+			"item": [
+				{
+					"name": "Get All Rooms",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/rooms",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"rooms"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Rooms by Location",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/locations/{{location_id}}/rooms",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"locations",
+								"{{location_id}}",
+								"rooms"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Room",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Rainbow Room\",\n  \"description\": \"Toddler classroom with play areas and learning centers\",\n  \"locationId\": \"{{location_id}}\",\n  \"capacity\": 20,\n  \"ageRangeStart\": 24,\n  \"ageRangeEnd\": 48\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/rooms",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"rooms"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Room",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"capacity\": 25,\n  \"description\": \"Updated room description\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/rooms/{{room_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"rooms",
+								"{{room_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Room",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/rooms/{{room_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"rooms",
+								"{{room_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Room management within locations (Admin only)"
+		},
+		{
+			"name": "Settings - Categories",
+			"item": [
+				{
+					"name": "Get All Categories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Categories by Type",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/categories?type=activity",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"categories"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "activity"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Category",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"STEM Activities\",\n  \"description\": \"Science, Technology, Engineering, and Math focused activities\",\n  \"type\": \"activity\",\n  \"color\": \"#3b82f6\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Category",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"color\": \"#22c55e\",\n  \"description\": \"Updated category description\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/categories/{{category_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"categories",
+								"{{category_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Category",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/categories/{{category_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"categories",
+								"{{category_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Category management for activities, materials, and milestones (Admin only)"
+		},
+		{
+			"name": "Settings - Age Groups",
+			"item": [
+				{
+					"name": "Get All Age Groups",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/age-groups",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"age-groups"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Age Group",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Toddlers\",\n  \"description\": \"Active toddlers learning independence and social skills\",\n  \"ageRangeStart\": 18,\n  \"ageRangeEnd\": 36\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/age-groups",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"age-groups"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Age Group",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ageRangeEnd\": 42,\n  \"description\": \"Updated age group description\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/age-groups/{{age_group_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"age-groups",
+								"{{age_group_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Age Group",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/age-groups/{{age_group_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"age-groups",
+								"{{age_group_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Age group definitions for developmental tracking (Admin only)"
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "{{base_url}}",
+			"type": "string"
+		}
+	]
+}
