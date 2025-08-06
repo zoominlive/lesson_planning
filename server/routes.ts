@@ -49,7 +49,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Milestones routes
   app.get("/api/milestones", async (req, res) => {
     try {
-      const milestones = await storage.getMilestones();
+      const { locationId } = req.query;
+      const milestones = await storage.getMilestones(locationId as string);
       res.json(milestones);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch milestones" });
@@ -97,7 +98,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Materials routes
   app.get("/api/materials", async (req, res) => {
     try {
-      const materials = await storage.getMaterials();
+      const { locationId } = req.query;
+      const materials = await storage.getMaterials(locationId as string);
       res.json(materials);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch materials" });
@@ -144,7 +146,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Activities routes
   app.get("/api/activities", async (req, res) => {
     try {
-      const activities = await storage.getActivities();
+      const { locationId } = req.query;
+      const activities = await storage.getActivities(locationId as string);
       res.json(activities);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch activities" });
@@ -191,8 +194,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lesson Plans routes
   app.get("/api/lesson-plans", async (req, res) => {
     try {
-      const { teacherId } = req.query;
-      const lessonPlans = await storage.getLessonPlans(teacherId as string);
+      const { teacherId, locationId, roomId } = req.query;
+      const lessonPlans = await storage.getLessonPlans(
+        teacherId as string, 
+        locationId as string, 
+        roomId as string
+      );
       res.json(lessonPlans);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch lesson plans" });
@@ -227,7 +234,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/lesson-plans/:lessonPlanId/scheduled-activities", async (req, res) => {
     try {
       const { lessonPlanId } = req.params;
-      const scheduledActivities = await storage.getScheduledActivities(lessonPlanId);
+      const { locationId, roomId } = req.query;
+      const scheduledActivities = await storage.getScheduledActivities(
+        lessonPlanId,
+        locationId as string,
+        roomId as string
+      );
       res.json(scheduledActivities);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch scheduled activities" });

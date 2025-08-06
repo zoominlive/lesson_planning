@@ -46,22 +46,26 @@ The application uses a PostgreSQL database with Drizzle ORM, successfully integr
 - **Seeding**: Automated database seeding with sample data for development
 
 ### Database Integration Status
-✅ **COMPLETED**: PostgreSQL database with multi-tenant architecture
+✅ **COMPLETED**: PostgreSQL database with multi-tenant, multi-location architecture
 - UUID primary keys implemented across all tables for proper record deletion
+- **Multi-Location Support**: All lesson plan entities (milestones, materials, activities, lesson plans, scheduled activities) now require both tenantId AND locationId for proper data isolation
 - Complete tenant isolation - all tables reference tenant_id foreign key
-- DatabaseStorage class with tenant context filtering for data isolation
-- Tenant-aware API endpoints automatically filter data by authenticated tenant
+- **Location-based filtering**: API endpoints support locationId query parameter for location-specific data filtering
+- **Room-based organization**: Lesson plans and scheduled activities now reference specific roomId for classroom-level organization
+- DatabaseStorage class with composite tenant + location filtering for data isolation
+- Tenant-aware API endpoints automatically filter data by authenticated tenant and optional location
 - Sample data migrated with development tenant UUID (7cb6c28d-164c-49fa-b461-dfc47a8a3fed)
 - JWT authentication supports query parameter integration with user context (userFirstName, userLastName, username, role)
-- Production-ready multi-tenant data separation ensuring complete tenant isolation
+- Production-ready multi-tenant, multi-location data separation ensuring complete isolation
 
 ### Core Data Models
 - **Users**: Teacher profiles with classroom assignments
-- **Milestones**: Developmental milestones categorized by domain (Social, Emotional, Cognitive, Physical)
-- **Materials**: Classroom materials with inventory tracking and location management
-- **Activities**: Educational activities with age ranges, objectives, and material requirements
-- **Lesson Plans**: Weekly planning containers with teacher assignments
-- **Scheduled Activities**: Time-slotted activities within lesson plans
+- **Milestones**: Developmental milestones categorized by domain (Social, Emotional, Cognitive, Physical) - **requires tenantId + locationId**
+- **Materials**: Classroom materials with inventory tracking and location management - **requires tenantId + locationId**
+- **Activities**: Educational activities with age ranges, objectives, and material requirements - **requires tenantId + locationId**
+- **Lesson Plans**: Weekly planning containers with teacher assignments - **requires tenantId + locationId + roomId**
+- **Scheduled Activities**: Time-slotted activities within lesson plans - **requires tenantId + locationId + roomId**
+- **Settings**: Multi-location organizational structure (Locations, Rooms, Categories, Age Groups)
 
 ## Authentication and Authorization
 ✅ **COMPLETED**: JWT-based multi-tenant authentication system

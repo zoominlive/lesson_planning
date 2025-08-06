@@ -35,6 +35,7 @@ export const users = pgTable("users", {
 export const milestones = pgTable("milestones", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  locationId: varchar("location_id").notNull().references(() => locations.id),
   title: text("title").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull(), // Social, Emotional, Cognitive, Physical
@@ -47,6 +48,7 @@ export const milestones = pgTable("milestones", {
 export const materials = pgTable("materials", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  locationId: varchar("location_id").notNull().references(() => locations.id),
   name: text("name").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull(),
@@ -59,6 +61,7 @@ export const materials = pgTable("materials", {
 export const activities = pgTable("activities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  locationId: varchar("location_id").notNull().references(() => locations.id),
   title: text("title").notNull(),
   description: text("description").notNull(),
   duration: integer("duration").notNull(), // in minutes
@@ -77,9 +80,10 @@ export const activities = pgTable("activities", {
 export const lessonPlans = pgTable("lesson_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  locationId: varchar("location_id").notNull().references(() => locations.id),
+  roomId: varchar("room_id").notNull().references(() => rooms.id),
   teacherId: varchar("teacher_id").notNull().references(() => users.id),
   weekStart: text("week_start").notNull(), // ISO date string
-  room: text("room").notNull(),
   status: text("status").notNull().default("draft"), // draft, submitted, approved
   submittedAt: timestamp("submitted_at"),
   approvedAt: timestamp("approved_at"),
@@ -89,6 +93,8 @@ export const lessonPlans = pgTable("lesson_plans", {
 export const scheduledActivities = pgTable("scheduled_activities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  locationId: varchar("location_id").notNull().references(() => locations.id),
+  roomId: varchar("room_id").notNull().references(() => rooms.id),
   lessonPlanId: varchar("lesson_plan_id").notNull().references(() => lessonPlans.id),
   activityId: varchar("activity_id").notNull().references(() => activities.id),
   dayOfWeek: integer("day_of_week").notNull(), // 0-4 (Monday-Friday)
@@ -116,57 +122,26 @@ export const insertUserSchema = createInsertSchema(users).pick({
   classroom: true,
 });
 
-export const insertMilestoneSchema = createInsertSchema(milestones).pick({
-  tenantId: true,
-  title: true,
-  description: true,
-  category: true,
-  ageRangeStart: true,
-  ageRangeEnd: true,
-  learningObjective: true,
+export const insertMilestoneSchema = createInsertSchema(milestones).omit({
+  id: true,
 });
 
-export const insertMaterialSchema = createInsertSchema(materials).pick({
-  tenantId: true,
-  name: true,
-  description: true,
-  category: true,
-  quantity: true,
-  location: true,
-  status: true,
+export const insertMaterialSchema = createInsertSchema(materials).omit({
+  id: true,
 });
 
-export const insertActivitySchema = createInsertSchema(activities).pick({
-  tenantId: true,
-  title: true,
-  description: true,
-  duration: true,
-  ageRangeStart: true,
-  ageRangeEnd: true,
-  teachingObjectives: true,
-  milestoneIds: true,
-  materialIds: true,
-  instructions: true,
-  videoUrl: true,
-  imageUrl: true,
-  category: true,
+export const insertActivitySchema = createInsertSchema(activities).omit({
+  id: true,
 });
 
-export const insertLessonPlanSchema = createInsertSchema(lessonPlans).pick({
-  tenantId: true,
-  teacherId: true,
-  weekStart: true,
-  room: true,
-  status: true,
+export const insertLessonPlanSchema = createInsertSchema(lessonPlans).omit({
+  id: true,
+  submittedAt: true,
+  approvedAt: true,
 });
 
-export const insertScheduledActivitySchema = createInsertSchema(scheduledActivities).pick({
-  tenantId: true,
-  lessonPlanId: true,
-  activityId: true,
-  dayOfWeek: true,
-  timeSlot: true,
-  notes: true,
+export const insertScheduledActivitySchema = createInsertSchema(scheduledActivities).omit({
+  id: true,
 });
 
 // Settings-related tables

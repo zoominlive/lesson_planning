@@ -153,9 +153,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Milestones
-  async getMilestones(): Promise<Milestone[]> {
+  async getMilestones(locationId?: string): Promise<Milestone[]> {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(milestones.tenantId, this.tenantId));
+    if (locationId) conditions.push(eq(milestones.locationId, locationId));
     
     return await this.db.select().from(milestones).where(conditions.length ? and(...conditions) : undefined);
   }
@@ -198,9 +199,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Materials
-  async getMaterials(): Promise<Material[]> {
+  async getMaterials(locationId?: string): Promise<Material[]> {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(materials.tenantId, this.tenantId));
+    if (locationId) conditions.push(eq(materials.locationId, locationId));
     
     return await this.db.select().from(materials).where(conditions.length ? and(...conditions) : undefined);
   }
@@ -243,9 +245,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Activities
-  async getActivities(): Promise<Activity[]> {
+  async getActivities(locationId?: string): Promise<Activity[]> {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(activities.tenantId, this.tenantId));
+    if (locationId) conditions.push(eq(activities.locationId, locationId));
     
     return await this.db.select().from(activities).where(conditions.length ? and(...conditions) : undefined);
   }
@@ -288,10 +291,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Lesson Plans
-  async getLessonPlans(teacherId?: string): Promise<LessonPlan[]> {
+  async getLessonPlans(teacherId?: string, locationId?: string, roomId?: string): Promise<LessonPlan[]> {
     const conditions = [];
-    if (teacherId) conditions.push(eq(lessonPlans.teacherId, teacherId));
     if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
+    if (teacherId) conditions.push(eq(lessonPlans.teacherId, teacherId));
+    if (locationId) conditions.push(eq(lessonPlans.locationId, locationId));
+    if (roomId) conditions.push(eq(lessonPlans.roomId, roomId));
     
     return await this.db.select().from(lessonPlans).where(conditions.length ? and(...conditions) : undefined);
   }
@@ -334,9 +339,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Scheduled Activities
-  async getScheduledActivities(lessonPlanId: string): Promise<ScheduledActivity[]> {
+  async getScheduledActivities(lessonPlanId: string, locationId?: string, roomId?: string): Promise<ScheduledActivity[]> {
     const conditions = [eq(scheduledActivities.lessonPlanId, lessonPlanId)];
     if (this.tenantId) conditions.push(eq(scheduledActivities.tenantId, this.tenantId));
+    if (locationId) conditions.push(eq(scheduledActivities.locationId, locationId));
+    if (roomId) conditions.push(eq(scheduledActivities.roomId, roomId));
     
     return await this.db.select().from(scheduledActivities).where(and(...conditions));
   }

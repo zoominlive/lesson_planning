@@ -105,38 +105,44 @@ Users with "Admin" role in their JWT token have access to:
 
 ## API Endpoints
 
-All API endpoints support tenant-based data isolation:
+All API endpoints support tenant-based data isolation with multi-location filtering:
+
+### Multi-Location Query Parameters
+
+Lesson plan related endpoints now support location-based filtering:
+- **locationId** (query parameter): Filter results by specific location
+- **roomId** (query parameter): Filter results by specific room (for lesson plans and scheduled activities)
 
 ### Authentication
 - `GET /api/user` - Get current user information from JWT token
 
 ### Milestones
-- `GET /api/milestones` - Retrieve all developmental milestones
-- `POST /api/milestones` - Create a new milestone
+- `GET /api/milestones?locationId={locationId}` - Retrieve developmental milestones, optionally filtered by location
+- `POST /api/milestones` - Create a new milestone (requires tenantId + locationId in body)
 - `PUT /api/milestones/:id` - Update existing milestone
 - `DELETE /api/milestones/:id` - Delete milestone
 
 ### Activities
-- `GET /api/activities` - Retrieve all activities
-- `POST /api/activities` - Create a new activity
+- `GET /api/activities?locationId={locationId}` - Retrieve activities, optionally filtered by location
+- `POST /api/activities` - Create a new activity (requires tenantId + locationId in body)
 - `PUT /api/activities/:id` - Update existing activity
 - `DELETE /api/activities/:id` - Delete activity
 
 ### Materials
-- `GET /api/materials` - Retrieve all materials
-- `POST /api/materials` - Create a new material
+- `GET /api/materials?locationId={locationId}` - Retrieve materials, optionally filtered by location
+- `POST /api/materials` - Create a new material (requires tenantId + locationId in body)
 - `PUT /api/materials/:id` - Update existing material
 - `DELETE /api/materials/:id` - Delete material
 
 ### Lesson Plans
-- `GET /api/lesson-plans` - Retrieve all lesson plans
-- `POST /api/lesson-plans` - Create a new lesson plan
+- `GET /api/lesson-plans?teacherId={teacherId}&locationId={locationId}&roomId={roomId}` - Retrieve lesson plans with optional filtering
+- `POST /api/lesson-plans` - Create a new lesson plan (requires tenantId + locationId + roomId in body)
 - `PUT /api/lesson-plans/:id` - Update existing lesson plan
 - `DELETE /api/lesson-plans/:id` - Delete lesson plan
 
 ### Scheduled Activities
-- `GET /api/scheduled-activities` - Retrieve all scheduled activities
-- `POST /api/scheduled-activities` - Create a new scheduled activity
+- `GET /api/lesson-plans/:lessonPlanId/scheduled-activities?locationId={locationId}&roomId={roomId}` - Retrieve scheduled activities with optional filtering
+- `POST /api/scheduled-activities` - Create a new scheduled activity (requires tenantId + locationId + roomId in body)
 - `PUT /api/scheduled-activities/:id` - Update existing scheduled activity
 - `DELETE /api/scheduled-activities/:id` - Delete scheduled activity
 
