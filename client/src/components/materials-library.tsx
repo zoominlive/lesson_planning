@@ -20,7 +20,14 @@ export default function MaterialsLibrary() {
   const [selectedLocationId, setSelectedLocationId] = useState("");
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
-    queryKey: ["/api/materials"],
+    queryKey: ["/api/materials", selectedLocationId],
+    queryFn: selectedLocationId 
+      ? async () => {
+          const data = await apiRequest("GET", `/api/materials?locationId=${selectedLocationId}`);
+          return data;
+        }
+      : undefined,
+    enabled: !!selectedLocationId,
   });
 
   // Fetch locations to get the first available location
@@ -32,29 +39,18 @@ export default function MaterialsLibrary() {
   const { data: ageGroups = [] } = useQuery({
     queryKey: ["/api/age-groups", selectedLocationId],
     queryFn: async () => {
-      console.log("Fetching age groups for locationId:", selectedLocationId);
       const data = await apiRequest("GET", `/api/age-groups?locationId=${selectedLocationId}`);
-      console.log("Age groups API response:", data);
-      console.log("Age groups response type:", typeof data);
-      console.log("Is Array?", Array.isArray(data));
       return data || [];
     },
     enabled: !!selectedLocationId,
-    refetchOnWindowFocus: true,
-    staleTime: 0,
   });
-
-  console.log("Age groups data:", ageGroups);
-  console.log("Age groups array check:", Array.isArray(ageGroups), "Length:", ageGroups?.length);
 
   // Auto-select first location if none selected  
   useEffect(() => {
-    console.log("Locations:", locations, "selectedLocationId:", selectedLocationId);
     if (!selectedLocationId && Array.isArray(locations) && locations.length > 0) {
       // Try to find "Main Campus" first since that's where the age groups are
       const mainCampus = locations.find(loc => loc.name === "Main Campus");
       const locationToSelect = mainCampus || locations[0];
-      console.log("Setting selectedLocationId to:", locationToSelect.id);
       setSelectedLocationId(locationToSelect.id);
       // Force invalidate the age groups query when location changes
       queryClient.invalidateQueries({ queryKey: ["/api/age-groups"] });
@@ -140,6 +136,23 @@ export default function MaterialsLibrary() {
                 data-testid="input-search-materials"
               />
             </div>
+            
+            <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+              <SelectTrigger className="w-48" data-testid="select-location-filter">
+                <SelectValue placeholder="Select Location" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.isArray(locations) && locations.length > 0 ? (
+                  locations.map((location: any) => (
+                    <SelectItem key={location.id} value={location.id}>
+                      {location.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="none" disabled>No locations available</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
             
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-48" data-testid="select-category-filter">
