@@ -31,6 +31,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Apply tenant context middleware to all API routes
   app.use("/api", (req: AuthenticatedRequest, res, next) => {
+    console.log("Setting tenant context for tenantId:", req.tenantId);
     if (req.tenantId) {
       storage.setTenantContext(req.tenantId);
     }

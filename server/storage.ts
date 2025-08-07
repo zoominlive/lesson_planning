@@ -560,11 +560,15 @@ export class DatabaseStorage implements IStorage {
 
   // Age Groups
   async getAgeGroups(locationId?: string): Promise<AgeGroup[]> {
+    console.log("getAgeGroups called with tenantId:", this.tenantId, "locationId:", locationId);
     const conditions = [];
     if (this.tenantId) conditions.push(eq(ageGroups.tenantId, this.tenantId));
     if (locationId) conditions.push(eq(ageGroups.locationId, locationId));
     
-    return await this.db.select().from(ageGroups).where(conditions.length ? and(...conditions) : undefined);
+    console.log("Conditions:", conditions.length);
+    const result = await this.db.select().from(ageGroups).where(conditions.length ? and(...conditions) : undefined);
+    console.log("Database result:", result);
+    return result;
   }
 
   async getAgeGroup(id: string, locationId?: string): Promise<AgeGroup | undefined> {

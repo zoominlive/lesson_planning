@@ -38,6 +38,9 @@ export default function MaterialsLibrary() {
     enabled: !!selectedLocationId,
   });
 
+  console.log("Age groups data:", ageGroups);
+  console.log("Age groups array check:", Array.isArray(ageGroups), "Length:", ageGroups?.length);
+
   // Auto-select first location if none selected  
   useEffect(() => {
     console.log("Locations:", locations, "selectedLocationId:", selectedLocationId);
@@ -151,11 +154,15 @@ export default function MaterialsLibrary() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Age Groups</SelectItem>
-                {Array.isArray(ageGroups) && ageGroups.map((ageGroup: any) => (
-                  <SelectItem key={ageGroup.id} value={ageGroup.id}>
-                    {ageGroup.name}
-                  </SelectItem>
-                ))}
+                {Array.isArray(ageGroups) && ageGroups.length > 0 ? (
+                  ageGroups.map((ageGroup: any) => (
+                    <SelectItem key={ageGroup.id} value={ageGroup.id}>
+                      {ageGroup.name} ({ageGroup.ageRangeStart}-{ageGroup.ageRangeEnd} years)
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="none" disabled>No age groups available</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
