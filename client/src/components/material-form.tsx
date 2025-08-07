@@ -16,10 +16,29 @@ import {
 } from "@/components/ui/select";
 import { insertMaterialSchema, type Material } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { ObjectUploader } from "./ObjectUploader";
+// Simple file upload button since we're handling upload directly
+function SimpleUploadButton({ onFileSelect, children, className }: any) {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onFileSelect(file);
+    }
+  };
+
+  return (
+    <label className={className}>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      {children}
+    </label>
+  );
+}
 import { Camera, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { UploadResult } from "@uppy/core";
 
 interface MaterialFormProps {
   material?: Material;
@@ -113,15 +132,32 @@ export default function MaterialForm({
   });
 
   const uploadPhotoMutation = useMutation({
-    mutationFn: ({
-      materialId,
-      photoURL,
-    }: {
-      materialId: string;
-      photoURL: string;
-    }) => apiRequest("PUT", `/api/materials/${materialId}/photo`, { photoURL }),
+    mutationFn: async (file: File) => {
+      // Get upload parameters
+      const uploadData: any = await apiRequest("POST", "/api/materials/upload-url");
+      
+      // Create form data for direct upload
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("key", uploadData.key);
+      
+      // Upload directly to object storage endpoint
+      const response = await fetch("/api/materials/upload-direct", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+      
+      return response.json();
+    },
     onSuccess: (result: any) => {
-      setPhotoUrl(result.objectPath);
+      setPhotoUrl(result.photoPath);
       queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
       toast({ title: "Photo uploaded successfully" });
     },
@@ -130,23 +166,8 @@ export default function MaterialForm({
     },
   });
 
-  const handleGetUploadParameters = async () => {
-    const response: any = await apiRequest("POST", "/api/objects/upload");
-    return {
-      method: "PUT" as const,
-      url: response.uploadURL,
-    };
-  };
-
-  const handleUploadComplete = (
-    result: UploadResult<Record<string, unknown>, Record<string, unknown>>,
-  ) => {
-    if (result.successful && result.successful[0]?.uploadURL && material?.id) {
-      uploadPhotoMutation.mutate({
-        materialId: material.id,
-        photoURL: result.successful[0].uploadURL,
-      });
-    }
+  const handlePhotoSelect = (file: File) => {
+    uploadPhotoMutation.mutate(file);
   };
 
   const handleAgeGroupToggle = (ageGroupId: string) => {
@@ -319,14 +340,13 @@ export default function MaterialForm({
               <Camera className="h-8 w-8 text-gray-400" />
             </div>
           )}
-          <ObjectUploader
-            onGetUploadParameters={handleGetUploadParameters}
-            onComplete={handleUploadComplete}
-            buttonClassName="bg-sky-blue text-white hover:bg-sky-blue/90"
+          <SimpleUploadButton
+            onFileSelect={handlePhotoSelect}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-sky-blue text-white hover:bg-sky-blue/90 h-10 px-4 py-2 cursor-pointer"
           >
             <Camera className="h-4 w-4 mr-2" />
             {photoUrl ? "Change Photo" : "Add Photo"}
-          </ObjectUploader>
+          </SimpleUploadButton>
         </div>
       </div>
 

@@ -12,6 +12,8 @@ import {
   ObjectStorageService,
   ObjectNotFoundError,
 } from "./objectStorage";
+import { materialStorage } from "./materialStorage";
+import multer from "multer";
 import { 
   insertMilestoneSchema, 
   insertMaterialSchema, 
@@ -301,41 +303,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve static files from public folder
-  app.use('/public', express.static('public'));
-
-  // Serve images directly from object storage
-  app.get('/storage/materials/:filename', async (req: AuthenticatedRequest, res) => {
+  // Material image routes
+  // Serve material images from object storage
+  app.get('/api/materials/images/:filename', async (req, res) => {
     try {
-      const { Client } = await import('@replit/object-storage');
-      const client = new Client();
-      const filename = `materials/${req.params.filename}`;
-      
-      const result = await client.downloadAsBytes(filename);
-      
-      // Extract the actual buffer data
-      const buffer = result.isOk ? result.value[0] : null;
-      
-      if (!buffer) {
-        return res.status(404).json({ error: 'Image not found' });
-      }
-      
-      // Set proper headers for image
-      res.setHeader('Content-Type', 'image/png');
-      res.setHeader('Content-Length', buffer.length);
-      res.end(buffer);
+      await materialStorage.downloadMaterialImage(req.params.filename, res);
     } catch (error) {
-      console.error('Error serving from object storage:', error);
-      res.status(404).json({ error: 'Image not found' });
+      console.error('Error serving material image:', error);
+      res.status(500).json({ error: 'Failed to retrieve image' });
     }
   });
 
-  // Object storage routes for material photos
+  // Get presigned URL for material upload
+  app.post('/api/materials/upload-url', async (req: AuthenticatedRequest, res) => {
+    try {
+      const uploadData = await materialStorage.getUploadUrl();
+      res.json(uploadData);
+    } catch (error) {
+      console.error('Error getting upload URL:', error);
+      res.status(500).json({ error: 'Failed to get upload URL' });
+    }
+  });
+
+  // Handle direct upload of material images
+  const upload = multer({ storage: multer.memoryStorage() });
+  app.post('/api/materials/upload-direct', upload.single('file'), async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file provided' });
+      }
+
+      const { key } = req.body;
+      if (!key) {
+        return res.status(400).json({ error: 'No storage key provided' });
+      }
+
+      const photoPath = await materialStorage.handleDirectUpload(req.file.buffer, key);
+      res.json({ photoPath });
+    } catch (error) {
+      console.error('Error uploading material image:', error);
+      res.status(500).json({ error: 'Failed to upload image' });
+    }
+  });
+
+  // Update material photo endpoint
+  app.put('/api/materials/:id/photo', async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { photoURL } = req.body;
+      
+      // Get existing material to check permissions
+      const material = await storage.getMaterial(id);
+      if (!material) {
+        return res.status(404).json({ error: 'Material not found' });
+      }
+
+      // Validate access to material locations
+      if (material.locationIds) {
+        for (const locId of material.locationIds) {
+          const accessCheck = await validateLocationAccess(req, locId);
+          if (!accessCheck.allowed) {
+            return res.status(403).json({ error: accessCheck.message });
+          }
+        }
+      }
+
+      // Update the material with the new photo URL
+      const updatedMaterial = await storage.updateMaterial(id, { photoUrl: photoURL });
+      res.json({ objectPath: photoURL });
+    } catch (error) {
+      console.error('Error updating material photo:', error);
+      res.status(500).json({ error: 'Failed to update material photo' });
+    }
+  });
+
+  // Legacy object storage routes (kept for backward compatibility)
   app.post("/api/objects/upload", async (req: AuthenticatedRequest, res) => {
     try {
-      const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      res.json({ uploadURL });
+      // Redirect to new material upload URL endpoint
+      const uploadData = await materialStorage.getUploadUrl();
+      res.json({ uploadURL: uploadData.url, key: uploadData.key });
     } catch (error) {
       console.error("Error getting upload URL:", error);
       res.status(500).json({ error: "Failed to get upload URL" });
