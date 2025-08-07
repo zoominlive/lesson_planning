@@ -28,6 +28,12 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Categories UI**: Built location-aware categories settings with location selector and form validation
 - ✅ **Complete Multi-Location Architecture**: Rooms, categories, and age groups are now properly associated with specific locations
 
+## Recent Fixes (August 7, 2025)
+- ✅ **Materials Age Group Safety**: Changed materials from category tracking to age group tracking for childcare safety
+- ✅ **Database Schema Update**: Renamed "categories" column to "age_groups" in materials table
+- ✅ **Safety-Based Material Assignment**: Updated existing materials with appropriate age groups (no scissors for infants, etc.)
+- ✅ **Settings Navigation**: Added back button to navigate from settings to main lesson planner
+
 ## Current Issues
 - Age groups settings UI needs to be updated to work with location context similar to categories
 

@@ -1,15 +1,35 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { LocationsSettings } from "@/components/settings/locations-settings";
 import { RoomsSettings } from "@/components/settings/rooms-settings";
 import { CategoriesSettings } from "@/components/settings/categories-settings";
 import { AgeGroupsSettings } from "@/components/settings/age-groups-settings";
-import { MapPin, Building, Tag, Users } from "lucide-react";
+import { MapPin, Building, Tag, Users, ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
 
 export function Settings() {
+  const [, setLocation] = useLocation();
+
+  const handleBackToPlanner = () => {
+    setLocation('/');
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center space-x-4 mb-6">
+        <Button 
+          variant="ghost" 
+          onClick={handleBackToPlanner}
+          className="flex items-center gap-2 hover:bg-gray-100"
+          data-testid="back-to-planner"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Lesson Planner
+        </Button>
+      </div>
+      
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">Settings</h1>
         <p className="text-muted-foreground">
