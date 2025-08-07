@@ -1184,6 +1184,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/rooms/:id", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const data = insertRoomSchema.partial().parse(req.body);
+      
+      // Get existing room to check location access
+      const existingRoom = await storage.getRoom(id);
+      if (!existingRoom) {
+        return res.status(404).json({ error: "Room not found" });
+      }
+      
+      // Validate access to existing location
+      const existingAccessCheck = await validateLocationAccess(req, existingRoom.locationId);
+      if (!existingAccessCheck.allowed) {
+        return res.status(403).json({ error: existingAccessCheck.message });
+      }
+      
+      // If location is being changed, validate access to new location
+      if (data.locationId && data.locationId !== existingRoom.locationId) {
+        const newAccessCheck = await validateLocationAccess(req, data.locationId);
+        if (!newAccessCheck.allowed) {
+          return res.status(403).json({ error: newAccessCheck.message });
+        }
+      }
+      
+      const room = await storage.updateRoom(id, data);
+      if (room) {
+        res.json(room);
+      } else {
+        res.status(404).json({ error: "Room not found" });
+      }
+    } catch (error) {
+      console.error("Room update error:", error);
+      res.status(400).json({ error: "Invalid room data" });
+    }
+  });
+
+  app.delete("/api/rooms/:id", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get room to check location access
+      const room = await storage.getRoom(id);
+      if (!room) {
+        return res.status(404).json({ error: "Room not found" });
+      }
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, room.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
+      const success = await storage.deleteRoom(id);
+      if (success) {
+        res.status(204).send();
+      } else {
+        res.status(404).json({ error: "Room not found" });
+      }
+    } catch (error) {
+      console.error("Room deletion error:", error);
+      res.status(500).json({ error: "Failed to delete room" });
+    }
+  });
+
   // Settings API Routes - Categories
   app.get("/api/categories", async (req: AuthenticatedRequest, res) => {
     try {

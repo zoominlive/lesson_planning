@@ -294,11 +294,9 @@ export function RoomsSettings() {
                 {room.capacity && (
                   <span data-testid={`text-room-capacity-${room.id}`}>Capacity: {room.capacity}</span>
                 )}
-                {room.ageRangeStart && room.ageRangeEnd && (
-                  <span data-testid={`text-room-age-range-${room.id}`}>
-                    Age: {room.ageRangeStart}-{room.ageRangeEnd} months
-                  </span>
-                )}
+                <span data-testid={`text-room-status-${room.id}`}>
+                  Status: {room.isActive ? "Active" : "Inactive"}
+                </span>
               </div>
             </CardContent>
           </Card>
