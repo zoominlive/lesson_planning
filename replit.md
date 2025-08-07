@@ -36,6 +36,8 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Database Schema Update**: Renamed "categories" column to "age_groups" in materials table
 - ✅ **Safety-Based Material Assignment**: Updated existing materials with appropriate age groups (no scissors for infants, etc.)
 - ✅ **Settings Navigation**: Added back button to navigate from settings to main lesson planner
+- ✅ **Activity Images Added**: Generated and added images for 3 activities (Mystery Sorting Safari, Animal Movement Obstacle Course, Animal Action Obstacle Course)
+- ✅ **Local Image Storage**: Confirmed images are stored locally in `public/activity-images/images/` directory
 
 ## Current Issues
 - Age groups settings UI needs to be updated to work with location context similar to categories
@@ -119,11 +121,20 @@ The application uses a PostgreSQL database with Drizzle ORM, successfully integr
 - User information display in navigation interface including authorized locations
 
 ## File Upload and Media Management
-The application integrates Uppy for file handling:
+**IMPORTANT**: Activity images are stored in the LOCAL FILE SYSTEM, not cloud storage.
 
+### Local File Storage (Current Implementation)
+- **Activity Images**: Stored locally in `public/activity-images/images/` directory
+- **Instruction Images**: Stored locally in `public/activity-images/instructions/` directory  
+- **Videos**: Stored locally in `public/activity-images/videos/` directory
+- **Serving**: Images served via `/api/activities/images/:filename` endpoint
+- **Storage Service**: ActivityStorageService handles all local file operations
+- **No Cloud Storage**: DO NOT use object storage or cloud storage for activity images
+
+### File Upload Components (Available but not for images)
 - **File Upload**: Uppy dashboard and drag-drop components
-- **Cloud Storage**: Google Cloud Storage integration
-- **AWS S3**: Alternative storage option with Uppy S3 plugin
+- **Cloud Storage**: Google Cloud Storage integration (NOT USED for activity images)
+- **AWS S3**: Alternative storage option with Uppy S3 plugin (NOT USED for activity images)
 - **Progress Tracking**: Built-in upload progress indicators
 
 ## Development and Build Process
