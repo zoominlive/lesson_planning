@@ -231,16 +231,24 @@ export default function MaterialsLibrary() {
           {filteredMaterials.map((material) => (
             <Card key={material.id} className="material-shadow overflow-hidden material-shadow-hover">
               <div className="relative h-40 bg-gradient-to-br from-turquoise to-sky-blue">
-                <div className="w-full h-full flex items-center justify-center text-white">
-                  <Package className="h-12 w-12" />
-                </div>
-                <div className="absolute top-2 right-2">
-                  {material.photoUrl && (
+                {material.photoUrl ? (
+                  <img 
+                    src={material.photoUrl} 
+                    alt={material.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white">
+                    <Package className="h-12 w-12" />
+                  </div>
+                )}
+                {material.photoUrl && (
+                  <div className="absolute top-2 right-2">
                     <Badge variant="secondary" className="bg-white/80 text-gray-700">
                       Photo
                     </Badge>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
               
               <CardContent className="p-4">
