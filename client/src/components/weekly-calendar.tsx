@@ -36,8 +36,8 @@ const weekDays = [
 export default function WeeklyCalendar() {
   const [searchTerm, setSearchTerm] = useState("");
   const [draggedActivity, setDraggedActivity] = useState<Activity | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all-categories");
+  const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("all-age-groups");
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { data: activities = [], isLoading } = useQuery<Activity[]>({
@@ -55,8 +55,8 @@ export default function WeeklyCalendar() {
   const filteredActivities = activities.filter(activity => {
     const matchesSearch = activity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || activity.category === selectedCategory;
-    const matchesAgeGroup = !selectedAgeGroup || (activity.ageGroupIds && activity.ageGroupIds.includes(selectedAgeGroup));
+    const matchesCategory = selectedCategory === "all-categories" || activity.category === selectedCategory;
+    const matchesAgeGroup = selectedAgeGroup === "all-age-groups" || (activity.ageGroupIds && activity.ageGroupIds.includes(selectedAgeGroup));
     return matchesSearch && matchesCategory && matchesAgeGroup;
   });
 
@@ -175,18 +175,19 @@ export default function WeeklyCalendar() {
         </Card>
       </div>
 
+      {/* Activity Library Drawer Trigger Button */}
+      <Button
+        onClick={() => setDrawerOpen(true)}
+        className="fixed right-6 bottom-24 z-40 bg-gradient-to-r from-coral-red to-turquoise text-white shadow-lg hover:shadow-xl"
+        size="lg"
+      >
+        <Package className="mr-2 h-5 w-5" />
+        Activities
+      </Button>
+
       {/* Activity Library Drawer */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetTrigger asChild>
-          <Button
-            className="fixed right-4 top-1/2 -translate-y-1/2 z-40 bg-gradient-to-r from-coral-red to-turquoise text-white"
-            size="lg"
-          >
-            <Package className="mr-2 h-5 w-5" />
-            Activities
-          </Button>
-        </SheetTrigger>
-        <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+        <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto" side="right">
           <SheetHeader>
             <SheetTitle className="text-xl font-bold text-charcoal flex items-center">
               <Package className="mr-2 text-coral-red" />
@@ -217,7 +218,7 @@ export default function WeeklyCalendar() {
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all-categories">All Categories</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.name}>
                       {category.name}
@@ -231,7 +232,7 @@ export default function WeeklyCalendar() {
                   <SelectValue placeholder="All Age Groups" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Age Groups</SelectItem>
+                  <SelectItem value="all-age-groups">All Age Groups</SelectItem>
                   {ageGroups.map((ageGroup) => (
                     <SelectItem key={ageGroup.id} value={ageGroup.id}>
                       {ageGroup.name}
