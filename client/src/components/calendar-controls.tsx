@@ -41,6 +41,14 @@ export function CalendarControls({
   const { data: locations = [] } = useQuery({
     queryKey: ["/api/locations"],
   });
+  
+  // Fetch all rooms
+  const { data: allRooms = [] } = useQuery({
+    queryKey: ["/api/rooms"],
+  });
+  
+  // Filter rooms for the selected location
+  const rooms = allRooms.filter((room: any) => room.locationId === currentLocation);
 
   // Auto-select first location if none selected
   useEffect(() => {
@@ -50,6 +58,13 @@ export function CalendarControls({
       onLocationChange?.(firstLocation.id);
     }
   }, [locations, currentLocation, onLocationChange]);
+  
+  // Auto-select first room when location changes or rooms load
+  useEffect(() => {
+    if (rooms.length > 0 && (!selectedRoom || selectedRoom === "all")) {
+      onRoomChange(rooms[0].id);
+    }
+  }, [rooms, selectedRoom, onRoomChange]);
 
   const handleLocationChange = (locationId: string) => {
     setCurrentLocation(locationId);
@@ -115,15 +130,22 @@ export function CalendarControls({
               </Select>
             </div>
 
-            <Select value={selectedRoom} onValueChange={onRoomChange}>
+            <Select value={selectedRoom} onValueChange={onRoomChange} disabled={!currentLocation}>
               <SelectTrigger className="w-48" data-testid="select-room">
                 <SelectValue placeholder="Select room" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Rooms</SelectItem>
-                <SelectItem value="rainbow">Rainbow Room</SelectItem>
-                <SelectItem value="sunshine">Sunshine Room</SelectItem>
-                <SelectItem value="garden">Garden Room</SelectItem>
+                {rooms.length > 0 ? (
+                  rooms.map((room: any) => (
+                    <SelectItem key={room.id} value={room.id}>
+                      {room.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="none" disabled>
+                    {currentLocation ? "No rooms in this location" : "Select a location first"}
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { NavigationTabs } from "@/components/navigation-tabs";
@@ -26,11 +26,19 @@ type UserInfo = {
 export default function LessonPlanner() {
   const [currentWeek, setCurrentWeek] = useState("Week of March 13-17, 2024");
   const [selectedRoom, setSelectedRoom] = useState("all");
+  const [selectedLocation, setSelectedLocation] = useState("");
   const [, setLocation] = useLocation();
 
   const { data: userInfo } = useQuery<UserInfo>({
     queryKey: ["/api/user"],
   });
+
+  // Reset room selection when location changes
+  useEffect(() => {
+    if (selectedLocation) {
+      setSelectedRoom("");
+    }
+  }, [selectedLocation]);
 
   const handlePreviousWeek = () => {
     // TODO: Implement week navigation
@@ -129,12 +137,17 @@ export default function LessonPlanner() {
         <CalendarControls
           currentWeek={currentWeek}
           selectedRoom={selectedRoom}
+          selectedLocation={selectedLocation}
           onPreviousWeek={handlePreviousWeek}
           onNextWeek={handleNextWeek}
           onRoomChange={setSelectedRoom}
+          onLocationChange={setSelectedLocation}
           onSubmitToSupervisor={handleSubmitToSupervisor}
         />
-        <WeeklyCalendar />
+        <WeeklyCalendar 
+          selectedLocation={selectedLocation}
+          selectedRoom={selectedRoom}
+        />
       </NavigationTabs>
 
       {/* Floating Action Button */}

@@ -10,6 +10,11 @@ import DraggableActivity from "./draggable-activity";
 import { toast } from "@/hooks/use-toast";
 import type { Activity, Category, AgeGroup } from "@shared/schema";
 
+interface WeeklyCalendarProps {
+  selectedLocation: string;
+  selectedRoom: string;
+}
+
 const timeSlots = [
   { id: 0, label: "6:00 AM", name: "Early Arrival" },
   { id: 1, label: "7:00 AM", name: "Breakfast" },
@@ -34,13 +39,11 @@ const weekDays = [
   { id: 4, name: "Friday", date: "Mar 17" },
 ];
 
-export default function WeeklyCalendar() {
+export default function WeeklyCalendar({ selectedLocation, selectedRoom }: WeeklyCalendarProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [draggedActivity, setDraggedActivity] = useState<Activity | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all-categories");
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("all-age-groups");
-  const [selectedLocation, setSelectedLocation] = useState<string>("");
-  const [selectedRoom, setSelectedRoom] = useState<string>("");
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { data: activities = [], isLoading } = useQuery<Activity[]>({
@@ -95,37 +98,6 @@ export default function WeeklyCalendar() {
     dropZone.classList.remove("drag-over");
   };
 
-  // Get locations
-  const { data: locations = [] } = useQuery<any[]>({
-    queryKey: ["/api/locations"],
-  });
-  
-  // Set default location when locations load
-  useEffect(() => {
-    if (locations.length > 0 && !selectedLocation) {
-      setSelectedLocation(locations[0].id);
-    }
-  }, [locations, selectedLocation]);
-  
-  // Reset room when location changes
-  useEffect(() => {
-    setSelectedRoom("");
-  }, [selectedLocation]);
-  
-  // Get all rooms
-  const { data: allRooms = [] } = useQuery<any[]>({
-    queryKey: ["/api/rooms"],
-  });
-  
-  // Filter rooms for the selected location
-  const rooms = allRooms.filter((room: any) => room.locationId === selectedLocation);
-  
-  // Set default room when rooms load
-  useEffect(() => {
-    if (rooms.length > 0 && !selectedRoom) {
-      setSelectedRoom(rooms[0].id);
-    }
-  }, [rooms, selectedRoom]);
 
   const scheduleMutation = useMutation({
     mutationFn: async ({ activityId, dayOfWeek, timeSlot }: { activityId: string; dayOfWeek: number; timeSlot: number }) => {
@@ -134,9 +106,7 @@ export default function WeeklyCalendar() {
         dayOfWeek, 
         timeSlot, 
         selectedLocation, 
-        selectedRoom,
-        locations: locations.length,
-        rooms: rooms.length
+        selectedRoom
       });
       
       if (!selectedLocation || !selectedRoom) {
@@ -233,34 +203,6 @@ export default function WeeklyCalendar() {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
           <h2 className="text-2xl font-bold text-charcoal">Weekly Schedule</h2>
-          
-          {/* Location Selector */}
-          <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select Location" />
-            </SelectTrigger>
-            <SelectContent>
-              {locations.map((location: any) => (
-                <SelectItem key={location.id} value={location.id}>
-                  {location.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          {/* Room Selector */}
-          <Select value={selectedRoom} onValueChange={setSelectedRoom} disabled={!selectedLocation}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select Room" />
-            </SelectTrigger>
-            <SelectContent>
-              {rooms.map((room: any) => (
-                <SelectItem key={room.id} value={room.id}>
-                  {room.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
         
         <Button
