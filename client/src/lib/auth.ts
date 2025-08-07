@@ -68,7 +68,7 @@ export function initializeIframeAuth() {
   
   // In development, force the proper JWT token to fix authentication
   const currentToken = getAuthToken();
-  const properToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InVzZXIxMjMiLCJ1c2VyRmlyc3ROYW1lIjoiSm9obiIsInVzZXJMYXN0TmFtZSI6IkRvZSIsInVzZXJuYW1lIjoiam9obi5kb2VAa2luZGVydGFsZXMuY29tIiwicm9sZSI6IkFkbWluIiwiaWF0IjoxNzU0NTMwODI2fQ.OglKHZf_UcSDO-bZxVNDNVv7dnAMO2cEYht9s0Wa4QA';
+  const properToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InVzZXIxMjMiLCJ1c2VyRmlyc3ROYW1lIjoiSm9obiIsInVzZXJMYXN0TmFtZSI6IkRvZSIsInVzZXJuYW1lIjoiam9obi5kb2VAa2luZGVydGFsZXMuY29tIiwicm9sZSI6IkFkbWluIiwibG9jYXRpb25zIjpbIk1haW4gQ2FtcHVzIiwiVGhpcmQgTG9jYXRpb24iXSwiaWF0IjoxNzU0NTM2MTg1fQ.uyZzqREEpTYvQZpj2bbs6CkmpDqh2x7vFWIlW12nRdw';
   
   console.log('Current token:', currentToken ? currentToken.substring(0, 30) + '...' : 'null');
   console.log('Proper token:', properToken.substring(0, 30) + '...');
