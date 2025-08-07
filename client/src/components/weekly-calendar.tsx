@@ -8,11 +8,19 @@ import DraggableActivity from "./draggable-activity";
 import type { Activity } from "@shared/schema";
 
 const timeSlots = [
-  { id: 0, label: "9:00 AM", name: "Morning Circle" },
-  { id: 1, label: "10:00 AM", name: "Activity Time" },
-  { id: 2, label: "11:00 AM", name: "Learning Centers" },
-  { id: 3, label: "1:00 PM", name: "Rest/Quiet Time" },
-  { id: 4, label: "2:00 PM", name: "Outdoor Play" },
+  { id: 0, label: "6:00 AM", name: "Early Arrival" },
+  { id: 1, label: "7:00 AM", name: "Breakfast" },
+  { id: 2, label: "8:00 AM", name: "Free Play" },
+  { id: 3, label: "9:00 AM", name: "Morning Circle" },
+  { id: 4, label: "10:00 AM", name: "Activity Time" },
+  { id: 5, label: "11:00 AM", name: "Learning Centers" },
+  { id: 6, label: "12:00 PM", name: "Lunch" },
+  { id: 7, label: "1:00 PM", name: "Rest/Quiet Time" },
+  { id: 8, label: "2:00 PM", name: "Afternoon Activities" },
+  { id: 9, label: "3:00 PM", name: "Snack Time" },
+  { id: 10, label: "4:00 PM", name: "Outdoor Play" },
+  { id: 11, label: "5:00 PM", name: "Free Choice" },
+  { id: 12, label: "6:00 PM", name: "Pickup Time" },
 ];
 
 const weekDays = [
