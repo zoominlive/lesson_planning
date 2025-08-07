@@ -255,13 +255,26 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
   });
 
   const onSubmit = (data: any) => {
+    // Filter out AI-generated fields that aren't in the database schema
+    const { 
+      objectives, 
+      preparationTime, 
+      safetyConsiderations, 
+      spaceRequired, 
+      groupSize, 
+      messLevel, 
+      variations,
+      imagePrompt,
+      ...validData 
+    } = data;
+
     const formData = {
-      ...data,
+      ...validData,
       ageGroupIds: selectedAgeGroups,
       milestoneIds: selectedMilestones,
       materialIds: selectedMaterials,
       instructions: instructions.filter(inst => inst.text.trim() !== "" || inst.imageUrl),
-      locationId: data.locationId || selectedLocationId,
+      locationId: validData.locationId || selectedLocationId,
       imageUrl: activityImageUrl,
       videoUrl: activityVideoUrl,
     };
