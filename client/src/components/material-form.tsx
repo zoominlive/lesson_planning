@@ -101,7 +101,7 @@ export default function MaterialForm({
         ...data,
         ageGroups: selectedAgeGroups,
         locationIds: selectedLocations,
-        photoUrl,
+        photo_url: photoUrl,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
@@ -119,7 +119,7 @@ export default function MaterialForm({
         ...data,
         ageGroups: selectedAgeGroups,
         locationIds: selectedLocations,
-        photoUrl,
+        photo_url: photoUrl,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
