@@ -593,11 +593,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/activities", async (req: AuthenticatedRequest, res) => {
     console.log('[POST /api/activities] Request body:', req.body);
+    console.log('[POST /api/activities] Authenticated tenant:', req.tenantId);
     
     try {
+      // Add tenantId from authenticated context to the request body
+      const dataWithTenant = {
+        ...req.body,
+        tenantId: req.tenantId
+      };
+      
       // Parse and validate the activity data with the schema
-      const data = insertActivitySchema.parse(req.body);
-      console.log('[POST /api/activities] Parsed data:', data);
+      const data = insertActivitySchema.parse(dataWithTenant);
+      console.log('[POST /api/activities] Parsed data with tenant:', data);
       
       // Validate location access
       const accessCheck = await validateLocationAccess(req, data.locationId);

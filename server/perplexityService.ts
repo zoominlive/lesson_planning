@@ -41,34 +41,45 @@ export class PerplexityService {
       ? "This should be a quiet, calm activity suitable for quiet time, nap preparation, or low-energy periods."
       : "This can be an active, engaging activity.";
 
-    const prompt = `Create a detailed educational activity for ${params.ageGroup} children (${params.ageRange.start}-${params.ageRange.end} years old) in the category of ${params.category}. ${quietDescription}
+    const prompt = `Create a comprehensive educational activity for ${params.ageGroup} children (${params.ageRange.start}-${params.ageRange.end} years old) in the category of ${params.category}. ${quietDescription}
 
-Return ONLY a valid JSON object with no additional text, markdown, or explanation. The JSON must follow this exact structure:
+Please generate a complete activity with the following structure. Return ONLY valid JSON:
 {
-  "title": "Creative and engaging activity title",
-  "description": "A detailed 2-3 sentence description of the activity and its educational benefits",
-  "duration": 30,
+  "title": "[Create an engaging, creative title for the activity]",
+  "description": "[Write a detailed 2-3 sentence description explaining what children will do and the educational benefits]",
+  "duration": [appropriate duration in minutes for the age group, typically 15-45],
   "instructions": [
-    {
-      "text": "Clear step-by-step instruction"
-    }
+    {"text": "[First step - be specific and clear]"},
+    {"text": "[Second step - include details]"},
+    {"text": "[Third step - explain what to do]"},
+    {"text": "[Continue with 4-8 total steps as needed]"}
   ],
-  "learningObjectives": ["objective1", "objective2", "objective3"],
-  "setupTime": 10,
-  "groupSize": "1-4 children",
-  "spaceRequired": "Indoor",
-  "messLevel": "Low",
-  "variations": ["variation1", "variation2"],
-  "safetyConsiderations": ["safety point 1", "safety point 2"],
-  "imagePrompt": "A detailed description for generating an image of this activity"
+  "learningObjectives": [
+    "[Specific learning objective 1]",
+    "[Specific learning objective 2]",
+    "[Specific learning objective 3]"
+  ],
+  "setupTime": [preparation time in minutes, typically 5-15],
+  "groupSize": "[e.g., 1-4 children, 2-6 children, or Full class]",
+  "spaceRequired": "[Indoor, Outdoor, or Both]",
+  "messLevel": "[Low, Medium, or High]",
+  "variations": [
+    "[Creative variation or adaptation 1]",
+    "[Creative variation or adaptation 2]"
+  ],
+  "safetyConsiderations": [
+    "[Important safety point 1]",
+    "[Important safety point 2]"
+  ],
+  "imagePrompt": "[Detailed description for visualizing this activity]"
 }
 
 Ensure the activity is:
-- Age-appropriate and developmentally suitable
-- Educational and promotes learning
+- Age-appropriate and developmentally suitable for ${params.ageRange.start}-${params.ageRange.end} year olds
+- Educational and promotes ${params.category} development
 - Safe and practical for a childcare setting
 - Engaging and fun for children
-- Clear and easy for educators to implement`;
+- Complete with 4-8 clear instructional steps`;
 
     try {
       const response = await fetch(this.apiUrl, {
