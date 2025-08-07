@@ -89,6 +89,22 @@ export default function MilestonesLibrary() {
     }
   };
 
+  const getCategoryPlaceholderImage = (category: string) => {
+    // Return a colored gradient as placeholder based on category
+    switch (category) {
+      case "Social":
+        return "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+      case "Emotional":
+        return "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)";
+      case "Cognitive":
+        return "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)";
+      case "Physical":
+        return "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)";
+      default:
+        return "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+    }
+  };
+
   const getCategoryGradient = (category: string) => {
     switch (category) {
       case "Social":
@@ -265,19 +281,30 @@ export default function MilestonesLibrary() {
                     categoryMilestones.map((milestone) => (
                       <div 
                         key={milestone.id} 
-                        className="border border-gray-200 rounded-lg p-4 hover:border-turquoise transition-colors"
+                        className="border border-gray-200 rounded-lg overflow-hidden hover:border-turquoise transition-colors"
                       >
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-semibold text-charcoal" data-testid={`milestone-title-${milestone.id}`}>
-                            {milestone.title}
-                          </h4>
-                          <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs" data-testid={`milestone-age-${milestone.id}`}>
-                            {getAgeGroupNames(milestone.ageGroupIds || [])}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-3" data-testid={`milestone-description-${milestone.id}`}>
-                          {milestone.description}
-                        </p>
+                        {/* Milestone Image */}
+                        <div 
+                          className="w-full h-32 bg-gray-100" 
+                          style={{
+                            background: milestone.imageUrl 
+                              ? `url(${milestone.imageUrl}) center/cover`
+                              : getCategoryPlaceholderImage(milestone.category),
+                          }}
+                        />
+                        
+                        <div className="p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-semibold text-charcoal" data-testid={`milestone-title-${milestone.id}`}>
+                              {milestone.title}
+                            </h4>
+                            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs" data-testid={`milestone-age-${milestone.id}`}>
+                              {getAgeGroupNames(milestone.ageGroupIds || [])}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-3" data-testid={`milestone-description-${milestone.id}`}>
+                            {milestone.description}
+                          </p>
                         <div className="flex justify-between items-center">
                           <div className="flex items-center text-sm text-gray-500">
                             <Link className="mr-1 h-3 w-3" />
@@ -301,6 +328,7 @@ export default function MilestonesLibrary() {
                               <Link className="h-3 w-3" />
                             </Button>
                           </div>
+                        </div>
                         </div>
                       </div>
                     ))

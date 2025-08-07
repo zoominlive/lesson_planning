@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { insertMilestoneSchema, type Milestone } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface MilestoneFormProps {
   milestone?: Milestone;
@@ -25,6 +25,9 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
   const [selectedAgeGroupIds, setSelectedAgeGroupIds] = useState<string[]>(
     milestone?.ageGroupIds || []
   );
+  const [imageUrl, setImageUrl] = useState<string>(milestone?.imageUrl || "");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { register, handleSubmit, formState: { errors }, setValue } = useForm({
     resolver: zodResolver(insertMilestoneSchema.omit({ locationIds: true, ageGroupIds: true })),
@@ -111,11 +114,39 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
     },
   });
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await fetch('/api/milestones/upload-image', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Failed to upload image');
+      const data = await response.json();
+      setImageUrl(data.imageUrl);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const onSubmit = (data: any) => {
     const formData = {
       ...data,
       locationIds: selectedLocationIds,
       ageGroupIds: selectedAgeGroupIds,
+      imageUrl,
     };
 
     if (milestone) {
@@ -237,6 +268,53 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
         {selectedAgeGroupIds.length === 0 && (
           <p className="text-amber-600 text-sm mt-1">Please select at least one age group</p>
         )}
+      </div>
+
+      <div>
+        <Label>Milestone Image</Label>
+        <div className="space-y-2">
+          {imageUrl && (
+            <div className="relative w-full h-48 border rounded-md overflow-hidden">
+              <img 
+                src={imageUrl} 
+                alt="Milestone" 
+                className="w-full h-full object-cover"
+              />
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="absolute top-2 right-2"
+                onClick={() => setImageUrl("")}
+                data-testid="button-remove-image"
+              >
+                Remove
+              </Button>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+              data-testid="input-milestone-image"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingImage}
+              data-testid="button-upload-image"
+            >
+              {uploadingImage ? "Uploading..." : imageUrl ? "Change Image" : "Upload Image"}
+            </Button>
+            <span className="text-sm text-gray-500">
+              Recommended: 400x300px, JPG or PNG
+            </span>
+          </div>
+        </div>
       </div>
 
       <div>

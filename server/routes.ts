@@ -14,6 +14,7 @@ import {
 } from "./objectStorage";
 import { materialStorage } from "./materialStorage";
 import { activityStorage } from "./activityStorage";
+import { milestoneStorage } from "./milestoneStorage";
 import multer from "multer";
 import { 
   insertMilestoneSchema, 
@@ -32,8 +33,21 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Configure multer for file uploads
+  const upload = multer({ storage: multer.memoryStorage() });
   
   // PUBLIC API ROUTES - No authentication required for these specific paths
+  // Serve milestone images from object storage (public access for display in UI)
+  app.get('/api/milestones/images/*', async (req, res) => {
+    try {
+      const filePath = req.params[0]; // Gets everything after /api/milestones/images/
+      await milestoneStorage.downloadMilestoneImage(filePath, res);
+    } catch (error) {
+      console.error('Error serving milestone image:', error);
+      res.status(500).json({ error: 'Failed to retrieve image' });
+    }
+  });
+  
   // Serve material images from object storage (public access for display in UI)
   app.get('/api/materials/images/:filename', async (req, res) => {
     try {
@@ -92,7 +106,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apply authentication middleware to all API routes EXCEPT the public ones above
   app.use("/api", (req, res, next) => {
     // Skip authentication for public image routes
-    if (req.path.startsWith('/materials/images/') || 
+    if (req.path.startsWith('/milestones/images/') ||
+        req.path.startsWith('/materials/images/') || 
         req.path.startsWith('/activities/images/') ||
         req.path.startsWith('/activities/videos/') ||
         req.path.startsWith('/activities/instructions/')) {
@@ -168,6 +183,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(milestones);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch milestones" });
+    }
+  });
+
+  // Upload milestone image
+  app.post("/api/milestones/upload-image", upload.single('image'), async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No image file provided" });
+      }
+
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Tenant ID not found" });
+      }
+
+      const imageUrl = await milestoneStorage.uploadMilestoneImage(
+        tenantId,
+        req.file.buffer,
+        req.file.originalname
+      );
+
+      res.json({ imageUrl });
+    } catch (error) {
+      console.error('Error uploading milestone image:', error);
+      res.status(500).json({ error: "Failed to upload image" });
     }
   });
 
@@ -381,7 +421,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Handle direct upload of material images
-  const upload = multer({ storage: multer.memoryStorage() });
   app.post('/api/materials/upload-direct', upload.single('file'), async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.file) {
