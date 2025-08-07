@@ -75,7 +75,7 @@ Ensure the activity is:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama-3.1-sonar-small-128k-online',
+          model: 'sonar-small-online',
           messages: [
             {
               role: 'system',
@@ -99,7 +99,7 @@ Ensure the activity is:
         const errorText = await response.text();
         console.error('Perplexity API error response:', errorText);
         console.error('Request body was:', JSON.stringify({
-          model: 'llama-3.1-sonar-small-128k-online',
+          model: 'sonar-small-online',
           messages: [
             {
               role: 'system',
