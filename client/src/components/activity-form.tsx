@@ -35,6 +35,8 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>(
     activity?.materialIds || []
   );
+  const [materialCategoryFilter, setMaterialCategoryFilter] = useState<string>("");
+  const [materialAgeGroupFilter, setMaterialAgeGroupFilter] = useState<string>("");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadingInstructionImage, setUploadingInstructionImage] = useState<number | null>(null);
@@ -53,9 +55,9 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
       usageCount: true,
       lastUsedAt: true,
       createdAt: true,
-      updatedAt: true
-    }).extend({
-      ageGroupIds: insertActivitySchema.shape.ageGroupIds || [],
+      updatedAt: true,
+      id: true,
+      tenantId: true
     })),
     defaultValues: {
       title: activity?.title || "",
@@ -288,6 +290,17 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
     );
   };
 
+  // Filter materials based on selected filters
+  const filteredMaterials = materials.filter((material: any) => {
+    const categoryMatch = !materialCategoryFilter || material.category === materialCategoryFilter;
+    const ageGroupMatch = !materialAgeGroupFilter || 
+      (material.ageGroups && material.ageGroups.includes(materialAgeGroupFilter));
+    return categoryMatch && ageGroupMatch;
+  });
+
+  // Get unique categories from materials
+  const materialCategories = [...new Set(materials.map((m: any) => m.category).filter(Boolean))];
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -505,9 +518,57 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
               {selectedMaterials.length} item{selectedMaterials.length !== 1 ? 's' : ''} selected
             </span>
           </div>
+          
+          {/* Materials Filters */}
+          <div className="flex gap-3 items-center">
+            <div className="flex-1">
+              <Select value={materialCategoryFilter} onValueChange={setMaterialCategoryFilter}>
+                <SelectTrigger className="h-8 text-sm" data-testid="filter-material-category">
+                  <SelectValue placeholder="Filter by category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Categories</SelectItem>
+                  {materialCategories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1">
+              <Select value={materialAgeGroupFilter} onValueChange={setMaterialAgeGroupFilter}>
+                <SelectTrigger className="h-8 text-sm" data-testid="filter-material-age-group">
+                  <SelectValue placeholder="Filter by age group" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Age Groups</SelectItem>
+                  {ageGroups.map((group: any) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {(materialCategoryFilter || materialAgeGroupFilter) && (
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  setMaterialCategoryFilter("");
+                  setMaterialAgeGroupFilter("");
+                }}
+                data-testid="button-clear-filters"
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
           <div className="space-y-3 max-h-64 overflow-y-auto border rounded-md p-3">
-            {materials.length > 0 ? (
-              materials.map((material: any) => (
+            {filteredMaterials.length > 0 ? (
+              filteredMaterials.map((material: any) => (
                 <div key={material.id} className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-md transition-colors">
                   <Checkbox
                     id={`material-${material.id}`}
@@ -554,14 +615,19 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                   </div>
                 </div>
               ))
-            ) : (
+            ) : materials.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p className="text-sm mb-2">No materials found for this location</p>
                 <p className="text-xs">Add materials in the Materials Library to select them here</p>
               </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p className="text-sm mb-2">No materials match the selected filters</p>
+                <p className="text-xs">Try adjusting or clearing the filters above</p>
+              </div>
             )}
           </div>
-          {selectedMaterials.length === 0 && materials.length > 0 && (
+          {selectedMaterials.length === 0 && filteredMaterials.length > 0 && (
             <p className="text-amber-600 text-sm">Select the materials needed for this activity</p>
           )}
           {selectedMaterials.length > 0 && (
