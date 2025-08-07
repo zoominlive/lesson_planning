@@ -77,11 +77,13 @@ export default function WeeklyCalendar() {
   };
 
   const handleDragStart = (activity: Activity) => {
+    console.log('[handleDragStart] Setting dragged activity:', activity.title);
     setDraggedActivity(activity);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
     const dropZone = e.currentTarget as HTMLElement;
     dropZone.classList.add("drag-over");
   };
@@ -167,18 +169,39 @@ export default function WeeklyCalendar() {
   });
 
   const handleDrop = (e: React.DragEvent, dayOfWeek: number, timeSlot: number) => {
+    console.log('[handleDrop] Drop event triggered');
     e.preventDefault();
+    e.stopPropagation();
     const dropZone = e.currentTarget as HTMLElement;
     dropZone.classList.remove("drag-over");
     
+    console.log('[handleDrop] draggedActivity:', draggedActivity);
+    console.log('[handleDrop] dayOfWeek:', dayOfWeek, 'timeSlot:', timeSlot);
+    console.log('[handleDrop] currentLocationId:', currentLocationId);
+    console.log('[handleDrop] currentRoomId:', currentRoomId);
+    
     if (draggedActivity) {
-      console.log(`Dropped ${draggedActivity.title} on ${weekDays[dayOfWeek].name} at ${timeSlots[timeSlot].label}`);
+      console.log(`[handleDrop] Scheduling: ${draggedActivity.title} on ${weekDays[dayOfWeek].name} at ${timeSlots[timeSlot].label}`);
+      
+      if (!currentLocationId || !currentRoomId) {
+        console.error('[handleDrop] Missing location or room');
+        toast({
+          title: "Cannot schedule activity",
+          description: "No location or room selected",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      console.log('[handleDrop] Calling scheduleMutation.mutate');
       scheduleMutation.mutate({
         activityId: draggedActivity.id,
         dayOfWeek,
         timeSlot,
       });
       setDraggedActivity(null);
+    } else {
+      console.log('[handleDrop] No dragged activity to schedule');
     }
   };
 
@@ -236,7 +259,7 @@ export default function WeeklyCalendar() {
                 return (
                   <div 
                     key={slot.id} 
-                    className="h-24 border-b border-gray-200 p-2 drag-zone"
+                    className="h-24 p-2 border-2 border-dashed border-gray-300 hover:border-turquoise transition-all"
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, day.id, slot.id)}

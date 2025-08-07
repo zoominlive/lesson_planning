@@ -103,21 +103,10 @@
   }
 
   /* Drag zone styling */
-  .drag-zone {
-    border: 2px dashed var(--turquoise);
-    transition: all 0.3s ease;
-    border-radius: var(--radius);
-  }
-
-  .drag-zone:hover {
-    border-color: var(--coral-red);
-    background-color: hsl(358, 100%, 69%, 0.05);
-  }
-
-  .drag-zone.drag-over {
-    border-color: var(--coral-red);
-    background-color: hsl(358, 100%, 69%, 0.1);
-    transform: scale(1.02);
+  .drag-over {
+    border-color: var(--coral-red) !important;
+    background-color: hsl(358, 100%, 69%, 0.1) !important;
+    border-width: 3px !important;
   }
 
   /* Activity card gradients */
