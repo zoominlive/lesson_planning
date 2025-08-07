@@ -14,6 +14,7 @@ import {
 } from "./objectStorage";
 import { materialStorage } from "./materialStorage";
 import { activityStorage } from "./activityStorage";
+import { perplexityService } from "./perplexityService";
 import { milestoneStorage } from "./milestoneStorage";
 import multer from "multer";
 import path from "path";
@@ -694,6 +695,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Activity upload error:', error);
       res.status(500).json({ error: 'Failed to upload file' });
+    }
+  });
+
+  // Generate activity using AI
+  app.post('/api/activities/generate', async (req: AuthenticatedRequest, res) => {
+    try {
+      const { ageGroupId, ageGroupName, ageRange, category, isQuiet, locationId } = req.body;
+      
+      if (!ageGroupName || !category || isQuiet === undefined) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      // Generate activity using Perplexity AI
+      const generatedActivity = await perplexityService.generateActivity({
+        ageGroup: ageGroupName,
+        category,
+        isQuiet,
+        ageRange: ageRange || { start: 2, end: 5 }
+      });
+
+      // Transform the AI response to match our activity form structure
+      const transformedActivity = {
+        title: generatedActivity.title,
+        description: generatedActivity.description,
+        duration: generatedActivity.duration,
+        ageRangeStart: ageRange.start,
+        ageRangeEnd: ageRange.end,
+        objectives: generatedActivity.learningObjectives,
+        preparationTime: generatedActivity.setupTime,
+        safetyConsiderations: generatedActivity.safetyConsiderations,
+        category,
+        spaceRequired: generatedActivity.spaceRequired,
+        groupSize: generatedActivity.groupSize,
+        messLevel: generatedActivity.messLevel,
+        instructions: generatedActivity.instructions.map((inst: any, index: number) => ({
+          stepNumber: index + 1,
+          text: inst.text,
+          tip: inst.tip || '',
+          imageUrl: ''
+        })),
+        variations: generatedActivity.variations,
+        imagePrompt: generatedActivity.imagePrompt
+      };
+
+      res.json(transformedActivity);
+    } catch (error) {
+      console.error('Activity generation error:', error);
+      res.status(500).json({ error: 'Failed to generate activity. Please try again.' });
     }
   });
 

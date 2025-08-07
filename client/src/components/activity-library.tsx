@@ -10,6 +10,8 @@ import { Plus, Edit, List, Trash2, Play, Package } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import ActivityForm from "./activity-form";
+import ActivityCreationChoice from "./activity-creation-choice";
+import AiActivityGenerator from "./ai-activity-generator";
 import type { Activity } from "@shared/schema";
 
 export default function ActivityLibrary() {
@@ -18,6 +20,9 @@ export default function ActivityLibrary() {
   const [ageFilter, setAgeFilter] = useState("all");
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [showCreationChoice, setShowCreationChoice] = useState(false);
+  const [showAiGenerator, setShowAiGenerator] = useState(false);
+  const [aiGeneratedData, setAiGeneratedData] = useState<any>(null);
   const [selectedLocationId, setSelectedLocationId] = useState("");
 
   const { data: activities = [], isLoading } = useQuery<Activity[]>({
@@ -66,6 +71,18 @@ export default function ActivityLibrary() {
     queryFn: selectedLocationId
       ? async () => {
           const data = await apiRequest("GET", `/api/age-groups?locationId=${selectedLocationId}`);
+          return data;
+        }
+      : undefined,
+    enabled: !!selectedLocationId,
+  });
+
+  // Fetch categories for the selected location
+  const { data: categories = [] } = useQuery({
+    queryKey: ["/api/categories", selectedLocationId],
+    queryFn: selectedLocationId
+      ? async () => {
+          const data = await apiRequest("GET", `/api/categories?locationId=${selectedLocationId}`);
           return data;
         }
       : undefined,
@@ -158,24 +175,63 @@ export default function ActivityLibrary() {
             <h2 className="text-2xl font-bold text-charcoal" data-testid="activities-title">
               Activity Library
             </h2>
+            <Button 
+              className="bg-gradient-to-r from-coral-red to-turquoise text-white hover:shadow-lg transition-all duration-300"
+              data-testid="button-create-activity"
+              onClick={() => setShowCreationChoice(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create New Activity
+            </Button>
+
+            {/* Creation Choice Dialog */}
+            <ActivityCreationChoice
+              open={showCreationChoice}
+              onOpenChange={setShowCreationChoice}
+              onChooseManual={() => {
+                setShowCreationChoice(false);
+                setAiGeneratedData(null);
+                setIsCreateDialogOpen(true);
+              }}
+              onChooseAI={() => {
+                setShowCreationChoice(false);
+                setShowAiGenerator(true);
+              }}
+            />
+
+            {/* AI Generator Dialog */}
+            <AiActivityGenerator
+              open={showAiGenerator}
+              onOpenChange={setShowAiGenerator}
+              onGenerated={(data) => {
+                setAiGeneratedData(data);
+                setShowAiGenerator(false);
+                setIsCreateDialogOpen(true);
+              }}
+              ageGroups={ageGroups}
+              categories={categories}
+              locationId={selectedLocationId}
+            />
+
+            {/* Activity Form Dialog */}
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  className="bg-gradient-to-r from-coral-red to-turquoise text-white hover:shadow-lg transition-all duration-300"
-                  data-testid="button-create-activity"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create New Activity
-                </Button>
-              </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Create New Activity</DialogTitle>
+                  <DialogTitle>
+                    {aiGeneratedData ? 'Review and Customize AI-Generated Activity' : 'Create New Activity'}
+                  </DialogTitle>
                 </DialogHeader>
                 <ActivityForm 
-                  onSuccess={() => setIsCreateDialogOpen(false)}
-                  onCancel={() => setIsCreateDialogOpen(false)}
+                  onSuccess={() => {
+                    setIsCreateDialogOpen(false);
+                    setAiGeneratedData(null);
+                  }}
+                  onCancel={() => {
+                    setIsCreateDialogOpen(false);
+                    setAiGeneratedData(null);
+                  }}
                   selectedLocationId={selectedLocationId}
+                  initialData={aiGeneratedData}
                 />
               </DialogContent>
             </Dialog>

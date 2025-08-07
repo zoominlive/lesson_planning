@@ -19,12 +19,15 @@ interface ActivityFormProps {
   onSuccess: () => void;
   onCancel: () => void;
   selectedLocationId?: string;
+  initialData?: any; // AI-generated data
 }
 
-export default function ActivityForm({ activity, onSuccess, onCancel, selectedLocationId }: ActivityFormProps) {
+export default function ActivityForm({ activity, onSuccess, onCancel, selectedLocationId, initialData }: ActivityFormProps) {
   const { toast } = useToast();
+  
+  // Use AI-generated data if available, otherwise use activity data
   const [instructions, setInstructions] = useState<InstructionStep[]>(
-    activity?.instructions || [{ text: "" }]
+    initialData?.instructions || activity?.instructions || [{ text: "" }]
   );
   const [selectedAgeGroups, setSelectedAgeGroups] = useState<string[]>(
     activity?.ageGroupIds || []
@@ -56,18 +59,28 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
       locationId: true
     })),
     defaultValues: {
-      title: activity?.title || "",
-      description: activity?.description || "",
-      duration: activity?.duration || 30,
-      category: activity?.category || "",
+      title: initialData?.title || activity?.title || "",
+      description: initialData?.description || activity?.description || "",
+      duration: initialData?.duration || activity?.duration || 30,
+      category: initialData?.category || activity?.category || "",
       milestoneIds: activity?.milestoneIds || [],
       materialIds: activity?.materialIds || [],
-      instructions: activity?.instructions || [],
+      instructions: initialData?.instructions || activity?.instructions || [],
       videoUrl: activity?.videoUrl || "",
       imageUrl: activity?.imageUrl || "",
       locationId: activity?.locationId || selectedLocationId || "",
       tenantId: "", // Will be set by backend
       ageGroupIds: activity?.ageGroupIds || [],
+      // Additional fields from AI generation (stored as extended data)
+      ...(initialData && {
+        objectives: initialData.objectives,
+        preparationTime: initialData.preparationTime,
+        safetyConsiderations: initialData.safetyConsiderations,
+        spaceRequired: initialData.spaceRequired,
+        groupSize: initialData.groupSize,
+        messLevel: initialData.messLevel,
+        variations: initialData.variations,
+      }),
     },
   });
 
@@ -403,6 +416,85 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
             </div>
           </CardContent>
         </Card>
+
+        {/* Additional Details (from AI generation) */}
+        {initialData && (
+          <Card>
+            <CardContent className="p-4 space-y-4">
+              <h3 className="font-semibold text-lg">Additional Details</h3>
+              
+              {initialData.objectives && (
+                <div>
+                  <Label>Learning Objectives</Label>
+                  <div className="space-y-2">
+                    {initialData.objectives.map((objective: string, index: number) => (
+                      <div key={index} className="flex items-start gap-2">
+                        <span className="text-sm text-gray-500 mt-0.5">•</span>
+                        <p className="text-sm">{objective}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {initialData.preparationTime && (
+                <div>
+                  <Label>Preparation Time</Label>
+                  <p className="text-sm">{initialData.preparationTime} minutes</p>
+                </div>
+              )}
+
+              {initialData.spaceRequired && (
+                <div>
+                  <Label>Space Required</Label>
+                  <p className="text-sm">{initialData.spaceRequired}</p>
+                </div>
+              )}
+
+              {initialData.groupSize && (
+                <div>
+                  <Label>Group Size</Label>
+                  <p className="text-sm">{initialData.groupSize}</p>
+                </div>
+              )}
+
+              {initialData.messLevel && (
+                <div>
+                  <Label>Mess Level</Label>
+                  <p className="text-sm">{initialData.messLevel}</p>
+                </div>
+              )}
+
+              {initialData.safetyConsiderations && initialData.safetyConsiderations.length > 0 && (
+                <div>
+                  <Label>Safety Considerations</Label>
+                  <div className="space-y-2">
+                    {initialData.safetyConsiderations.map((safety: string, index: number) => (
+                      <div key={index} className="flex items-start gap-2">
+                        <span className="text-sm text-amber-500 mt-0.5">⚠</span>
+                        <p className="text-sm">{safety}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {initialData.variations && initialData.variations.length > 0 && (
+                <div>
+                  <Label>Activity Variations</Label>
+                  <div className="space-y-2">
+                    {initialData.variations.map((variation: string, index: number) => (
+                      <div key={index} className="flex items-start gap-2">
+                        <span className="text-sm text-turquoise mt-0.5">✦</span>
+                        <p className="text-sm">{variation}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Media */}
         <Card>
