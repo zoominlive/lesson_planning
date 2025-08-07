@@ -161,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If no specific location requested, filter to only authorized locations
       if (!locationId && authorizedLocationIds.length > 0) {
         milestones = milestones.filter(m => 
-          authorizedLocationIds.includes(m.locationId)
+          m.locationIds && m.locationIds.some(locId => authorizedLocationIds.includes(locId))
         );
       }
       
