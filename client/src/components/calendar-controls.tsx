@@ -1,7 +1,10 @@
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Send, MapPin } from "lucide-react";
+import { getUserAuthorizedLocations } from "@/lib/auth";
 
 interface CalendarControlsProps {
   currentWeek: string;
@@ -10,6 +13,8 @@ interface CalendarControlsProps {
   onNextWeek: () => void;
   onRoomChange: (room: string) => void;
   onSubmitToSupervisor: () => void;
+  onLocationChange?: (locationId: string) => void;
+  selectedLocation?: string;
 }
 
 export function CalendarControls({ 
@@ -18,8 +23,31 @@ export function CalendarControls({
   onPreviousWeek, 
   onNextWeek, 
   onRoomChange, 
-  onSubmitToSupervisor 
+  onSubmitToSupervisor,
+  onLocationChange,
+  selectedLocation 
 }: CalendarControlsProps) {
+  const [currentLocation, setCurrentLocation] = useState(selectedLocation || "");
+  
+  // Fetch authorized locations - API already filters based on JWT
+  const { data: locations = [] } = useQuery({
+    queryKey: ["/api/locations"],
+  });
+
+  // Auto-select first location if none selected
+  useEffect(() => {
+    if (!currentLocation && Array.isArray(locations) && locations.length > 0) {
+      const firstLocation = locations[0];
+      setCurrentLocation(firstLocation.id);
+      onLocationChange?.(firstLocation.id);
+    }
+  }, [locations, currentLocation, onLocationChange]);
+
+  const handleLocationChange = (locationId: string) => {
+    setCurrentLocation(locationId);
+    onLocationChange?.(locationId);
+  };
+
   return (
     <Card className="material-shadow">
       <CardContent className="p-6">
@@ -50,6 +78,27 @@ export function CalendarControls({
           </div>
           
           <div className="flex items-center space-x-3">
+            {/* Location Filter - Only shows authorized locations */}
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-gray-500" />
+              <Select value={currentLocation} onValueChange={handleLocationChange}>
+                <SelectTrigger className="w-48" data-testid="select-location">
+                  <SelectValue placeholder="Select Location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(locations) && locations.length > 0 ? (
+                    locations.map((location: any) => (
+                      <SelectItem key={location.id} value={location.id}>
+                        {location.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>No authorized locations</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            
             <Select value={selectedRoom} onValueChange={onRoomChange}>
               <SelectTrigger className="w-48" data-testid="select-room">
                 <SelectValue placeholder="Select room" />
