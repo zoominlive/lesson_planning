@@ -59,14 +59,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Serve activity images from object storage (public access)
+  // Serve activity images from local storage (public access)
   app.get('/api/activities/images/:filename', async (req, res) => {
     try {
       const imageBuffer = await activityStorage.downloadActivityImage(req.params.filename);
       if (!imageBuffer) {
         return res.status(404).json({ error: 'Image not found' });
       }
-      res.set('Content-Type', 'image/jpeg');
+      
+      // Determine content type based on file extension
+      const ext = path.extname(req.params.filename).toLowerCase();
+      let contentType = 'image/jpeg';
+      if (ext === '.png') contentType = 'image/png';
+      else if (ext === '.gif') contentType = 'image/gif';
+      else if (ext === '.webp') contentType = 'image/webp';
+      
+      res.set('Content-Type', contentType);
+      res.set('Cache-Control', 'public, max-age=3600');
       res.send(imageBuffer);
     } catch (error) {
       console.error('Error serving activity image:', error);
@@ -74,14 +83,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Serve activity videos from object storage (public access)
+  // Serve activity videos from local storage (public access)
   app.get('/api/activities/videos/:filename', async (req, res) => {
     try {
       const videoBuffer = await activityStorage.downloadActivityVideo(req.params.filename);
       if (!videoBuffer) {
         return res.status(404).json({ error: 'Video not found' });
       }
-      res.set('Content-Type', 'video/mp4');
+      
+      // Determine content type based on file extension
+      const ext = path.extname(req.params.filename).toLowerCase();
+      let contentType = 'video/mp4';
+      if (ext === '.webm') contentType = 'video/webm';
+      else if (ext === '.ogg') contentType = 'video/ogg';
+      
+      res.set('Content-Type', contentType);
+      res.set('Cache-Control', 'public, max-age=3600');
       res.send(videoBuffer);
     } catch (error) {
       console.error('Error serving activity video:', error);
@@ -89,14 +106,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Serve instruction images from object storage (public access)
+  // Serve instruction images from local storage (public access)
   app.get('/api/activities/instructions/:filename', async (req, res) => {
     try {
       const imageBuffer = await activityStorage.downloadInstructionImage(req.params.filename);
       if (!imageBuffer) {
         return res.status(404).json({ error: 'Image not found' });
       }
-      res.set('Content-Type', 'image/jpeg');
+      
+      // Determine content type based on file extension
+      const ext = path.extname(req.params.filename).toLowerCase();
+      let contentType = 'image/jpeg';
+      if (ext === '.png') contentType = 'image/png';
+      else if (ext === '.gif') contentType = 'image/gif';
+      else if (ext === '.webp') contentType = 'image/webp';
+      
+      res.set('Content-Type', contentType);
+      res.set('Cache-Control', 'public, max-age=3600');
       res.send(imageBuffer);
     } catch (error) {
       console.error('Error serving instruction image:', error);

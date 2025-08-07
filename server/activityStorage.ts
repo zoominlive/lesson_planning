@@ -1,12 +1,29 @@
-import { Client } from "@replit/object-storage";
 import path from "path";
 import crypto from "crypto";
+import fs from "fs";
+import { promises as fsPromises } from "fs";
 
 export class ActivityStorageService {
-  private client: Client;
+  private localStoragePath: string;
   
   constructor() {
-    this.client = new Client();
+    // Use local storage directory
+    this.localStoragePath = path.join(process.cwd(), 'public', 'activity-images');
+    this.ensureDirectories();
+  }
+
+  private async ensureDirectories() {
+    const dirs = [
+      path.join(this.localStoragePath, 'images'),
+      path.join(this.localStoragePath, 'videos'),
+      path.join(this.localStoragePath, 'instructions')
+    ];
+    
+    for (const dir of dirs) {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+    }
   }
 
   private generateFileName(originalName: string): string {
@@ -19,77 +36,80 @@ export class ActivityStorageService {
 
   async uploadActivityImage(buffer: Buffer, originalName: string): Promise<string> {
     const fileName = this.generateFileName(originalName);
-    const objectPath = `activities/images/${fileName}`;
+    const filePath = path.join(this.localStoragePath, 'images', fileName);
     
-    const result = await this.client.uploadFromBytes(objectPath, buffer);
-    
-    if (result.error) {
-      throw new Error(`Failed to upload activity image: ${result.error}`);
+    try {
+      await fsPromises.writeFile(filePath, buffer);
+      return `/api/activities/images/${fileName}`;
+    } catch (error) {
+      throw new Error(`Failed to upload activity image: ${error instanceof Error ? error.message : String(error)}`);
     }
-
-    return `/api/activities/images/${fileName}`;
   }
 
   async uploadActivityVideo(buffer: Buffer, originalName: string): Promise<string> {
     const fileName = this.generateFileName(originalName);
-    const objectPath = `activities/videos/${fileName}`;
+    const filePath = path.join(this.localStoragePath, 'videos', fileName);
     
-    const result = await this.client.uploadFromBytes(objectPath, buffer);
-    
-    if (result.error) {
-      throw new Error(`Failed to upload activity video: ${result.error}`);
+    try {
+      await fsPromises.writeFile(filePath, buffer);
+      return `/api/activities/videos/${fileName}`;
+    } catch (error) {
+      throw new Error(`Failed to upload activity video: ${error instanceof Error ? error.message : String(error)}`);
     }
-
-    return `/api/activities/videos/${fileName}`;
   }
 
   async uploadInstructionImage(buffer: Buffer, originalName: string): Promise<string> {
     const fileName = this.generateFileName(originalName);
-    const objectPath = `activities/instructions/${fileName}`;
+    const filePath = path.join(this.localStoragePath, 'instructions', fileName);
     
-    const result = await this.client.uploadFromBytes(objectPath, buffer);
-    
-    if (result.error) {
-      throw new Error(`Failed to upload instruction image: ${result.error}`);
+    try {
+      await fsPromises.writeFile(filePath, buffer);
+      return `/api/activities/instructions/${fileName}`;
+    } catch (error) {
+      throw new Error(`Failed to upload instruction image: ${error instanceof Error ? error.message : String(error)}`);
     }
-
-    return `/api/activities/instructions/${fileName}`;
   }
 
   async downloadActivityImage(fileName: string): Promise<Buffer | null> {
-    const objectPath = `activities/images/${fileName}`;
-    const result = await this.client.downloadAsBytes(objectPath);
+    const filePath = path.join(this.localStoragePath, 'images', fileName);
     
-    if (result.error) {
-      console.error('Failed to download activity image:', result.error);
+    try {
+      if (!fs.existsSync(filePath)) {
+        return null;
+      }
+      return await fsPromises.readFile(filePath);
+    } catch (error) {
+      console.error('Failed to download activity image:', error);
       return null;
     }
-
-    return result.value;
   }
 
   async downloadActivityVideo(fileName: string): Promise<Buffer | null> {
-    const objectPath = `activities/videos/${fileName}`;
-    const result = await this.client.downloadAsBytes(objectPath);
+    const filePath = path.join(this.localStoragePath, 'videos', fileName);
     
-    if (result.error) {
-      console.error('Failed to download activity video:', result.error);
+    try {
+      if (!fs.existsSync(filePath)) {
+        return null;
+      }
+      return await fsPromises.readFile(filePath);
+    } catch (error) {
+      console.error('Failed to download activity video:', error);
       return null;
     }
-
-    return result.value;
   }
 
   async downloadInstructionImage(fileName: string): Promise<Buffer | null> {
-    const objectPath = `activities/instructions/${fileName}`;
-    const result = await this.client.downloadAsBytes(objectPath);
+    const filePath = path.join(this.localStoragePath, 'instructions', fileName);
     
-    if (result.error) {
-      console.error('Failed to download instruction image:', result.error);
+    try {
+      if (!fs.existsSync(filePath)) {
+        return null;
+      }
+      return await fsPromises.readFile(filePath);
+    } catch (error) {
+      console.error('Failed to download instruction image:', error);
       return null;
     }
-
-    return result.value;
   }
 
   async deleteActivityImage(imageUrl: string): Promise<void> {
@@ -98,12 +118,14 @@ export class ActivityStorageService {
     }
 
     const fileName = imageUrl.replace('/api/activities/images/', '');
-    const objectPath = `activities/images/${fileName}`;
+    const filePath = path.join(this.localStoragePath, 'images', fileName);
     
-    const result = await this.client.delete(objectPath);
-    
-    if (result.error) {
-      console.error('Failed to delete activity image:', result.error);
+    try {
+      if (fs.existsSync(filePath)) {
+        await fsPromises.unlink(filePath);
+      }
+    } catch (error) {
+      console.error('Failed to delete activity image:', error);
     }
   }
 
@@ -113,12 +135,14 @@ export class ActivityStorageService {
     }
 
     const fileName = videoUrl.replace('/api/activities/videos/', '');
-    const objectPath = `activities/videos/${fileName}`;
+    const filePath = path.join(this.localStoragePath, 'videos', fileName);
     
-    const result = await this.client.delete(objectPath);
-    
-    if (result.error) {
-      console.error('Failed to delete activity video:', result.error);
+    try {
+      if (fs.existsSync(filePath)) {
+        await fsPromises.unlink(filePath);
+      }
+    } catch (error) {
+      console.error('Failed to delete activity video:', error);
     }
   }
 
@@ -128,12 +152,14 @@ export class ActivityStorageService {
     }
 
     const fileName = imageUrl.replace('/api/activities/instructions/', '');
-    const objectPath = `activities/instructions/${fileName}`;
+    const filePath = path.join(this.localStoragePath, 'instructions', fileName);
     
-    const result = await this.client.delete(objectPath);
-    
-    if (result.error) {
-      console.error('Failed to delete instruction image:', result.error);
+    try {
+      if (fs.existsSync(filePath)) {
+        await fsPromises.unlink(filePath);
+      }
+    } catch (error) {
+      console.error('Failed to delete instruction image:', error);
     }
   }
 }
