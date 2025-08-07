@@ -304,6 +304,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve static files from public folder
   app.use('/public', express.static('public'));
 
+  // Serve images directly from object storage
+  app.get('/storage/materials/:filename', async (req: AuthenticatedRequest, res) => {
+    try {
+      const { Client } = await import('@replit/object-storage');
+      const client = new Client();
+      const filename = `materials/${req.params.filename}`;
+      
+      const data = await client.downloadAsBytes(filename);
+      res.set('Content-Type', 'image/png');
+      res.send(data);
+    } catch (error) {
+      console.error('Error serving from object storage:', error);
+      res.status(404).send('Image not found');
+    }
+  });
+
   // Object storage routes for material photos
   app.post("/api/objects/upload", async (req: AuthenticatedRequest, res) => {
     try {
