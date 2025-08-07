@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Link, Users, Heart, Brain, Activity } from "lucide-react";
+import { Plus, Edit, Link, Users, Heart, Brain, Activity, Trash2 } from "lucide-react";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import { apiRequest } from "@/lib/queryClient";
 import MilestoneForm from "./milestone-form";
@@ -132,9 +132,9 @@ export default function MilestonesLibrary() {
     setEditingMilestone(milestone);
   };
 
-  const handleLinkActivities = (milestone: Milestone) => {
-    // TODO: Implement activity linking modal
-    console.log("Link activities for:", milestone.title);
+  const handleDelete = (milestone: Milestone) => {
+    // TODO: Implement delete milestone functionality
+    console.log("Delete milestone:", milestone.title);
   };
 
   const categories = ["Social", "Emotional", "Cognitive", "Physical"];
@@ -301,11 +301,11 @@ export default function MilestonesLibrary() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => handleLinkActivities(milestone)}
-                      data-testid={`button-link-milestone-${milestone.id}`}
+                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                      onClick={() => handleDelete(milestone)}
+                      data-testid={`button-delete-milestone-${milestone.id}`}
                     >
-                      <Link className="h-3 w-3" />
+                      <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
