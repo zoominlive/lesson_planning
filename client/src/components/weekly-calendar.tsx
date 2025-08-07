@@ -105,6 +105,9 @@ export default function WeeklyCalendar() {
     enabled: !!currentLocationId,
   });
 
+  // Get first room as default (you may want to get this from a selector)
+  const currentRoomId = rooms[0]?.id;
+
   const scheduleMutation = useMutation({
     mutationFn: async ({ activityId, dayOfWeek, timeSlot }: { activityId: string; dayOfWeek: number; timeSlot: number }) => {
       console.log('Scheduling activity:', { 
