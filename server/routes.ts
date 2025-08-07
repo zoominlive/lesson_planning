@@ -372,9 +372,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.put("/api/materials/:id", async (req: AuthenticatedRequest, res) => {
+    console.log('[PUT /api/materials] Starting update for ID:', req.params.id);
+    console.log('[PUT /api/materials] Request body:', req.body);
+    console.log('[PUT /api/materials] Auth info:', { tenantId: req.tenantId, userId: req.userId });
+    
     try {
       const { id } = req.params;
-      console.log('[PUT /api/materials] Request body:', req.body);
       const data = insertMaterialSchema.partial().parse(req.body);
       console.log('[PUT /api/materials] Parsed data:', data);
       
