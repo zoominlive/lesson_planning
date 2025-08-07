@@ -943,12 +943,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/scheduled-activities", async (req, res) => {
+  app.post("/api/scheduled-activities", async (req: AuthenticatedRequest, res) => {
     try {
-      const data = insertScheduledActivitySchema.parse(req.body);
+      let { lessonPlanId, ...otherData } = req.body;
+      
+      // If no lesson plan ID provided, try to create one automatically
+      if (!lessonPlanId && otherData.locationId && otherData.roomId) {
+        // Use the authenticated user as the teacher
+        let teacherId = req.userId || 'default-teacher';
+        
+        // Try to get existing user by ID
+        let teacher = await storage.getUser(teacherId);
+        
+        if (!teacher) {
+          // Create a default teacher if none exists
+          const defaultUser = await storage.createUser({
+            tenantId: req.tenantId!,
+            username: 'default.teacher',
+            password: 'temp123',
+            name: 'Default Teacher',
+            email: 'teacher@example.com',
+            classroom: 'Main Room'
+          });
+          teacherId = defaultUser.id;
+        }
+        
+        // Create a lesson plan for the current week
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Start of week
+        
+        const lessonPlan = await storage.createLessonPlan({
+          tenantId: req.tenantId!,
+          locationId: otherData.locationId,
+          roomId: otherData.roomId,
+          teacherId: teacherId,
+          weekStart: weekStart.toISOString(),
+          status: 'draft'
+        });
+        
+        lessonPlanId = lessonPlan.id;
+      }
+      
+      // Now create the scheduled activity with the lesson plan ID
+      const data = insertScheduledActivitySchema.parse({
+        ...otherData,
+        lessonPlanId,
+        tenantId: req.tenantId
+      });
+      
       const scheduledActivity = await storage.createScheduledActivity(data);
       res.status(201).json(scheduledActivity);
     } catch (error) {
+      console.error('Error creating scheduled activity:', error);
       res.status(400).json({ error: "Invalid scheduled activity data" });
     }
   });
