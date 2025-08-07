@@ -90,17 +90,17 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
   const getCategoryGradient = (category: string) => {
     switch (category) {
       case "Social Development":
-        return "from-mint-green/30 to-mint-green/50";
+        return "from-green-100 to-emerald-200";
       case "Art & Creativity":
-        return "from-coral-red/30 to-coral-red/50";
+        return "from-pink-100 to-rose-200";
       case "Physical Development":
-        return "from-turquoise/30 to-turquoise/50";
+        return "from-cyan-100 to-blue-200";
       case "Cognitive Development":
-        return "from-sky-blue/30 to-sky-blue/50";
+        return "from-blue-100 to-indigo-200";
       case "Music & Movement":
-        return "from-soft-yellow/30 to-soft-yellow/50";
+        return "from-yellow-100 to-amber-200";
       default:
-        return "from-gray-200 to-gray-300";
+        return "from-gray-100 to-gray-200";
     }
   };
 
