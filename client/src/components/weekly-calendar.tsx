@@ -23,39 +23,6 @@ const weekDays = [
   { id: 4, name: "Friday", date: "Mar 17" },
 ];
 
-const sampleScheduledActivities = [
-  {
-    dayOfWeek: 0,
-    timeSlot: 0,
-    activity: {
-      id: "activity-1",
-      title: "Morning Circle",
-      category: "Social Development",
-      duration: 25,
-    }
-  },
-  {
-    dayOfWeek: 0,
-    timeSlot: 1,
-    activity: {
-      id: "activity-2",
-      title: "Finger Painting",
-      category: "Art & Creativity",
-      duration: 45,
-    }
-  },
-  {
-    dayOfWeek: 1,
-    timeSlot: 1,
-    activity: {
-      id: "activity-3",
-      title: "Music & Movement",
-      category: "Physical Development",
-      duration: 30,
-    }
-  },
-];
-
 export default function WeeklyCalendar() {
   const [searchTerm, setSearchTerm] = useState("");
   const [draggedActivity, setDraggedActivity] = useState<Activity | null>(null);
@@ -112,7 +79,8 @@ export default function WeeklyCalendar() {
   };
 
   const isSlotOccupied = (dayOfWeek: number, timeSlot: number) => {
-    return sampleScheduledActivities.find(sa => sa.dayOfWeek === dayOfWeek && sa.timeSlot === timeSlot);
+    // TODO: Fetch actual scheduled activities from the database
+    return null;
   };
 
   return (
