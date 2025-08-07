@@ -42,6 +42,10 @@ export const milestones = pgTable("milestones", {
   ageGroupIds: json("age_group_ids").$type<string[]>().notNull().default([]), // Multi-select age groups
   learningObjective: text("learning_objective").notNull(),
   imageUrl: text("image_url"),
+  status: text("status").notNull().default("active"), // active, disabled
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at"),
 });
 
 // Materials

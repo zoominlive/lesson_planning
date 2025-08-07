@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Edit, Link, Users, Heart, Brain, Activity, Trash2 } from "lucide-react";
 import { getUserAuthorizedLocations } from "@/lib/auth";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import MilestoneForm from "./milestone-form";
 import type { Milestone } from "@shared/schema";
 
@@ -132,9 +132,29 @@ export default function MilestonesLibrary() {
     setEditingMilestone(milestone);
   };
 
-  const handleDelete = (milestone: Milestone) => {
-    // TODO: Implement delete milestone functionality
-    console.log("Delete milestone:", milestone.title);
+  const handleDelete = async (milestone: Milestone) => {
+    if (!confirm(`Are you sure you want to delete "${milestone.title}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/milestones/${milestone.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete milestone');
+      }
+
+      // Refetch milestones to update the UI
+      queryClient.invalidateQueries({ queryKey: ["/api/milestones"] });
+    } catch (error) {
+      console.error('Error deleting milestone:', error);
+      alert('Failed to delete milestone. Please try again.');
+    }
   };
 
   const categories = ["Social", "Emotional", "Cognitive", "Physical"];

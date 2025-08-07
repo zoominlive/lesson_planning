@@ -271,10 +271,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Milestone not found" });
       }
       
-      // Validate location access
-      const accessCheck = await validateLocationAccess(req, milestone.locationId);
-      if (!accessCheck.allowed) {
-        return res.status(403).json({ error: accessCheck.message });
+      // Validate location access - check if user has access to any of the milestone's locations
+      const userLocationIds = getUserAuthorizedLocationIds(req);
+      const hasAccess = milestone.locationIds.some(locId => userLocationIds.includes(locId));
+      if (!hasAccess) {
+        return res.status(403).json({ error: "Access denied. You don't have permission to access this milestone." });
       }
       
       const deleted = await storage.deleteMilestone(id);

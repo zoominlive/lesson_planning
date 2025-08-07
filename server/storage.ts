@@ -37,7 +37,7 @@ import {
   ageGroups
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, isNull } from "drizzle-orm";
 
 // Re-importing schema to use it within the class
 import * as schema from "@shared/schema";
@@ -156,8 +156,11 @@ export class DatabaseStorage implements IStorage {
   async getMilestones(locationId?: string): Promise<Milestone[]> {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(milestones.tenantId, this.tenantId));
+    // Only return active, non-deleted milestones
+    conditions.push(eq(milestones.status, 'active'));
+    conditions.push(isNull(milestones.deletedAt));
     
-    let results = await this.db.select().from(milestones).where(conditions.length ? and(...conditions) : undefined);
+    let results = await this.db.select().from(milestones).where(and(...conditions));
     
     // Filter by locationId if provided (check if locationId is in locationIds array)
     if (locationId) {
@@ -193,7 +196,10 @@ export class DatabaseStorage implements IStorage {
     const conditions = [eq(milestones.id, id)];
     if (this.tenantId) conditions.push(eq(milestones.tenantId, this.tenantId));
     
-    const dataToUpdate: any = { ...updates };
+    const dataToUpdate: any = { 
+      ...updates, 
+      updatedAt: sql`NOW()`
+    };
     if (updates.locationIds) dataToUpdate.locationIds = updates.locationIds;
     
     const [milestone] = await this.db
@@ -208,7 +214,15 @@ export class DatabaseStorage implements IStorage {
     const conditions = [eq(milestones.id, id)];
     if (this.tenantId) conditions.push(eq(milestones.tenantId, this.tenantId));
     
-    const result = await this.db.delete(milestones).where(and(...conditions));
+    // Soft delete: set status to disabled and deletedAt to current timestamp
+    const result = await this.db
+      .update(milestones)
+      .set({ 
+        status: 'disabled',
+        deletedAt: sql`NOW()`,
+        updatedAt: sql`NOW()`
+      })
+      .where(and(...conditions));
     return (result.rowCount ?? 0) > 0;
   }
 
