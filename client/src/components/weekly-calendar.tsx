@@ -58,6 +58,12 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
     queryKey: ["/api/age-groups"],
   });
 
+  // Fetch scheduled activities for the current room
+  const { data: scheduledActivities = [] } = useQuery<any[]>({
+    queryKey: ["/api/scheduled-activities", selectedRoom],
+    enabled: !!selectedRoom && selectedRoom !== "all",
+  });
+
   const filteredActivities = activities.filter(activity => {
     const matchesSearch = activity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -78,6 +84,23 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
         return "activity-cognitive";
       default:
         return "activity-social";
+    }
+  };
+
+  const getCategoryGradient = (category: string) => {
+    switch (category) {
+      case "Social Development":
+        return "from-mint-green to-emerald-500";
+      case "Art & Creativity":
+        return "from-coral-red to-pink-500";
+      case "Physical Development":
+        return "from-turquoise to-blue-500";
+      case "Cognitive Development":
+        return "from-sky-blue to-indigo-500";
+      case "Music & Movement":
+        return "from-soft-yellow to-amber-500";
+      default:
+        return "from-gray-400 to-gray-600";
     }
   };
 
@@ -140,7 +163,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom] });
       toast({
         title: "Activity Scheduled",
         description: "The activity has been added to the calendar.",
@@ -193,8 +216,12 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
   };
 
   const isSlotOccupied = (dayOfWeek: number, timeSlot: number) => {
-    // TODO: Fetch actual scheduled activities from the database
-    return null;
+    return scheduledActivities.find(
+      (scheduled: any) => 
+        scheduled.dayOfWeek === dayOfWeek && 
+        scheduled.timeSlot === timeSlot &&
+        scheduled.roomId === selectedRoom
+    );
   };
 
   return (
@@ -249,29 +276,28 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
                 return (
                   <div 
                     key={slot.id} 
-                    className="h-24 p-2 border-2 border-dashed border-gray-300 hover:border-turquoise transition-all"
+                    className="h-24 p-1 border border-gray-200 hover:border-turquoise transition-all"
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, day.id, slot.id)}
                     data-testid={`calendar-slot-${day.id}-${slot.id}`}
                   >
                     {scheduledActivity ? (
-                      <div className={`${getCategoryStyle(scheduledActivity.activity.category)} text-white rounded-lg p-2 h-full flex flex-col justify-between cursor-move material-shadow-hover`}>
+                      <div className={`bg-gradient-to-br ${getCategoryGradient(scheduledActivity.activity?.category || 'Other')} text-white rounded-lg p-2 h-full flex flex-col justify-between cursor-move shadow-md hover:shadow-lg transition-all`}>
                         <div>
-                          <h4 className="font-semibold text-sm" data-testid={`activity-title-${scheduledActivity.activity.id}`}>
-                            {scheduledActivity.activity.title}
+                          <h4 className="font-semibold text-xs line-clamp-2" data-testid={`activity-title-${scheduledActivity.activity?.id}`}>
+                            {scheduledActivity.activity?.title || 'Untitled Activity'}
                           </h4>
-                          <p className="text-xs opacity-90">{scheduledActivity.activity.category}</p>
+                          <p className="text-xs opacity-90 mt-1">{scheduledActivity.activity?.category || 'Uncategorized'}</p>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs">{scheduledActivity.activity.duration} min</span>
-                          <span className="material-icons text-sm">⋮⋮</span>
+                          <span className="text-xs font-medium">{scheduledActivity.activity?.duration || 30} min</span>
                         </div>
                       </div>
                     ) : (
-                      <div className="h-full flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
-                        <Plus className="h-4 w-4 mr-1" />
-                        <span className="text-sm">Add Activity</span>
+                      <div className="h-full flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
+                        <Plus className="h-3 w-3 mr-1 opacity-50" />
+                        <span className="text-xs opacity-50">Drop Activity</span>
                       </div>
                     )}
                   </div>

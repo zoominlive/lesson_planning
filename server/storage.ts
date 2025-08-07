@@ -77,7 +77,9 @@ export interface IStorage {
   deleteLessonPlan(id: string): Promise<boolean>;
 
   // Scheduled Activities
-  getScheduledActivities(lessonPlanId: string): Promise<ScheduledActivity[]>;
+  getScheduledActivities(lessonPlanId: string, locationId?: string, roomId?: string): Promise<ScheduledActivity[]>;
+  getAllScheduledActivities(): Promise<ScheduledActivity[]>;
+  getScheduledActivity(id: string): Promise<ScheduledActivity | undefined>;
   createScheduledActivity(scheduledActivity: InsertScheduledActivity): Promise<ScheduledActivity>;
   updateScheduledActivity(id: string, scheduledActivity: Partial<InsertScheduledActivity>): Promise<ScheduledActivity | undefined>;
   deleteScheduledActivity(id: string): Promise<boolean>;
@@ -405,6 +407,16 @@ export class DatabaseStorage implements IStorage {
     if (roomId) conditions.push(eq(scheduledActivities.roomId, roomId));
     
     return await this.db.select().from(scheduledActivities).where(and(...conditions));
+  }
+
+  async getAllScheduledActivities(): Promise<ScheduledActivity[]> {
+    const conditions = [];
+    if (this.tenantId) conditions.push(eq(scheduledActivities.tenantId, this.tenantId));
+    
+    if (conditions.length > 0) {
+      return await this.db.select().from(scheduledActivities).where(and(...conditions));
+    }
+    return await this.db.select().from(scheduledActivities);
   }
 
   async getScheduledActivity(id: string): Promise<ScheduledActivity | undefined> {

@@ -937,6 +937,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Scheduled Activities routes
+  app.get("/api/scheduled-activities/:roomId", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { roomId } = req.params;
+      
+      // Get all scheduled activities for this room
+      const allScheduledActivities = await storage.getAllScheduledActivities();
+      
+      // Filter by room and tenant
+      const roomScheduledActivities = allScheduledActivities.filter(
+        sa => sa.roomId === roomId && sa.tenantId === req.tenantId
+      );
+      
+      // Populate activity data for each scheduled activity
+      const populatedActivities = await Promise.all(
+        roomScheduledActivities.map(async (sa) => {
+          const activity = await storage.getActivity(sa.activityId);
+          return {
+            ...sa,
+            activity
+          };
+        })
+      );
+      
+      res.json(populatedActivities);
+    } catch (error) {
+      console.error('Error fetching scheduled activities:', error);
+      res.status(500).json({ error: "Failed to fetch scheduled activities" });
+    }
+  });
+
   app.get("/api/lesson-plans/:lessonPlanId/scheduled-activities", async (req, res) => {
     try {
       const { lessonPlanId } = req.params;
