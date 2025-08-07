@@ -75,6 +75,16 @@ export default function MaterialsLibrary() {
     return names.join(", ");
   };
 
+  const getLocationNames = (locationIds: string[]) => {
+    if (!Array.isArray(locations) || !Array.isArray(locationIds)) return "";
+    
+    const names = locationIds
+      .map(id => locations.find((loc: any) => loc.id === id)?.name)
+      .filter(Boolean);
+    
+    return names.join(", ");
+  };
+
   const handleEdit = (material: Material) => {
     setEditingMaterial(material);
   };
@@ -87,12 +97,17 @@ export default function MaterialsLibrary() {
   // Calculate statistics
   const totalMaterials = materials.length;
   const allAgeGroups = new Set();
+  const allLocations = new Set();
   materials.forEach(m => {
     if (Array.isArray(m.ageGroups)) {
       m.ageGroups.forEach(agId => allAgeGroups.add(agId));
     }
+    if (Array.isArray(m.locationIds)) {
+      m.locationIds.forEach(locId => allLocations.add(locId));
+    }
   });
   const ageGroupsCount = allAgeGroups.size;
+  const locationsCount = allLocations.size;
 
   return (
     <div className="space-y-6">
@@ -240,14 +255,14 @@ export default function MaterialsLibrary() {
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500">Quantity:</span>
-                    <span className="font-medium" data-testid={`material-quantity-${material.id}`}>
-                      {material.quantity}
+                    <span className="text-gray-500">Locations:</span>
+                    <span className="font-medium text-right" data-testid={`material-locations-${material.id}`}>
+                      {getLocationNames(material.locationIds || [])}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500">Location:</span>
-                    <span className="font-medium" data-testid={`material-location-${material.id}`}>
+                    <span className="text-gray-500">Storage:</span>
+                    <span className="font-medium" data-testid={`material-storage-${material.id}`}>
                       {material.location}
                     </span>
                   </div>
@@ -293,10 +308,10 @@ export default function MaterialsLibrary() {
         </Card>
         <Card className="material-shadow text-center">
           <CardContent className="p-6">
-            <div className="text-3xl font-bold text-mint-green mb-2" data-testid="stat-age-groups">
-              {ageGroupsCount}
+            <div className="text-3xl font-bold text-mint-green mb-2" data-testid="stat-locations">
+              {locationsCount}
             </div>
-            <div className="text-gray-600">Age Groups</div>
+            <div className="text-gray-600">Locations</div>
           </CardContent>
         </Card>
         <Card className="material-shadow text-center">

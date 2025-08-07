@@ -37,7 +37,7 @@ import {
   ageGroups
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 // Re-importing schema to use it within the class
 import * as schema from "@shared/schema";
@@ -198,13 +198,23 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  // Materials
-  async getMaterials(locationId?: string): Promise<Material[]> {
+  // Materials - Interface compatible version
+  async getMaterials(): Promise<Material[]> {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(materials.tenantId, this.tenantId));
-    if (locationId) conditions.push(eq(materials.locationId, locationId));
     
     return await this.db.select().from(materials).where(conditions.length ? and(...conditions) : undefined);
+  }
+
+  // Extended version for location filtering
+  async getMaterialsByLocation(locationId: string): Promise<Material[]> {
+    const conditions = [];
+    if (this.tenantId) conditions.push(eq(materials.tenantId, this.tenantId));
+    
+    // For multi-location materials, check if locationId is included in locationIds array using PostgreSQL JSON operators
+    conditions.push(sql`${materials.locationIds} @> ${JSON.stringify([locationId])}`); 
+    
+    return await this.db.select().from(materials).where(and(...conditions));
   }
 
   async getMaterial(id: string): Promise<Material | undefined> {
@@ -508,10 +518,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Categories
-  async getCategories(locationId?: string): Promise<Category[]> {
+  // Extended version for location filtering
+  async getCategoriesByLocation(locationId: string): Promise<Category[]> {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(categories.tenantId, this.tenantId));
     if (locationId) conditions.push(eq(categories.locationId, locationId));
+    
+    return await this.db.select().from(categories).where(and(...conditions));
+  }
+
+  // Interface compatibility method - override for no parameter version
+  async getCategories(): Promise<Category[]> {
+    const conditions = [];
+    if (this.tenantId) conditions.push(eq(categories.tenantId, this.tenantId));
+    
+    return await this.db.select().from(categories).where(conditions.length ? and(...conditions) : undefined);
+  }
+
+  async getCategoriesByType(type: string): Promise<Category[]> {
+    const conditions = [];
+    if (this.tenantId) conditions.push(eq(categories.tenantId, this.tenantId));
+    // Note: Current schema doesn't have a type field, so this returns all categories
+    // This could be expanded if categories get a type field in the future
     
     return await this.db.select().from(categories).where(conditions.length ? and(...conditions) : undefined);
   }

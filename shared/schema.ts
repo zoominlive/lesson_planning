@@ -48,12 +48,11 @@ export const milestones = pgTable("milestones", {
 export const materials = pgTable("materials", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
-  locationId: varchar("location_id").notNull().references(() => locations.id),
+  locationIds: json("location_ids").$type<string[]>().notNull().default([]), // Multi-select locations
   name: text("name").notNull(),
   description: text("description").notNull(),
   ageGroups: json("age_groups").$type<string[]>().notNull().default([]), // Multi-select age groups for safety
-  quantity: integer("quantity").notNull().default(0),
-  location: text("location").notNull(),
+  location: text("location").notNull(), // Storage location within the facility
   photoUrl: text("photo_url"), // URL to uploaded photo
 });
 

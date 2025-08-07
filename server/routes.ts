@@ -120,7 +120,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/materials", async (req, res) => {
     try {
       const { locationId } = req.query;
-      const materials = await storage.getMaterials(locationId as string);
+      const materials = locationId 
+        ? await storage.getMaterialsByLocation(locationId as string)
+        : await storage.getMaterials();
       res.json(materials);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch materials" });
@@ -436,7 +438,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/categories", async (req: AuthenticatedRequest, res) => {
     try {
       const { locationId } = req.query;
-      const categories = await storage.getCategories(locationId as string);
+      const categories = locationId 
+        ? await storage.getCategoriesByLocation(locationId as string)
+        : await storage.getCategories();
       res.json(categories);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch categories" });

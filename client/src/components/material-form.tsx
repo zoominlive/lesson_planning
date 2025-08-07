@@ -19,12 +19,13 @@ interface MaterialFormProps {
   material?: Material;
   onSuccess: () => void;
   onCancel: () => void;
-  selectedLocationId: string;
+  selectedLocationId: string; // For default selection
 }
 
 export default function MaterialForm({ material, onSuccess, onCancel, selectedLocationId }: MaterialFormProps) {
   const { toast } = useToast();
   const [selectedAgeGroups, setSelectedAgeGroups] = useState<string[]>(material?.ageGroups || []);
+  const [selectedLocations, setSelectedLocations] = useState<string[]>(material?.locationIds || [selectedLocationId]);
   const [photoUrl, setPhotoUrl] = useState<string>(material?.photoUrl || "");
 
   const { register, handleSubmit, formState: { errors }, setValue, control } = useForm({
@@ -33,25 +34,31 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
       name: material?.name || "",
       description: material?.description || "",
       ageGroups: material?.ageGroups || [],
-      quantity: material?.quantity || 1,
       location: material?.location || "",
-      locationId: selectedLocationId,
+      locationIds: material?.locationIds || [selectedLocationId],
       tenantId: "", // Will be set by backend
       photoUrl: material?.photoUrl || "",
     },
   });
 
-  // Fetch available age groups for multi-select
+  // Fetch available age groups for multi-select (from first selected location)
+  const firstSelectedLocation = selectedLocations[0] || selectedLocationId;
   const { data: ageGroups = [] } = useQuery({
-    queryKey: ["/api/age-groups", selectedLocationId],
-    queryFn: () => apiRequest("GET", `/api/age-groups?locationId=${selectedLocationId}`),
-    enabled: !!selectedLocationId,
+    queryKey: ["/api/age-groups", firstSelectedLocation],
+    queryFn: () => apiRequest("GET", `/api/age-groups?locationId=${firstSelectedLocation}`),
+    enabled: !!firstSelectedLocation,
+  });
+
+  // Fetch all locations for multi-select
+  const { data: locations = [] } = useQuery({
+    queryKey: ["/api/locations"],
   });
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/materials", { 
       ...data, 
-      ageGroups: selectedAgeGroups, 
+      ageGroups: selectedAgeGroups,
+      locationIds: selectedLocations,
       photoUrl 
     }),
     onSuccess: () => {
@@ -67,7 +74,8 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
   const updateMutation = useMutation({
     mutationFn: (data: any) => apiRequest("PUT", `/api/materials/${material!.id}`, { 
       ...data, 
-      ageGroups: selectedAgeGroups, 
+      ageGroups: selectedAgeGroups,
+      locationIds: selectedLocations,
       photoUrl 
     }),
     onSuccess: () => {
@@ -118,12 +126,20 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
     );
   };
 
+  const handleLocationToggle = (locationId: string) => {
+    setSelectedLocations(prev => 
+      prev.includes(locationId) 
+        ? prev.filter(id => id !== locationId)
+        : [...prev, locationId]
+    );
+  };
+
   const onSubmit = (data: any) => {
     const submissionData = { 
       ...data, 
-      ageGroups: selectedAgeGroups, 
-      photoUrl,
-      locationId: selectedLocationId 
+      ageGroups: selectedAgeGroups,
+      locationIds: selectedLocations,
+      photoUrl
     };
     
     if (material) {
@@ -157,6 +173,36 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
       </div>
 
       <div>
+        <Label>Locations *</Label>
+        <p className="text-sm text-gray-600 mb-2">Select which locations have this material</p>
+        <div className="flex flex-wrap gap-2 p-3 border rounded-md min-h-[40px]">
+          {Array.isArray(locations) && locations.map((location: any) => {
+            const isSelected = selectedLocations.includes(location.id);
+            return (
+              <Badge
+                key={location.id}
+                variant={isSelected ? "default" : "outline"}
+                className={`cursor-pointer hover:scale-105 transition-transform ${
+                  isSelected ? "bg-turquoise text-white" : "hover:bg-gray-100"
+                }`}
+                onClick={() => handleLocationToggle(location.id)}
+                data-testid={`badge-location-${location.id}`}
+              >
+                {location.name}
+                {isSelected && <X className="w-3 h-3 ml-1" />}
+              </Badge>
+            );
+          })}
+          {selectedLocations.length === 0 && (
+            <span className="text-gray-500 text-sm">Click locations to select</span>
+          )}
+        </div>
+        {selectedLocations.length === 0 && (
+          <p className="text-red-500 text-sm">At least one location is required</p>
+        )}
+      </div>
+
+      <div>
         <Label>Age Groups * (for safety)</Label>
         <p className="text-sm text-gray-600 mb-2">Select which age groups can safely use this material</p>
         <div className="flex flex-wrap gap-2 p-3 border rounded-md min-h-[40px]">
@@ -186,17 +232,6 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
         )}
       </div>
 
-      <div>
-        <Label htmlFor="quantity">Quantity *</Label>
-        <Input 
-          id="quantity" 
-          type="number" 
-          min="0"
-          {...register("quantity", { valueAsNumber: true })} 
-          data-testid="input-material-quantity"
-        />
-        {errors.quantity && <p className="text-red-500 text-sm">{errors.quantity.message}</p>}
-      </div>
 
       <div>
         <Label htmlFor="location">Storage Location *</Label>
