@@ -211,8 +211,8 @@ export class DatabaseStorage implements IStorage {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(materials.tenantId, this.tenantId));
     
-    // For multi-location materials, check if locationId is included in locationIds array using PostgreSQL JSON operators
-    conditions.push(sql`${materials.locationIds} @> ${JSON.stringify([locationId])}`); 
+    // For multi-location materials, check if locationId is included in locationIds array
+    conditions.push(sql`${materials.locationIds}::jsonb ? ${locationId}`); 
     
     return await this.db.select().from(materials).where(and(...conditions));
   }
