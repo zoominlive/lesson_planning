@@ -16,6 +16,7 @@ import { materialStorage } from "./materialStorage";
 import { activityStorage } from "./activityStorage";
 import { milestoneStorage } from "./milestoneStorage";
 import multer from "multer";
+import path from "path";
 import { 
   insertMilestoneSchema, 
   insertMaterialSchema, 
@@ -667,6 +668,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Activity upload error:', error);
       res.status(500).json({ error: 'Failed to upload file' });
+    }
+  });
+
+  // Serve activity images
+  app.get('/api/activities/images/:fileName', async (req: AuthenticatedRequest, res) => {
+    try {
+      const { fileName } = req.params;
+      const imageBuffer = await activityStorage.downloadActivityImage(fileName);
+      
+      if (!imageBuffer) {
+        return res.status(404).json({ error: 'Image not found' });
+      }
+      
+      // Determine content type based on file extension
+      const ext = path.extname(fileName).toLowerCase();
+      let contentType = 'image/jpeg';
+      if (ext === '.png') contentType = 'image/png';
+      else if (ext === '.gif') contentType = 'image/gif';
+      else if (ext === '.webp') contentType = 'image/webp';
+      
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.send(imageBuffer);
+    } catch (error) {
+      console.error('Error serving activity image:', error);
+      res.status(500).json({ error: 'Failed to retrieve image' });
+    }
+  });
+
+  // Serve activity videos
+  app.get('/api/activities/videos/:fileName', async (req: AuthenticatedRequest, res) => {
+    try {
+      const { fileName } = req.params;
+      const videoBuffer = await activityStorage.downloadActivityVideo(fileName);
+      
+      if (!videoBuffer) {
+        return res.status(404).json({ error: 'Video not found' });
+      }
+      
+      // Determine content type based on file extension
+      const ext = path.extname(fileName).toLowerCase();
+      let contentType = 'video/mp4';
+      if (ext === '.webm') contentType = 'video/webm';
+      else if (ext === '.ogg') contentType = 'video/ogg';
+      
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.send(videoBuffer);
+    } catch (error) {
+      console.error('Error serving activity video:', error);
+      res.status(500).json({ error: 'Failed to retrieve video' });
+    }
+  });
+
+  // Serve instruction images
+  app.get('/api/activities/instructions/:fileName', async (req: AuthenticatedRequest, res) => {
+    try {
+      const { fileName } = req.params;
+      const imageBuffer = await activityStorage.downloadInstructionImage(fileName);
+      
+      if (!imageBuffer) {
+        return res.status(404).json({ error: 'Instruction image not found' });
+      }
+      
+      // Determine content type based on file extension
+      const ext = path.extname(fileName).toLowerCase();
+      let contentType = 'image/jpeg';
+      if (ext === '.png') contentType = 'image/png';
+      else if (ext === '.gif') contentType = 'image/gif';
+      else if (ext === '.webp') contentType = 'image/webp';
+      
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.send(imageBuffer);
+    } catch (error) {
+      console.error('Error serving instruction image:', error);
+      res.status(500).json({ error: 'Failed to retrieve instruction image' });
     }
   });
 
