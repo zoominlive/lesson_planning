@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Edit, Link, Users, Heart, Brain, Activity } from "lucide-react";
+import { getUserAuthorizedLocations } from "@/lib/auth";
+import { apiRequest } from "@/lib/queryClient";
 import MilestoneForm from "./milestone-form";
 import type { Milestone } from "@shared/schema";
 
@@ -14,10 +16,36 @@ export default function MilestonesLibrary() {
   const [ageFilter, setAgeFilter] = useState("all");
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedLocationId, setSelectedLocationId] = useState("");
 
   const { data: milestones = [], isLoading } = useQuery<Milestone[]>({
-    queryKey: ["/api/milestones"],
+    queryKey: ["/api/milestones", selectedLocationId],
+    queryFn: selectedLocationId 
+      ? async () => {
+          const data = await apiRequest("GET", `/api/milestones?locationId=${selectedLocationId}`);
+          return data;
+        }
+      : undefined,
+    enabled: !!selectedLocationId,
   });
+  
+  // Fetch locations - API now filters to only authorized locations
+  const { data: locations = [] } = useQuery({
+    queryKey: ["/api/locations"],
+  });
+
+  // Auto-select first authorized location if none selected  
+  useEffect(() => {
+    if (!selectedLocationId && Array.isArray(locations) && locations.length > 0) {
+      // Try to find "Main Campus" first if user has access to it
+      const authorizedLocations = getUserAuthorizedLocations();
+      const mainCampus = locations.find(loc => 
+        loc.name === "Main Campus" && authorizedLocations.includes(loc.name)
+      );
+      const locationToSelect = mainCampus || locations[0];
+      setSelectedLocationId(locationToSelect.id);
+    }
+  }, [locations, selectedLocationId]);
 
   const filteredMilestones = milestones.filter(milestone => {
     const matchesSearch = milestone.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -108,6 +136,7 @@ export default function MilestonesLibrary() {
                 <MilestoneForm 
                   onSuccess={() => setIsCreateDialogOpen(false)}
                   onCancel={() => setIsCreateDialogOpen(false)}
+                  selectedLocationId={selectedLocationId}
                 />
               </DialogContent>
             </Dialog>
@@ -127,6 +156,23 @@ export default function MilestonesLibrary() {
                 data-testid="input-search-milestones"
               />
             </div>
+            
+            <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+              <SelectTrigger className="w-48" data-testid="select-location-filter">
+                <SelectValue placeholder="Select Location" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.isArray(locations) && locations.length > 0 ? (
+                  locations.map((location: any) => (
+                    <SelectItem key={location.id} value={location.id}>
+                      {location.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="none" disabled>No authorized locations</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
             
             <Select value={ageFilter} onValueChange={setAgeFilter}>
               <SelectTrigger className="w-40" data-testid="select-age-filter">
@@ -260,6 +306,7 @@ export default function MilestonesLibrary() {
               milestone={editingMilestone}
               onSuccess={() => setEditingMilestone(null)}
               onCancel={() => setEditingMilestone(null)}
+              selectedLocationId={selectedLocationId}
             />
           </DialogContent>
         </Dialog>

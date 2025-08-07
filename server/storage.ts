@@ -156,9 +156,15 @@ export class DatabaseStorage implements IStorage {
   async getMilestones(locationId?: string): Promise<Milestone[]> {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(milestones.tenantId, this.tenantId));
-    if (locationId) conditions.push(eq(milestones.locationId, locationId));
     
-    return await this.db.select().from(milestones).where(conditions.length ? and(...conditions) : undefined);
+    let results = await this.db.select().from(milestones).where(conditions.length ? and(...conditions) : undefined);
+    
+    // Filter by locationId if provided (check if locationId is in locationIds array)
+    if (locationId) {
+      results = results.filter(m => m.locationIds.includes(locationId));
+    }
+    
+    return results;
   }
 
   async getMilestone(id: string): Promise<Milestone | undefined> {
@@ -173,7 +179,10 @@ export class DatabaseStorage implements IStorage {
     const milestoneData = this.tenantId ? { ...insertMilestone, tenantId: this.tenantId } : insertMilestone;
     const [milestone] = await this.db
       .insert(milestones)
-      .values(milestoneData)
+      .values({
+        ...milestoneData,
+        locationIds: milestoneData.locationIds || []
+      })
       .returning();
     return milestone;
   }
@@ -182,9 +191,12 @@ export class DatabaseStorage implements IStorage {
     const conditions = [eq(milestones.id, id)];
     if (this.tenantId) conditions.push(eq(milestones.tenantId, this.tenantId));
     
+    const dataToUpdate: any = { ...updates };
+    if (updates.locationIds) dataToUpdate.locationIds = updates.locationIds;
+    
     const [milestone] = await this.db
       .update(milestones)
-      .set(updates)
+      .set(dataToUpdate)
       .where(and(...conditions))
       .returning();
     return milestone || undefined;

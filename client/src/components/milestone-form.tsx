@@ -1,23 +1,30 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { insertMilestoneSchema, type Milestone } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
+import { useState } from "react";
 
 interface MilestoneFormProps {
   milestone?: Milestone;
   onSuccess: () => void;
   onCancel: () => void;
+  selectedLocationId?: string;
 }
 
-export default function MilestoneForm({ milestone, onSuccess, onCancel }: MilestoneFormProps) {
+export default function MilestoneForm({ milestone, onSuccess, onCancel, selectedLocationId }: MilestoneFormProps) {
+  const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>(
+    milestone?.locationIds || (selectedLocationId ? [selectedLocationId] : [])
+  );
+
   const { register, handleSubmit, formState: { errors }, setValue } = useForm({
-    resolver: zodResolver(insertMilestoneSchema),
+    resolver: zodResolver(insertMilestoneSchema.omit({ locationIds: true })),
     defaultValues: {
       title: milestone?.title || "",
       description: milestone?.description || "",
@@ -25,7 +32,13 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel }: Milest
       ageRangeStart: milestone?.ageRangeStart || 36,
       ageRangeEnd: milestone?.ageRangeEnd || 48,
       learningObjective: milestone?.learningObjective || "",
+      tenantId: "", // Will be set by backend
     },
+  });
+
+  // Fetch all authorized locations
+  const { data: locations = [] } = useQuery({
+    queryKey: ["/api/locations"],
   });
 
   const createMutation = useMutation({
@@ -61,17 +74,24 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel }: Milest
   });
 
   const onSubmit = (data: any) => {
+    const formData = {
+      ...data,
+      locationIds: selectedLocationIds,
+    };
+
     if (milestone) {
-      updateMutation.mutate(data);
+      updateMutation.mutate(formData);
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(formData);
     }
   };
 
-  const formatAgeRange = (startMonths: number, endMonths: number) => {
-    const startYears = Math.floor(startMonths / 12);
-    const endYears = Math.floor(endMonths / 12);
-    return `${startYears}-${endYears} years`;
+  const toggleLocation = (locationId: string) => {
+    setSelectedLocationIds(prev => 
+      prev.includes(locationId) 
+        ? prev.filter(id => id !== locationId)
+        : [...prev, locationId]
+    );
   };
 
   return (
@@ -113,6 +133,34 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel }: Milest
           </SelectContent>
         </Select>
         {errors.category && <p className="text-red-500 text-sm">{errors.category.message}</p>}
+      </div>
+
+      <div>
+        <Label>Locations *</Label>
+        <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+          {Array.isArray(locations) && locations.map((location: any) => (
+            <div key={location.id} className="flex items-center space-x-2">
+              <Checkbox
+                id={`location-${location.id}`}
+                checked={selectedLocationIds.includes(location.id)}
+                onCheckedChange={() => toggleLocation(location.id)}
+                data-testid={`checkbox-location-${location.id}`}
+              />
+              <label
+                htmlFor={`location-${location.id}`}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                {location.name}
+                {location.description && (
+                  <span className="text-gray-500 ml-2">({location.description})</span>
+                )}
+              </label>
+            </div>
+          ))}
+        </div>
+        {selectedLocationIds.length === 0 && (
+          <p className="text-amber-600 text-sm mt-1">Please select at least one location</p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

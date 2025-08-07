@@ -35,7 +35,7 @@ export const users = pgTable("users", {
 export const milestones = pgTable("milestones", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
-  locationId: varchar("location_id").notNull().references(() => locations.id),
+  locationIds: json("location_ids").$type<string[]>().notNull().default([]), // Multi-select locations
   title: text("title").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull(), // Social, Emotional, Cognitive, Physical
