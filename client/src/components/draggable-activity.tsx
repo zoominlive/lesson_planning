@@ -25,12 +25,6 @@ export default function DraggableActivity({ activity, onDragStart }: DraggableAc
     }
   };
 
-  const formatAgeRange = (startMonths: number, endMonths: number) => {
-    const startYears = Math.floor(startMonths / 12);
-    const endYears = Math.floor(endMonths / 12);
-    return `${startYears}-${endYears} years`;
-  };
-
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.effectAllowed = "move";
     onDragStart(activity);
@@ -60,11 +54,6 @@ export default function DraggableActivity({ activity, onDragStart }: DraggableAc
         <div className="flex items-center space-x-3">
           <span className="text-gray-500">
             Duration: <span className="font-medium text-charcoal">{activity.duration} min</span>
-          </span>
-          <span className="text-gray-500">
-            Age: <span className="font-medium text-charcoal">
-              {formatAgeRange(activity.ageRangeStart, activity.ageRangeEnd)}
-            </span>
           </span>
         </div>
         
