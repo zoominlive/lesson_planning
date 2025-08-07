@@ -234,122 +234,104 @@ export default function MilestonesLibrary() {
         </CardContent>
       </Card>
 
-      {/* Milestone Categories */}
+      {/* Individual Milestone Tiles */}
       {isLoading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i} className="material-shadow animate-pulse">
-              <div className={`h-16 bg-gray-200`}></div>
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, j) => (
-                    <div key={j} className="border border-gray-200 rounded-lg p-3">
-                      <div className="h-3 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-2 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-2 bg-gray-200 rounded"></div>
-                    </div>
-                  ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {[...Array(8)].map((_, i) => (
+            <Card key={i} className="material-shadow animate-pulse overflow-hidden">
+              <div className="h-24 bg-gray-200"></div>
+              <CardContent className="p-3">
+                <div className="h-3 bg-gray-200 rounded mb-2"></div>
+                <div className="h-2 bg-gray-200 rounded mb-2"></div>
+                <div className="h-2 bg-gray-200 rounded"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : filteredMilestones.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredMilestones.map((milestone) => (
+            <Card key={milestone.id} className="material-shadow overflow-hidden hover:shadow-lg transition-shadow">
+              {/* Category Header */}
+              <div className={`bg-gradient-to-r ${getCategoryGradient(milestone.category)} text-white p-2`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    {getCategoryIcon(milestone.category)}
+                    <span className="ml-1.5 text-xs font-medium">{milestone.category}</span>
+                  </div>
+                  <span className="bg-white/20 text-white px-1.5 py-0.5 rounded text-xs" data-testid={`milestone-age-${milestone.id}`}>
+                    {getAgeGroupNames(milestone.ageGroupIds || [])}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Milestone Image */}
+              <div 
+                className="w-full h-24 bg-gray-100" 
+                style={{
+                  background: milestone.imageUrl 
+                    ? `url(${milestone.imageUrl}) center/cover`
+                    : getCategoryPlaceholderImage(milestone.category),
+                }}
+              />
+              
+              <CardContent className="p-3">
+                <h4 className="font-medium text-charcoal text-sm mb-1 line-clamp-2" data-testid={`milestone-title-${milestone.id}`}>
+                  {milestone.title}
+                </h4>
+                <p className="text-xs text-gray-600 mb-2 line-clamp-3" data-testid={`milestone-description-${milestone.id}`}>
+                  {milestone.description}
+                </p>
+                
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center text-xs text-gray-500">
+                    <Link className="mr-1 h-3 w-3" />
+                    <span>0 activities</span>
+                  </div>
+                  <div className="flex space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => handleEdit(milestone)}
+                      data-testid={`button-edit-milestone-${milestone.id}`}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => handleLinkActivities(milestone)}
+                      data-testid={`button-link-milestone-${milestone.id}`}
+                    >
+                      <Link className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {categories.map((category) => {
-            const categoryMilestones = getMilestonesByCategory(category);
-            
-            return (
-              <Card key={category} className="material-shadow overflow-hidden">
-                <div className={`bg-gradient-to-r ${getCategoryGradient(category)} text-white p-4`}>
-                  <div className="flex items-center">
-                    {getCategoryIcon(category)}
-                    <div className="ml-2">
-                      <h3 className="text-lg font-bold">{category} Development</h3>
-                      <p className="text-xs opacity-90">
-                        {category === "Social" && "Building relationships and social skills"}
-                        {category === "Emotional" && "Managing emotions and self-awareness"}
-                        {category === "Cognitive" && "Thinking, learning, and problem-solving"}
-                        {category === "Physical" && "Gross and fine motor skills"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                <CardContent className="p-4 space-y-3">
-                  {categoryMilestones.length > 0 ? (
-                    categoryMilestones.map((milestone) => (
-                      <div 
-                        key={milestone.id} 
-                        className="border border-gray-200 rounded-lg overflow-hidden hover:border-turquoise transition-colors"
-                      >
-                        {/* Milestone Image */}
-                        <div 
-                          className="w-full h-24 bg-gray-100" 
-                          style={{
-                            background: milestone.imageUrl 
-                              ? `url(${milestone.imageUrl}) center/cover`
-                              : getCategoryPlaceholderImage(milestone.category),
-                          }}
-                        />
-                        
-                        <div className="p-3">
-                          <div className="flex justify-between items-start mb-1">
-                            <h4 className="font-medium text-charcoal text-sm" data-testid={`milestone-title-${milestone.id}`}>
-                              {milestone.title}
-                            </h4>
-                            <span className="bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded text-xs whitespace-nowrap ml-2" data-testid={`milestone-age-${milestone.id}`}>
-                              {getAgeGroupNames(milestone.ageGroupIds || [])}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2 line-clamp-2" data-testid={`milestone-description-${milestone.id}`}>
-                            {milestone.description}
-                          </p>
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center text-xs text-gray-500">
-                            <Link className="mr-1 h-3 w-3" />
-                            <span>0 activities</span>
-                          </div>
-                          <div className="flex space-x-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0"
-                              onClick={() => handleEdit(milestone)}
-                              data-testid={`button-edit-milestone-${milestone.id}`}
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0"
-                              onClick={() => handleLinkActivities(milestone)}
-                              data-testid={`button-link-milestone-${milestone.id}`}
-                            >
-                              <Link className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-gray-500 py-4">
-                      <p>No milestones found for this category.</p>
-                      <Button 
-                        variant="outline" 
-                        className="mt-2"
-                        onClick={() => setIsCreateDialogOpen(true)}
-                      >
-                        Add First Milestone
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+        <div className="text-center text-gray-500 py-12">
+          <div className="mb-4">
+            <Brain className="h-12 w-12 mx-auto text-gray-300" />
+          </div>
+          <p className="text-lg font-medium mb-2">No milestones found</p>
+          <p className="text-sm mb-4">
+            {searchTerm || selectedAgeGroupId !== "all" || selectedCategory !== "all"
+              ? "Try adjusting your filters to see more milestones."
+              : "Get started by adding your first developmental milestone."
+            }
+          </p>
+          <Button 
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="bg-gradient-to-r from-mint-green to-turquoise text-white"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add First Milestone
+          </Button>
         </div>
       )}
 
