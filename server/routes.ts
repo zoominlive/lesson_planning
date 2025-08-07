@@ -374,7 +374,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/materials/:id", async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
+      console.log('[PUT /api/materials] Request body:', req.body);
       const data = insertMaterialSchema.partial().parse(req.body);
+      console.log('[PUT /api/materials] Parsed data:', data);
       
       // Get existing material to check location access
       const existing = await storage.getMaterial(id);
@@ -405,7 +407,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const material = await storage.updateMaterial(id, data);
       res.json(material);
     } catch (error) {
-      res.status(400).json({ error: "Invalid material data" });
+      console.error('[PUT /api/materials] Error:', error);
+      res.status(400).json({ 
+        error: "Invalid material data",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
