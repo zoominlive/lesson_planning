@@ -287,6 +287,8 @@ export class DatabaseStorage implements IStorage {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(activities.tenantId, this.tenantId));
     if (locationId) conditions.push(eq(activities.locationId, locationId));
+    // Filter out soft-deleted activities
+    conditions.push(isNull(activities.deletedAt));
     
     return await this.db.select().from(activities).where(conditions.length ? and(...conditions) : undefined);
   }
@@ -294,6 +296,8 @@ export class DatabaseStorage implements IStorage {
   async getActivity(id: string): Promise<Activity | undefined> {
     const conditions = [eq(activities.id, id)];
     if (this.tenantId) conditions.push(eq(activities.tenantId, this.tenantId));
+    // Filter out soft-deleted activities
+    conditions.push(isNull(activities.deletedAt));
     
     const [activity] = await this.db.select().from(activities).where(and(...conditions));
     return activity || undefined;
@@ -324,7 +328,15 @@ export class DatabaseStorage implements IStorage {
     const conditions = [eq(activities.id, id)];
     if (this.tenantId) conditions.push(eq(activities.tenantId, this.tenantId));
     
-    const result = await this.db.delete(activities).where(and(...conditions));
+    // Soft delete: set deletedAt timestamp and status to disabled
+    const result = await this.db
+      .update(activities)
+      .set({ 
+        deletedAt: new Date(),
+        status: 'disabled',
+        updatedAt: new Date()
+      })
+      .where(and(...conditions));
     return (result.rowCount ?? 0) > 0;
   }
 

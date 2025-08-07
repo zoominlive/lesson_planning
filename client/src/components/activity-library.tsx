@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, List, Copy, Play, Package } from "lucide-react";
+import { Plus, Edit, List, Trash2, Play, Package } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import ActivityForm from "./activity-form";
@@ -87,8 +87,12 @@ export default function ActivityLibrary() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      const token = localStorage.getItem('authToken');
       const response = await fetch(`/api/activities/${id}`, {
         method: "DELETE",
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
       });
       if (!response.ok) throw new Error("Failed to delete activity");
     },
@@ -134,9 +138,10 @@ export default function ActivityLibrary() {
     setEditingActivity(activity);
   };
 
-  const handleDuplicate = (activity: Activity) => {
-    // TODO: Implement activity duplication
-    console.log("Duplicate activity:", activity.title);
+  const handleDelete = async (activity: Activity) => {
+    if (confirm(`Are you sure you want to delete "${activity.title}"? This action cannot be undone.`)) {
+      await deleteMutation.mutateAsync(activity.id);
+    }
   };
 
   const handleViewSteps = (activity: Activity) => {
@@ -386,10 +391,11 @@ export default function ActivityLibrary() {
                   <Button 
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDuplicate(activity)}
-                    data-testid={`button-duplicate-${activity.id}`}
+                    onClick={() => handleDelete(activity)}
+                    data-testid={`button-delete-${activity.id}`}
+                    className="hover:bg-red-50 hover:text-red-600 hover:border-red-300"
                   >
-                    <Copy className="h-3 w-3" />
+                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </CardContent>

@@ -81,10 +81,12 @@ export const activities = pgTable("activities", {
   videoUrl: text("video_url"),
   imageUrl: text("image_url"),
   category: text("category").notNull(),
+  status: text("status").notNull().default("active"), // active, disabled
   usageCount: integer("usage_count").default(0),
   lastUsedAt: timestamp("last_used_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at"),
 });
 
 // Lesson plans
