@@ -36,6 +36,42 @@ export default function ActivityLibrary() {
     queryKey: ["/api/locations"],
   });
 
+  // Fetch materials for the selected location
+  const { data: materials = [] } = useQuery({
+    queryKey: ["/api/materials", selectedLocationId],
+    queryFn: selectedLocationId
+      ? async () => {
+          const data = await apiRequest("GET", `/api/materials?locationId=${selectedLocationId}`);
+          return data;
+        }
+      : undefined,
+    enabled: !!selectedLocationId,
+  });
+
+  // Fetch milestones for the selected location
+  const { data: milestones = [] } = useQuery({
+    queryKey: ["/api/milestones", selectedLocationId],
+    queryFn: selectedLocationId
+      ? async () => {
+          const data = await apiRequest("GET", `/api/milestones?locationId=${selectedLocationId}`);
+          return data;
+        }
+      : undefined,
+    enabled: !!selectedLocationId,
+  });
+
+  // Fetch age groups for the selected location
+  const { data: ageGroups = [] } = useQuery({
+    queryKey: ["/api/age-groups", selectedLocationId],
+    queryFn: selectedLocationId
+      ? async () => {
+          const data = await apiRequest("GET", `/api/age-groups?locationId=${selectedLocationId}`);
+          return data;
+        }
+      : undefined,
+    enabled: !!selectedLocationId,
+  });
+
   // Auto-select first authorized location if none selected  
   useEffect(() => {
     if (!selectedLocationId && Array.isArray(locations) && locations.length > 0) {
@@ -256,11 +292,22 @@ export default function ActivityLibrary() {
                     <h4 className="font-semibold text-sm text-charcoal mb-1">Milestones:</h4>
                     <ul className="text-xs text-gray-600 space-y-1">
                       {activity.milestoneIds && activity.milestoneIds.length > 0 ? (
-                        activity.milestoneIds.map((milestoneId, index) => (
-                          <li key={index}>• Milestone {index + 1}</li>
-                        ))
+                        activity.milestoneIds.slice(0, 3).map((milestoneId) => {
+                          const milestone = milestones.find((m: any) => m.id === milestoneId);
+                          return (
+                            <li key={milestoneId} className="flex items-start">
+                              <span className="mr-1">•</span>
+                              <span className="flex-1">
+                                {milestone ? milestone.title : "Unknown milestone"}
+                              </span>
+                            </li>
+                          );
+                        })
                       ) : (
                         <li className="text-gray-400">• No milestones linked</li>
+                      )}
+                      {activity.milestoneIds && activity.milestoneIds.length > 3 && (
+                        <li className="text-gray-500 italic">• ...and {activity.milestoneIds.length - 3} more</li>
                       )}
                     </ul>
                   </div>
@@ -268,14 +315,22 @@ export default function ActivityLibrary() {
                   <div>
                     <h4 className="font-semibold text-sm text-charcoal mb-1">Materials Needed:</h4>
                     <div className="flex flex-wrap gap-1">
-                      {activity.materialIds.length > 0 ? (
-                        activity.materialIds.map((materialId, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            Material {index + 1}
-                          </Badge>
-                        ))
+                      {activity.materialIds && activity.materialIds.length > 0 ? (
+                        activity.materialIds.slice(0, 4).map((materialId) => {
+                          const material = materials.find((m: any) => m.id === materialId);
+                          return (
+                            <Badge key={materialId} variant="secondary" className="text-xs">
+                              {material ? material.name : "Unknown material"}
+                            </Badge>
+                          );
+                        })
                       ) : (
                         <span className="text-xs text-gray-500">No materials specified</span>
+                      )}
+                      {activity.materialIds && activity.materialIds.length > 4 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{activity.materialIds.length - 4} more
+                        </Badge>
                       )}
                     </div>
                   </div>
@@ -286,7 +341,24 @@ export default function ActivityLibrary() {
                     Duration: {activity.duration} minutes
                   </span>
                   <span data-testid={`activity-age-${activity.id}`}>
-                    Age Groups: {activity.ageGroupIds && activity.ageGroupIds.length > 0 ? `${activity.ageGroupIds.length} groups` : 'All ages'}
+                    {activity.ageGroupIds && activity.ageGroupIds.length > 0 ? (
+                      <span className="flex items-center gap-1">
+                        <span>Ages:</span>
+                        {activity.ageGroupIds.slice(0, 2).map((ageGroupId) => {
+                          const ageGroup = ageGroups.find((ag: any) => ag.id === ageGroupId);
+                          return ageGroup ? (
+                            <Badge key={ageGroupId} variant="outline" className="text-xs px-1">
+                              {ageGroup.name}
+                            </Badge>
+                          ) : null;
+                        })}
+                        {activity.ageGroupIds.length > 2 && (
+                          <span className="text-xs text-gray-500">+{activity.ageGroupIds.length - 2}</span>
+                        )}
+                      </span>
+                    ) : (
+                      'All ages'
+                    )}
                   </span>
                 </div>
                 
