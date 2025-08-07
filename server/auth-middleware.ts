@@ -10,6 +10,7 @@ export interface AuthenticatedRequest extends Request {
   userLastName?: string;
   username?: string;
   role?: string;
+  locations?: string[];
 }
 
 export async function authenticateToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
@@ -63,6 +64,7 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
     req.userLastName = verified.userLastName;
     req.username = verified.username;
     req.role = verified.role;
+    req.locations = verified.locations;
     
     next();
   } catch (err) {
@@ -84,6 +86,7 @@ export function generateDevelopmentToken(): string {
     userLastName: "Doe",                                // Required: User's last name
     username: "john.doe@kindertales.com",               // Required: Username
     role: "Admin",                                      // Required: User role (teacher, admin, etc.)
+    locations: ["Main Campus", "North Campus"],         // Required: Array of location name strings
     iat: Math.floor(Date.now() / 1000),                // Issued at
     // No expiration for development token
   };
