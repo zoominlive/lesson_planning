@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -300,6 +300,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to delete material" });
     }
   });
+
+  // Serve static files from public folder
+  app.use('/public', express.static('public'));
 
   // Object storage routes for material photos
   app.post("/api/objects/upload", async (req: AuthenticatedRequest, res) => {
