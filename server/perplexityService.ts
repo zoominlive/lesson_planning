@@ -139,17 +139,42 @@ Ensure the activity is:
         throw new Error("No content received from Perplexity API");
       }
 
+      console.log("Raw AI response:", content);
+
       // Parse the JSON response
       try {
+        // First try to parse as-is
         const activityData = JSON.parse(content);
         return activityData;
       } catch (parseError) {
+        console.log("Initial parse failed, attempting to extract JSON...");
+        
         // Try to extract JSON from the response if it contains other text
+        // Look for JSON object between curly braces
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
+          try {
+            const extracted = jsonMatch[0];
+            console.log("Extracted JSON:", extracted.substring(0, 200) + "...");
+            return JSON.parse(extracted);
+          } catch (secondParseError) {
+            console.error("Failed to parse extracted JSON:", secondParseError);
+            console.error("Extracted content was:", jsonMatch[0].substring(0, 500));
+          }
         }
-        throw new Error("Failed to parse AI response as JSON");
+        
+        // If that fails, try to find JSON between ```json markers
+        const codeBlockMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+        if (codeBlockMatch && codeBlockMatch[1]) {
+          try {
+            console.log("Found JSON in code block, attempting to parse...");
+            return JSON.parse(codeBlockMatch[1]);
+          } catch (codeBlockError) {
+            console.error("Failed to parse code block JSON:", codeBlockError);
+          }
+        }
+        
+        throw new Error("Failed to parse AI response as JSON. Response was: " + content.substring(0, 500));
       }
     } catch (error) {
       console.error("Error generating activity with Perplexity:", error);
