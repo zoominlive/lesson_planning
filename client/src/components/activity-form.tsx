@@ -16,9 +16,10 @@ interface ActivityFormProps {
   activity?: Activity;
   onSuccess: () => void;
   onCancel: () => void;
+  selectedLocationId?: string;
 }
 
-export default function ActivityForm({ activity, onSuccess, onCancel }: ActivityFormProps) {
+export default function ActivityForm({ activity, onSuccess, onCancel, selectedLocationId }: ActivityFormProps) {
   const [objectives, setObjectives] = useState<string[]>(activity?.teachingObjectives || [""]);
   const [instructions, setInstructions] = useState<string[]>(activity?.instructions || [""]);
 
@@ -37,6 +38,8 @@ export default function ActivityForm({ activity, onSuccess, onCancel }: Activity
       instructions: activity?.instructions || [],
       videoUrl: activity?.videoUrl || "",
       imageUrl: activity?.imageUrl || "",
+      locationId: activity?.locationId || selectedLocationId || "",
+      tenantId: "", // Will be set by backend
     },
   });
 
@@ -77,6 +80,7 @@ export default function ActivityForm({ activity, onSuccess, onCancel }: Activity
       ...data,
       teachingObjectives: objectives.filter(obj => obj.trim() !== ""),
       instructions: instructions.filter(inst => inst.trim() !== ""),
+      locationId: data.locationId || selectedLocationId,
     };
 
     if (activity) {

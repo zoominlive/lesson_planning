@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Edit, List, Copy, Play, Package } from "lucide-react";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { getUserAuthorizedLocations } from "@/lib/auth";
 import ActivityForm from "./activity-form";
 import type { Activity } from "@shared/schema";
 
@@ -17,10 +18,36 @@ export default function ActivityLibrary() {
   const [ageFilter, setAgeFilter] = useState("all");
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedLocationId, setSelectedLocationId] = useState("");
 
   const { data: activities = [], isLoading } = useQuery<Activity[]>({
-    queryKey: ["/api/activities"],
+    queryKey: ["/api/activities", selectedLocationId],
+    queryFn: selectedLocationId 
+      ? async () => {
+          const data = await apiRequest("GET", `/api/activities?locationId=${selectedLocationId}`);
+          return data;
+        }
+      : undefined,
+    enabled: !!selectedLocationId,
   });
+
+  // Fetch locations - API now filters to only authorized locations
+  const { data: locations = [] } = useQuery({
+    queryKey: ["/api/locations"],
+  });
+
+  // Auto-select first authorized location if none selected  
+  useEffect(() => {
+    if (!selectedLocationId && Array.isArray(locations) && locations.length > 0) {
+      // Try to find "Main Campus" first if user has access to it
+      const authorizedLocations = getUserAuthorizedLocations();
+      const mainCampus = locations.find(loc => 
+        loc.name === "Main Campus" && authorizedLocations.includes(loc.name)
+      );
+      const locationToSelect = mainCampus || locations[0];
+      setSelectedLocationId(locationToSelect.id);
+    }
+  }, [locations, selectedLocationId]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -107,6 +134,7 @@ export default function ActivityLibrary() {
                 <ActivityForm 
                   onSuccess={() => setIsCreateDialogOpen(false)}
                   onCancel={() => setIsCreateDialogOpen(false)}
+                  selectedLocationId={selectedLocationId}
                 />
               </DialogContent>
             </Dialog>
@@ -122,6 +150,23 @@ export default function ActivityLibrary() {
                 data-testid="input-search-activities"
               />
             </div>
+            
+            <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+              <SelectTrigger className="w-48" data-testid="select-location-filter">
+                <SelectValue placeholder="Select Location" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.isArray(locations) && locations.length > 0 ? (
+                  locations.map((location: any) => (
+                    <SelectItem key={location.id} value={location.id}>
+                      {location.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="none" disabled>No authorized locations</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
             
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-48" data-testid="select-category-filter">
@@ -288,6 +333,7 @@ export default function ActivityLibrary() {
               activity={editingActivity}
               onSuccess={() => setEditingActivity(null)}
               onCancel={() => setEditingActivity(null)}
+              selectedLocationId={selectedLocationId}
             />
           </DialogContent>
         </Dialog>
