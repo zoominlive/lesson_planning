@@ -56,6 +56,12 @@ export const materials = pgTable("materials", {
   photoUrl: text("photo_url"), // URL to uploaded photo
 });
 
+// Instruction step type with optional image
+export interface InstructionStep {
+  text: string;
+  imageUrl?: string;
+}
+
 // Activities
 export const activities = pgTable("activities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -64,15 +70,17 @@ export const activities = pgTable("activities", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   duration: integer("duration").notNull(), // in minutes
-  ageRangeStart: integer("age_range_start").notNull(), // in months
-  ageRangeEnd: integer("age_range_end").notNull(), // in months
-  teachingObjectives: json("teaching_objectives").$type<string[]>().notNull().default([]),
+  ageGroupIds: json("age_group_ids").$type<string[]>().default([]), // Multi-select age groups
   milestoneIds: json("milestone_ids").$type<string[]>().notNull().default([]),
   materialIds: json("material_ids").$type<string[]>().notNull().default([]),
-  instructions: json("instructions").$type<string[]>().notNull().default([]),
+  instructions: json("instructions").$type<InstructionStep[]>().notNull().default([]),
   videoUrl: text("video_url"),
   imageUrl: text("image_url"),
   category: text("category").notNull(),
+  usageCount: integer("usage_count").default(0),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Lesson plans
@@ -86,6 +94,32 @@ export const lessonPlans = pgTable("lesson_plans", {
   status: text("status").notNull().default("draft"), // draft, submitted, approved
   submittedAt: timestamp("submitted_at"),
   approvedAt: timestamp("approved_at"),
+});
+
+// Activity usage tracking
+export const activityUsage = pgTable("activity_usage", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  activityId: varchar("activity_id").notNull().references(() => activities.id),
+  teacherId: varchar("teacher_id").notNull().references(() => users.id),
+  roomId: varchar("room_id").notNull().references(() => rooms.id),
+  usedAt: timestamp("used_at").defaultNow().notNull(),
+  duration: integer("duration"), // Actual duration in minutes
+  notes: text("notes"),
+});
+
+// Teacher reviews for activities
+export const activityReviews = pgTable("activity_reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  activityId: varchar("activity_id").notNull().references(() => activities.id),
+  teacherId: varchar("teacher_id").notNull().references(() => users.id),
+  rating: integer("rating").notNull(), // 1-5 stars
+  comment: text("comment"),
+  engagementLevel: integer("engagement_level"), // 1-5 scale
+  difficultyLevel: integer("difficulty_level"), // 1-5 scale
+  wouldRecommend: boolean("would_recommend"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Scheduled activities (activities placed in calendar slots)
@@ -131,6 +165,10 @@ export const insertMaterialSchema = createInsertSchema(materials).omit({
 
 export const insertActivitySchema = createInsertSchema(activities).omit({
   id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastUsedAt: true,
+  usageCount: true
 });
 
 export const insertLessonPlanSchema = createInsertSchema(lessonPlans).omit({
@@ -141,6 +179,16 @@ export const insertLessonPlanSchema = createInsertSchema(lessonPlans).omit({
 
 export const insertScheduledActivitySchema = createInsertSchema(scheduledActivities).omit({
   id: true,
+});
+
+export const insertActivityUsageSchema = createInsertSchema(activityUsage).omit({
+  id: true,
+  usedAt: true,
+});
+
+export const insertActivityReviewSchema = createInsertSchema(activityReviews).omit({
+  id: true,
+  createdAt: true,
 });
 
 // Settings-related tables
@@ -234,6 +282,12 @@ export type InsertLessonPlan = z.infer<typeof insertLessonPlanSchema>;
 
 export type ScheduledActivity = typeof scheduledActivities.$inferSelect;
 export type InsertScheduledActivity = z.infer<typeof insertScheduledActivitySchema>;
+
+export type ActivityUsage = typeof activityUsage.$inferSelect;
+export type InsertActivityUsage = z.infer<typeof insertActivityUsageSchema>;
+
+export type ActivityReview = typeof activityReviews.$inferSelect;
+export type InsertActivityReview = z.infer<typeof insertActivityReviewSchema>;
 
 // Settings types
 export type Location = typeof locations.$inferSelect;

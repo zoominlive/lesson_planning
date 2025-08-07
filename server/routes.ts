@@ -13,6 +13,7 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { materialStorage } from "./materialStorage";
+import { activityStorage } from "./activityStorage";
 import multer from "multer";
 import { 
   insertMilestoneSchema, 
@@ -43,10 +44,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Serve activity images from object storage (public access)
+  app.get('/api/activities/images/:filename', async (req, res) => {
+    try {
+      const imageBuffer = await activityStorage.downloadActivityImage(req.params.filename);
+      if (!imageBuffer) {
+        return res.status(404).json({ error: 'Image not found' });
+      }
+      res.set('Content-Type', 'image/jpeg');
+      res.send(imageBuffer);
+    } catch (error) {
+      console.error('Error serving activity image:', error);
+      res.status(500).json({ error: 'Failed to retrieve image' });
+    }
+  });
+  
+  // Serve activity videos from object storage (public access)
+  app.get('/api/activities/videos/:filename', async (req, res) => {
+    try {
+      const videoBuffer = await activityStorage.downloadActivityVideo(req.params.filename);
+      if (!videoBuffer) {
+        return res.status(404).json({ error: 'Video not found' });
+      }
+      res.set('Content-Type', 'video/mp4');
+      res.send(videoBuffer);
+    } catch (error) {
+      console.error('Error serving activity video:', error);
+      res.status(500).json({ error: 'Failed to retrieve video' });
+    }
+  });
+  
+  // Serve instruction images from object storage (public access)
+  app.get('/api/activities/instructions/:filename', async (req, res) => {
+    try {
+      const imageBuffer = await activityStorage.downloadInstructionImage(req.params.filename);
+      if (!imageBuffer) {
+        return res.status(404).json({ error: 'Image not found' });
+      }
+      res.set('Content-Type', 'image/jpeg');
+      res.send(imageBuffer);
+    } catch (error) {
+      console.error('Error serving instruction image:', error);
+      res.status(500).json({ error: 'Failed to retrieve image' });
+    }
+  });
+  
   // Apply authentication middleware to all API routes EXCEPT the public ones above
   app.use("/api", (req, res, next) => {
     // Skip authentication for public image routes
-    if (req.path.startsWith('/materials/images/')) {
+    if (req.path.startsWith('/materials/images/') || 
+        req.path.startsWith('/activities/images/') ||
+        req.path.startsWith('/activities/videos/') ||
+        req.path.startsWith('/activities/instructions/')) {
       return next();
     }
     return authenticateToken(req as AuthenticatedRequest, res, next);
@@ -543,6 +592,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete activity" });
+    }
+  });
+  
+  // Upload route for activity media
+  app.post('/api/activities/upload', upload.single('file'), async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+      
+      const type = req.body.type as 'image' | 'video' | 'instruction';
+      if (!type) {
+        return res.status(400).json({ error: 'File type not specified' });
+      }
+      
+      let url: string;
+      
+      switch(type) {
+        case 'image':
+          url = await activityStorage.uploadActivityImage(req.file.buffer, req.file.originalname);
+          break;
+        case 'video':
+          url = await activityStorage.uploadActivityVideo(req.file.buffer, req.file.originalname);
+          break;
+        case 'instruction':
+          url = await activityStorage.uploadInstructionImage(req.file.buffer, req.file.originalname);
+          break;
+        default:
+          return res.status(400).json({ error: 'Invalid file type' });
+      }
+      
+      res.json({ url });
+    } catch (error) {
+      console.error('Activity upload error:', error);
+      res.status(500).json({ error: 'Failed to upload file' });
     }
   });
 
