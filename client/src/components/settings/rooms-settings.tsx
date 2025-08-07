@@ -92,15 +92,15 @@ export function RoomsSettings() {
   });
 
   const handleSubmit = (data: RoomFormData) => {
-    // Add tenantId to the data for proper multi-tenant support
-    const dataWithTenant = {
-      ...data,
-      tenantId: "7cb6c28d-164c-49fa-b461-dfc47a8a3fed" // This should come from auth context in production
-    };
-    
     if (editingRoom) {
-      updateMutation.mutate({ id: editingRoom.id, data: dataWithTenant });
+      // Don't send tenantId on update - it's handled by backend auth
+      updateMutation.mutate({ id: editingRoom.id, data });
     } else {
+      // Add tenantId only for creation
+      const dataWithTenant = {
+        ...data,
+        tenantId: "7cb6c28d-164c-49fa-b461-dfc47a8a3fed" // This should come from auth context in production
+      };
       createMutation.mutate(dataWithTenant);
     }
   };
