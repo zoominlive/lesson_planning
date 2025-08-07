@@ -125,8 +125,12 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
       formData.append('file', file);
       formData.append('type', type);
       
+      const token = localStorage.getItem('authToken');
       const response = await fetch('/api/activities/upload', {
         method: 'POST',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
         body: formData,
       });
       
@@ -199,9 +203,13 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
+      const token = localStorage.getItem('authToken');
       const response = await fetch("/api/activities", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
         body: JSON.stringify(data),
       });
       if (!response.ok) throw new Error("Failed to create activity");
@@ -215,9 +223,13 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
+      const token = localStorage.getItem('authToken');
       const response = await fetch(`/api/activities/${activity!.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
         body: JSON.stringify(data),
       });
       if (!response.ok) throw new Error("Failed to update activity");
