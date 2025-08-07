@@ -528,7 +528,10 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                         </span>
                         {material.ageGroups && material.ageGroups.length > 0 && (
                           <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
-                            {material.ageGroups.join(', ')}
+                            {material.ageGroups.map((ageGroupId: string) => {
+                              const ageGroup = ageGroups.find((ag: any) => ag.id === ageGroupId);
+                              return ageGroup?.name || 'Unknown';
+                            }).join(', ')}
                           </span>
                         )}
                       </div>
