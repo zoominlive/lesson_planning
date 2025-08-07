@@ -86,7 +86,7 @@ export function generateDevelopmentToken(): string {
     userLastName: "Doe",                                // Required: User's last name
     username: "john.doe@kindertales.com",               // Required: Username
     role: "Admin",                                      // Required: User role (teacher, admin, etc.)
-    locations: ["Main Campus", "North Campus"],         // Required: Array of location name strings
+    locations: ["Main Campus", "Third Location"],       // Required: Array of location name strings
     iat: Math.floor(Date.now() / 1000),                // Issued at
     // No expiration for development token
   };
