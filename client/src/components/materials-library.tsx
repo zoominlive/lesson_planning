@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,43 +7,57 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Edit, Check, Package } from "lucide-react";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import MaterialForm from "./material-form";
 import type { Material } from "@shared/schema";
 
 export default function MaterialsLibrary() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [ageGroupFilter, setAgeGroupFilter] = useState("all");
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedLocationId, setSelectedLocationId] = useState("");
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
     queryKey: ["/api/materials"],
   });
 
+  // Fetch locations to get the first available location
+  const { data: locations = [] } = useQuery({
+    queryKey: ["/api/locations"],
+  });
+
+  // Fetch age groups for filtering
+  const { data: ageGroups = [] } = useQuery({
+    queryKey: ["/api/age-groups", selectedLocationId],
+    queryFn: () => apiRequest("GET", `/api/age-groups?locationId=${selectedLocationId}`),
+    enabled: !!selectedLocationId,
+  });
+
+  // Auto-select first location if none selected
+  useEffect(() => {
+    if (!selectedLocationId && Array.isArray(locations) && locations.length > 0) {
+      setSelectedLocationId(locations[0].id);
+    }
+  }, [locations, selectedLocationId]);
+
   const filteredMaterials = materials.filter(material => {
     const matchesSearch = material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          material.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || material.category === categoryFilter;
-    const matchesStatus = statusFilter === "all" || material.status === statusFilter;
+    const matchesAgeGroup = ageGroupFilter === "all" || (material.ageGroups && material.ageGroups.includes(ageGroupFilter));
     
-    return matchesSearch && matchesCategory && matchesStatus;
+    return matchesSearch && matchesAgeGroup;
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "in_stock":
-        return <Badge className="status-in-stock">In Stock</Badge>;
-      case "low_stock":
-        return <Badge className="status-low-stock">Low Stock</Badge>;
-      case "out_of_stock":
-        return <Badge className="status-out-of-stock">Out of Stock</Badge>;
-      case "on_order":
-        return <Badge variant="outline">On Order</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
+  const getAgeGroupNames = (ageGroupIds: string[]) => {
+    if (!Array.isArray(ageGroups) || !Array.isArray(ageGroupIds)) return "";
+    
+    const names = ageGroupIds
+      .map(id => ageGroups.find((ag: any) => ag.id === id)?.name)
+      .filter(Boolean);
+    
+    return names.join(", ");
   };
 
   const handleEdit = (material: Material) => {
@@ -57,9 +71,13 @@ export default function MaterialsLibrary() {
 
   // Calculate statistics
   const totalMaterials = materials.length;
-  const inStock = materials.filter(m => m.status === "in_stock").length;
-  const lowStock = materials.filter(m => m.status === "low_stock").length;
-  const categories = new Set(materials.map(m => m.category)).size;
+  const allAgeGroups = new Set();
+  materials.forEach(m => {
+    if (Array.isArray(m.ageGroups)) {
+      m.ageGroups.forEach(agId => allAgeGroups.add(agId));
+    }
+  });
+  const ageGroupsCount = allAgeGroups.size;
 
   return (
     <div className="space-y-6">
@@ -87,6 +105,7 @@ export default function MaterialsLibrary() {
                 <MaterialForm 
                   onSuccess={() => setIsCreateDialogOpen(false)}
                   onCancel={() => setIsCreateDialogOpen(false)}
+                  selectedLocationId={selectedLocationId}
                 />
               </DialogContent>
             </Dialog>
@@ -118,16 +137,17 @@ export default function MaterialsLibrary() {
               </SelectContent>
             </Select>
             
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40" data-testid="select-status-filter">
-                <SelectValue placeholder="All Status" />
+            <Select value={ageGroupFilter} onValueChange={setAgeGroupFilter}>
+              <SelectTrigger className="w-48" data-testid="select-age-group-filter">
+                <SelectValue placeholder="All Age Groups" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Availability</SelectItem>
-                <SelectItem value="in_stock">In Stock</SelectItem>
-                <SelectItem value="low_stock">Low Stock</SelectItem>
-                <SelectItem value="out_of_stock">Out of Stock</SelectItem>
-                <SelectItem value="on_order">On Order</SelectItem>
+                <SelectItem value="all">All Age Groups</SelectItem>
+                {Array.isArray(ageGroups) && ageGroups.map((ageGroup: any) => (
+                  <SelectItem key={ageGroup.id} value={ageGroup.id}>
+                    {ageGroup.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -160,7 +180,11 @@ export default function MaterialsLibrary() {
                   <Package className="h-12 w-12" />
                 </div>
                 <div className="absolute top-2 right-2">
-                  {getStatusBadge(material.status)}
+                  {material.photoUrl && (
+                    <Badge variant="secondary" className="bg-white/80 text-gray-700">
+                      Photo
+                    </Badge>
+                  )}
                 </div>
               </div>
               
@@ -174,9 +198,9 @@ export default function MaterialsLibrary() {
                 
                 <div className="space-y-2 mb-3">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500">Category:</span>
-                    <span className="font-medium" data-testid={`material-category-${material.id}`}>
-                      {material.category}
+                    <span className="text-gray-500">Age Groups:</span>
+                    <span className="font-medium text-right" data-testid={`material-age-groups-${material.id}`}>
+                      {getAgeGroupNames(material.ageGroups || [])}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
@@ -209,7 +233,6 @@ export default function MaterialsLibrary() {
                     size="sm"
                     className="flex-1"
                     onClick={() => handleUse(material)}
-                    disabled={material.status === "out_of_stock"}
                     data-testid={`button-use-material-${material.id}`}
                   >
                     <Check className="mr-1 h-3 w-3" />
@@ -223,7 +246,7 @@ export default function MaterialsLibrary() {
       )}
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="material-shadow text-center">
           <CardContent className="p-6">
             <div className="text-3xl font-bold text-coral-red mb-2" data-testid="stat-total-materials">
@@ -234,26 +257,18 @@ export default function MaterialsLibrary() {
         </Card>
         <Card className="material-shadow text-center">
           <CardContent className="p-6">
-            <div className="text-3xl font-bold text-mint-green mb-2" data-testid="stat-in-stock">
-              {inStock}
+            <div className="text-3xl font-bold text-mint-green mb-2" data-testid="stat-age-groups">
+              {ageGroupsCount}
             </div>
-            <div className="text-gray-600">In Stock</div>
+            <div className="text-gray-600">Age Groups</div>
           </CardContent>
         </Card>
         <Card className="material-shadow text-center">
           <CardContent className="p-6">
-            <div className="text-3xl font-bold text-yellow-500 mb-2" data-testid="stat-low-stock">
-              {lowStock}
+            <div className="text-3xl font-bold text-sky-blue mb-2" data-testid="stat-with-photos">
+              {materials.filter(m => m.photoUrl).length}
             </div>
-            <div className="text-gray-600">Low Stock</div>
-          </CardContent>
-        </Card>
-        <Card className="material-shadow text-center">
-          <CardContent className="p-6">
-            <div className="text-3xl font-bold text-sky-blue mb-2" data-testid="stat-categories">
-              {categories}
-            </div>
-            <div className="text-gray-600">Categories</div>
+            <div className="text-gray-600">With Photos</div>
           </CardContent>
         </Card>
       </div>
@@ -269,6 +284,7 @@ export default function MaterialsLibrary() {
               material={editingMaterial}
               onSuccess={() => setEditingMaterial(null)}
               onCancel={() => setEditingMaterial(null)}
+              selectedLocationId={selectedLocationId}
             />
           </DialogContent>
         </Dialog>
