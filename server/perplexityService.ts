@@ -43,22 +43,21 @@ export class PerplexityService {
 
     const prompt = `Create a detailed educational activity for ${params.ageGroup} children (${params.ageRange.start}-${params.ageRange.end} years old) in the category of ${params.category}. ${quietDescription}
 
-Please provide a comprehensive activity plan in the following JSON format:
+Return ONLY a valid JSON object with no additional text, markdown, or explanation. The JSON must follow this exact structure:
 {
   "title": "Creative and engaging activity title",
   "description": "A detailed 2-3 sentence description of the activity and its educational benefits",
-  "duration": number (in minutes, appropriate for the age group),
+  "duration": 30,
   "instructions": [
     {
-      "text": "Clear step-by-step instruction",
-      "tip": "Optional helpful tip for this step"
+      "text": "Clear step-by-step instruction"
     }
   ],
   "learningObjectives": ["objective1", "objective2", "objective3"],
-  "setupTime": number (preparation time in minutes),
-  "groupSize": "1-4 children" or similar,
-  "spaceRequired": "Indoor/Outdoor/Both",
-  "messLevel": "Low/Medium/High",
+  "setupTime": 10,
+  "groupSize": "1-4 children",
+  "spaceRequired": "Indoor",
+  "messLevel": "Low",
   "variations": ["variation1", "variation2"],
   "safetyConsiderations": ["safety point 1", "safety point 2"],
   "imagePrompt": "A detailed description for generating an image of this activity"
@@ -84,7 +83,7 @@ Ensure the activity is:
             {
               role: "system",
               content:
-                "You are an expert early childhood educator with extensive experience in creating developmentally appropriate activities for children. Always respond with valid JSON only, no additional text.",
+                "You are an expert early childhood educator. You MUST respond with ONLY a valid JSON object. Do not include any markdown formatting, code blocks, explanations, or text outside the JSON. The response should start with { and end with }.",
             },
             {
               role: "user",
@@ -139,17 +138,54 @@ Ensure the activity is:
         throw new Error("No content received from Perplexity API");
       }
 
+      console.log('[PerplexityService] Raw AI response:', content);
+
       // Parse the JSON response
       try {
-        const activityData = JSON.parse(content);
+        // First, try to clean the content
+        let cleanedContent = content.trim();
+        
+        // Remove any markdown code blocks if present
+        cleanedContent = cleanedContent.replace(/```json\s*/gi, '');
+        cleanedContent = cleanedContent.replace(/```\s*/g, '');
+        
+        // Try to extract JSON if wrapped in other text
+        const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          cleanedContent = jsonMatch[0];
+        }
+        
+        // Fix common JSON issues
+        // Replace single quotes with double quotes for property names
+        cleanedContent = cleanedContent.replace(/'([^']+)'\s*:/g, '"$1":');
+        
+        // Remove trailing commas before closing braces/brackets
+        cleanedContent = cleanedContent.replace(/,\s*([\]}])/g, '$1');
+        
+        console.log('[PerplexityService] Attempting to parse cleaned content');
+        const activityData = JSON.parse(cleanedContent);
+        console.log('[PerplexityService] Successfully parsed activity data');
         return activityData;
       } catch (parseError) {
-        // Try to extract JSON from the response if it contains other text
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
-        throw new Error("Failed to parse AI response as JSON");
+        console.error('[PerplexityService] Failed to parse JSON:', parseError);
+        console.error('[PerplexityService] Content that failed to parse:', content);
+        
+        // As a fallback, create a basic activity structure
+        console.log('[PerplexityService] Returning fallback activity structure');
+        return {
+          title: "Activity Generation Failed",
+          description: "The AI response could not be parsed. Please try again or create the activity manually.",
+          duration: 30,
+          instructions: [{text: "Please create the activity manually"}],
+          learningObjectives: ["To be defined"],
+          setupTime: 10,
+          groupSize: "1-4 children",
+          spaceRequired: "Indoor",
+          messLevel: "Low",
+          variations: [],
+          safetyConsiderations: [],
+          imagePrompt: "Educational activity for children"
+        };
       }
     } catch (error) {
       console.error("Error generating activity with Perplexity:", error);
