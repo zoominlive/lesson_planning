@@ -65,6 +65,9 @@
                                                                         "    const jsonData = pm.response.json();",
                                                                         "    pm.expect(jsonData).to.have.property('tenantId');",
                                                                         "    pm.expect(jsonData).to.have.property('userId');",
+                                                                        "    pm.expect(jsonData).to.have.property('userFirstName');",
+                                                                        "    pm.expect(jsonData).to.have.property('userLastName');",
+                                                                        "    pm.expect(jsonData).to.have.property('username');",
                                                                         "    pm.expect(jsonData).to.have.property('role');",
                                                                         "});"
                                                                 ],

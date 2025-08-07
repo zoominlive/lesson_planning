@@ -35,6 +35,7 @@ const payload = {
   userLastName: "Doe",                                // Required: User's last name
   username: "john.doe",                               // Required: Username
   role: "teacher",                                    // Required: User role (teacher, admin, etc.)
+  locations: ["Main Campus", "West Wing"],           // Required: Array of location names user can access
   iat: Math.floor(Date.now() / 1000),                // Issued at
   exp: Math.floor(Date.now() / 1000) + (60 * 60)     // Expires in 1 hour
 };
@@ -92,8 +93,9 @@ iframe.onload = function() {
 
 Once authenticated, the application displays user information and provides access to user context through:
 
-- **User Info Display**: Shows user name, username, and role in the navigation
-- **API Context**: All API requests include user context for data filtering
+- **User Info Display**: Shows user name, username, role, and authorized locations in the navigation
+- **Location-Based Access**: Users can only access data for locations specified in their JWT token
+- **API Context**: All API requests include user context for data filtering and location validation
 - **Role-Based Access**: Admin users see additional settings management features
 - **Personalization**: User-specific settings and preferences
 
@@ -105,7 +107,15 @@ Users with "Admin" role in their JWT token have access to:
 
 ## API Endpoints
 
-All API endpoints support tenant-based data isolation with multi-location filtering:
+All API endpoints support tenant-based data isolation with location-based authorization:
+
+### Location-Based Authorization
+
+**Important:** Users can only access data for locations specified in their JWT token's `locations` array. The server validates location access on every API request.
+
+- **locations** (JWT payload): Array of location names (strings) the user is authorized to access
+- **Server-Side Validation**: All endpoints validate user has access to requested location
+- **403 Forbidden**: Returned when user lacks access to the requested location
 
 ### Multi-Location Query Parameters
 
@@ -189,6 +199,7 @@ function generateLessonPlannerToken(user) {
     userLastName: user.lastName,
     username: user.username,
     role: user.role || 'teacher',
+    locations: user.authorizedLocations || [], // Array of location names
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + (60 * 60) // 1 hour
   };
@@ -223,6 +234,7 @@ function generateLessonPlannerToken($user) {
         'userLastName' => $user['last_name'],
         'username' => $user['username'],
         'role' => $user['role'] ?: 'teacher',
+        'locations' => $user['authorized_locations'] ?: [], // Array of location names
         'iat' => time(),
         'exp' => time() + 3600 // 1 hour
     );
@@ -251,9 +263,14 @@ function generateLessonPlannerToken($user) {
 - Validate token hasn't expired
 
 **User Info Not Displayed:**
-- Confirm userFirstName, userLastName, username, and role are in JWT payload
+- Confirm userFirstName, userLastName, username, role, and locations are in JWT payload
 - Check token is being passed correctly via query parameter or postMessage
 - Verify iframe has loaded completely before sending postMessage
+
+**Location Access Denied:**
+- Ensure locations array in JWT contains valid location names
+- Verify user is attempting to access data only for authorized locations
+- Check that location names match exactly with database records
 
 **API Access Issues:**
 - Ensure tenant is active in our system
@@ -265,6 +282,7 @@ function generateLessonPlannerToken($user) {
 For development and testing, the application runs with mock user data:
 - Tenant ID: `7cb6c28d-164c-49fa-b461-dfc47a8a3fed`
 - User: Dev User (@dev-user, teacher role)
+- Authorized Locations: ["Main Campus", "Third Location"]
 
 ## Postman Collection
 
