@@ -14,6 +14,7 @@ import type { Milestone } from "@shared/schema";
 export default function MilestonesLibrary() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAgeGroupId, setSelectedAgeGroupId] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState("");
@@ -64,8 +65,9 @@ export default function MilestonesLibrary() {
                          milestone.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesAge = selectedAgeGroupId === "all" || 
                       (milestone.ageGroupIds && milestone.ageGroupIds.includes(selectedAgeGroupId));
+    const matchesCategory = selectedCategory === "all" || milestone.category === selectedCategory;
     
-    return matchesSearch && matchesAge;
+    return matchesSearch && matchesAge && matchesCategory;
   });
 
   const getMilestonesByCategory = (category: string) => {
@@ -194,6 +196,20 @@ export default function MilestonesLibrary() {
                 {Array.isArray(ageGroups) && ageGroups.map((group: any) => (
                   <SelectItem key={group.id} value={group.id}>
                     {group.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-48" data-testid="select-category-filter">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category} Development
                   </SelectItem>
                 ))}
               </SelectContent>
