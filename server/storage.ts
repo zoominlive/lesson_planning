@@ -157,20 +157,13 @@ export class DatabaseStorage implements IStorage {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(milestones.tenantId, this.tenantId));
     
-    console.log('getMilestones called with tenantId:', this.tenantId, 'locationId:', locationId);
     let results = await this.db.select().from(milestones).where(conditions.length ? and(...conditions) : undefined);
-    console.log('Database results:', results.length, 'milestones found');
-    console.log('First milestone locationIds:', results[0]?.locationIds);
     
     // Filter by locationId if provided (check if locationId is in locationIds array)
     if (locationId) {
-      console.log('Filtering by locationId:', locationId);
       results = results.filter(m => {
-        const isIncluded = m.locationIds && Array.isArray(m.locationIds) && m.locationIds.includes(locationId);
-        console.log('Milestone', m.id, 'locationIds:', m.locationIds, 'includes?', isIncluded);
-        return isIncluded;
+        return m.locationIds && Array.isArray(m.locationIds) && m.locationIds.includes(locationId);
       });
-      console.log('After filtering:', results.length, 'milestones');
     }
     
     return results;

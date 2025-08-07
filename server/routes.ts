@@ -154,11 +154,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get authorized location IDs for filtering
       const authorizedLocationIds = await getUserAuthorizedLocationIds(req);
-      console.log('Authorized location IDs:', authorizedLocationIds);
       
       // Filter milestones to only authorized locations
       let milestones = await storage.getMilestones(locationId as string);
-      console.log('Fetched milestones:', milestones.length, 'for locationId:', locationId);
       
       // If no specific location requested, filter to only authorized locations
       if (!locationId && authorizedLocationIds.length > 0) {
@@ -167,10 +165,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
       
-      console.log('Filtered milestones:', milestones.length);
       res.json(milestones);
     } catch (error) {
-      console.error('Error fetching milestones:', error);
       res.status(500).json({ error: "Failed to fetch milestones" });
     }
   });
