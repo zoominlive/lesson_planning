@@ -1,5 +1,5 @@
 interface PerplexityMessage {
-  role: 'system' | 'user' | 'assistant';
+  role: "system" | "user" | "assistant";
   content: string;
 }
 
@@ -16,14 +16,18 @@ interface PerplexityResponse {
 
 export class PerplexityService {
   private apiKey: string;
-  private apiUrl = 'https://api.perplexity.ai/chat/completions';
+  private apiUrl = "https://api.perplexity.ai/chat/completions";
 
   constructor() {
-    this.apiKey = process.env.PERPLEXITY_API_KEY || '';
+    this.apiKey = process.env.PERPLEXITY_API_KEY || "";
     if (!this.apiKey) {
-      console.warn('PERPLEXITY_API_KEY not found in environment variables');
+      console.warn("PERPLEXITY_API_KEY not found in environment variables");
     } else {
-      console.log('Perplexity API key loaded successfully (length:', this.apiKey.length, ')');
+      console.log(
+        "Perplexity API key loaded successfully (length:",
+        this.apiKey.length,
+        ")",
+      );
     }
   }
 
@@ -33,8 +37,8 @@ export class PerplexityService {
     isQuiet: boolean;
     ageRange: { start: number; end: number };
   }): Promise<any> {
-    const quietDescription = params.isQuiet 
-      ? "This should be a quiet, calm activity suitable for quiet time, nap preparation, or low-energy periods." 
+    const quietDescription = params.isQuiet
+      ? "This should be a quiet, calm activity suitable for quiet time, nap preparation, or low-energy periods."
       : "This can be an active, engaging activity.";
 
     const prompt = `Create a detailed educational activity for ${params.ageGroup} children (${params.ageRange.start}-${params.ageRange.end} years old) in the category of ${params.category}. ${quietDescription}
@@ -69,59 +73,70 @@ Ensure the activity is:
 
     try {
       const response = await fetch(this.apiUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: 'llama-3.1-sonar-small-128k-chat',
+          model: "sonar-pro",
           messages: [
             {
-              role: 'system',
-              content: 'You are an expert early childhood educator with extensive experience in creating developmentally appropriate activities for children. Always respond with valid JSON only, no additional text.'
+              role: "system",
+              content:
+                "You are an expert early childhood educator with extensive experience in creating developmentally appropriate activities for children. Always respond with valid JSON only, no additional text.",
             },
             {
-              role: 'user',
-              content: prompt
-            }
+              role: "user",
+              content: prompt,
+            },
           ],
           temperature: 0.7,
           max_tokens: 2000,
           stream: false,
           top_p: 0.9,
           presence_penalty: 0,
-          frequency_penalty: 1
-        })
+          frequency_penalty: 1,
+        }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Perplexity API error response:', errorText);
-        console.error('Request body was:', JSON.stringify({
-          model: 'llama-3.1-sonar-small-128k-chat',
-          messages: [
+        console.error("Perplexity API error response:", errorText);
+        console.error(
+          "Request body was:",
+          JSON.stringify(
             {
-              role: 'system',
-              content: 'You are an expert early childhood educator with extensive experience in creating developmentally appropriate activities for children. Always respond with valid JSON only, no additional text.'
+              model: "sonar-pro",
+              messages: [
+                {
+                  role: "system",
+                  content:
+                    "You are an expert early childhood educator with extensive experience in creating developmentally appropriate activities for children. Always respond with valid JSON only, no additional text.",
+                },
+                {
+                  role: "user",
+                  content: prompt,
+                },
+              ],
+              temperature: 0.7,
+              max_tokens: 2000,
+              stream: false,
             },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 2000,
-          stream: false
-        }, null, 2));
-        throw new Error(`Perplexity API error: ${response.status} ${response.statusText} - ${errorText}`);
+            null,
+            2,
+          ),
+        );
+        throw new Error(
+          `Perplexity API error: ${response.status} ${response.statusText} - ${errorText}`,
+        );
       }
 
-      const data = await response.json() as PerplexityResponse;
+      const data = (await response.json()) as PerplexityResponse;
       const content = data.choices[0]?.message?.content;
-      
+
       if (!content) {
-        throw new Error('No content received from Perplexity API');
+        throw new Error("No content received from Perplexity API");
       }
 
       // Parse the JSON response
@@ -134,10 +149,10 @@ Ensure the activity is:
         if (jsonMatch) {
           return JSON.parse(jsonMatch[0]);
         }
-        throw new Error('Failed to parse AI response as JSON');
+        throw new Error("Failed to parse AI response as JSON");
       }
     } catch (error) {
-      console.error('Error generating activity with Perplexity:', error);
+      console.error("Error generating activity with Perplexity:", error);
       throw error;
     }
   }
