@@ -486,9 +486,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/age-groups", async (req: AuthenticatedRequest, res) => {
     try {
       const { locationId } = req.query;
+      console.log("Age groups API called with locationId:", locationId, "tenantId:", req.tenantId);
       const ageGroups = await storage.getAgeGroups(locationId as string);
+      console.log("Found age groups:", ageGroups.length);
       res.json(ageGroups);
     } catch (error) {
+      console.error("Age groups API error:", error);
       res.status(500).json({ error: "Failed to fetch age groups" });
     }
   });

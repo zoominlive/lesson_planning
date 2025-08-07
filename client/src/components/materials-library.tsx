@@ -31,14 +31,22 @@ export default function MaterialsLibrary() {
   // Fetch age groups for filtering
   const { data: ageGroups = [] } = useQuery({
     queryKey: ["/api/age-groups", selectedLocationId],
-    queryFn: () => apiRequest("GET", `/api/age-groups?locationId=${selectedLocationId}`),
+    queryFn: () => {
+      console.log("Fetching age groups for locationId:", selectedLocationId);
+      return apiRequest("GET", `/api/age-groups?locationId=${selectedLocationId}`);
+    },
     enabled: !!selectedLocationId,
   });
 
-  // Auto-select first location if none selected
+  // Auto-select first location if none selected  
   useEffect(() => {
+    console.log("Locations:", locations, "selectedLocationId:", selectedLocationId);
     if (!selectedLocationId && Array.isArray(locations) && locations.length > 0) {
-      setSelectedLocationId(locations[0].id);
+      // Try to find "Main Campus" first since that's where the age groups are
+      const mainCampus = locations.find(loc => loc.name === "Main Campus");
+      const locationToSelect = mainCampus || locations[0];
+      console.log("Setting selectedLocationId to:", locationToSelect.id);
+      setSelectedLocationId(locationToSelect.id);
     }
   }, [locations, selectedLocationId]);
 
