@@ -188,7 +188,7 @@ export default function WeeklyCalendar() {
       </div>
 
       {/* Main Content Area with Calendar and Drawer */}
-      <div className="flex gap-4">
+      <div className={`flex ${drawerOpen ? 'gap-4' : ''}`}>
         {/* Calendar Grid */}
         <div className={`transition-all duration-300 ${drawerOpen ? 'flex-1' : 'w-full'}`}>
           <Card className="material-shadow overflow-hidden">
