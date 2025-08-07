@@ -137,6 +137,11 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
         throw new Error(error.error || 'Failed to delete scheduled activity');
       }
       
+      // Handle 204 No Content response (successful delete with no body)
+      if (response.status === 204) {
+        return { success: true };
+      }
+      
       return response.json();
     },
     onSuccess: () => {
