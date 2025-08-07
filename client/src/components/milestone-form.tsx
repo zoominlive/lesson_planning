@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { insertMilestoneSchema, type Milestone } from "@shared/schema";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 
 interface MilestoneFormProps {
@@ -63,10 +63,11 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
       // Fetch age groups for all selected locations
       const allAgeGroups = [];
       for (const locId of selectedLocationIds) {
-        const response = await fetch(`/api/age-groups?locationId=${locId}`);
-        if (response.ok) {
-          const data = await response.json();
+        try {
+          const data = await apiRequest("GET", `/api/age-groups?locationId=${locId}`);
           allAgeGroups.push(...data);
+        } catch (error) {
+          console.error(`Failed to fetch age groups for location ${locId}:`, error);
         }
       }
       // Remove duplicates based on ID
