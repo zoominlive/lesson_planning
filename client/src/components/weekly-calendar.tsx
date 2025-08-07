@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
@@ -91,8 +91,75 @@ export default function WeeklyCalendar() {
     dropZone.classList.remove("drag-over");
   };
 
+  // Get current location and room from context or query params
+  const { data: locations = [] } = useQuery<any[]>({
+    queryKey: ["/api/locations"],
+  });
+  
+  // Get first location as default (you may want to get this from a selector)
+  const currentLocationId = locations[0]?.id;
+  
+  // Get rooms for the current location
+  const { data: rooms = [] } = useQuery<any[]>({
+    queryKey: ["/api/rooms", currentLocationId],
+    enabled: !!currentLocationId,
+  });
+  
+  // Get first room as default (you may want to get this from a selector)
+  const currentRoomId = rooms[0]?.id;
+  
+  // Get or create a lesson plan for the current week
+  const { data: lessonPlans = [] } = useQuery<any[]>({
+    queryKey: ["/api/lesson-plans"],
+  });
+  
+  // Create lesson plan mutation
+  const createLessonPlanMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('/api/lesson-plans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          locationId: currentLocationId,
+          roomId: currentRoomId,
+          weekStartDate: new Date().toISOString(),
+          weekEndDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'draft',
+          notes: 'Auto-created lesson plan for activity scheduling',
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create lesson plan');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/lesson-plans'] });
+    },
+  });
+  
+  // Get current week's lesson plan or use first one
+  const currentLessonPlanId = lessonPlans[0]?.id;
+  
+  // Auto-create lesson plan if none exists
+  useEffect(() => {
+    if (currentLocationId && currentRoomId && lessonPlans.length === 0 && !createLessonPlanMutation.isPending) {
+      createLessonPlanMutation.mutate();
+    }
+  }, [currentLocationId, currentRoomId, lessonPlans.length]);
+
   const scheduleMutation = useMutation({
     mutationFn: async ({ activityId, dayOfWeek, timeSlot }: { activityId: string; dayOfWeek: number; timeSlot: number }) => {
+      if (!currentLocationId || !currentRoomId || !currentLessonPlanId) {
+        throw new Error('Missing required context: location, room, or lesson plan');
+      }
+      
       const token = localStorage.getItem('authToken');
       const response = await fetch('/api/scheduled-activities', {
         method: 'POST',
@@ -104,12 +171,15 @@ export default function WeeklyCalendar() {
           activityId,
           dayOfWeek,
           timeSlot,
-          weekStartDate: new Date().toISOString(),
+          lessonPlanId: currentLessonPlanId,
+          roomId: currentRoomId,
+          locationId: currentLocationId,
         }),
       });
       
       if (!response.ok) {
-        throw new Error('Failed to schedule activity');
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to schedule activity');
       }
       
       return response.json();
