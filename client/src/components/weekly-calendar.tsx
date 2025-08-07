@@ -108,11 +108,23 @@ export default function WeeklyCalendar() {
   };
 
   return (
-    <div className="flex gap-4">
+    <div className="space-y-4">
+      {/* Calendar Header */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-charcoal">Weekly Schedule</h2>
+        <Button
+          onClick={() => setDrawerOpen(true)}
+          className="bg-gradient-to-r from-coral-red to-turquoise text-white shadow-lg hover:shadow-xl"
+          size="default"
+        >
+          <Package className="mr-2 h-5 w-5" />
+          Activities
+        </Button>
+      </div>
+
       {/* Calendar Grid */}
-      <div className="flex-1">
-        <Card className="material-shadow overflow-hidden">
-          <div className="grid grid-cols-6 gap-0">
+      <Card className="material-shadow overflow-hidden">
+        <div className="grid grid-cols-6 gap-0">
           {/* Time Column */}
           <div className="bg-gray-50 border-r border-gray-200">
             <div className="h-16 border-b border-gray-200 flex items-center justify-center font-semibold text-gray-700">
@@ -171,19 +183,8 @@ export default function WeeklyCalendar() {
               })}
             </div>
           ))}
-          </div>
-        </Card>
-      </div>
-
-      {/* Activity Library Drawer Trigger Button */}
-      <Button
-        onClick={() => setDrawerOpen(true)}
-        className="fixed right-6 bottom-24 z-40 bg-gradient-to-r from-coral-red to-turquoise text-white shadow-lg hover:shadow-xl"
-        size="lg"
-      >
-        <Package className="mr-2 h-5 w-5" />
-        Activities
-      </Button>
+        </div>
+      </Card>
 
       {/* Activity Library Drawer */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
