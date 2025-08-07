@@ -107,8 +107,19 @@ export default function WeeklyCalendar() {
 
   const scheduleMutation = useMutation({
     mutationFn: async ({ activityId, dayOfWeek, timeSlot }: { activityId: string; dayOfWeek: number; timeSlot: number }) => {
+      console.log('Scheduling activity:', { 
+        activityId, 
+        dayOfWeek, 
+        timeSlot, 
+        currentLocationId, 
+        currentRoomId,
+        locations: locations.length,
+        rooms: rooms.length
+      });
+      
       if (!currentLocationId || !currentRoomId) {
-        throw new Error('Missing required context: location or room');
+        console.error('Missing context:', { currentLocationId, currentRoomId });
+        throw new Error(`Missing required context: location ${currentLocationId ? 'exists' : 'missing'}, room ${currentRoomId ? 'exists' : 'missing'}`);
       }
       
       const token = localStorage.getItem('authToken');
@@ -130,6 +141,7 @@ export default function WeeklyCalendar() {
       
       if (!response.ok) {
         const error = await response.json();
+        console.error('Server error:', error);
         throw new Error(error.error || 'Failed to schedule activity');
       }
       
