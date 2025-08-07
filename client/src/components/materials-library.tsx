@@ -31,11 +31,17 @@ export default function MaterialsLibrary() {
   // Fetch age groups for filtering
   const { data: ageGroups = [] } = useQuery({
     queryKey: ["/api/age-groups", selectedLocationId],
-    queryFn: () => {
+    queryFn: async () => {
       console.log("Fetching age groups for locationId:", selectedLocationId);
-      return apiRequest("GET", `/api/age-groups?locationId=${selectedLocationId}`);
+      const data = await apiRequest("GET", `/api/age-groups?locationId=${selectedLocationId}`);
+      console.log("Age groups API response:", data);
+      console.log("Age groups response type:", typeof data);
+      console.log("Is Array?", Array.isArray(data));
+      return data || [];
     },
     enabled: !!selectedLocationId,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   console.log("Age groups data:", ageGroups);
@@ -50,6 +56,8 @@ export default function MaterialsLibrary() {
       const locationToSelect = mainCampus || locations[0];
       console.log("Setting selectedLocationId to:", locationToSelect.id);
       setSelectedLocationId(locationToSelect.id);
+      // Force invalidate the age groups query when location changes
+      queryClient.invalidateQueries({ queryKey: ["/api/age-groups"] });
     }
   }, [locations, selectedLocationId]);
 

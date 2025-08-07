@@ -71,8 +71,8 @@ export function CategoriesSettings() {
     queryKey: ["/api/categories", selectedLocationId],
     queryFn: selectedLocationId 
       ? async () => {
-          const response = await apiRequest("GET", `/api/categories?locationId=${selectedLocationId}`);
-          return await response.json();
+          const data = await apiRequest("GET", `/api/categories?locationId=${selectedLocationId}`);
+          return data;
         }
       : undefined,
     enabled: !!selectedLocationId,

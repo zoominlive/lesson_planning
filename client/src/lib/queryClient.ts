@@ -12,7 +12,7 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
-): Promise<Response> {
+): Promise<any> {
   const token = getAuthToken();
   const headers: Record<string, string> = {};
   
@@ -32,7 +32,15 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
-  return res;
+  
+  // Parse and return JSON response if available
+  const contentType = res.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    return await res.json();
+  }
+  
+  // For non-JSON responses, return null
+  return null;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
