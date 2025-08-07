@@ -114,19 +114,23 @@ export default function MaterialForm({
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: any) =>
-      apiRequest("PUT", `/api/materials/${material!.id}`, {
+    mutationFn: (data: any) => {
+      console.log('Updating material with photoUrl:', photoUrl);
+      console.log('Auth token in localStorage:', localStorage.getItem('authToken')?.substring(0, 30) + '...');
+      return apiRequest("PUT", `/api/materials/${material!.id}`, {
         ...data,
         ageGroups: selectedAgeGroups,
         locationIds: selectedLocations,
         photoUrl,
-      }),
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
       onSuccess();
       toast({ title: "Material updated successfully" });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Material update error:', error);
       toast({ title: "Failed to update material", variant: "destructive" });
     },
   });
