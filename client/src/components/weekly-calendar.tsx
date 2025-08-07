@@ -136,9 +136,9 @@ export default function WeeklyCalendar() {
           {weekDays.map((day) => (
             <div key={day.id} className="border-r border-gray-200 last:border-r-0">
               {/* Day Header */}
-              <div className="h-16 bg-gradient-to-r from-red-500 to-cyan-500 text-white border-b border-gray-200 flex flex-col items-center justify-center">
-                <span className="font-bold text-xl tracking-wide drop-shadow-md" data-testid={`day-name-${day.id}`}>{day.name}</span>
-                <span className="text-xs opacity-90 mt-1 drop-shadow" data-testid={`day-date-${day.id}`}>{day.date}</span>
+              <div className="h-16 bg-white text-black border-b border-gray-200 flex flex-col items-center justify-center">
+                <span className="font-bold text-xl tracking-wide" data-testid={`day-name-${day.id}`}>{day.name}</span>
+                <span className="text-xs text-gray-600 mt-1" data-testid={`day-date-${day.id}`}>{day.date}</span>
               </div>
               
               {/* Time Slots */}
