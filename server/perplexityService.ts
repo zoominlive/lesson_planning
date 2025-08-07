@@ -22,6 +22,8 @@ export class PerplexityService {
     this.apiKey = process.env.PERPLEXITY_API_KEY || '';
     if (!this.apiKey) {
       console.warn('PERPLEXITY_API_KEY not found in environment variables');
+    } else {
+      console.log('Perplexity API key loaded successfully (length:', this.apiKey.length, ')');
     }
   }
 
@@ -86,12 +88,33 @@ Ensure the activity is:
           ],
           temperature: 0.7,
           max_tokens: 2000,
-          stream: false
+          stream: false,
+          top_p: 0.9,
+          presence_penalty: 0,
+          frequency_penalty: 1
         })
       });
 
       if (!response.ok) {
-        throw new Error(`Perplexity API error: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('Perplexity API error response:', errorText);
+        console.error('Request body was:', JSON.stringify({
+          model: 'llama-3.1-sonar-small-128k-online',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert early childhood educator with extensive experience in creating developmentally appropriate activities for children. Always respond with valid JSON only, no additional text.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 2000,
+          stream: false
+        }, null, 2));
+        throw new Error(`Perplexity API error: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const data = await response.json() as PerplexityResponse;
