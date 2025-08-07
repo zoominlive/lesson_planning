@@ -13,7 +13,7 @@ import type { Milestone } from "@shared/schema";
 
 export default function MilestonesLibrary() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [ageFilter, setAgeFilter] = useState("all");
+  const [selectedAgeGroupId, setSelectedAgeGroupId] = useState("all");
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState("");
@@ -47,14 +47,23 @@ export default function MilestonesLibrary() {
     }
   }, [locations, selectedLocationId]);
 
+  // Fetch age groups for the selected location
+  const { data: ageGroups = [] } = useQuery({
+    queryKey: ["/api/age-groups", selectedLocationId],
+    queryFn: selectedLocationId 
+      ? async () => {
+          const data = await apiRequest("GET", `/api/age-groups?locationId=${selectedLocationId}`);
+          return data;
+        }
+      : undefined,
+    enabled: !!selectedLocationId,
+  });
+  
   const filteredMilestones = milestones.filter(milestone => {
     const matchesSearch = milestone.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          milestone.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesAge = ageFilter === "all" || 
-                      (ageFilter === "2-3" && milestone.ageRangeStart <= 36 && milestone.ageRangeEnd >= 24) ||
-                      (ageFilter === "3-4" && milestone.ageRangeStart <= 48 && milestone.ageRangeEnd >= 36) ||
-                      (ageFilter === "4-5" && milestone.ageRangeStart <= 60 && milestone.ageRangeEnd >= 48) ||
-                      (ageFilter === "5-6" && milestone.ageRangeStart <= 72 && milestone.ageRangeEnd >= 60);
+    const matchesAge = selectedAgeGroupId === "all" || 
+                      (milestone.ageGroupIds && milestone.ageGroupIds.includes(selectedAgeGroupId));
     
     return matchesSearch && matchesAge;
   });
@@ -93,10 +102,12 @@ export default function MilestonesLibrary() {
     }
   };
 
-  const formatAgeRange = (startMonths: number, endMonths: number) => {
-    const startYears = Math.floor(startMonths / 12);
-    const endYears = Math.floor(endMonths / 12);
-    return `${startYears}-${endYears} years`;
+  const getAgeGroupNames = (ageGroupIds: string[]) => {
+    if (!ageGroupIds || ageGroupIds.length === 0) return "No age groups";
+    const names = ageGroupIds
+      .map(id => ageGroups.find((g: any) => g.id === id)?.name)
+      .filter(Boolean);
+    return names.length > 0 ? names.join(", ") : "Unknown age groups";
   };
 
   const handleEdit = (milestone: Milestone) => {
@@ -174,16 +185,17 @@ export default function MilestonesLibrary() {
               </SelectContent>
             </Select>
             
-            <Select value={ageFilter} onValueChange={setAgeFilter}>
-              <SelectTrigger className="w-40" data-testid="select-age-filter">
-                <SelectValue placeholder="All Ages" />
+            <Select value={selectedAgeGroupId} onValueChange={setSelectedAgeGroupId}>
+              <SelectTrigger className="w-48" data-testid="select-age-filter">
+                <SelectValue placeholder="All Age Groups" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Age Groups</SelectItem>
-                <SelectItem value="2-3">2-3 Years</SelectItem>
-                <SelectItem value="3-4">3-4 Years</SelectItem>
-                <SelectItem value="4-5">4-5 Years</SelectItem>
-                <SelectItem value="5-6">5-6 Years</SelectItem>
+                {Array.isArray(ageGroups) && ageGroups.map((group: any) => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -244,7 +256,7 @@ export default function MilestonesLibrary() {
                             {milestone.title}
                           </h4>
                           <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs" data-testid={`milestone-age-${milestone.id}`}>
-                            {formatAgeRange(milestone.ageRangeStart, milestone.ageRangeEnd)}
+                            {getAgeGroupNames(milestone.ageGroupIds || [])}
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 mb-3" data-testid={`milestone-description-${milestone.id}`}>

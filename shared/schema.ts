@@ -39,8 +39,7 @@ export const milestones = pgTable("milestones", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull(), // Social, Emotional, Cognitive, Physical
-  ageRangeStart: integer("age_range_start").notNull(), // in months
-  ageRangeEnd: integer("age_range_end").notNull(), // in months
+  ageGroupIds: json("age_group_ids").$type<string[]>().notNull().default([]), // Multi-select age groups
   learningObjective: text("learning_objective").notNull(),
 });
 

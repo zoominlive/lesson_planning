@@ -22,15 +22,16 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>(
     milestone?.locationIds || (selectedLocationId ? [selectedLocationId] : [])
   );
+  const [selectedAgeGroupIds, setSelectedAgeGroupIds] = useState<string[]>(
+    milestone?.ageGroupIds || []
+  );
 
   const { register, handleSubmit, formState: { errors }, setValue } = useForm({
-    resolver: zodResolver(insertMilestoneSchema.omit({ locationIds: true })),
+    resolver: zodResolver(insertMilestoneSchema.omit({ locationIds: true, ageGroupIds: true })),
     defaultValues: {
       title: milestone?.title || "",
       description: milestone?.description || "",
       category: milestone?.category || "",
-      ageRangeStart: milestone?.ageRangeStart || 36,
-      ageRangeEnd: milestone?.ageRangeEnd || 48,
       learningObjective: milestone?.learningObjective || "",
       tenantId: "", // Will be set by backend
     },
@@ -39,6 +40,28 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
   // Fetch all authorized locations
   const { data: locations = [] } = useQuery({
     queryKey: ["/api/locations"],
+  });
+  
+  // Fetch age groups for selected locations
+  const { data: ageGroups = [] } = useQuery({
+    queryKey: ["/api/age-groups", selectedLocationIds],
+    queryFn: async () => {
+      // Fetch age groups for all selected locations
+      const allAgeGroups = [];
+      for (const locId of selectedLocationIds) {
+        const response = await fetch(`/api/age-groups?locationId=${locId}`);
+        if (response.ok) {
+          const data = await response.json();
+          allAgeGroups.push(...data);
+        }
+      }
+      // Remove duplicates based on ID
+      const uniqueGroups = allAgeGroups.filter((group, index, self) =>
+        index === self.findIndex((g) => g.id === group.id)
+      );
+      return uniqueGroups;
+    },
+    enabled: selectedLocationIds.length > 0,
   });
 
   const createMutation = useMutation({
@@ -77,6 +100,7 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
     const formData = {
       ...data,
       locationIds: selectedLocationIds,
+      ageGroupIds: selectedAgeGroupIds,
     };
 
     if (milestone) {
@@ -91,6 +115,14 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
       prev.includes(locationId) 
         ? prev.filter(id => id !== locationId)
         : [...prev, locationId]
+    );
+  };
+  
+  const toggleAgeGroup = (ageGroupId: string) => {
+    setSelectedAgeGroupIds(prev => 
+      prev.includes(ageGroupId) 
+        ? prev.filter(id => id !== ageGroupId)
+        : [...prev, ageGroupId]
     );
   };
 
@@ -163,34 +195,33 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="ageRangeStart">Minimum Age (months) *</Label>
-          <Input 
-            id="ageRangeStart" 
-            type="number" 
-            min="12"
-            max="84"
-            step="6"
-            {...register("ageRangeStart", { valueAsNumber: true })} 
-            data-testid="input-age-start"
-          />
-          {errors.ageRangeStart && <p className="text-red-500 text-sm">{errors.ageRangeStart.message}</p>}
+      <div>
+        <Label>Age Groups *</Label>
+        <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+          {Array.isArray(ageGroups) && ageGroups.length > 0 ? (
+            ageGroups.map((group: any) => (
+              <div key={group.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`age-group-${group.id}`}
+                  checked={selectedAgeGroupIds.includes(group.id)}
+                  onCheckedChange={() => toggleAgeGroup(group.id)}
+                  data-testid={`checkbox-age-group-${group.id}`}
+                />
+                <label
+                  htmlFor={`age-group-${group.id}`}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {group.name} ({group.ageRangeStart}-{group.ageRangeEnd} months)
+                </label>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500 text-sm">Select locations first to see available age groups</p>
+          )}
         </div>
-
-        <div>
-          <Label htmlFor="ageRangeEnd">Maximum Age (months) *</Label>
-          <Input 
-            id="ageRangeEnd" 
-            type="number" 
-            min="12"
-            max="84"
-            step="6"
-            {...register("ageRangeEnd", { valueAsNumber: true })} 
-            data-testid="input-age-end"
-          />
-          {errors.ageRangeEnd && <p className="text-red-500 text-sm">{errors.ageRangeEnd.message}</p>}
-        </div>
+        {selectedAgeGroupIds.length === 0 && (
+          <p className="text-amber-600 text-sm mt-1">Please select at least one age group</p>
+        )}
       </div>
 
       <div>
