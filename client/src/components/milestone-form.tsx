@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { insertMilestoneSchema, type Milestone } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface MilestoneFormProps {
   milestone?: Milestone;
@@ -41,6 +41,20 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
   const { data: locations = [] } = useQuery({
     queryKey: ["/api/locations"],
   });
+  
+  // Auto-select first location if none selected and locations are available
+  useEffect(() => {
+    if (selectedLocationIds.length === 0 && Array.isArray(locations) && locations.length > 0) {
+      // If selectedLocationId prop is provided, use it; otherwise use first location
+      const locationToSelect = selectedLocationId && locations.find(loc => loc.id === selectedLocationId)
+        ? selectedLocationId
+        : locations[0]?.id;
+      
+      if (locationToSelect) {
+        setSelectedLocationIds([locationToSelect]);
+      }
+    }
+  }, [locations, selectedLocationId, selectedLocationIds.length]);
   
   // Fetch age groups for selected locations
   const { data: ageGroups = [] } = useQuery({
