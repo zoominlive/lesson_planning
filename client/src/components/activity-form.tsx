@@ -37,6 +37,8 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
   );
   const [materialCategoryFilter, setMaterialCategoryFilter] = useState<string>("all");
   const [materialAgeGroupFilter, setMaterialAgeGroupFilter] = useState<string>("all");
+  const [milestoneCategoryFilter, setMilestoneCategoryFilter] = useState<string>("all");
+  const [milestoneAgeGroupFilter, setMilestoneAgeGroupFilter] = useState<string>("all");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadingInstructionImage, setUploadingInstructionImage] = useState<number | null>(null);
@@ -50,7 +52,8 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
     resolver: zodResolver(insertActivitySchema.omit({ 
       id: true,
-      tenantId: true
+      tenantId: true,
+      locationId: true
     })),
     defaultValues: {
       title: activity?.title || "",
@@ -294,6 +297,17 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
   // Get unique categories from materials
   const materialCategories = Array.from(new Set(materials.map((m: any) => m.category).filter(Boolean)));
 
+  // Filter milestones based on selected filters
+  const filteredMilestones = milestones.filter((milestone: any) => {
+    const categoryMatch = milestoneCategoryFilter === "all" || milestone.category === milestoneCategoryFilter;
+    const ageGroupMatch = milestoneAgeGroupFilter === "all" || 
+      (milestone.ageGroupIds && milestone.ageGroupIds.includes(milestoneAgeGroupFilter));
+    return categoryMatch && ageGroupMatch;
+  });
+
+  // Get unique categories from milestones
+  const milestoneCategories = Array.from(new Set(milestones.map((m: any) => m.category).filter(Boolean)));
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -475,8 +489,58 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
       <Card>
         <CardContent className="p-4 space-y-4">
           <h3 className="font-semibold text-lg">Learning Milestones</h3>
+          
+          {/* Milestone Filters */}
+          <div className="flex gap-3 items-center">
+            <div className="flex-1">
+              <Select value={milestoneCategoryFilter} onValueChange={setMilestoneCategoryFilter}>
+                <SelectTrigger className="h-8 text-sm" data-testid="filter-milestone-category">
+                  <SelectValue placeholder="Filter by category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {milestoneCategories.map((category: string) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1">
+              <Select value={milestoneAgeGroupFilter} onValueChange={setMilestoneAgeGroupFilter}>
+                <SelectTrigger className="h-8 text-sm" data-testid="filter-milestone-age-group">
+                  <SelectValue placeholder="Filter by age group" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Age Groups</SelectItem>
+                  {ageGroups.map((group: any) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {(milestoneCategoryFilter !== "all" || milestoneAgeGroupFilter !== "all") && (
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  setMilestoneCategoryFilter("all");
+                  setMilestoneAgeGroupFilter("all");
+                }}
+                data-testid="button-clear-milestone-filters"
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
+          
           <div className="space-y-2 max-h-64 overflow-y-auto border rounded-md p-3">
-            {milestones.map((milestone: any) => (
+            {filteredMilestones.length > 0 ? (
+              filteredMilestones.map((milestone: any) => (
               <div key={milestone.id} className="flex items-start space-x-2">
                 <Checkbox
                   id={`milestone-${milestone.id}`}
@@ -494,9 +558,20 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                   <p className="text-xs text-gray-500">{milestone.description}</p>
                 </label>
               </div>
-            ))}
+            ))
+            ) : milestones.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p className="text-sm mb-2">No milestones found for this location</p>
+                <p className="text-xs">Add milestones in the Milestones Library to select them here</p>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p className="text-sm mb-2">No milestones match the selected filters</p>
+                <p className="text-xs">Try adjusting or clearing the filters above</p>
+              </div>
+            )}
           </div>
-          {selectedMilestones.length === 0 && (
+          {selectedMilestones.length === 0 && filteredMilestones.length > 0 && (
             <p className="text-amber-600 text-sm">Consider selecting relevant milestones for this activity</p>
           )}
         </CardContent>
@@ -521,7 +596,7 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {materialCategories.map((category) => (
+                  {materialCategories.map((category: string) => (
                     <SelectItem key={category} value={category}>
                       {category}
                     </SelectItem>
