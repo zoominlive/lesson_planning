@@ -32,6 +32,17 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // PUBLIC ROUTES - No authentication required
+  // Serve material images from object storage (public access for display in UI)
+  app.get('/materials/images/:filename', async (req, res) => {
+    try {
+      await materialStorage.downloadMaterialImage(req.params.filename, res);
+    } catch (error) {
+      console.error('Error serving material image:', error);
+      res.status(500).json({ error: 'Failed to retrieve image' });
+    }
+  });
+  
   // Apply authentication middleware to all API routes first
   app.use("/api", (req, res, next) => {
     return authenticateToken(req as AuthenticatedRequest, res, next);
@@ -303,16 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Material image routes
-  // Serve material images from object storage
-  app.get('/api/materials/images/:filename', async (req, res) => {
-    try {
-      await materialStorage.downloadMaterialImage(req.params.filename, res);
-    } catch (error) {
-      console.error('Error serving material image:', error);
-      res.status(500).json({ error: 'Failed to retrieve image' });
-    }
-  });
+  // Material image upload routes (authenticated)
 
   // Get presigned URL for material upload
   app.post('/api/materials/upload-url', async (req: AuthenticatedRequest, res) => {

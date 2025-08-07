@@ -28,8 +28,8 @@ export class MaterialStorageService {
         throw new Error(`Failed to upload image: ${result.error}`);
       }
       
-      // Return the path that will be used to retrieve the image
-      return `/api/materials/images/${uniqueId}.${extension}`;
+      // Return the path that will be used to retrieve the image (public, no auth)
+      return `/materials/images/${uniqueId}.${extension}`;
     } catch (error) {
       console.error('Error uploading material image:', error);
       throw error;
@@ -132,8 +132,8 @@ export class MaterialStorageService {
         throw new Error(`Failed to migrate image ${filename}: ${result.error}`);
       }
       
-      // Return the path that will be used to retrieve the image
-      return `/api/materials/images/${filename}`;
+      // Return the path that will be used to retrieve the image (public, no auth)
+      return `/materials/images/${filename}`;
     } catch (error) {
       console.error(`Error migrating image ${filename}:`, error);
       throw error;
@@ -153,9 +153,9 @@ export class MaterialStorageService {
         throw new Error(`Failed to upload: ${result.error}`);
       }
       
-      // Extract filename from key and return the retrieval path
+      // Extract filename from key and return the retrieval path (public, no auth)
       const filename = key.replace(`${MATERIALS_FOLDER}/`, '');
-      return `/api/materials/images/${filename}`;
+      return `/materials/images/${filename}`;
     } catch (error) {
       console.error('Error in direct upload:', error);
       throw error;
