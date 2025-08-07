@@ -32,6 +32,9 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
   const [selectedMilestones, setSelectedMilestones] = useState<string[]>(
     activity?.milestoneIds || []
   );
+  const [selectedMaterials, setSelectedMaterials] = useState<string[]>(
+    activity?.materialIds || []
+  );
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadingInstructionImage, setUploadingInstructionImage] = useState<number | null>(null);
@@ -100,6 +103,18 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
     queryFn: selectedLocationId 
       ? async () => {
           const data = await apiRequest("GET", `/api/categories?locationId=${selectedLocationId}`);
+          return data;
+        }
+      : undefined,
+    enabled: !!selectedLocationId,
+  });
+
+  // Fetch materials for the selected location
+  const { data: materials = [] } = useQuery({
+    queryKey: ["/api/materials", selectedLocationId],
+    queryFn: selectedLocationId 
+      ? async () => {
+          const data = await apiRequest("GET", `/api/materials?locationId=${selectedLocationId}`);
           return data;
         }
       : undefined,
@@ -221,6 +236,7 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
       ...data,
       ageGroupIds: selectedAgeGroups,
       milestoneIds: selectedMilestones,
+      materialIds: selectedMaterials,
       instructions: instructions.filter(inst => inst.text.trim() !== "" || inst.imageUrl),
       locationId: data.locationId || selectedLocationId,
       imageUrl: activityImageUrl,
@@ -261,6 +277,14 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
       prev.includes(milestoneId) 
         ? prev.filter(id => id !== milestoneId)
         : [...prev, milestoneId]
+    );
+  };
+
+  const toggleMaterial = (materialId: string) => {
+    setSelectedMaterials(prev => 
+      prev.includes(materialId) 
+        ? prev.filter(id => id !== materialId)
+        : [...prev, materialId]
     );
   };
 
@@ -468,6 +492,91 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
           </div>
           {selectedMilestones.length === 0 && (
             <p className="text-amber-600 text-sm">Consider selecting relevant milestones for this activity</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Materials Required */}
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold text-lg">Materials Required</h3>
+            <span className="text-sm text-gray-500">
+              {selectedMaterials.length} item{selectedMaterials.length !== 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <div className="space-y-3 max-h-64 overflow-y-auto border rounded-md p-3">
+            {materials.length > 0 ? (
+              materials.map((material: any) => (
+                <div key={material.id} className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-md transition-colors">
+                  <Checkbox
+                    id={`material-${material.id}`}
+                    checked={selectedMaterials.includes(material.id)}
+                    onCheckedChange={() => toggleMaterial(material.id)}
+                    data-testid={`checkbox-material-${material.id}`}
+                    className="mt-1"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <label
+                      htmlFor={`material-${material.id}`}
+                      className="text-sm leading-relaxed cursor-pointer block"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-gray-900">{material.name}</span>
+                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                          {material.category}
+                        </span>
+                        {material.ageGroups && material.ageGroups.length > 0 && (
+                          <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                            {material.ageGroups.join(', ')}
+                          </span>
+                        )}
+                      </div>
+                      {material.description && (
+                        <p className="text-xs text-gray-600 mt-1">{material.description}</p>
+                      )}
+                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                        {material.safetyNotes && (
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
+                            Safety notes available
+                          </span>
+                        )}
+                        <span>Quantity: {material.quantity || 'N/A'}</span>
+                        {material.location && (
+                          <span>Location: {material.location}</span>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p className="text-sm mb-2">No materials found for this location</p>
+                <p className="text-xs">Add materials in the Materials Library to select them here</p>
+              </div>
+            )}
+          </div>
+          {selectedMaterials.length === 0 && materials.length > 0 && (
+            <p className="text-amber-600 text-sm">Select the materials needed for this activity</p>
+          )}
+          {selectedMaterials.length > 0 && (
+            <div className="bg-blue-50 p-3 rounded-md">
+              <p className="text-sm text-blue-800 font-medium mb-1">
+                Materials Selected ({selectedMaterials.length}):
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {selectedMaterials.map((materialId) => {
+                  const material = materials.find((m: any) => m.id === materialId);
+                  return material ? (
+                    <span key={materialId} className="text-xs bg-blue-200 text-blue-900 px-2 py-1 rounded-full">
+                      {material.name}
+                    </span>
+                  ) : null;
+                })}
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
