@@ -35,8 +35,8 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>(
     activity?.materialIds || []
   );
-  const [materialCategoryFilter, setMaterialCategoryFilter] = useState<string>("");
-  const [materialAgeGroupFilter, setMaterialAgeGroupFilter] = useState<string>("");
+  const [materialCategoryFilter, setMaterialCategoryFilter] = useState<string>("all");
+  const [materialAgeGroupFilter, setMaterialAgeGroupFilter] = useState<string>("all");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadingInstructionImage, setUploadingInstructionImage] = useState<number | null>(null);
@@ -49,13 +49,6 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
     resolver: zodResolver(insertActivitySchema.omit({ 
-      ageRangeStart: true, 
-      ageRangeEnd: true,
-      teachingObjectives: true,
-      usageCount: true,
-      lastUsedAt: true,
-      createdAt: true,
-      updatedAt: true,
       id: true,
       tenantId: true
     })),
@@ -292,14 +285,14 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
 
   // Filter materials based on selected filters
   const filteredMaterials = materials.filter((material: any) => {
-    const categoryMatch = !materialCategoryFilter || material.category === materialCategoryFilter;
-    const ageGroupMatch = !materialAgeGroupFilter || 
+    const categoryMatch = materialCategoryFilter === "all" || material.category === materialCategoryFilter;
+    const ageGroupMatch = materialAgeGroupFilter === "all" || 
       (material.ageGroups && material.ageGroups.includes(materialAgeGroupFilter));
     return categoryMatch && ageGroupMatch;
   });
 
   // Get unique categories from materials
-  const materialCategories = [...new Set(materials.map((m: any) => m.category).filter(Boolean))];
+  const materialCategories = Array.from(new Set(materials.map((m: any) => m.category).filter(Boolean)));
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -527,7 +520,7 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   {materialCategories.map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
@@ -542,7 +535,7 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                   <SelectValue placeholder="Filter by age group" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Age Groups</SelectItem>
+                  <SelectItem value="all">All Age Groups</SelectItem>
                   {ageGroups.map((group: any) => (
                     <SelectItem key={group.id} value={group.id}>
                       {group.name}
@@ -551,14 +544,14 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                 </SelectContent>
               </Select>
             </div>
-            {(materialCategoryFilter || materialAgeGroupFilter) && (
+            {(materialCategoryFilter !== "all" || materialAgeGroupFilter !== "all") && (
               <Button 
                 type="button" 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => {
-                  setMaterialCategoryFilter("");
-                  setMaterialAgeGroupFilter("");
+                  setMaterialCategoryFilter("all");
+                  setMaterialAgeGroupFilter("all");
                 }}
                 data-testid="button-clear-filters"
               >
