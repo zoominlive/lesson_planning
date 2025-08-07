@@ -312,11 +312,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filename = `materials/${req.params.filename}`;
       
       const data = await client.downloadAsBytes(filename);
-      res.set('Content-Type', 'image/png');
-      res.send(data);
+      
+      // Set proper headers for image
+      res.setHeader('Content-Type', 'image/png');
+      // Convert to Buffer to get proper length
+      const buffer = Buffer.from(data);
+      res.setHeader('Content-Length', buffer.length);
+      res.end(buffer);
     } catch (error) {
       console.error('Error serving from object storage:', error);
-      res.status(404).send('Image not found');
+      res.status(404).json({ error: 'Image not found' });
     }
   });
 

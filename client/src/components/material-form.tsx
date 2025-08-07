@@ -7,13 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { insertMaterialSchema, type Material } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ObjectUploader } from "./ObjectUploader";
 import { Camera, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { UploadResult } from '@uppy/core';
+import type { UploadResult } from "@uppy/core";
 
 interface MaterialFormProps {
   material?: Material;
@@ -22,13 +28,28 @@ interface MaterialFormProps {
   selectedLocationId: string; // For default selection
 }
 
-export default function MaterialForm({ material, onSuccess, onCancel, selectedLocationId }: MaterialFormProps) {
+export default function MaterialForm({
+  material,
+  onSuccess,
+  onCancel,
+  selectedLocationId,
+}: MaterialFormProps) {
   const { toast } = useToast();
-  const [selectedAgeGroups, setSelectedAgeGroups] = useState<string[]>(material?.ageGroups || []);
-  const [selectedLocations, setSelectedLocations] = useState<string[]>(material?.locationIds || [selectedLocationId]);
+  const [selectedAgeGroups, setSelectedAgeGroups] = useState<string[]>(
+    material?.ageGroups || [],
+  );
+  const [selectedLocations, setSelectedLocations] = useState<string[]>(
+    material?.locationIds || [selectedLocationId],
+  );
   const [photoUrl, setPhotoUrl] = useState<string>(material?.photoUrl || "");
 
-  const { register, handleSubmit, formState: { errors }, setValue, control } = useForm({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    control,
+  } = useForm({
     resolver: zodResolver(insertMaterialSchema),
     defaultValues: {
       name: material?.name || "",
@@ -45,7 +66,8 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
   const firstSelectedLocation = selectedLocations[0] || selectedLocationId;
   const { data: ageGroups = [] } = useQuery({
     queryKey: ["/api/age-groups", firstSelectedLocation],
-    queryFn: () => apiRequest("GET", `/api/age-groups?locationId=${firstSelectedLocation}`),
+    queryFn: () =>
+      apiRequest("GET", `/api/age-groups?locationId=${firstSelectedLocation}`),
     enabled: !!firstSelectedLocation,
   });
 
@@ -55,12 +77,13 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/materials", { 
-      ...data, 
-      ageGroups: selectedAgeGroups,
-      locationIds: selectedLocations,
-      photoUrl 
-    }),
+    mutationFn: (data: any) =>
+      apiRequest("POST", "/api/materials", {
+        ...data,
+        ageGroups: selectedAgeGroups,
+        locationIds: selectedLocations,
+        photoUrl,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
       onSuccess();
@@ -72,12 +95,13 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("PUT", `/api/materials/${material!.id}`, { 
-      ...data, 
-      ageGroups: selectedAgeGroups,
-      locationIds: selectedLocations,
-      photoUrl 
-    }),
+    mutationFn: (data: any) =>
+      apiRequest("PUT", `/api/materials/${material!.id}`, {
+        ...data,
+        ageGroups: selectedAgeGroups,
+        locationIds: selectedLocations,
+        photoUrl,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
       onSuccess();
@@ -89,8 +113,13 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
   });
 
   const uploadPhotoMutation = useMutation({
-    mutationFn: ({ materialId, photoURL }: { materialId: string, photoURL: string }) => 
-      apiRequest("PUT", `/api/materials/${materialId}/photo`, { photoURL }),
+    mutationFn: ({
+      materialId,
+      photoURL,
+    }: {
+      materialId: string;
+      photoURL: string;
+    }) => apiRequest("PUT", `/api/materials/${materialId}/photo`, { photoURL }),
     onSuccess: (result: any) => {
       setPhotoUrl(result.objectPath);
       queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
@@ -109,7 +138,9 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
     };
   };
 
-  const handleUploadComplete = (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+  const handleUploadComplete = (
+    result: UploadResult<Record<string, unknown>, Record<string, unknown>>,
+  ) => {
     if (result.successful && result.successful[0]?.uploadURL && material?.id) {
       uploadPhotoMutation.mutate({
         materialId: material.id,
@@ -119,29 +150,29 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
   };
 
   const handleAgeGroupToggle = (ageGroupId: string) => {
-    setSelectedAgeGroups(prev => 
-      prev.includes(ageGroupId) 
-        ? prev.filter(id => id !== ageGroupId)
-        : [...prev, ageGroupId]
+    setSelectedAgeGroups((prev) =>
+      prev.includes(ageGroupId)
+        ? prev.filter((id) => id !== ageGroupId)
+        : [...prev, ageGroupId],
     );
   };
 
   const handleLocationToggle = (locationId: string) => {
-    setSelectedLocations(prev => 
-      prev.includes(locationId) 
-        ? prev.filter(id => id !== locationId)
-        : [...prev, locationId]
+    setSelectedLocations((prev) =>
+      prev.includes(locationId)
+        ? prev.filter((id) => id !== locationId)
+        : [...prev, locationId],
     );
   };
 
   const onSubmit = (data: any) => {
-    const submissionData = { 
-      ...data, 
+    const submissionData = {
+      ...data,
       ageGroups: selectedAgeGroups,
       locationIds: selectedLocations,
-      photoUrl
+      photoUrl,
     };
-    
+
     if (material) {
       updateMutation.mutate(submissionData);
     } else {
@@ -153,95 +184,114 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
         <Label htmlFor="name">Material Name *</Label>
-        <Input 
-          id="name" 
-          {...register("name")} 
+        <Input
+          id="name"
+          {...register("name")}
           data-testid="input-material-name"
         />
-        {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
+        {errors.name && (
+          <p className="text-red-500 text-sm">{errors.name.message}</p>
+        )}
       </div>
 
       <div>
         <Label htmlFor="description">Description *</Label>
-        <Textarea 
-          id="description" 
-          {...register("description")} 
+        <Textarea
+          id="description"
+          {...register("description")}
           rows={3}
           data-testid="textarea-material-description"
         />
-        {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
+        {errors.description && (
+          <p className="text-red-500 text-sm">{errors.description.message}</p>
+        )}
       </div>
 
       <div>
         <Label>Locations *</Label>
-        <p className="text-sm text-gray-600 mb-2">Select which locations have this material</p>
+        <p className="text-sm text-gray-600 mb-2">
+          Select which locations have this material
+        </p>
         <div className="flex flex-wrap gap-2 p-3 border rounded-md min-h-[40px]">
-          {Array.isArray(locations) && locations.map((location: any) => {
-            const isSelected = selectedLocations.includes(location.id);
-            return (
-              <Badge
-                key={location.id}
-                variant={isSelected ? "default" : "outline"}
-                className={`cursor-pointer hover:scale-105 transition-transform ${
-                  isSelected ? "bg-turquoise text-white" : "hover:bg-gray-100"
-                }`}
-                onClick={() => handleLocationToggle(location.id)}
-                data-testid={`badge-location-${location.id}`}
-              >
-                {location.name}
-                {isSelected && <X className="w-3 h-3 ml-1" />}
-              </Badge>
-            );
-          })}
+          {Array.isArray(locations) &&
+            locations.map((location: any) => {
+              const isSelected = selectedLocations.includes(location.id);
+              return (
+                <Badge
+                  key={location.id}
+                  variant={isSelected ? "default" : "outline"}
+                  className={`cursor-pointer hover:scale-105 transition-transform ${
+                    isSelected ? "bg-turquoise text-white" : "hover:bg-gray-100"
+                  }`}
+                  onClick={() => handleLocationToggle(location.id)}
+                  data-testid={`badge-location-${location.id}`}
+                >
+                  {location.name}
+                  {isSelected && <X className="w-3 h-3 ml-1" />}
+                </Badge>
+              );
+            })}
           {selectedLocations.length === 0 && (
-            <span className="text-gray-500 text-sm">Click locations to select</span>
+            <span className="text-gray-500 text-sm">
+              Click locations to select
+            </span>
           )}
         </div>
         {selectedLocations.length === 0 && (
-          <p className="text-red-500 text-sm">At least one location is required</p>
+          <p className="text-red-500 text-sm">
+            At least one location is required
+          </p>
         )}
       </div>
 
       <div>
-        <Label>Age Groups * (for safety)</Label>
-        <p className="text-sm text-gray-600 mb-2">Select which age groups can safely use this material</p>
+        <Label>Age Groups *</Label>
+        <p className="text-sm text-gray-600 mb-2">
+          Select which age groups can safely use this material
+        </p>
         <div className="flex flex-wrap gap-2 p-3 border rounded-md min-h-[40px]">
-          {Array.isArray(ageGroups) && ageGroups.map((ageGroup: any) => {
-            const isSelected = selectedAgeGroups.includes(ageGroup.id);
-            return (
-              <Badge
-                key={ageGroup.id}
-                variant={isSelected ? "default" : "outline"}
-                className={`cursor-pointer hover:scale-105 transition-transform ${
-                  isSelected ? "bg-coral-red text-white" : "hover:bg-gray-100"
-                }`}
-                onClick={() => handleAgeGroupToggle(ageGroup.id)}
-                data-testid={`badge-age-group-${ageGroup.id}`}
-              >
-                {ageGroup.name}
-                {isSelected && <X className="w-3 h-3 ml-1" />}
-              </Badge>
-            );
-          })}
+          {Array.isArray(ageGroups) &&
+            ageGroups.map((ageGroup: any) => {
+              const isSelected = selectedAgeGroups.includes(ageGroup.id);
+              return (
+                <Badge
+                  key={ageGroup.id}
+                  variant={isSelected ? "default" : "outline"}
+                  className={`cursor-pointer hover:scale-105 transition-transform ${
+                    isSelected ? "bg-coral-red text-white" : "hover:bg-gray-100"
+                  }`}
+                  onClick={() => handleAgeGroupToggle(ageGroup.id)}
+                  data-testid={`badge-age-group-${ageGroup.id}`}
+                >
+                  {ageGroup.name}
+                  {isSelected && <X className="w-3 h-3 ml-1" />}
+                </Badge>
+              );
+            })}
           {selectedAgeGroups.length === 0 && (
-            <span className="text-gray-500 text-sm">Click age groups to select</span>
+            <span className="text-gray-500 text-sm">
+              Click age groups to select
+            </span>
           )}
         </div>
         {selectedAgeGroups.length === 0 && (
-          <p className="text-red-500 text-sm">At least one age group is required for safety</p>
+          <p className="text-red-500 text-sm">
+            At least one age group is required for safety
+          </p>
         )}
       </div>
 
-
       <div>
         <Label htmlFor="location">Storage Location *</Label>
-        <Input 
-          id="location" 
-          {...register("location")} 
+        <Input
+          id="location"
+          {...register("location")}
           placeholder="e.g., Art Cabinet A, Block Area..."
           data-testid="input-material-location"
         />
-        {errors.location && <p className="text-red-500 text-sm">{errors.location.message}</p>}
+        {errors.location && (
+          <p className="text-red-500 text-sm">{errors.location.message}</p>
+        )}
       </div>
 
       <div>
@@ -249,7 +299,11 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
         <div className="flex items-center gap-4">
           {photoUrl ? (
             <div className="relative">
-              <img src={photoUrl} alt="Material" className="w-20 h-20 object-cover rounded-lg" />
+              <img
+                src={photoUrl}
+                alt="Material"
+                className="w-20 h-20 object-cover rounded-lg"
+              />
               <Button
                 type="button"
                 variant="outline"
@@ -277,11 +331,16 @@ export default function MaterialForm({ material, onSuccess, onCancel, selectedLo
       </div>
 
       <div className="flex justify-end space-x-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} data-testid="button-cancel">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          data-testid="button-cancel"
+        >
           Cancel
         </Button>
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           className="bg-gradient-to-r from-turquoise to-sky-blue text-white"
           disabled={createMutation.isPending || updateMutation.isPending}
           data-testid="button-save-material"
