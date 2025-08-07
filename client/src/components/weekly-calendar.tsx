@@ -90,17 +90,17 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
   const getCategoryGradient = (category: string) => {
     switch (category) {
       case "Social Development":
-        return "from-mint-green to-emerald-500";
+        return "from-mint-green/30 to-mint-green/50";
       case "Art & Creativity":
-        return "from-coral-red to-pink-500";
+        return "from-coral-red/30 to-coral-red/50";
       case "Physical Development":
-        return "from-turquoise to-blue-500";
+        return "from-turquoise/30 to-turquoise/50";
       case "Cognitive Development":
-        return "from-sky-blue to-indigo-500";
+        return "from-sky-blue/30 to-sky-blue/50";
       case "Music & Movement":
-        return "from-soft-yellow to-amber-500";
+        return "from-soft-yellow/30 to-soft-yellow/50";
       default:
-        return "from-gray-400 to-gray-600";
+        return "from-gray-200 to-gray-300";
     }
   };
 
@@ -283,15 +283,15 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
                     data-testid={`calendar-slot-${day.id}-${slot.id}`}
                   >
                     {scheduledActivity ? (
-                      <div className={`bg-gradient-to-br ${getCategoryGradient(scheduledActivity.activity?.category || 'Other')} text-white rounded-lg p-2 h-full flex flex-col justify-between cursor-move shadow-md hover:shadow-lg transition-all`}>
+                      <div className={`bg-gradient-to-br ${getCategoryGradient(scheduledActivity.activity?.category || 'Other')} border border-gray-200 rounded-lg p-2 h-full flex flex-col justify-between cursor-move shadow-sm hover:shadow-md transition-all`}>
                         <div>
-                          <h4 className="font-semibold text-xs line-clamp-2" data-testid={`activity-title-${scheduledActivity.activity?.id}`}>
+                          <h4 className="font-semibold text-xs text-charcoal line-clamp-2" data-testid={`activity-title-${scheduledActivity.activity?.id}`}>
                             {scheduledActivity.activity?.title || 'Untitled Activity'}
                           </h4>
-                          <p className="text-xs opacity-90 mt-1">{scheduledActivity.activity?.category || 'Uncategorized'}</p>
+                          <p className="text-xs text-gray-600 mt-1">{scheduledActivity.activity?.category || 'Uncategorized'}</p>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium">{scheduledActivity.activity?.duration || 30} min</span>
+                          <span className="text-xs text-gray-500 font-medium">{scheduledActivity.activity?.duration || 30} min</span>
                         </div>
                       </div>
                     ) : (
