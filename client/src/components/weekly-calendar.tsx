@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Play, Package, Filter, X } from "lucide-react";
+import { Search, Plus, Play, Package, Filter, X, Trash2 } from "lucide-react";
 import DraggableActivity from "./draggable-activity";
 import { toast } from "@/hooks/use-toast";
 import type { Activity, Category, AgeGroup } from "@shared/schema";
@@ -121,6 +121,39 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
     dropZone.classList.remove("drag-over");
   };
 
+
+  const deleteScheduledMutation = useMutation({
+    mutationFn: async (scheduledActivityId: string) => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`/api/scheduled-activities/${scheduledActivityId}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete scheduled activity');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom] });
+      toast({
+        title: "Activity Removed",
+        description: "The activity has been removed from the schedule.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Delete Failed",
+        description: "Unable to remove the activity. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const scheduleMutation = useMutation({
     mutationFn: async ({ activityId, dayOfWeek, timeSlot }: { activityId: string; dayOfWeek: number; timeSlot: number }) => {
@@ -283,9 +316,20 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
                     data-testid={`calendar-slot-${day.id}-${slot.id}`}
                   >
                     {scheduledActivity ? (
-                      <div className={`bg-gradient-to-br ${getCategoryGradient(scheduledActivity.activity?.category || 'Other')} border border-gray-200 rounded-lg p-2 h-full flex flex-col justify-between cursor-move shadow-sm hover:shadow-md transition-all`}>
+                      <div className={`bg-gradient-to-br ${getCategoryGradient(scheduledActivity.activity?.category || 'Other')} border border-gray-200 rounded-lg p-2 h-full flex flex-col justify-between cursor-move shadow-sm hover:shadow-md transition-all relative group`}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            deleteScheduledMutation.mutate(scheduledActivity.id);
+                          }}
+                          className="absolute top-1 right-1 p-1 rounded bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100"
+                          title="Remove from schedule"
+                        >
+                          <Trash2 className="h-3 w-3 text-red-500" />
+                        </button>
                         <div>
-                          <h4 className="font-semibold text-xs text-charcoal line-clamp-2" data-testid={`activity-title-${scheduledActivity.activity?.id}`}>
+                          <h4 className="font-semibold text-xs text-charcoal line-clamp-2 pr-6" data-testid={`activity-title-${scheduledActivity.activity?.id}`}>
                             {scheduledActivity.activity?.title || 'Untitled Activity'}
                           </h4>
                           <p className="text-xs text-gray-600 mt-1">{scheduledActivity.activity?.category || 'Uncategorized'}</p>
