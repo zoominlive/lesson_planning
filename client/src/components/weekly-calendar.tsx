@@ -137,8 +137,8 @@ export default function WeeklyCalendar() {
             <div key={day.id} className="border-r border-gray-200 last:border-r-0">
               {/* Day Header */}
               <div className="h-16 bg-gradient-to-r from-coral-red to-turquoise text-white border-b border-gray-200 flex flex-col items-center justify-center">
-                <span className="font-bold text-lg" data-testid={`day-name-${day.id}`}>{day.name}</span>
-                <span className="text-sm opacity-90" data-testid={`day-date-${day.id}`}>{day.date}</span>
+                <span className="font-bold text-xl tracking-wide" data-testid={`day-name-${day.id}`}>{day.name}</span>
+                <span className="text-xs opacity-75 mt-1" data-testid={`day-date-${day.id}`}>{day.date}</span>
               </div>
               
               {/* Time Slots */}
