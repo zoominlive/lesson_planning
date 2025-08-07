@@ -255,29 +255,31 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
   });
 
   const onSubmit = (data: any) => {
-    // Filter out AI-generated fields that aren't in the database schema
-    const { 
-      objectives, 
-      preparationTime, 
-      safetyConsiderations, 
-      spaceRequired, 
-      groupSize, 
-      messLevel, 
-      variations,
-      imagePrompt,
-      ...validData 
-    } = data;
+    console.log('[ActivityForm] Submitting activity with raw data:', data);
+    
+    // Remove only the imagePrompt field as it's not stored in the database
+    const { imagePrompt, ...dataWithoutPrompt } = data;
 
     const formData = {
-      ...validData,
+      ...dataWithoutPrompt,
       ageGroupIds: selectedAgeGroups,
       milestoneIds: selectedMilestones,
       materialIds: selectedMaterials,
       instructions: instructions.filter(inst => inst.text.trim() !== "" || inst.imageUrl),
-      locationId: validData.locationId || selectedLocationId,
+      locationId: dataWithoutPrompt.locationId || selectedLocationId,
       imageUrl: activityImageUrl,
       videoUrl: activityVideoUrl,
+      // Include AI-generated fields if they exist
+      objectives: dataWithoutPrompt.objectives || [],
+      preparationTime: dataWithoutPrompt.preparationTime || null,
+      safetyConsiderations: dataWithoutPrompt.safetyConsiderations || [],
+      spaceRequired: dataWithoutPrompt.spaceRequired || null,
+      groupSize: dataWithoutPrompt.groupSize || null,
+      messLevel: dataWithoutPrompt.messLevel || null,
+      variations: dataWithoutPrompt.variations || [],
     };
+
+    console.log('[ActivityForm] Final form data being sent:', formData);
 
     if (activity) {
       updateMutation.mutate(formData);

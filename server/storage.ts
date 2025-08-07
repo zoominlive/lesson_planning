@@ -304,12 +304,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createActivity(insertActivity: InsertActivity): Promise<Activity> {
+    console.log('[DatabaseStorage] Creating activity with data:', insertActivity);
     const activityData = this.tenantId ? { ...insertActivity, tenantId: this.tenantId } : insertActivity;
-    const [activity] = await this.db
-      .insert(activities)
-      .values(activityData)
-      .returning();
-    return activity;
+    console.log('[DatabaseStorage] Activity data with tenant:', activityData);
+    
+    try {
+      const [activity] = await this.db
+        .insert(activities)
+        .values(activityData)
+        .returning();
+      console.log('[DatabaseStorage] Activity created successfully:', activity.id);
+      return activity;
+    } catch (error) {
+      console.error('[DatabaseStorage] Error creating activity:', error);
+      throw error;
+    }
   }
 
   async updateActivity(id: string, updates: Partial<InsertActivity>): Promise<Activity | undefined> {

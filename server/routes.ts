@@ -592,19 +592,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/activities", async (req: AuthenticatedRequest, res) => {
+    console.log('[POST /api/activities] Request body:', req.body);
+    
     try {
+      // Parse and validate the activity data with the schema
       const data = insertActivitySchema.parse(req.body);
+      console.log('[POST /api/activities] Parsed data:', data);
       
       // Validate location access
       const accessCheck = await validateLocationAccess(req, data.locationId);
       if (!accessCheck.allowed) {
+        console.log('[POST /api/activities] Location access denied:', accessCheck.message);
         return res.status(403).json({ error: accessCheck.message });
       }
       
+      // Create the activity with all fields including AI-generated ones
       const activity = await storage.createActivity(data);
+      console.log('[POST /api/activities] Activity created successfully with ID:', activity.id);
       res.status(201).json(activity);
     } catch (error) {
-      res.status(400).json({ error: "Invalid activity data" });
+      console.error('[POST /api/activities] Error creating activity:', error);
+      if (error instanceof Error) {
+        console.error('[POST /api/activities] Error details:', error.message);
+        console.error('[POST /api/activities] Error stack:', error.stack);
+      }
+      res.status(400).json({ error: "Invalid activity data", details: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 

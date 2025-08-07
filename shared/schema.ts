@@ -81,6 +81,15 @@ export const activities = pgTable("activities", {
   videoUrl: text("video_url"),
   imageUrl: text("image_url"),
   category: text("category").notNull(),
+  // AI-generated fields
+  objectives: json("objectives").$type<string[]>().default([]), // Learning objectives
+  preparationTime: integer("preparation_time"), // Setup time in minutes
+  safetyConsiderations: json("safety_considerations").$type<string[]>().default([]),
+  spaceRequired: text("space_required"), // Indoor/Outdoor/Both
+  groupSize: text("group_size"), // e.g. "1-4 children"
+  messLevel: text("mess_level"), // Low/Medium/High
+  variations: json("variations").$type<string[]>().default([]), // Activity variations
+  // System fields
   status: text("status").notNull().default("active"), // active, disabled
   usageCount: integer("usage_count").default(0),
   lastUsedAt: timestamp("last_used_at"),
