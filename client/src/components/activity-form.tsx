@@ -30,7 +30,7 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
     initialData?.instructions || activity?.instructions || [{ text: "" }]
   );
   const [selectedAgeGroups, setSelectedAgeGroups] = useState<string[]>(
-    activity?.ageGroupIds || []
+    activity?.ageGroupIds || (initialData?.selectedAgeGroupId ? [initialData.selectedAgeGroupId] : [])
   );
   const [selectedMilestones, setSelectedMilestones] = useState<string[]>(
     activity?.milestoneIds || []
@@ -379,7 +379,7 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
 
             <div>
               <Label htmlFor="category">Category *</Label>
-              <Select onValueChange={(value) => setValue("category", value)} defaultValue={activity?.category}>
+              <Select onValueChange={(value) => setValue("category", value)} defaultValue={initialData?.category || activity?.category}>
                 <SelectTrigger data-testid="select-activity-category">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>

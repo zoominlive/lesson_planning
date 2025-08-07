@@ -70,7 +70,12 @@ export default function AiActivityGenerator({
       const generatedActivity = await response.json();
       
       // Pass the generated activity data to the parent component
-      onGenerated(generatedActivity);
+      // Include the selected category and age group from the wizard
+      onGenerated({
+        ...generatedActivity,
+        category: selectedCategory,
+        selectedAgeGroupId: selectedAgeGroup
+      });
       
       // Reset the dialog
       setStep(1);
