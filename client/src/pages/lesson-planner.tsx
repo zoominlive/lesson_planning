@@ -7,9 +7,11 @@ import { FloatingActionButton } from "@/components/floating-action-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 import WeeklyCalendar from "@/components/weekly-calendar";
-import { Settings } from "lucide-react";
+import { Settings, MapPin } from "lucide-react";
 import { useLocation } from "wouter";
+import { getUserInfo } from "@/lib/auth";
 
 type UserInfo = {
   tenantId: string;
@@ -18,6 +20,7 @@ type UserInfo = {
   userLastName: string;
   username: string;
   role: string;
+  locations?: string[];
 };
 
 export default function LessonPlanner() {
@@ -71,6 +74,23 @@ export default function LessonPlanner() {
                 <p className="text-sm text-gray-500" data-testid="classroom-name">
                   {userInfo?.role ? userInfo.role : "Loading..."}
                 </p>
+                {userInfo?.locations && userInfo.locations.length > 0 && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <MapPin className="h-3 w-3 text-gray-400" />
+                    <div className="flex gap-1">
+                      {userInfo.locations.map((location, idx) => (
+                        <Badge 
+                          key={idx} 
+                          variant="secondary" 
+                          className="text-xs py-0 h-5"
+                          data-testid={`location-badge-${idx}`}
+                        >
+                          {location}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {userInfo?.role === "Admin" && (

@@ -358,6 +358,17 @@ export class DatabaseStorage implements IStorage {
     return await this.db.select().from(scheduledActivities).where(and(...conditions));
   }
 
+  async getScheduledActivity(id: string): Promise<ScheduledActivity | undefined> {
+    const conditions = [eq(scheduledActivities.id, id)];
+    if (this.tenantId) conditions.push(eq(scheduledActivities.tenantId, this.tenantId));
+    
+    const [scheduledActivity] = await this.db
+      .select()
+      .from(scheduledActivities)
+      .where(and(...conditions));
+    return scheduledActivity;
+  }
+
   async createScheduledActivity(insertScheduledActivity: InsertScheduledActivity): Promise<ScheduledActivity> {
     const scheduledActivityData = this.tenantId ? { ...insertScheduledActivity, tenantId: this.tenantId } : insertScheduledActivity;
     const [scheduledActivity] = await this.db

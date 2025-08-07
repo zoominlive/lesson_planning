@@ -77,6 +77,65 @@ export function generateJwtSecret(): string {
   return require('crypto').randomBytes(64).toString('hex');
 }
 
+// Location validation helper
+export async function validateLocationAccess(
+  req: AuthenticatedRequest,
+  requestedLocationId?: string
+): Promise<{ allowed: boolean; message?: string }> {
+  // If no location ID is requested, allow the request (for list operations)
+  if (!requestedLocationId) {
+    return { allowed: true };
+  }
+
+  // If user has no locations in JWT, deny access
+  if (!req.locations || req.locations.length === 0) {
+    return { 
+      allowed: false, 
+      message: "User has no authorized locations" 
+    };
+  }
+
+  // Get the location details to match name with ID
+  const location = await storage.getLocation(requestedLocationId);
+  if (!location) {
+    return { 
+      allowed: false, 
+      message: "Location not found" 
+    };
+  }
+
+  // Check if the location name is in the user's authorized locations
+  const hasAccess = req.locations.includes(location.name);
+  
+  if (!hasAccess) {
+    return { 
+      allowed: false, 
+      message: `Access denied to location: ${location.name}` 
+    };
+  }
+
+  return { allowed: true };
+}
+
+// Helper to filter locations based on user's authorized locations
+export async function getUserAuthorizedLocationIds(
+  req: AuthenticatedRequest
+): Promise<string[]> {
+  if (!req.locations || req.locations.length === 0) {
+    return [];
+  }
+
+  // Get all locations for this tenant
+  const allLocations = await storage.getLocations();
+  
+  // Filter to only locations the user has access to
+  const authorizedLocations = allLocations.filter(loc => 
+    req.locations!.includes(loc.name)
+  );
+
+  return authorizedLocations.map(loc => loc.id);
+}
+
 // Generate development JWT token
 export function generateDevelopmentToken(): string {
   const payload = {

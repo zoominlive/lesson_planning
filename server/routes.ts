@@ -1,7 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { type AuthenticatedRequest, generateDevelopmentToken, authenticateToken } from "./auth-middleware";
+import { 
+  type AuthenticatedRequest, 
+  generateDevelopmentToken, 
+  authenticateToken,
+  validateLocationAccess,
+  getUserAuthorizedLocationIds 
+} from "./auth-middleware";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -68,10 +74,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Milestones routes
-  app.get("/api/milestones", async (req, res) => {
+  app.get("/api/milestones", async (req: AuthenticatedRequest, res) => {
     try {
       const { locationId } = req.query;
-      const milestones = await storage.getMilestones(locationId as string);
+      
+      // Validate location access if locationId is provided
+      if (locationId) {
+        const accessCheck = await validateLocationAccess(req, locationId as string);
+        if (!accessCheck.allowed) {
+          return res.status(403).json({ error: accessCheck.message });
+        }
+      }
+      
+      // Get authorized location IDs for filtering
+      const authorizedLocationIds = await getUserAuthorizedLocationIds(req);
+      
+      // Filter milestones to only authorized locations
+      let milestones = await storage.getMilestones(locationId as string);
+      
+      // If no specific location requested, filter to only authorized locations
+      if (!locationId && authorizedLocationIds.length > 0) {
+        milestones = milestones.filter(m => 
+          authorizedLocationIds.includes(m.locationId)
+        );
+      }
+      
       res.json(milestones);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch milestones" });
@@ -81,6 +108,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/milestones", async (req: AuthenticatedRequest, res) => {
     try {
       const data = insertMilestoneSchema.parse(req.body);
+      
+      // Validate that user has access to the location they're creating the milestone in
+      const accessCheck = await validateLocationAccess(req, data.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
       const milestone = await storage.createMilestone(data);
       res.status(201).json(milestone);
     } catch (error) {
@@ -89,27 +123,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/milestones/:id", async (req, res) => {
+  app.put("/api/milestones/:id", async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const data = insertMilestoneSchema.partial().parse(req.body);
-      const milestone = await storage.updateMilestone(id, data);
-      if (!milestone) {
+      
+      // Get existing milestone to check location access
+      const existing = await storage.getMilestone(id);
+      if (!existing) {
         return res.status(404).json({ error: "Milestone not found" });
       }
+      
+      // Validate access to existing location
+      const accessCheck = await validateLocationAccess(req, existing.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
+      // If changing location, validate access to new location
+      if (data.locationId && data.locationId !== existing.locationId) {
+        const newAccessCheck = await validateLocationAccess(req, data.locationId);
+        if (!newAccessCheck.allowed) {
+          return res.status(403).json({ error: `Cannot move to location: ${newAccessCheck.message}` });
+        }
+      }
+      
+      const milestone = await storage.updateMilestone(id, data);
       res.json(milestone);
     } catch (error) {
       res.status(400).json({ error: "Invalid milestone data" });
     }
   });
 
-  app.delete("/api/milestones/:id", async (req, res) => {
+  app.delete("/api/milestones/:id", async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
-      const deleted = await storage.deleteMilestone(id);
-      if (!deleted) {
+      
+      // Get milestone to check location access
+      const milestone = await storage.getMilestone(id);
+      if (!milestone) {
         return res.status(404).json({ error: "Milestone not found" });
       }
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, milestone.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
+      const deleted = await storage.deleteMilestone(id);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete milestone" });
@@ -117,21 +179,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Materials routes
-  app.get("/api/materials", async (req, res) => {
+  app.get("/api/materials", async (req: AuthenticatedRequest, res) => {
     try {
       const { locationId } = req.query;
-      const materials = locationId 
+      
+      // Validate location access if locationId is provided
+      if (locationId) {
+        const accessCheck = await validateLocationAccess(req, locationId as string);
+        if (!accessCheck.allowed) {
+          return res.status(403).json({ error: accessCheck.message });
+        }
+      }
+      
+      // Get authorized location IDs for filtering
+      const authorizedLocationIds = await getUserAuthorizedLocationIds(req);
+      
+      // Get materials
+      let materials = locationId 
         ? await storage.getMaterialsByLocation(locationId as string)
         : await storage.getMaterials();
+      
+      // Filter materials to only include those in authorized locations
+      if (authorizedLocationIds.length > 0) {
+        materials = materials.filter(m => {
+          // Check if any of the material's locationIds are in the authorized list
+          return m.locationIds && m.locationIds.some(locId => 
+            authorizedLocationIds.includes(locId)
+          );
+        });
+      }
+      
       res.json(materials);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch materials" });
     }
   });
 
-  app.post("/api/materials", async (req, res) => {
+  app.post("/api/materials", async (req: AuthenticatedRequest, res) => {
     try {
       const data = insertMaterialSchema.parse(req.body);
+      
+      // Validate that user has access to ALL locations they're assigning the material to
+      if (data.locationIds && data.locationIds.length > 0) {
+        for (const locId of data.locationIds) {
+          const accessCheck = await validateLocationAccess(req, locId);
+          if (!accessCheck.allowed) {
+            return res.status(403).json({ error: `Access denied: ${accessCheck.message}` });
+          }
+        }
+      }
+      
       const material = await storage.createMaterial(data);
       res.status(201).json(material);
     } catch (error) {
@@ -139,27 +236,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/materials/:id", async (req, res) => {
+  app.put("/api/materials/:id", async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const data = insertMaterialSchema.partial().parse(req.body);
-      const material = await storage.updateMaterial(id, data);
-      if (!material) {
+      
+      // Get existing material to check location access
+      const existing = await storage.getMaterial(id);
+      if (!existing) {
         return res.status(404).json({ error: "Material not found" });
       }
+      
+      // Validate access to ALL existing locations
+      if (existing.locationIds) {
+        for (const locId of existing.locationIds) {
+          const accessCheck = await validateLocationAccess(req, locId);
+          if (!accessCheck.allowed) {
+            return res.status(403).json({ error: accessCheck.message });
+          }
+        }
+      }
+      
+      // If changing locations, validate access to ALL new locations
+      if (data.locationIds) {
+        for (const locId of data.locationIds) {
+          const accessCheck = await validateLocationAccess(req, locId);
+          if (!accessCheck.allowed) {
+            return res.status(403).json({ error: `Cannot assign to location: ${accessCheck.message}` });
+          }
+        }
+      }
+      
+      const material = await storage.updateMaterial(id, data);
       res.json(material);
     } catch (error) {
       res.status(400).json({ error: "Invalid material data" });
     }
   });
 
-  app.delete("/api/materials/:id", async (req, res) => {
+  app.delete("/api/materials/:id", async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
-      const deleted = await storage.deleteMaterial(id);
-      if (!deleted) {
+      
+      // Get material to check location access
+      const material = await storage.getMaterial(id);
+      if (!material) {
         return res.status(404).json({ error: "Material not found" });
       }
+      
+      // Validate access to ALL material locations
+      if (material.locationIds) {
+        for (const locId of material.locationIds) {
+          const accessCheck = await validateLocationAccess(req, locId);
+          if (!accessCheck.allowed) {
+            return res.status(403).json({ error: accessCheck.message });
+          }
+        }
+      }
+      
+      const deleted = await storage.deleteMaterial(id);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete material" });
@@ -226,19 +361,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Activities routes
-  app.get("/api/activities", async (req, res) => {
+  app.get("/api/activities", async (req: AuthenticatedRequest, res) => {
     try {
       const { locationId } = req.query;
-      const activities = await storage.getActivities(locationId as string);
+      
+      // Validate location access if locationId is provided
+      if (locationId) {
+        const accessCheck = await validateLocationAccess(req, locationId as string);
+        if (!accessCheck.allowed) {
+          return res.status(403).json({ error: accessCheck.message });
+        }
+      }
+      
+      // Get authorized location IDs for filtering
+      const authorizedLocationIds = await getUserAuthorizedLocationIds(req);
+      
+      // Get activities
+      let activities = await storage.getActivities(locationId as string);
+      
+      // Filter to only authorized locations if no specific location requested
+      if (!locationId && authorizedLocationIds.length > 0) {
+        activities = activities.filter(a => 
+          authorizedLocationIds.includes(a.locationId)
+        );
+      }
+      
       res.json(activities);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch activities" });
     }
   });
 
-  app.post("/api/activities", async (req, res) => {
+  app.post("/api/activities", async (req: AuthenticatedRequest, res) => {
     try {
       const data = insertActivitySchema.parse(req.body);
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, data.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
       const activity = await storage.createActivity(data);
       res.status(201).json(activity);
     } catch (error) {
@@ -246,27 +409,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/activities/:id", async (req, res) => {
+  app.put("/api/activities/:id", async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const data = insertActivitySchema.partial().parse(req.body);
-      const activity = await storage.updateActivity(id, data);
-      if (!activity) {
+      
+      // Get existing activity to check location access
+      const existing = await storage.getActivity(id);
+      if (!existing) {
         return res.status(404).json({ error: "Activity not found" });
       }
+      
+      // Validate access to existing location
+      const accessCheck = await validateLocationAccess(req, existing.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
+      // If changing location, validate access to new location
+      if (data.locationId && data.locationId !== existing.locationId) {
+        const newAccessCheck = await validateLocationAccess(req, data.locationId);
+        if (!newAccessCheck.allowed) {
+          return res.status(403).json({ error: `Cannot move to location: ${newAccessCheck.message}` });
+        }
+      }
+      
+      const activity = await storage.updateActivity(id, data);
       res.json(activity);
     } catch (error) {
       res.status(400).json({ error: "Invalid activity data" });
     }
   });
 
-  app.delete("/api/activities/:id", async (req, res) => {
+  app.delete("/api/activities/:id", async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
-      const deleted = await storage.deleteActivity(id);
-      if (!deleted) {
+      
+      // Get activity to check location access
+      const activity = await storage.getActivity(id);
+      if (!activity) {
         return res.status(404).json({ error: "Activity not found" });
       }
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, activity.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
+      const deleted = await storage.deleteActivity(id);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete activity" });
@@ -274,23 +465,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Lesson Plans routes
-  app.get("/api/lesson-plans", async (req, res) => {
+  app.get("/api/lesson-plans", async (req: AuthenticatedRequest, res) => {
     try {
       const { teacherId, locationId, roomId } = req.query;
-      const lessonPlans = await storage.getLessonPlans(
+      
+      // Validate location access if locationId is provided
+      if (locationId) {
+        const accessCheck = await validateLocationAccess(req, locationId as string);
+        if (!accessCheck.allowed) {
+          return res.status(403).json({ error: accessCheck.message });
+        }
+      }
+      
+      // Get authorized location IDs for filtering
+      const authorizedLocationIds = await getUserAuthorizedLocationIds(req);
+      
+      // Get lesson plans
+      let lessonPlans = await storage.getLessonPlans(
         teacherId as string, 
         locationId as string, 
         roomId as string
       );
+      
+      // Filter to only authorized locations if no specific location requested
+      if (!locationId && authorizedLocationIds.length > 0) {
+        lessonPlans = lessonPlans.filter(lp => 
+          authorizedLocationIds.includes(lp.locationId)
+        );
+      }
+      
       res.json(lessonPlans);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch lesson plans" });
     }
   });
 
-  app.post("/api/lesson-plans", async (req, res) => {
+  app.post("/api/lesson-plans", async (req: AuthenticatedRequest, res) => {
     try {
       const data = insertLessonPlanSchema.parse(req.body);
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, data.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
       const lessonPlan = await storage.createLessonPlan(data);
       res.status(201).json(lessonPlan);
     } catch (error) {
@@ -298,14 +517,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/lesson-plans/:id", async (req, res) => {
+  app.put("/api/lesson-plans/:id", async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const data = insertLessonPlanSchema.partial().parse(req.body);
-      const lessonPlan = await storage.updateLessonPlan(id, data);
-      if (!lessonPlan) {
+      
+      // Get existing lesson plan to check location access
+      const existing = await storage.getLessonPlan(id);
+      if (!existing) {
         return res.status(404).json({ error: "Lesson plan not found" });
       }
+      
+      // Validate access to existing location
+      const accessCheck = await validateLocationAccess(req, existing.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
+      // If changing location, validate access to new location
+      if (data.locationId && data.locationId !== existing.locationId) {
+        const newAccessCheck = await validateLocationAccess(req, data.locationId);
+        if (!newAccessCheck.allowed) {
+          return res.status(403).json({ error: `Cannot move to location: ${newAccessCheck.message}` });
+        }
+      }
+      
+      const lessonPlan = await storage.updateLessonPlan(id, data);
       res.json(lessonPlan);
     } catch (error) {
       res.status(400).json({ error: "Invalid lesson plan data" });
@@ -338,27 +575,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/scheduled-activities/:id", async (req, res) => {
+  app.put("/api/scheduled-activities/:id", async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const data = insertScheduledActivitySchema.partial().parse(req.body);
-      const scheduledActivity = await storage.updateScheduledActivity(id, data);
-      if (!scheduledActivity) {
+      
+      // Get existing scheduled activity to check location access
+      const existing = await storage.getScheduledActivity(id);
+      if (!existing) {
         return res.status(404).json({ error: "Scheduled activity not found" });
       }
+      
+      // Validate access to existing location
+      const accessCheck = await validateLocationAccess(req, existing.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
+      // If changing location, validate access to new location
+      if (data.locationId && data.locationId !== existing.locationId) {
+        const newAccessCheck = await validateLocationAccess(req, data.locationId);
+        if (!newAccessCheck.allowed) {
+          return res.status(403).json({ error: `Cannot move to location: ${newAccessCheck.message}` });
+        }
+      }
+      
+      const scheduledActivity = await storage.updateScheduledActivity(id, data);
       res.json(scheduledActivity);
     } catch (error) {
       res.status(400).json({ error: "Invalid scheduled activity data" });
     }
   });
 
-  app.delete("/api/scheduled-activities/:id", async (req, res) => {
+  app.delete("/api/scheduled-activities/:id", async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
-      const deleted = await storage.deleteScheduledActivity(id);
-      if (!deleted) {
+      
+      // Get scheduled activity to check location access
+      const scheduledActivity = await storage.getScheduledActivity(id);
+      if (!scheduledActivity) {
         return res.status(404).json({ error: "Scheduled activity not found" });
       }
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, scheduledActivity.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
+      const deleted = await storage.deleteScheduledActivity(id);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete scheduled activity" });
@@ -366,10 +631,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Settings API Routes - Locations
-  app.get("/api/locations", async (req, res) => {
+  app.get("/api/locations", async (req: AuthenticatedRequest, res) => {
     try {
       const locations = await storage.getLocations();
-      res.json(locations);
+      
+      // Filter locations to only those the user has access to
+      const filteredLocations = locations.filter(loc => 
+        req.locations && req.locations.includes(loc.name)
+      );
+      
+      res.json(filteredLocations);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch locations" });
     }
@@ -414,10 +685,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Settings API Routes - Rooms  
-  app.get("/api/rooms", async (req, res) => {
+  app.get("/api/rooms", async (req: AuthenticatedRequest, res) => {
     try {
       const rooms = await storage.getRooms();
-      res.json(rooms);
+      
+      // Get authorized location IDs
+      const authorizedLocationIds = await getUserAuthorizedLocationIds(req);
+      
+      // Filter rooms to only those in authorized locations
+      const filteredRooms = rooms.filter(room => 
+        authorizedLocationIds.includes(room.locationId)
+      );
+      
+      res.json(filteredRooms);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch rooms" });
     }
@@ -426,6 +706,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/rooms", async (req: AuthenticatedRequest, res) => {
     try {
       const data = insertRoomSchema.parse(req.body);
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, data.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
       const room = await storage.createRoom(data);
       res.status(201).json(room);
     } catch (error) {
@@ -438,9 +725,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/categories", async (req: AuthenticatedRequest, res) => {
     try {
       const { locationId } = req.query;
-      const categories = locationId 
+      
+      // Validate location access if locationId is provided
+      if (locationId) {
+        const accessCheck = await validateLocationAccess(req, locationId as string);
+        if (!accessCheck.allowed) {
+          return res.status(403).json({ error: accessCheck.message });
+        }
+      }
+      
+      // Get authorized location IDs
+      const authorizedLocationIds = await getUserAuthorizedLocationIds(req);
+      
+      // Get categories
+      let categories = locationId 
         ? await storage.getCategoriesByLocation(locationId as string)
         : await storage.getCategories();
+      
+      // Filter to only authorized locations if no specific location requested
+      if (!locationId && authorizedLocationIds.length > 0) {
+        categories = categories.filter(c => 
+          authorizedLocationIds.includes(c.locationId)
+        );
+      }
+      
       res.json(categories);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch categories" });
@@ -450,6 +758,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/categories", async (req: AuthenticatedRequest, res) => {
     try {
       const data = insertCategorySchema.parse(req.body);
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, data.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
       const category = await storage.createCategory(data);
       res.status(201).json(category);
     } catch (error) {
@@ -492,7 +807,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { locationId } = req.query;
       console.log("Age groups API called with locationId:", locationId, "tenantId:", req.tenantId);
-      const ageGroups = await storage.getAgeGroups(locationId as string);
+      
+      // Validate location access if locationId is provided
+      if (locationId) {
+        const accessCheck = await validateLocationAccess(req, locationId as string);
+        if (!accessCheck.allowed) {
+          return res.status(403).json({ error: accessCheck.message });
+        }
+      }
+      
+      // Get authorized location IDs
+      const authorizedLocationIds = await getUserAuthorizedLocationIds(req);
+      
+      // Get age groups
+      let ageGroups = await storage.getAgeGroups(locationId as string);
+      
+      // Filter to only authorized locations if no specific location requested
+      if (!locationId && authorizedLocationIds.length > 0) {
+        ageGroups = ageGroups.filter(ag => 
+          authorizedLocationIds.includes(ag.locationId)
+        );
+      }
+      
       console.log("Found age groups:", ageGroups.length);
       res.json(ageGroups);
     } catch (error) {
@@ -504,6 +840,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/age-groups", async (req: AuthenticatedRequest, res) => {
     try {
       const data = insertAgeGroupSchema.parse(req.body);
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, data.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
       const ageGroup = await storage.createAgeGroup(data);
       res.status(201).json(ageGroup);
     } catch (error) {

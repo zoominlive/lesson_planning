@@ -50,6 +50,50 @@ function getTokenFromUrl(): string | null {
 }
 
 // Listen for postMessage authentication tokens and check URL parameters
+// Get user information from stored JWT token
+export interface UserInfo {
+  tenantId: string;
+  userId: string;
+  userFirstName: string;
+  userLastName: string;
+  username: string;
+  role: string;
+  locations: string[];
+}
+
+export function getUserInfo(): UserInfo | null {
+  const token = getAuthToken();
+  if (!token) return null;
+  
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return {
+      tenantId: payload.tenantId,
+      userId: payload.userId,
+      userFirstName: payload.userFirstName,
+      userLastName: payload.userLastName,
+      username: payload.username,
+      role: payload.role,
+      locations: payload.locations || []
+    };
+  } catch (e) {
+    console.warn('Could not decode user info from token:', e);
+    return null;
+  }
+}
+
+// Get authorized locations from JWT
+export function getUserAuthorizedLocations(): string[] {
+  const userInfo = getUserInfo();
+  return userInfo?.locations || [];
+}
+
+// Check if user has access to a specific location
+export function hasLocationAccess(locationName: string): boolean {
+  const authorizedLocations = getUserAuthorizedLocations();
+  return authorizedLocations.includes(locationName);
+}
+
 export function initializeIframeAuth() {
   if (typeof window === 'undefined') return;
   

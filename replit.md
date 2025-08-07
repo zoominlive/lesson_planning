@@ -8,12 +8,15 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## JWT Authentication Implementation (August 6, 2025)
+## JWT Authentication & Location-Based Authorization (August 7, 2025)
 - ✅ **JWT Token System**: Implemented proper JWT authentication for iframe integration
-- ✅ **Multi-tenant Support**: Tokens include tenantId, userFirstName, userLastName, username, role
+- ✅ **Multi-tenant Support**: Tokens include tenantId, userFirstName, userLastName, username, role, locations
+- ✅ **Location-Based Authorization**: Users can only access data for locations in their JWT token
+- ✅ **Server-Side Validation**: All API endpoints validate location access against JWT payload
+- ✅ **Client-Side Filtering**: UI components respect location restrictions from JWT
 - ✅ **URL Parameter Method**: Tokens passed via `?token=` query parameter for testing
 - ✅ **PostMessage Support**: Ready for iframe communication via postMessage
-- ✅ **User Display**: Header shows authenticated user name and role
+- ✅ **User Display**: Header shows authenticated user name, role, and authorized locations
 - ✅ **Admin Access**: Settings gear icon appears for Admin role users
 - ✅ **Clean Navigation**: Removed redundant user info from navigation tabs
 
@@ -81,14 +84,14 @@ The application uses a PostgreSQL database with Drizzle ORM, successfully integr
 - UUID primary keys implemented across all tables for proper record deletion
 - **Multi-Location Support**: All lesson plan entities (milestones, materials, activities, lesson plans, scheduled activities) now require both tenantId AND locationId for proper data isolation
 - Complete tenant isolation - all tables reference tenant_id foreign key
-- **Location-based filtering**: API endpoints support locationId query parameter for location-specific data filtering
+- **Location-based filtering**: API endpoints validate and filter based on user's authorized locations from JWT
 - **Room-based organization**: Lesson plans and scheduled activities now reference specific roomId for classroom-level organization
 - **Simplified room schema**: Removed age range requirements (ageRangeStart, ageRangeEnd) from rooms table for more flexible room management
 - DatabaseStorage class with composite tenant + location filtering for data isolation
-- Tenant-aware API endpoints automatically filter data by authenticated tenant and optional location
+- Tenant-aware API endpoints automatically filter data by authenticated tenant and authorized locations
 - Sample data migrated with development tenant UUID (7cb6c28d-164c-49fa-b461-dfc47a8a3fed)
-- JWT authentication supports query parameter integration with user context (userFirstName, userLastName, username, role)
-- Production-ready multi-tenant, multi-location data separation ensuring complete isolation
+- JWT authentication with location-based authorization (userFirstName, userLastName, username, role, locations)
+- Production-ready multi-tenant, multi-location data separation with server-side access control
 
 ### Core Data Models
 - **Users**: Teacher profiles with classroom assignments
@@ -104,14 +107,16 @@ The application uses a PostgreSQL database with Drizzle ORM, successfully integr
   - **Age Groups**: Developmental age ranges for content targeting - **requires tenantId + locationId**
 
 ## Authentication and Authorization
-✅ **COMPLETED**: JWT-based multi-tenant authentication system
+✅ **COMPLETED**: JWT-based multi-tenant authentication system with location-based authorization
 - Query parameter token passing (primary method) with URL cleaning for security
 - PostMessage token passing (fallback method) for iframe communication
 - Tenant-based data isolation with UUID-based tenant identification
-- User context extraction from JWT tokens (userFirstName, userLastName, username, role)
-- Development mode with mock user data for testing
+- Location-based access control - users can only access authorized locations from JWT
+- Server-side validation of location access on all API endpoints
+- User context extraction from JWT tokens (userFirstName, userLastName, username, role, locations)
+- Development mode with mock user data for testing (includes locations: ["Main Campus", "Third Location"])
 - Production-ready JWT validation with tenant-specific secrets
-- User information display in navigation interface
+- User information display in navigation interface including authorized locations
 
 ## File Upload and Media Management
 The application integrates Uppy for file handling:
@@ -131,9 +136,12 @@ The application integrates Uppy for file handling:
 The REST API follows consistent patterns:
 
 - **CRUD Operations**: Standardized endpoints for Create, Read, Update, Delete operations
+- **Location-Based Access Control**: All endpoints validate user's authorized locations from JWT
+- **Server-Side Authorization**: Location validation occurs on server, not just client-side filtering
 - **Error Handling**: Centralized error middleware with consistent response formats
 - **Request Validation**: Zod schema validation for all incoming data
 - **Response Logging**: Structured logging for API requests and responses
+- **403 Forbidden**: Returned when user lacks access to requested location
 
 ## UI/UX Design System
 The application features a cohesive design system:

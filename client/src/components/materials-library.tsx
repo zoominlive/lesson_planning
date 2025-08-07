@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Edit, Check, Package } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { getUserAuthorizedLocations } from "@/lib/auth";
 import MaterialForm from "./material-form";
 import type { Material } from "@shared/schema";
 
@@ -30,7 +31,7 @@ export default function MaterialsLibrary() {
     enabled: !!selectedLocationId,
   });
 
-  // Fetch locations to get the first available location
+  // Fetch locations - API now filters to only authorized locations
   const { data: locations = [] } = useQuery({
     queryKey: ["/api/locations"],
   });
@@ -45,11 +46,14 @@ export default function MaterialsLibrary() {
     enabled: !!selectedLocationId,
   });
 
-  // Auto-select first location if none selected  
+  // Auto-select first authorized location if none selected  
   useEffect(() => {
     if (!selectedLocationId && Array.isArray(locations) && locations.length > 0) {
-      // Try to find "Main Campus" first since that's where the age groups are
-      const mainCampus = locations.find(loc => loc.name === "Main Campus");
+      // Try to find "Main Campus" first if user has access to it
+      const authorizedLocations = getUserAuthorizedLocations();
+      const mainCampus = locations.find(loc => 
+        loc.name === "Main Campus" && authorizedLocations.includes(loc.name)
+      );
       const locationToSelect = mainCampus || locations[0];
       setSelectedLocationId(locationToSelect.id);
       // Force invalidate the age groups query when location changes
@@ -164,7 +168,7 @@ export default function MaterialsLibrary() {
                     </SelectItem>
                   ))
                 ) : (
-                  <SelectItem value="none" disabled>No locations available</SelectItem>
+                  <SelectItem value="none" disabled>No authorized locations</SelectItem>
                 )}
               </SelectContent>
             </Select>
