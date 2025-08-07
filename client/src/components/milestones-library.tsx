@@ -77,15 +77,15 @@ export default function MilestonesLibrary() {
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case "Social":
-        return <Users className="h-8 w-8" />;
+        return <Users className="h-6 w-6" />;
       case "Emotional":
-        return <Heart className="h-8 w-8" />;
+        return <Heart className="h-6 w-6" />;
       case "Cognitive":
-        return <Brain className="h-8 w-8" />;
+        return <Brain className="h-6 w-6" />;
       case "Physical":
-        return <Activity className="h-8 w-8" />;
+        return <Activity className="h-6 w-6" />;
       default:
-        return <Users className="h-8 w-8" />;
+        return <Users className="h-6 w-6" />;
     }
   };
 
@@ -140,22 +140,22 @@ export default function MilestonesLibrary() {
   const categories = ["Social", "Emotional", "Cognitive", "Physical"];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <Card className="material-shadow">
-        <CardContent className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-charcoal" data-testid="milestones-title">
+        <CardContent className="p-4">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-xl font-bold text-charcoal" data-testid="milestones-title">
               Developmental Milestones
             </h2>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button 
-                  className="bg-gradient-to-r from-mint-green to-turquoise text-white hover:shadow-lg transition-all duration-300"
+                  className="bg-gradient-to-r from-mint-green to-turquoise text-white hover:shadow-lg transition-all duration-300 text-sm"
                   data-testid="button-add-milestone"
                 >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add New Milestone
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  Add Milestone
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -171,12 +171,12 @@ export default function MilestonesLibrary() {
             </Dialog>
           </div>
           
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-600 mb-3 text-sm">
             Track and manage developmental milestones across all four key domains. Associate activities with specific milestones to ensure comprehensive child development.
           </p>
           
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex-1 min-w-64">
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex-1 min-w-48">
               <Input 
                 type="text"
                 placeholder="Search milestones by description or learning objective..."
@@ -187,7 +187,7 @@ export default function MilestonesLibrary() {
             </div>
             
             <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
-              <SelectTrigger className="w-48" data-testid="select-location-filter">
+              <SelectTrigger className="w-40" data-testid="select-location-filter">
                 <SelectValue placeholder="Select Location" />
               </SelectTrigger>
               <SelectContent>
@@ -204,7 +204,7 @@ export default function MilestonesLibrary() {
             </Select>
             
             <Select value={selectedAgeGroupId} onValueChange={setSelectedAgeGroupId}>
-              <SelectTrigger className="w-48" data-testid="select-age-filter">
+              <SelectTrigger className="w-40" data-testid="select-age-filter">
                 <SelectValue placeholder="All Age Groups" />
               </SelectTrigger>
               <SelectContent>
@@ -218,7 +218,7 @@ export default function MilestonesLibrary() {
             </Select>
             
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-48" data-testid="select-category-filter">
+              <SelectTrigger className="w-40" data-testid="select-category-filter">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
@@ -236,16 +236,16 @@ export default function MilestonesLibrary() {
 
       {/* Milestone Categories */}
       {isLoading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i} className="material-shadow animate-pulse">
-              <div className={`h-24 bg-gray-200`}></div>
-              <CardContent className="p-6">
-                <div className="space-y-4">
+              <div className={`h-16 bg-gray-200`}></div>
+              <CardContent className="p-4">
+                <div className="space-y-3">
                   {[...Array(3)].map((_, j) => (
-                    <div key={j} className="border border-gray-200 rounded-lg p-4">
-                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded mb-3"></div>
+                    <div key={j} className="border border-gray-200 rounded-lg p-3">
+                      <div className="h-3 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-2 bg-gray-200 rounded mb-2"></div>
                       <div className="h-2 bg-gray-200 rounded"></div>
                     </div>
                   ))}
@@ -255,18 +255,18 @@ export default function MilestonesLibrary() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {categories.map((category) => {
             const categoryMilestones = getMilestonesByCategory(category);
             
             return (
               <Card key={category} className="material-shadow overflow-hidden">
-                <div className={`bg-gradient-to-r ${getCategoryGradient(category)} text-white p-6`}>
+                <div className={`bg-gradient-to-r ${getCategoryGradient(category)} text-white p-4`}>
                   <div className="flex items-center">
                     {getCategoryIcon(category)}
-                    <div className="ml-3">
-                      <h3 className="text-xl font-bold">{category} Development</h3>
-                      <p className="text-sm opacity-90">
+                    <div className="ml-2">
+                      <h3 className="text-lg font-bold">{category} Development</h3>
+                      <p className="text-xs opacity-90">
                         {category === "Social" && "Building relationships and social skills"}
                         {category === "Emotional" && "Managing emotions and self-awareness"}
                         {category === "Cognitive" && "Thinking, learning, and problem-solving"}
@@ -276,7 +276,7 @@ export default function MilestonesLibrary() {
                   </div>
                 </div>
                 
-                <CardContent className="p-6 space-y-4">
+                <CardContent className="p-4 space-y-3">
                   {categoryMilestones.length > 0 ? (
                     categoryMilestones.map((milestone) => (
                       <div 
@@ -285,7 +285,7 @@ export default function MilestonesLibrary() {
                       >
                         {/* Milestone Image */}
                         <div 
-                          className="w-full h-32 bg-gray-100" 
+                          className="w-full h-24 bg-gray-100" 
                           style={{
                             background: milestone.imageUrl 
                               ? `url(${milestone.imageUrl}) center/cover`
@@ -293,27 +293,28 @@ export default function MilestonesLibrary() {
                           }}
                         />
                         
-                        <div className="p-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-semibold text-charcoal" data-testid={`milestone-title-${milestone.id}`}>
+                        <div className="p-3">
+                          <div className="flex justify-between items-start mb-1">
+                            <h4 className="font-medium text-charcoal text-sm" data-testid={`milestone-title-${milestone.id}`}>
                               {milestone.title}
                             </h4>
-                            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs" data-testid={`milestone-age-${milestone.id}`}>
+                            <span className="bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded text-xs whitespace-nowrap ml-2" data-testid={`milestone-age-${milestone.id}`}>
                               {getAgeGroupNames(milestone.ageGroupIds || [])}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 mb-3" data-testid={`milestone-description-${milestone.id}`}>
+                          <p className="text-sm text-gray-600 mb-2 line-clamp-2" data-testid={`milestone-description-${milestone.id}`}>
                             {milestone.description}
                           </p>
                         <div className="flex justify-between items-center">
-                          <div className="flex items-center text-sm text-gray-500">
+                          <div className="flex items-center text-xs text-gray-500">
                             <Link className="mr-1 h-3 w-3" />
-                            <span>0 activities linked</span>
+                            <span>0 activities</span>
                           </div>
-                          <div className="flex space-x-2">
+                          <div className="flex space-x-1">
                             <Button
                               variant="ghost"
                               size="sm"
+                              className="h-7 w-7 p-0"
                               onClick={() => handleEdit(milestone)}
                               data-testid={`button-edit-milestone-${milestone.id}`}
                             >
@@ -322,6 +323,7 @@ export default function MilestonesLibrary() {
                             <Button
                               variant="ghost"
                               size="sm"
+                              className="h-7 w-7 p-0"
                               onClick={() => handleLinkActivities(milestone)}
                               data-testid={`button-link-milestone-${milestone.id}`}
                             >
@@ -333,7 +335,7 @@ export default function MilestonesLibrary() {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center text-gray-500 py-8">
+                    <div className="text-center text-gray-500 py-4">
                       <p>No milestones found for this category.</p>
                       <Button 
                         variant="outline" 
