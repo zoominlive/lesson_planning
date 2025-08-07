@@ -3,9 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Play, Package } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Plus, Play, Package, Filter } from "lucide-react";
 import DraggableActivity from "./draggable-activity";
-import type { Activity } from "@shared/schema";
+import type { Activity, Category, AgeGroup } from "@shared/schema";
 
 const timeSlots = [
   { id: 0, label: "6:00 AM", name: "Early Arrival" },
@@ -34,15 +36,29 @@ const weekDays = [
 export default function WeeklyCalendar() {
   const [searchTerm, setSearchTerm] = useState("");
   const [draggedActivity, setDraggedActivity] = useState<Activity | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("");
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { data: activities = [], isLoading } = useQuery<Activity[]>({
     queryKey: ["/api/activities"],
   });
 
-  const filteredActivities = activities.filter(activity =>
-    activity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    activity.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
+  });
+
+  const { data: ageGroups = [] } = useQuery<AgeGroup[]>({
+    queryKey: ["/api/age-groups"],
+  });
+
+  const filteredActivities = activities.filter(activity => {
+    const matchesSearch = activity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = !selectedCategory || activity.category === selectedCategory;
+    const matchesAgeGroup = !selectedAgeGroup || (activity.ageGroupIds && activity.ageGroupIds.includes(selectedAgeGroup));
+    return matchesSearch && matchesCategory && matchesAgeGroup;
+  });
 
   const getCategoryStyle = (category: string) => {
     switch (category) {
@@ -92,10 +108,11 @@ export default function WeeklyCalendar() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex gap-4">
       {/* Calendar Grid */}
-      <Card className="material-shadow overflow-hidden">
-        <div className="grid grid-cols-6 gap-0">
+      <div className="flex-1">
+        <Card className="material-shadow overflow-hidden">
+          <div className="grid grid-cols-6 gap-0">
           {/* Time Column */}
           <div className="bg-gray-50 border-r border-gray-200">
             <div className="h-16 border-b border-gray-200 flex items-center justify-center font-semibold text-gray-700">
@@ -154,54 +171,101 @@ export default function WeeklyCalendar() {
               })}
             </div>
           ))}
-        </div>
-      </Card>
-
-      {/* Activity Library Sidebar */}
-      <Card className="material-shadow">
-        <CardContent className="p-6">
-          <h3 className="text-xl font-bold text-charcoal mb-4 flex items-center">
-            <Package className="mr-2 text-coral-red" />
-            Activity Library
-          </h3>
-          
-          <div className="flex space-x-2 mb-4">
-            <Input 
-              type="text" 
-              placeholder="Search activities..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1"
-              data-testid="input-search-activities"
-            />
-            <Button variant="outline" size="icon" data-testid="button-search-activities">
-              <Search className="h-4 w-4" />
-            </Button>
           </div>
+        </Card>
+      </div>
 
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="border border-gray-200 rounded-lg p-4 animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded mb-3"></div>
-                  <div className="h-2 bg-gray-200 rounded"></div>
-                </div>
-              ))}
+      {/* Activity Library Drawer */}
+      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <SheetTrigger asChild>
+          <Button
+            className="fixed right-4 top-1/2 -translate-y-1/2 z-40 bg-gradient-to-r from-coral-red to-turquoise text-white"
+            size="lg"
+          >
+            <Package className="mr-2 h-5 w-5" />
+            Activities
+          </Button>
+        </SheetTrigger>
+        <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="text-xl font-bold text-charcoal flex items-center">
+              <Package className="mr-2 text-coral-red" />
+              Activity Library
+            </SheetTitle>
+          </SheetHeader>
+          
+          <div className="mt-6 space-y-4">
+            {/* Search */}
+            <div className="flex space-x-2">
+              <Input 
+                type="text" 
+                placeholder="Search activities..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1"
+                data-testid="input-search-activities"
+              />
+              <Button variant="outline" size="icon" data-testid="button-search-activities">
+                <Search className="h-4 w-4" />
+              </Button>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredActivities.map((activity) => (
-                <DraggableActivity 
-                  key={activity.id} 
-                  activity={activity} 
-                  onDragStart={handleDragStart}
-                />
-              ))}
+
+            {/* Filters */}
+            <div className="flex gap-2">
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Categories</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={selectedAgeGroup} onValueChange={setSelectedAgeGroup}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="All Age Groups" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Age Groups</SelectItem>
+                  {ageGroups.map((ageGroup) => (
+                    <SelectItem key={ageGroup.id} value={ageGroup.id}>
+                      {ageGroup.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
-        </CardContent>
-      </Card>
+
+            {/* Activities Grid */}
+            {isLoading ? (
+              <div className="grid grid-cols-1 gap-4">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="border border-gray-200 rounded-lg p-4 animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded mb-3"></div>
+                    <div className="h-2 bg-gray-200 rounded"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {filteredActivities.map((activity) => (
+                  <DraggableActivity 
+                    key={activity.id} 
+                    activity={activity} 
+                    onDragStart={handleDragStart}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
