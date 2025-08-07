@@ -74,6 +74,15 @@ Please generate a complete activity with the following structure. Return ONLY va
   "imagePrompt": "[Detailed description for visualizing this activity]"
 }
 
+IMPORTANT JSON FORMATTING RULES:
+- Do NOT use single quotes anywhere in your response
+- Do NOT use apostrophes or quotation marks within string values
+- Do NOT use special characters like em dash (—)
+- Use simple dashes (-) instead of em dashes
+- Instead of "don't" write "do not"
+- Instead of "it's" write "it is"
+- Instead of naming variations like "'Shape Hunt': description" just write "Shape Hunt - description"
+
 Ensure the activity is:
 - Age-appropriate and developmentally suitable for ${params.ageRange.start}-${params.ageRange.end} year olds
 - Educational and promotes ${params.category} development
@@ -167,16 +176,53 @@ Ensure the activity is:
         }
         
         // Fix common JSON issues
-        // Replace single quotes with double quotes for property names
-        cleanedContent = cleanedContent.replace(/'([^']+)'\s*:/g, '"$1":');
+        // First, handle special characters
+        // Replace em dash with regular dash
+        cleanedContent = cleanedContent.replace(/—/g, '-');
         
-        // Remove trailing commas before closing braces/brackets
-        cleanedContent = cleanedContent.replace(/,\s*([\]}])/g, '$1');
+        // Replace smart quotes with regular quotes
+        cleanedContent = cleanedContent.replace(/['']/g, "'");
+        cleanedContent = cleanedContent.replace(/[""]/g, '"');
         
-        console.log('[PerplexityService] Attempting to parse cleaned content');
-        const activityData = JSON.parse(cleanedContent);
-        console.log('[PerplexityService] Successfully parsed activity data');
-        return activityData;
+        // Try to parse first without modifications
+        try {
+          const firstAttempt = JSON.parse(cleanedContent);
+          console.log('[PerplexityService] Successfully parsed activity data on first attempt');
+          return firstAttempt;
+        } catch (e) {
+          // If that fails, try more aggressive cleaning
+          console.log('[PerplexityService] First parse attempt failed, trying aggressive cleaning');
+          
+          // Replace single quotes with escaped quotes within strings
+          // This regex looks for strings and escapes single quotes within them
+          cleanedContent = cleanedContent.replace(/"([^"]*)"/g, (match, p1) => {
+            // Escape any single quotes within the string value
+            const escaped = p1.replace(/'/g, "\\'");
+            return `"${escaped}"`;
+          });
+          
+          // Remove trailing commas before closing braces/brackets
+          cleanedContent = cleanedContent.replace(/,\s*([\]}])/g, '$1');
+          
+          // Try parsing again
+          try {
+            const secondAttempt = JSON.parse(cleanedContent);
+            console.log('[PerplexityService] Successfully parsed activity data on second attempt');
+            return secondAttempt;
+          } catch (e2) {
+            // If still failing, try one more approach - remove problematic quotes altogether
+            console.log('[PerplexityService] Second parse attempt failed, removing problematic quotes');
+            
+            // Replace strings that have quotes at the beginning followed by text
+            cleanedContent = cleanedContent.replace(/"'([^:]+)':\s*([^"]*?)"/g, '"$1 - $2"');
+            cleanedContent = cleanedContent.replace(/"'([^"]*?)'/g, '"$1"');
+            
+            console.log('[PerplexityService] Final cleaned content:', cleanedContent.substring(0, 500) + '...');
+            const finalAttempt = JSON.parse(cleanedContent);
+            console.log('[PerplexityService] Successfully parsed activity data on final attempt');
+            return finalAttempt;
+          }
+        }
       } catch (parseError) {
         console.error('[PerplexityService] Failed to parse JSON:', parseError);
         console.error('[PerplexityService] Content that failed to parse:', content);
