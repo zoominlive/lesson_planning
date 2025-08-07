@@ -66,9 +66,9 @@ export default function ActivityLibrary() {
                          activity.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || activity.category === categoryFilter;
     const matchesAge = ageFilter === "all" || 
-                      (ageFilter === "2-3" && activity.ageRangeStart <= 36 && activity.ageRangeEnd >= 24) ||
-                      (ageFilter === "3-4" && activity.ageRangeStart <= 48 && activity.ageRangeEnd >= 36) ||
-                      (ageFilter === "4-5" && activity.ageRangeStart <= 60 && activity.ageRangeEnd >= 48);
+                      (ageFilter === "2-3" && activity.ageGroupIds && activity.ageGroupIds.length > 0) ||
+                      (ageFilter === "3-4" && activity.ageGroupIds && activity.ageGroupIds.length > 0) ||
+                      (ageFilter === "4-5" && activity.ageGroupIds && activity.ageGroupIds.length > 0);
     
     return matchesSearch && matchesCategory && matchesAge;
   });
@@ -253,11 +253,15 @@ export default function ActivityLibrary() {
                 
                 <div className="space-y-3 mb-4">
                   <div>
-                    <h4 className="font-semibold text-sm text-charcoal mb-1">Teaching Objectives:</h4>
+                    <h4 className="font-semibold text-sm text-charcoal mb-1">Milestones:</h4>
                     <ul className="text-xs text-gray-600 space-y-1">
-                      {activity.teachingObjectives.map((objective, index) => (
-                        <li key={index}>• {objective}</li>
-                      ))}
+                      {activity.milestoneIds && activity.milestoneIds.length > 0 ? (
+                        activity.milestoneIds.map((milestoneId, index) => (
+                          <li key={index}>• Milestone {index + 1}</li>
+                        ))
+                      ) : (
+                        <li className="text-gray-400">• No milestones linked</li>
+                      )}
                     </ul>
                   </div>
                   
@@ -282,7 +286,7 @@ export default function ActivityLibrary() {
                     Duration: {activity.duration} minutes
                   </span>
                   <span data-testid={`activity-age-${activity.id}`}>
-                    Age: {formatAgeRange(activity.ageRangeStart, activity.ageRangeEnd)}
+                    Age Groups: {activity.ageGroupIds && activity.ageGroupIds.length > 0 ? `${activity.ageGroupIds.length} groups` : 'All ages'}
                   </span>
                 </div>
                 
