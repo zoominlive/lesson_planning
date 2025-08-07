@@ -39,6 +39,8 @@ export default function WeeklyCalendar() {
   const [draggedActivity, setDraggedActivity] = useState<Activity | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all-categories");
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("all-age-groups");
+  const [selectedLocation, setSelectedLocation] = useState<string>("");
+  const [selectedRoom, setSelectedRoom] = useState<string>("");
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { data: activities = [], isLoading } = useQuery<Activity[]>({
@@ -93,22 +95,37 @@ export default function WeeklyCalendar() {
     dropZone.classList.remove("drag-over");
   };
 
-  // Get current location and room from context or query params
+  // Get locations
   const { data: locations = [] } = useQuery<any[]>({
     queryKey: ["/api/locations"],
   });
   
-  // Get first location as default (you may want to get this from a selector)
-  const currentLocationId = locations[0]?.id;
+  // Set default location when locations load
+  useEffect(() => {
+    if (locations.length > 0 && !selectedLocation) {
+      setSelectedLocation(locations[0].id);
+    }
+  }, [locations, selectedLocation]);
   
-  // Get rooms for the current location
-  const { data: rooms = [] } = useQuery<any[]>({
-    queryKey: ["/api/rooms", currentLocationId],
-    enabled: !!currentLocationId,
+  // Reset room when location changes
+  useEffect(() => {
+    setSelectedRoom("");
+  }, [selectedLocation]);
+  
+  // Get all rooms
+  const { data: allRooms = [] } = useQuery<any[]>({
+    queryKey: ["/api/rooms"],
   });
-
-  // Get first room as default (you may want to get this from a selector)
-  const currentRoomId = rooms[0]?.id;
+  
+  // Filter rooms for the selected location
+  const rooms = allRooms.filter((room: any) => room.locationId === selectedLocation);
+  
+  // Set default room when rooms load
+  useEffect(() => {
+    if (rooms.length > 0 && !selectedRoom) {
+      setSelectedRoom(rooms[0].id);
+    }
+  }, [rooms, selectedRoom]);
 
   const scheduleMutation = useMutation({
     mutationFn: async ({ activityId, dayOfWeek, timeSlot }: { activityId: string; dayOfWeek: number; timeSlot: number }) => {
@@ -116,15 +133,15 @@ export default function WeeklyCalendar() {
         activityId, 
         dayOfWeek, 
         timeSlot, 
-        currentLocationId, 
-        currentRoomId,
+        selectedLocation, 
+        selectedRoom,
         locations: locations.length,
         rooms: rooms.length
       });
       
-      if (!currentLocationId || !currentRoomId) {
-        console.error('Missing context:', { currentLocationId, currentRoomId });
-        throw new Error(`Missing required context: location ${currentLocationId ? 'exists' : 'missing'}, room ${currentRoomId ? 'exists' : 'missing'}`);
+      if (!selectedLocation || !selectedRoom) {
+        console.error('Missing context:', { selectedLocation, selectedRoom });
+        throw new Error(`Missing required context: location ${selectedLocation ? 'exists' : 'missing'}, room ${selectedRoom ? 'exists' : 'missing'}`);
       }
       
       const token = localStorage.getItem('authToken');
@@ -138,8 +155,8 @@ export default function WeeklyCalendar() {
           activityId,
           dayOfWeek,
           timeSlot,
-          roomId: currentRoomId,
-          locationId: currentLocationId,
+          roomId: selectedRoom,
+          locationId: selectedLocation,
           // lessonPlanId is optional - backend will create one if needed
         }),
       });
@@ -177,17 +194,17 @@ export default function WeeklyCalendar() {
     
     console.log('[handleDrop] draggedActivity:', draggedActivity);
     console.log('[handleDrop] dayOfWeek:', dayOfWeek, 'timeSlot:', timeSlot);
-    console.log('[handleDrop] currentLocationId:', currentLocationId);
-    console.log('[handleDrop] currentRoomId:', currentRoomId);
+    console.log('[handleDrop] selectedLocation:', selectedLocation);
+    console.log('[handleDrop] selectedRoom:', selectedRoom);
     
     if (draggedActivity) {
       console.log(`[handleDrop] Scheduling: ${draggedActivity.title} on ${weekDays[dayOfWeek].name} at ${timeSlots[timeSlot].label}`);
       
-      if (!currentLocationId || !currentRoomId) {
+      if (!selectedLocation || !selectedRoom) {
         console.error('[handleDrop] Missing location or room');
         toast({
           title: "Cannot schedule activity",
-          description: "No location or room selected",
+          description: "Please select a location and room first",
           variant: "destructive"
         });
         return;
@@ -214,7 +231,38 @@ export default function WeeklyCalendar() {
     <div className="space-y-4">
       {/* Calendar Header */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-charcoal">Weekly Schedule</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-2xl font-bold text-charcoal">Weekly Schedule</h2>
+          
+          {/* Location Selector */}
+          <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select Location" />
+            </SelectTrigger>
+            <SelectContent>
+              {locations.map((location: any) => (
+                <SelectItem key={location.id} value={location.id}>
+                  {location.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {/* Room Selector */}
+          <Select value={selectedRoom} onValueChange={setSelectedRoom} disabled={!selectedLocation}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select Room" />
+            </SelectTrigger>
+            <SelectContent>
+              {rooms.map((room: any) => (
+                <SelectItem key={room.id} value={room.id}>
+                  {room.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
         <Button
           onClick={() => setDrawerOpen(!drawerOpen)}
           className="bg-gradient-to-r from-coral-red to-turquoise text-white shadow-lg hover:shadow-xl"
