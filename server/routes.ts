@@ -940,23 +940,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/scheduled-activities/:roomId", async (req: AuthenticatedRequest, res) => {
     try {
       const { roomId } = req.params;
-      const { weekStart } = req.query;
+      const { weekStart, locationId } = req.query;
+      
+      console.log('[GET /api/scheduled-activities] Params:', { roomId, weekStart, locationId });
       
       // Get all scheduled activities for this room
       const allScheduledActivities = await storage.getAllScheduledActivities();
       
-      // Get all lesson plans to filter by week if weekStart is provided
+      // Filter lesson plans by week, location, and room if weekStart is provided
       let lessonPlanIds: string[] = [];
-      if (weekStart) {
+      if (weekStart && locationId) {
         const allLessonPlans = await storage.getLessonPlans();
-        // Filter lesson plans by the week start date
+        
+        // Filter lesson plans by the week start date, location, and room
         const weekLessonPlans = allLessonPlans.filter(lp => {
+          // Parse the dates and compare only the date part (not time)
           const lpWeekStart = new Date(lp.weekStart);
           const requestedWeekStart = new Date(weekStart as string);
-          // Compare dates (ignoring time)
-          return lpWeekStart.toDateString() === requestedWeekStart.toDateString();
+          
+          // Set both dates to start of day for comparison
+          lpWeekStart.setHours(0, 0, 0, 0);
+          requestedWeekStart.setHours(0, 0, 0, 0);
+          
+          const matchesWeek = lpWeekStart.getTime() === requestedWeekStart.getTime();
+          const matchesLocation = lp.locationId === locationId;
+          const matchesRoom = lp.roomId === roomId;
+          
+          console.log('[GET /api/scheduled-activities] Checking lesson plan:', {
+            lpId: lp.id,
+            lpWeekStart: lpWeekStart.toISOString(),
+            requestedWeekStart: requestedWeekStart.toISOString(),
+            lpLocation: lp.locationId,
+            lpRoom: lp.roomId,
+            matchesWeek,
+            matchesLocation,
+            matchesRoom
+          });
+          
+          return matchesWeek && matchesLocation && matchesRoom;
         });
+        
         lessonPlanIds = weekLessonPlans.map(lp => lp.id);
+        console.log('[GET /api/scheduled-activities] Matching lesson plan IDs:', lessonPlanIds);
       }
       
       // Filter by room, tenant, and optionally by lesson plan (week)
@@ -966,6 +991,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const matchesWeek = !weekStart || lessonPlanIds.includes(sa.lessonPlanId);
         return matchesRoom && matchesTenant && matchesWeek;
       });
+      
+      console.log('[GET /api/scheduled-activities] Filtered activities count:', roomScheduledActivities.length);
       
       // Populate activity data for each scheduled activity
       const populatedActivities = await Promise.all(
@@ -1002,43 +1029,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/scheduled-activities", async (req: AuthenticatedRequest, res) => {
     try {
-      let { lessonPlanId, ...otherData } = req.body;
+      let { lessonPlanId, weekStart, ...otherData } = req.body;
       
-      // If no lesson plan ID provided, try to create one automatically
+      console.log('[POST /api/scheduled-activities] Request body:', { lessonPlanId, weekStart, ...otherData });
+      
+      // If no lesson plan ID provided, try to find or create one
       if (!lessonPlanId && otherData.locationId && otherData.roomId) {
-        // Use the authenticated user as the teacher
-        let teacherId = req.userId || 'default-teacher';
-        
-        // Try to get existing user by ID
-        let teacher = await storage.getUser(teacherId);
-        
-        if (!teacher) {
-          // Create a default teacher if none exists
-          const defaultUser = await storage.createUser({
-            tenantId: req.tenantId!,
-            username: 'default.teacher',
-            password: 'temp123',
-            name: 'Default Teacher',
-            email: 'teacher@example.com',
-            classroom: 'Main Room'
-          });
-          teacherId = defaultUser.id;
+        // Determine the week start date
+        let targetWeekStart: Date;
+        if (weekStart) {
+          targetWeekStart = new Date(weekStart);
+        } else {
+          // Default to current week if not provided
+          targetWeekStart = new Date();
+          const dayOfWeek = targetWeekStart.getDay();
+          const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+          targetWeekStart.setDate(targetWeekStart.getDate() + daysToMonday);
         }
+        targetWeekStart.setHours(0, 0, 0, 0);
         
-        // Create a lesson plan for the current week
-        const weekStart = new Date();
-        weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Start of week
+        console.log('[POST /api/scheduled-activities] Target week start:', targetWeekStart.toISOString());
         
-        const lessonPlan = await storage.createLessonPlan({
-          tenantId: req.tenantId!,
-          locationId: otherData.locationId,
-          roomId: otherData.roomId,
-          teacherId: teacherId,
-          weekStart: weekStart.toISOString(),
-          status: 'draft'
+        // First try to find existing lesson plan for this week/location/room
+        const allLessonPlans = await storage.getLessonPlans();
+        const existingLessonPlan = allLessonPlans.find(lp => {
+          const lpWeekStart = new Date(lp.weekStart);
+          lpWeekStart.setHours(0, 0, 0, 0);
+          
+          return lpWeekStart.getTime() === targetWeekStart.getTime() &&
+                 lp.locationId === otherData.locationId &&
+                 lp.roomId === otherData.roomId &&
+                 lp.tenantId === req.tenantId;
         });
         
-        lessonPlanId = lessonPlan.id;
+        if (existingLessonPlan) {
+          console.log('[POST /api/scheduled-activities] Found existing lesson plan:', existingLessonPlan.id);
+          lessonPlanId = existingLessonPlan.id;
+        } else {
+          // Create new lesson plan if none exists
+          console.log('[POST /api/scheduled-activities] Creating new lesson plan');
+          
+          // Use the authenticated user as the teacher
+          let teacherId = req.userId || 'default-teacher';
+          
+          // Try to get existing user by ID
+          let teacher = await storage.getUser(teacherId);
+          
+          if (!teacher) {
+            // Create a default teacher if none exists
+            const defaultUser = await storage.createUser({
+              tenantId: req.tenantId!,
+              username: 'default.teacher',
+              password: 'temp123',
+              name: 'Default Teacher',
+              email: 'teacher@example.com',
+              classroom: 'Main Room'
+            });
+            teacherId = defaultUser.id;
+          }
+          
+          const lessonPlan = await storage.createLessonPlan({
+            tenantId: req.tenantId!,
+            locationId: otherData.locationId,
+            roomId: otherData.roomId,
+            teacherId: teacherId,
+            weekStart: targetWeekStart.toISOString(),
+            status: 'draft'
+          });
+          
+          console.log('[POST /api/scheduled-activities] Created lesson plan:', lessonPlan.id);
+          lessonPlanId = lessonPlan.id;
+        }
       }
       
       // Now create the scheduled activity with the lesson plan ID

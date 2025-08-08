@@ -74,11 +74,11 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
 
   // Fetch scheduled activities for the current room and week
   const { data: scheduledActivities = [] } = useQuery<any[]>({
-    queryKey: ["/api/scheduled-activities", selectedRoom, weekStartDate.toISOString()],
+    queryKey: ["/api/scheduled-activities", selectedRoom, weekStartDate.toISOString(), selectedLocation],
     queryFn: async () => {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        `/api/scheduled-activities/${selectedRoom}?weekStart=${encodeURIComponent(weekStartDate.toISOString())}`,
+        `/api/scheduled-activities/${selectedRoom}?weekStart=${encodeURIComponent(weekStartDate.toISOString())}&locationId=${encodeURIComponent(selectedLocation)}`,
         {
           headers: {
             ...(token && { 'Authorization': `Bearer ${token}` }),
@@ -88,7 +88,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
       if (!response.ok) throw new Error('Failed to fetch scheduled activities');
       return response.json();
     },
-    enabled: !!selectedRoom && selectedRoom !== "all",
+    enabled: !!selectedRoom && selectedRoom !== "all" && !!selectedLocation,
   });
 
   const filteredActivities = activities.filter(activity => {
@@ -172,7 +172,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom] });
+      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom, weekStartDate.toISOString(), selectedLocation] });
       toast({
         title: "Activity Removed",
         description: "The activity has been removed from the schedule.",
@@ -188,11 +188,12 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   });
 
   const scheduleMutation = useMutation({
-    mutationFn: async ({ activityId, dayOfWeek, timeSlot }: { activityId: string; dayOfWeek: number; timeSlot: number }) => {
+    mutationFn: async ({ activityId, dayOfWeek, timeSlot, weekStart }: { activityId: string; dayOfWeek: number; timeSlot: number; weekStart: string }) => {
       console.log('Scheduling activity:', { 
         activityId, 
         dayOfWeek, 
         timeSlot, 
+        weekStart,
         selectedLocation, 
         selectedRoom
       });
@@ -215,6 +216,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
           timeSlot,
           roomId: selectedRoom,
           locationId: selectedLocation,
+          weekStart,
           // lessonPlanId is optional - backend will create one if needed
         }),
       });
@@ -228,7 +230,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom] });
+      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom, weekStartDate.toISOString(), selectedLocation] });
       toast({
         title: "Activity Scheduled",
         description: "The activity has been added to the calendar.",
@@ -273,6 +275,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
         activityId: draggedActivity.id,
         dayOfWeek,
         timeSlot,
+        weekStart: weekStartDate.toISOString(),
       });
       setDraggedActivity(null);
     } else {
