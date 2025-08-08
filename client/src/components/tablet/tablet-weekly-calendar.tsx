@@ -301,10 +301,9 @@ export function TabletWeeklyCalendar({
             {timeSlots.map((slot) => (
               <div 
                 key={slot.id} 
-                className="h-16 flex flex-col items-center justify-center bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-sm border border-gray-100 text-center p-1"
+                className="h-16 flex items-center justify-center bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-sm border border-gray-100 text-center p-1"
               >
                 <span className="text-xs font-bold bg-gradient-to-r from-turquoise to-sky-blue bg-clip-text text-transparent">{slot.label}</span>
-                <span className="text-[10px] text-gray-500">{slot.name}</span>
               </div>
             ))}
           </div>

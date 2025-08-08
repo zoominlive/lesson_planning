@@ -322,9 +322,8 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
               Time
             </div>
             {timeSlots.map((slot) => (
-              <div key={slot.id} className="h-24 border-b border-sky-blue/10 flex flex-col items-center justify-center bg-white/30 hover:bg-white/50 transition-colors">
+              <div key={slot.id} className="h-24 border-b border-sky-blue/10 flex items-center justify-center bg-white/30 hover:bg-white/50 transition-colors">
                 <span data-testid={`time-slot-${slot.id}`} className="text-sm font-semibold text-charcoal">{slot.label}</span>
-                <span className="text-xs text-gray-500 mt-1">{slot.name}</span>
               </div>
             ))}
           </div>
