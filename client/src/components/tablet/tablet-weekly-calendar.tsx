@@ -1,10 +1,21 @@
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
-import { Clock, Trash2 } from "lucide-react";
+import { Clock } from "lucide-react";
 import type { Activity } from "@shared/schema";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TabletWeeklyCalendarProps {
   currentWeekDate: Date;
@@ -55,6 +66,10 @@ export function TabletWeeklyCalendar({
   onSlotTap 
 }: TabletWeeklyCalendarProps) {
   const weekDays = generateWeekDays(currentWeekDate);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [activityToDelete, setActivityToDelete] = useState<any>(null);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
 
   // Fetch scheduled activities
   const { data: scheduledActivities = [] } = useQuery<any[]>({
@@ -105,6 +120,8 @@ export function TabletWeeklyCalendar({
         title: "Activity Removed",
         description: "The activity has been removed from the schedule.",
       });
+      setDeleteDialogOpen(false);
+      setActivityToDelete(null);
     },
   });
 
@@ -129,6 +146,54 @@ export function TabletWeeklyCalendar({
         return "from-blue-100 to-indigo-200 border-indigo-300";
       default:
         return "from-gray-100 to-gray-200 border-gray-300";
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent, scheduledActivity: any) => {
+    // Store the initial touch position
+    const touch = e.touches[0];
+    touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+    
+    // Start the long press timer
+    longPressTimer.current = setTimeout(() => {
+      // Trigger haptic feedback if available
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+      setActivityToDelete(scheduledActivity);
+      setDeleteDialogOpen(true);
+    }, 500); // 500ms for long press
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    // Cancel long press if user moves finger too much
+    if (touchStartPos.current && longPressTimer.current) {
+      const touch = e.touches[0];
+      const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
+      const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
+      
+      // If finger moved more than 10 pixels, cancel the long press
+      if (deltaX > 10 || deltaY > 10) {
+        if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current);
+          longPressTimer.current = null;
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    // Clear the timer if touch ends before long press triggers
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    touchStartPos.current = null;
+  };
+
+  const handleDeleteConfirm = () => {
+    if (activityToDelete) {
+      deleteScheduledMutation.mutate(activityToDelete.id);
     }
   };
 
@@ -168,53 +233,77 @@ export function TabletWeeklyCalendar({
                 const isSelected = selectedActivity !== null;
                 
                 return (
-                  <button
-                    key={slot.id}
-                    onClick={() => onSlotTap(day.id, slot.id)}
-                    className={`h-16 w-full p-1 rounded transition-all ${
-                      isSelected 
-                        ? 'bg-turquoise/10 border-2 border-dashed border-turquoise hover:bg-turquoise/20' 
-                        : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
-                    }`}
-                    data-testid={`slot-${day.id}-${slot.id}`}
-                  >
+                  <div key={slot.id}>
                     {scheduledActivity ? (
-                      <div className={`bg-gradient-to-br ${getCategoryColor(scheduledActivity.activity?.category || '')} border rounded p-1 h-full flex flex-col justify-between relative group`}>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteScheduledMutation.mutate(scheduledActivity.id);
-                          }}
-                          className="absolute -top-1 -right-1 p-0.5 rounded-full bg-red-500 text-white opacity-0 group-active:opacity-100 z-10"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                        <p className="text-xs font-semibold line-clamp-2 text-charcoal">
-                          {scheduledActivity.activity?.title}
-                        </p>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3 text-gray-500" />
-                          <span className="text-xs text-gray-600">
-                            {scheduledActivity.activity?.duration}m
-                          </span>
+                      <div
+                        className={`h-16 w-full p-1 rounded bg-gradient-to-br ${getCategoryColor(scheduledActivity.activity?.category || '')} border-2 transition-all cursor-pointer active:scale-95`}
+                        onTouchStart={(e) => handleTouchStart(e, scheduledActivity)}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                        onTouchCancel={handleTouchEnd}
+                        data-testid={`scheduled-activity-${day.id}-${slot.id}`}
+                      >
+                        <div className="h-full flex flex-col justify-between">
+                          <p className="text-xs font-semibold line-clamp-2 text-charcoal">
+                            {scheduledActivity.activity?.title}
+                          </p>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-gray-500" />
+                            <span className="text-xs text-gray-600">
+                              {scheduledActivity.activity?.duration}m
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="h-full flex items-center justify-center">
-                        {isSelected ? (
-                          <span className="text-xs text-turquoise font-medium">Tap</span>
-                        ) : (
-                          <span className="text-xs text-gray-400">+</span>
-                        )}
-                      </div>
+                      <button
+                        onClick={() => onSlotTap(day.id, slot.id)}
+                        className={`h-16 w-full p-1 rounded transition-all ${
+                          isSelected 
+                            ? 'bg-turquoise/10 border-2 border-dashed border-turquoise hover:bg-turquoise/20' 
+                            : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
+                        }`}
+                        data-testid={`slot-${day.id}-${slot.id}`}
+                      >
+                        <div className="h-full flex items-center justify-center">
+                          {isSelected ? (
+                            <span className="text-xs text-turquoise font-medium">Tap</span>
+                          ) : (
+                            <span className="text-xs text-gray-400">+</span>
+                          )}
+                        </div>
+                      </button>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
           ))}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-[90%] sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Activity</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove "{activityToDelete?.activity?.title}" from the schedule? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setActivityToDelete(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
