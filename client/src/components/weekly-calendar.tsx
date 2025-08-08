@@ -72,9 +72,22 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
     queryKey: ["/api/age-groups"],
   });
 
-  // Fetch scheduled activities for the current room
+  // Fetch scheduled activities for the current room and week
   const { data: scheduledActivities = [] } = useQuery<any[]>({
-    queryKey: ["/api/scheduled-activities", selectedRoom],
+    queryKey: ["/api/scheduled-activities", selectedRoom, weekStartDate.toISOString()],
+    queryFn: async () => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `/api/scheduled-activities/${selectedRoom}?weekStart=${encodeURIComponent(weekStartDate.toISOString())}`,
+        {
+          headers: {
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+          },
+        }
+      );
+      if (!response.ok) throw new Error('Failed to fetch scheduled activities');
+      return response.json();
+    },
     enabled: !!selectedRoom && selectedRoom !== "all",
   });
 

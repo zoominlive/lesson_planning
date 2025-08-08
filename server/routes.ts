@@ -940,14 +940,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/scheduled-activities/:roomId", async (req: AuthenticatedRequest, res) => {
     try {
       const { roomId } = req.params;
+      const { weekStart } = req.query;
       
       // Get all scheduled activities for this room
       const allScheduledActivities = await storage.getAllScheduledActivities();
       
-      // Filter by room and tenant
-      const roomScheduledActivities = allScheduledActivities.filter(
-        sa => sa.roomId === roomId && sa.tenantId === req.tenantId
-      );
+      // Get all lesson plans to filter by week if weekStart is provided
+      let lessonPlanIds: string[] = [];
+      if (weekStart) {
+        const allLessonPlans = await storage.getLessonPlans();
+        // Filter lesson plans by the week start date
+        const weekLessonPlans = allLessonPlans.filter(lp => {
+          const lpWeekStart = new Date(lp.weekStart);
+          const requestedWeekStart = new Date(weekStart as string);
+          // Compare dates (ignoring time)
+          return lpWeekStart.toDateString() === requestedWeekStart.toDateString();
+        });
+        lessonPlanIds = weekLessonPlans.map(lp => lp.id);
+      }
+      
+      // Filter by room, tenant, and optionally by lesson plan (week)
+      const roomScheduledActivities = allScheduledActivities.filter(sa => {
+        const matchesRoom = sa.roomId === roomId;
+        const matchesTenant = sa.tenantId === req.tenantId;
+        const matchesWeek = !weekStart || lessonPlanIds.includes(sa.lessonPlanId);
+        return matchesRoom && matchesTenant && matchesWeek;
+      });
       
       // Populate activity data for each scheduled activity
       const populatedActivities = await Promise.all(
