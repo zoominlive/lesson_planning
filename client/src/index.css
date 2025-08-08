@@ -325,3 +325,81 @@
   outline: 2px solid var(--sky-blue);
   outline-offset: 2px;
 }
+
+/* Tablet and Mobile Specific Styles */
+@media (max-width: 1024px) {
+  .tablet-planner {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    overscroll-behavior: contain;
+  }
+  
+  /* Optimize touch targets */
+  .tablet-planner button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent text selection on interactive elements */
+  .tablet-planner button,
+  .tablet-planner [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Smooth scrolling */
+  .tablet-planner * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Animation for drawer */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Touch-friendly hover states */
+@media (hover: none) {
+  .hover\:bg-gray-100:hover {
+    background-color: transparent;
+  }
+  
+  .hover\:shadow-lg:hover {
+    box-shadow: none;
+  }
+  
+  /* Add active states for touch feedback */
+  button:active,
+  [role="button"]:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
+
+/* Tablet viewport optimizations */
+.tablet-viewport {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+
+/* Safe area insets for iOS */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}

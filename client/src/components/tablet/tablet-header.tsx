@@ -1,0 +1,147 @@
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChevronLeft, ChevronRight, Menu, MapPin, Home } from "lucide-react";
+import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from "date-fns";
+
+interface TabletHeaderProps {
+  userInfo: any;
+  currentWeekDate: Date;
+  selectedLocation: string;
+  selectedRoom: string;
+  locations: any[];
+  rooms: any[];
+  onWeekChange: (date: Date) => void;
+  onLocationChange: (locationId: string) => void;
+  onRoomChange: (roomId: string) => void;
+  onActivityButtonClick: () => void;
+}
+
+export function TabletHeader({
+  userInfo,
+  currentWeekDate,
+  selectedLocation,
+  selectedRoom,
+  locations,
+  rooms,
+  onWeekChange,
+  onLocationChange,
+  onRoomChange,
+  onActivityButtonClick,
+}: TabletHeaderProps) {
+  const handlePreviousWeek = () => {
+    onWeekChange(subWeeks(currentWeekDate, 1));
+  };
+
+  const handleNextWeek = () => {
+    onWeekChange(addWeeks(currentWeekDate, 1));
+  };
+
+  const formatWeekRange = (date: Date) => {
+    const start = startOfWeek(date, { weekStartsOn: 1 });
+    const end = endOfWeek(date, { weekStartsOn: 1 });
+    return `${format(start, 'MMM d')} - ${format(end, 'd')}`;
+  };
+
+  return (
+    <div className="bg-white shadow-lg border-b border-sky-blue/20">
+      {/* Top Bar */}
+      <div className="px-4 py-3 bg-gradient-to-r from-turquoise to-sky-blue text-white">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold">
+                {userInfo?.userFirstName?.[0]}{userInfo?.userLastName?.[0]}
+              </span>
+            </div>
+            <div>
+              <p className="font-semibold text-sm">
+                {userInfo ? `${userInfo.userFirstName} ${userInfo.userLastName}` : "Teacher"}
+              </p>
+              <p className="text-xs opacity-90">{userInfo?.role || "Loading..."}</p>
+            </div>
+          </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onActivityButtonClick}
+            className="text-white hover:bg-white/20"
+            data-testid="button-activities-drawer"
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Week Navigation */}
+      <div className="px-4 py-3 bg-gradient-to-r from-mint-green/10 to-sky-blue/10">
+        <div className="flex items-center justify-between">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handlePreviousWeek}
+            className="bg-white shadow-sm"
+            data-testid="button-prev-week-tablet"
+          >
+            <ChevronLeft className="h-5 w-5 text-turquoise" />
+          </Button>
+          
+          <div className="text-center flex-1 mx-4">
+            <h2 className="text-lg font-bold text-charcoal" data-testid="week-range-tablet">
+              {formatWeekRange(currentWeekDate)}
+            </h2>
+            <p className="text-xs text-gray-500">Week View</p>
+          </div>
+
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handleNextWeek}
+            className="bg-white shadow-sm"
+            data-testid="button-next-week-tablet"
+          >
+            <ChevronRight className="h-5 w-5 text-turquoise" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Location and Room Selectors */}
+      <div className="px-4 py-3 flex gap-2">
+        <div className="flex-1">
+          <Select value={selectedLocation} onValueChange={onLocationChange}>
+            <SelectTrigger className="w-full h-12 text-sm" data-testid="select-location-tablet">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-gray-500" />
+                <SelectValue placeholder="Location" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              {locations.map((location: any) => (
+                <SelectItem key={location.id} value={location.id}>
+                  {location.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex-1">
+          <Select value={selectedRoom} onValueChange={onRoomChange} disabled={!selectedLocation}>
+            <SelectTrigger className="w-full h-12 text-sm" data-testid="select-room-tablet">
+              <div className="flex items-center gap-2">
+                <Home className="h-4 w-4 text-gray-500" />
+                <SelectValue placeholder="Room" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              {rooms.map((room: any) => (
+                <SelectItem key={room.id} value={room.id}>
+                  {room.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
+  );
+}
