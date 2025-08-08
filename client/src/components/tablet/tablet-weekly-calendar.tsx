@@ -1,10 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
-import { Clock } from "lucide-react";
+import { Clock, Undo2 } from "lucide-react";
 import type { Activity } from "@shared/schema";
 import {
   AlertDialog,
@@ -68,8 +69,10 @@ export function TabletWeeklyCalendar({
   const weekDays = generateWeekDays(currentWeekDate);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [activityToDelete, setActivityToDelete] = useState<any>(null);
+  const [recentlyDeleted, setRecentlyDeleted] = useState<any>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const undoTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch scheduled activities
   const { data: scheduledActivities = [] } = useQuery<any[]>({
@@ -112,13 +115,24 @@ export function TabletWeeklyCalendar({
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, deletedId) => {
+      // Store the deleted activity for undo
+      const deletedActivity = scheduledActivities.find((a: any) => a.id === deletedId);
+      if (deletedActivity) {
+        setRecentlyDeleted(deletedActivity);
+        // Clear undo after 30 seconds
+        if (undoTimer.current) clearTimeout(undoTimer.current);
+        undoTimer.current = setTimeout(() => {
+          setRecentlyDeleted(null);
+        }, 30000);
+      }
+      
       queryClient.invalidateQueries({ 
         queryKey: ['/api/scheduled-activities', selectedRoom, currentWeekDate.toISOString(), selectedLocation] 
       });
       toast({
         title: "Activity Removed",
-        description: "The activity has been removed from the schedule.",
+        description: "Tap the undo button to restore.",
       });
       setDeleteDialogOpen(false);
       setActivityToDelete(null);
@@ -197,8 +211,85 @@ export function TabletWeeklyCalendar({
     }
   };
 
+  // Add scheduled activity mutation for undo
+  const addScheduledMutation = useMutation({
+    mutationFn: async (scheduledActivity: any) => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('/api/scheduled-activities', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          lessonPlanId: scheduledActivity.lessonPlanId,
+          activityId: scheduledActivity.activityId,
+          dayOfWeek: scheduledActivity.dayOfWeek,
+          timeSlot: scheduledActivity.timeSlot,
+          roomId: scheduledActivity.roomId,
+          locationId: selectedLocation,
+          weekStart: currentWeekDate.toISOString(),
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to restore activity');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/scheduled-activities', selectedRoom, currentWeekDate.toISOString(), selectedLocation] 
+      });
+      toast({
+        title: "Activity Restored",
+        description: "The activity has been added back to the schedule.",
+      });
+      setRecentlyDeleted(null);
+      if (undoTimer.current) clearTimeout(undoTimer.current);
+    },
+  });
+
+  const handleUndo = () => {
+    if (recentlyDeleted) {
+      addScheduledMutation.mutate(recentlyDeleted);
+    }
+  };
+
+  // Clear undo state when adding a new activity
+  useEffect(() => {
+    if (selectedActivity) {
+      setRecentlyDeleted(null);
+      if (undoTimer.current) clearTimeout(undoTimer.current);
+    }
+  }, [selectedActivity]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (undoTimer.current) clearTimeout(undoTimer.current);
+    };
+  }, []);
+
   return (
-    <div className="h-full overflow-auto p-4">
+    <div className="h-full overflow-auto p-4 relative">
+      {/* Undo Button */}
+      {recentlyDeleted && (
+        <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
+          <Button
+            onClick={handleUndo}
+            disabled={addScheduledMutation.isPending}
+            className="bg-charcoal hover:bg-charcoal/90 text-white rounded-full shadow-lg px-6 py-3 flex items-center gap-2"
+            data-testid="undo-delete-button"
+          >
+            <Undo2 className="h-5 w-5" />
+            <span>Undo Remove</span>
+          </Button>
+        </div>
+      )}
+      
       <div className="min-h-full">
         {/* Calendar Grid - Optimized for touch */}
         <div className="grid grid-cols-6 gap-1 bg-white rounded-lg shadow-lg p-2">
@@ -288,7 +379,7 @@ export function TabletWeeklyCalendar({
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Activity</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove "{activityToDelete?.activity?.title}" from the schedule? This action cannot be undone.
+              Are you sure you want to remove "{activityToDelete?.activity?.title}" from the schedule? You can undo this action using the undo button that will appear.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
