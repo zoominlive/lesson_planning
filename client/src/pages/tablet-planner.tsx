@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { TabletWeeklyCalendar } from "../components/tablet/tablet-weekly-calendar";
 import { TabletHeader } from "../components/tablet/tablet-header";
 import { TabletActivityDrawer } from "../components/tablet/tablet-activity-drawer";
 import { startOfWeek } from "date-fns";
 import { toast } from "@/hooks/use-toast";
+import { ChevronUp, Sparkles } from "lucide-react";
 import type { Activity } from "@shared/schema";
 
 export default function TabletPlanner() {
@@ -16,6 +17,8 @@ export default function TabletPlanner() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{day: number, slot: number} | null>(null);
+  const bottomTabRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef<number | null>(null);
 
   // Fetch user info
   const { data: userInfo } = useQuery({
@@ -85,8 +88,30 @@ export default function TabletPlanner() {
     setSelectedSlot(null);
   };
 
+  // Handle swipe up gesture on the bottom tab
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === null) return;
+    
+    const currentY = e.touches[0].clientY;
+    const deltaY = touchStartY.current - currentY;
+    
+    // If swiped up more than 50px, open the drawer
+    if (deltaY > 50 && !drawerOpen) {
+      setDrawerOpen(true);
+      touchStartY.current = null;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchStartY.current = null;
+  };
+
   return (
-    <div className="tablet-planner h-screen flex flex-col bg-gradient-to-br from-sky-blue/5 to-mint-green/5">
+    <div className="tablet-planner h-screen flex flex-col bg-gradient-to-br from-sky-blue/10 via-white to-mint-green/10">
       {/* Viewport meta tags are in index.html */}
       
       <TabletHeader
@@ -103,6 +128,13 @@ export default function TabletPlanner() {
       />
 
       <div className="flex-1 overflow-hidden relative">
+        {/* Beautiful background pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-turquoise rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-coral-red rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-soft-yellow rounded-full blur-3xl" />
+        </div>
+        
         <TabletWeeklyCalendar
           currentWeekDate={currentWeekDate}
           selectedLocation={selectedLocation}
@@ -110,6 +142,33 @@ export default function TabletPlanner() {
           selectedActivity={selectedActivity}
           onSlotTap={handleSlotTap}
         />
+
+        {/* Bottom Tab for Activity Drawer */}
+        <div
+          ref={bottomTabRef}
+          className={`fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 ${
+            drawerOpen ? 'translate-y-full' : 'translate-y-0'
+          }`}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div 
+            className="bg-gradient-to-t from-white via-white to-white/95 backdrop-blur-sm shadow-[0_-4px_20px_rgba(0,0,0,0.1)] rounded-t-3xl px-6 py-3 cursor-pointer"
+            onClick={() => setDrawerOpen(true)}
+          >
+            {/* Swipe indicator */}
+            <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-2" />
+            
+            <div className="flex items-center justify-center gap-2">
+              <Sparkles className="h-5 w-5 text-turquoise animate-pulse" />
+              <span className="text-sm font-semibold bg-gradient-to-r from-turquoise to-sky-blue bg-clip-text text-transparent">
+                Swipe up for Activities
+              </span>
+              <ChevronUp className="h-5 w-5 text-turquoise animate-bounce" />
+            </div>
+          </div>
+        </div>
 
         <TabletActivityDrawer
           isOpen={drawerOpen}

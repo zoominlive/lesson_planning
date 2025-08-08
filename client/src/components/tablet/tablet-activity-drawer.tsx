@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, X, Clock, Users, Tag } from "lucide-react";
+import { Search, X, Clock, Users, Tag, ChevronDown } from "lucide-react";
 import type { Activity, Category, AgeGroup } from "@shared/schema";
 
 interface TabletActivityDrawerProps {
@@ -23,6 +23,9 @@ export function TabletActivityDrawer({
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("all");
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef<number | null>(null);
+  const currentTranslateY = useRef<number>(0);
 
   // Fetch activities
   const { data: activities = [], isLoading } = useQuery<Activity[]>({
@@ -52,35 +55,85 @@ export function TabletActivityDrawer({
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "Social Development":
-        return "bg-green-100 text-green-700";
+        return "bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border-green-200";
       case "Art & Creativity":
-        return "bg-pink-100 text-pink-700";
+        return "bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 border-pink-200";
       case "Physical Development":
-        return "bg-blue-100 text-blue-700";
+        return "bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 border-blue-200";
       case "Cognitive Development":
-        return "bg-indigo-100 text-indigo-700";
+        return "bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 border-indigo-200";
       default:
-        return "bg-gray-100 text-gray-700";
+        return "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 border-gray-200";
     }
   };
+
+  // Handle swipe down to close
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+    currentTranslateY.current = 0;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === null || !drawerRef.current) return;
+    
+    const currentY = e.touches[0].clientY;
+    const deltaY = currentY - touchStartY.current;
+    
+    // Only allow dragging down
+    if (deltaY > 0) {
+      currentTranslateY.current = deltaY;
+      drawerRef.current.style.transform = `translateY(${deltaY}px)`;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!drawerRef.current) return;
+    
+    // If dragged more than 100px, close the drawer
+    if (currentTranslateY.current > 100) {
+      onClose();
+    } else {
+      // Snap back to position
+      drawerRef.current.style.transform = 'translateY(0)';
+    }
+    
+    touchStartY.current = null;
+    currentTranslateY.current = 0;
+  };
+
+  // Reset transform when drawer opens/closes
+  useEffect(() => {
+    if (drawerRef.current) {
+      drawerRef.current.style.transform = 'translateY(0)';
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end">
-      <div className="bg-white w-full h-[85%] rounded-t-3xl shadow-2xl animate-slide-up">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-end animate-fade-in">
+      <div 
+        ref={drawerRef}
+        className="bg-gradient-to-b from-white to-gray-50 w-full h-[85%] rounded-t-3xl shadow-2xl animate-slide-up transition-transform"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {/* Header */}
-        <div className="sticky top-0 bg-white rounded-t-3xl border-b border-gray-200 p-4">
+        <div className="sticky top-0 bg-gradient-to-b from-white to-white/95 backdrop-blur-sm rounded-t-3xl border-b border-gray-200/50 p-4">
+          {/* Swipe indicator */}
+          <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-3" />
+          
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-charcoal">Activity Library</h2>
+            <h2 className="text-xl font-bold bg-gradient-to-r from-turquoise to-sky-blue bg-clip-text text-transparent">Activity Library</h2>
             <Button
               size="icon"
               variant="ghost"
               onClick={onClose}
-              className="rounded-full"
+              className="rounded-full hover:bg-gray-100"
               data-testid="close-drawer-tablet"
             >
-              <X className="h-5 w-5" />
+              <ChevronDown className="h-5 w-5" />
             </Button>
           </div>
 
@@ -94,7 +147,7 @@ export function TabletActivityDrawer({
                   placeholder="Search activities..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-12"
+                  className="pl-10 h-12 border-gray-200 bg-white/80 backdrop-blur-sm focus:bg-white"
                   data-testid="search-activities-tablet"
                 />
               </div>
@@ -102,8 +155,8 @@ export function TabletActivityDrawer({
 
             <div className="flex gap-2">
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="flex-1 h-12">
-                  <Tag className="h-4 w-4 mr-2" />
+                <SelectTrigger className="flex-1 h-12 border-gray-200 bg-white/80 backdrop-blur-sm">
+                  <Tag className="h-4 w-4 mr-2 text-turquoise" />
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -117,8 +170,8 @@ export function TabletActivityDrawer({
               </Select>
 
               <Select value={selectedAgeGroup} onValueChange={setSelectedAgeGroup}>
-                <SelectTrigger className="flex-1 h-12">
-                  <Users className="h-4 w-4 mr-2" />
+                <SelectTrigger className="flex-1 h-12 border-gray-200 bg-white/80 backdrop-blur-sm">
+                  <Users className="h-4 w-4 mr-2 text-sky-blue" />
                   <SelectValue placeholder="Age Group" />
                 </SelectTrigger>
                 <SelectContent>
@@ -139,10 +192,10 @@ export function TabletActivityDrawer({
           {isLoading ? (
             <div className="space-y-3">
               {[...Array(6)].map((_, i) => (
-                <Card key={i} className="p-4 animate-pulse">
-                  <div className="h-5 bg-gray-200 rounded mb-2 w-3/4"></div>
-                  <div className="h-3 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                <Card key={i} className="p-4 animate-pulse bg-white/60">
+                  <div className="h-5 bg-gradient-to-r from-gray-200 to-gray-100 rounded mb-2 w-3/4"></div>
+                  <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-100 rounded mb-2"></div>
+                  <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-1/2"></div>
                 </Card>
               ))}
             </div>
@@ -151,7 +204,7 @@ export function TabletActivityDrawer({
               {filteredActivities.map((activity) => (
                 <Card
                   key={activity.id}
-                  className="p-4 cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-turquoise/30"
+                  className="p-4 cursor-pointer bg-white/80 hover:bg-white hover:shadow-xl transition-all border-2 border-gray-100 hover:border-turquoise/30 hover:scale-[1.02] active:scale-[0.98]"
                   onClick={() => onActivitySelect(activity)}
                   data-testid={`activity-card-${activity.id}`}
                 >
@@ -163,7 +216,7 @@ export function TabletActivityDrawer({
                       <img 
                         src={activity.imageUrl} 
                         alt={activity.title}
-                        className="w-16 h-16 rounded object-cover ml-3"
+                        className="w-16 h-16 rounded-lg object-cover ml-3 shadow-sm"
                       />
                     )}
                   </div>
@@ -173,7 +226,7 @@ export function TabletActivityDrawer({
                   </p>
                   
                   <div className="flex items-center gap-3 text-xs">
-                    <span className={`px-2 py-1 rounded-full ${getCategoryColor(activity.category)}`}>
+                    <span className={`px-3 py-1 rounded-full border ${getCategoryColor(activity.category)}`}>
                       {activity.category}
                     </span>
                     <div className="flex items-center gap-1 text-gray-500">

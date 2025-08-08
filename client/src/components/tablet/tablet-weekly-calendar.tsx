@@ -151,15 +151,15 @@ export function TabletWeeklyCalendar({
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "Social Development":
-        return "from-green-100 to-emerald-200 border-green-300";
+        return "from-green-100 via-emerald-100 to-teal-100 border-green-300 shadow-green-200/50";
       case "Art & Creativity":
-        return "from-pink-100 to-rose-200 border-pink-300";
+        return "from-pink-100 via-rose-100 to-fuchsia-100 border-pink-300 shadow-pink-200/50";
       case "Physical Development":
-        return "from-cyan-100 to-blue-200 border-blue-300";
+        return "from-cyan-100 via-sky-100 to-blue-100 border-blue-300 shadow-blue-200/50";
       case "Cognitive Development":
-        return "from-blue-100 to-indigo-200 border-indigo-300";
+        return "from-indigo-100 via-purple-100 to-violet-100 border-indigo-300 shadow-indigo-200/50";
       default:
-        return "from-gray-100 to-gray-200 border-gray-300";
+        return "from-gray-100 via-slate-100 to-gray-200 border-gray-300 shadow-gray-200/50";
     }
   };
 
@@ -277,11 +277,11 @@ export function TabletWeeklyCalendar({
     <div className="h-full overflow-auto p-4 relative">
       {/* Undo Button */}
       {recentlyDeleted && (
-        <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
+        <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
           <Button
             onClick={handleUndo}
             disabled={addScheduledMutation.isPending}
-            className="bg-charcoal hover:bg-charcoal/90 text-white rounded-full shadow-lg px-6 py-3 flex items-center gap-2"
+            className="bg-gradient-to-r from-charcoal to-gray-700 hover:from-charcoal/90 hover:to-gray-700/90 text-white rounded-full shadow-2xl px-6 py-3 flex items-center gap-2"
             data-testid="undo-delete-button"
           >
             <Undo2 className="h-5 w-5" />
@@ -292,30 +292,30 @@ export function TabletWeeklyCalendar({
       
       <div className="min-h-full">
         {/* Calendar Grid - Optimized for touch */}
-        <div className="grid grid-cols-6 gap-1 bg-white rounded-lg shadow-lg p-2">
+        <div className="grid grid-cols-6 gap-2 bg-gradient-to-br from-white via-white to-gray-50 rounded-2xl shadow-2xl p-3 border border-gray-100">
           {/* Time Column */}
-          <div className="space-y-1">
-            <div className="h-12 flex items-center justify-center text-xs font-bold text-turquoise">
+          <div className="space-y-2">
+            <div className="h-12 flex items-center justify-center text-xs font-bold bg-gradient-to-r from-turquoise/20 to-sky-blue/20 rounded-lg">
               Time
             </div>
             {timeSlots.map((slot) => (
               <div 
                 key={slot.id} 
-                className="h-16 flex flex-col items-center justify-center bg-gradient-to-b from-mint-green/10 to-sky-blue/10 rounded text-center p-1"
+                className="h-16 flex flex-col items-center justify-center bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-sm border border-gray-100 text-center p-1"
               >
-                <span className="text-xs font-semibold text-charcoal">{slot.label}</span>
-                <span className="text-xs text-gray-500">{slot.name}</span>
+                <span className="text-xs font-bold bg-gradient-to-r from-turquoise to-sky-blue bg-clip-text text-transparent">{slot.label}</span>
+                <span className="text-[10px] text-gray-500">{slot.name}</span>
               </div>
             ))}
           </div>
 
           {/* Days */}
           {weekDays.map((day) => (
-            <div key={day.id} className="space-y-1">
+            <div key={day.id} className="space-y-2">
               {/* Day Header */}
-              <div className="h-12 bg-gradient-to-b from-turquoise/20 to-mint-green/20 rounded flex flex-col items-center justify-center">
+              <div className="h-12 bg-gradient-to-br from-turquoise/30 via-sky-blue/20 to-mint-green/30 rounded-lg shadow-sm flex flex-col items-center justify-center border border-turquoise/20">
                 <span className="text-xs font-bold text-charcoal">{day.name}</span>
-                <span className="text-xs text-gray-600">{day.date}</span>
+                <span className="text-[10px] text-gray-600">{day.date}</span>
               </div>
               
               {/* Time Slots */}
@@ -327,7 +327,7 @@ export function TabletWeeklyCalendar({
                   <div key={slot.id}>
                     {scheduledActivity ? (
                       <div
-                        className={`h-16 w-full p-1 rounded bg-gradient-to-br ${getCategoryColor(scheduledActivity.activity?.category || '')} border-2 transition-all cursor-pointer active:scale-95`}
+                        className={`h-16 w-full p-1.5 rounded-lg bg-gradient-to-br ${getCategoryColor(scheduledActivity.activity?.category || '')} border-2 transition-all cursor-pointer active:scale-95 shadow-lg shadow-${getCategoryColor(scheduledActivity.activity?.category || '').split(' ')[4]}`}
                         onTouchStart={(e) => handleTouchStart(e, scheduledActivity)}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
@@ -335,12 +335,12 @@ export function TabletWeeklyCalendar({
                         data-testid={`scheduled-activity-${day.id}-${slot.id}`}
                       >
                         <div className="h-full flex flex-col justify-between">
-                          <p className="text-xs font-semibold line-clamp-2 text-charcoal">
+                          <p className="text-[10px] font-bold line-clamp-2 text-gray-700">
                             {scheduledActivity.activity?.title}
                           </p>
                           <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3 text-gray-500" />
-                            <span className="text-xs text-gray-600">
+                            <Clock className="h-2.5 w-2.5 text-gray-600" />
+                            <span className="text-[9px] text-gray-600 font-medium">
                               {scheduledActivity.activity?.duration}m
                             </span>
                           </div>
@@ -349,18 +349,18 @@ export function TabletWeeklyCalendar({
                     ) : (
                       <button
                         onClick={() => onSlotTap(day.id, slot.id)}
-                        className={`h-16 w-full p-1 rounded transition-all ${
+                        className={`h-16 w-full p-1 rounded-lg transition-all ${
                           isSelected 
-                            ? 'bg-turquoise/10 border-2 border-dashed border-turquoise hover:bg-turquoise/20' 
-                            : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
+                            ? 'bg-gradient-to-br from-turquoise/20 to-sky-blue/20 border-2 border-dashed border-turquoise hover:from-turquoise/30 hover:to-sky-blue/30 shadow-inner' 
+                            : 'bg-white border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
                         }`}
                         data-testid={`slot-${day.id}-${slot.id}`}
                       >
                         <div className="h-full flex items-center justify-center">
                           {isSelected ? (
-                            <span className="text-xs text-turquoise font-medium">Tap</span>
+                            <span className="text-xs font-bold bg-gradient-to-r from-turquoise to-sky-blue bg-clip-text text-transparent animate-pulse">Tap</span>
                           ) : (
-                            <span className="text-xs text-gray-400">+</span>
+                            <span className="text-lg text-gray-300 hover:text-gray-400">+</span>
                           )}
                         </div>
                       </button>
