@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { TabletWeeklyCalendar } from "../components/tablet/tablet-weekly-calendar";
 import { TabletHeader } from "../components/tablet/tablet-header";
 import { TabletActivityDrawer } from "../components/tablet/tablet-activity-drawer";
+import { TabletRecordingView } from "../components/tablet/tablet-recording-view";
 import { startOfWeek } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import { ChevronUp, Sparkles } from "lucide-react";
@@ -17,6 +18,7 @@ export default function TabletPlanner() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{day: number, slot: number} | null>(null);
+  const [viewMode, setViewMode] = useState<'planning' | 'recording'>('planning');
   const bottomTabRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef<number | null>(null);
 
@@ -125,6 +127,8 @@ export default function TabletPlanner() {
         onLocationChange={setSelectedLocation}
         onRoomChange={setSelectedRoom}
         onActivityButtonClick={() => setDrawerOpen(true)}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
       <div className="flex-1 overflow-hidden relative">
@@ -135,40 +139,52 @@ export default function TabletPlanner() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-soft-yellow rounded-full blur-3xl" />
         </div>
         
-        <TabletWeeklyCalendar
-          currentWeekDate={currentWeekDate}
-          selectedLocation={selectedLocation}
-          selectedRoom={selectedRoom}
-          selectedActivity={selectedActivity}
-          onSlotTap={handleSlotTap}
-        />
+        {viewMode === 'planning' ? (
+          <TabletWeeklyCalendar
+            currentWeekDate={currentWeekDate}
+            selectedLocation={selectedLocation}
+            selectedRoom={selectedRoom}
+            selectedActivity={selectedActivity}
+            onSlotTap={handleSlotTap}
+          />
+        ) : (
+          <TabletRecordingView
+            currentDate={new Date()}
+            selectedLocation={selectedLocation}
+            selectedRoom={selectedRoom}
+            locations={locations as any[]}
+            rooms={rooms}
+          />
+        )}
 
-        {/* Bottom Tab for Activity Drawer */}
-        <div
-          ref={bottomTabRef}
-          className={`fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 ${
-            drawerOpen ? 'translate-y-full' : 'translate-y-0'
-          }`}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          <div 
-            className="bg-gradient-to-t from-white via-white to-white/95 backdrop-blur-sm shadow-[0_-4px_20px_rgba(0,0,0,0.1)] rounded-t-3xl px-6 py-3 cursor-pointer"
-            onClick={() => setDrawerOpen(true)}
+        {/* Bottom Tab for Activity Drawer - Only show in planning mode */}
+        {viewMode === 'planning' && (
+          <div
+            ref={bottomTabRef}
+            className={`fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 ${
+              drawerOpen ? 'translate-y-full' : 'translate-y-0'
+            }`}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           >
-            {/* Swipe indicator */}
-            <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-2" />
-            
-            <div className="flex items-center justify-center gap-2">
-              <Sparkles className="h-5 w-5 text-turquoise animate-pulse" />
-              <span className="text-sm font-semibold bg-gradient-to-r from-turquoise to-sky-blue bg-clip-text text-transparent">
-                Swipe up for Activities
-              </span>
-              <ChevronUp className="h-5 w-5 text-turquoise animate-bounce" />
+            <div 
+              className="bg-gradient-to-t from-white via-white to-white/95 backdrop-blur-sm shadow-[0_-4px_20px_rgba(0,0,0,0.1)] rounded-t-3xl px-6 py-3 cursor-pointer"
+              onClick={() => setDrawerOpen(true)}
+            >
+              {/* Swipe indicator */}
+              <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-2" />
+              
+              <div className="flex items-center justify-center gap-2">
+                <Sparkles className="h-5 w-5 text-turquoise animate-pulse" />
+                <span className="text-sm font-semibold bg-gradient-to-r from-turquoise to-sky-blue bg-clip-text text-transparent">
+                  Swipe up for Activities
+                </span>
+                <ChevronUp className="h-5 w-5 text-turquoise animate-bounce" />
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <TabletActivityDrawer
           isOpen={drawerOpen}

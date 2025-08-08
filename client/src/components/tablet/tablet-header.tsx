@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Menu, MapPin, Home } from "lucide-react";
+import { ChevronLeft, ChevronRight, Menu, MapPin, Home, Calendar, CheckSquare } from "lucide-react";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from "date-fns";
 
 interface TabletHeaderProps {
@@ -14,6 +14,8 @@ interface TabletHeaderProps {
   onLocationChange: (locationId: string) => void;
   onRoomChange: (roomId: string) => void;
   onActivityButtonClick: () => void;
+  viewMode?: 'planning' | 'recording';
+  onViewModeChange?: (mode: 'planning' | 'recording') => void;
 }
 
 export function TabletHeader({
@@ -27,6 +29,8 @@ export function TabletHeader({
   onLocationChange,
   onRoomChange,
   onActivityButtonClick,
+  viewMode = 'planning',
+  onViewModeChange,
 }: TabletHeaderProps) {
   const handlePreviousWeek = () => {
     onWeekChange(subWeeks(currentWeekDate, 1));
@@ -69,6 +73,42 @@ export function TabletHeader({
           >
             <Menu className="h-6 w-6" />
           </Button>
+        </div>
+      </div>
+
+      {/* Mode Toggle */}
+      <div className="px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+        <div className="flex justify-center">
+          <div className="bg-white rounded-full p-1 shadow-inner flex gap-1">
+            <Button
+              size="sm"
+              variant={viewMode === 'planning' ? 'default' : 'ghost'}
+              onClick={() => onViewModeChange?.('planning')}
+              className={`rounded-full px-4 py-2 transition-all ${
+                viewMode === 'planning' 
+                  ? 'bg-gradient-to-r from-turquoise to-sky-blue text-white shadow-lg' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="mode-planning-button"
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Planning
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === 'recording' ? 'default' : 'ghost'}
+              onClick={() => onViewModeChange?.('recording')}
+              className={`rounded-full px-4 py-2 transition-all ${
+                viewMode === 'recording' 
+                  ? 'bg-gradient-to-r from-coral-red to-soft-yellow text-white shadow-lg' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="mode-recording-button"
+            >
+              <CheckSquare className="h-4 w-4 mr-2" />
+              Recording
+            </Button>
+          </div>
         </div>
       </div>
 
