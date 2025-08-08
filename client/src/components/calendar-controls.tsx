@@ -19,6 +19,7 @@ import { getUserAuthorizedLocations } from "@/lib/auth";
 import { DayPicker } from "react-day-picker";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from "date-fns";
 import { cn } from "@/lib/utils";
+import "react-day-picker/dist/style.css";
 
 interface CalendarControlsProps {
   currentWeekDate: Date;
@@ -108,64 +109,76 @@ export function CalendarControls({
         <div className="flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center space-x-4">
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               onClick={handlePreviousWeek}
+              className="bg-gradient-to-r from-mint-green/20 to-sky-blue/20 hover:from-mint-green/30 hover:to-sky-blue/30 border-2 border-mint-green/30 hover:border-mint-green/40 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105"
               data-testid="button-previous-week"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4 text-turquoise" />
             </Button>
             <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
               <PopoverTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   className={cn(
-                    "min-w-[240px] justify-start text-left font-normal",
+                    "min-w-[280px] h-auto py-3 px-4 bg-gradient-to-r from-sky-blue/10 to-mint-green/10 hover:from-sky-blue/20 hover:to-mint-green/20 border-2 border-sky-blue/20 hover:border-sky-blue/30 transition-all duration-300 shadow-sm hover:shadow-md",
                     !currentWeekDate && "text-muted-foreground"
                   )}
                   data-testid="button-week-picker"
                 >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  <div className="text-center flex-1">
-                    <h2
-                      className="text-base font-bold text-charcoal"
-                      data-testid="current-week"
-                    >
-                      {formatWeekRange(currentWeekDate)}
-                    </h2>
-                    <p className="text-xs text-gray-500">Click to select week</p>
+                  <div className="flex items-center justify-center w-full">
+                    <Calendar className="mr-3 h-5 w-5 text-turquoise" />
+                    <div className="text-center flex-1">
+                      <h2
+                        className="text-lg font-bold bg-gradient-to-r from-turquoise to-sky-blue bg-clip-text text-transparent"
+                        data-testid="current-week"
+                      >
+                        {formatWeekRange(currentWeekDate)}
+                      </h2>
+                      <p className="text-xs text-gray-500 mt-0.5">Click to select week</p>
+                    </div>
                   </div>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <DayPicker
-                  mode="single"
-                  selected={currentWeekDate}
-                  onSelect={handleDateSelect}
-                  showOutsideDays={true}
-                  className="p-3"
-                  modifiers={{
-                    currentWeek: {
-                      from: startOfWeek(currentWeekDate, { weekStartsOn: 1 }),
-                      to: endOfWeek(currentWeekDate, { weekStartsOn: 1 })
-                    }
-                  }}
-                  modifiersStyles={{
-                    currentWeek: {
-                      backgroundColor: 'rgba(79, 201, 176, 0.2)',
-                      borderRadius: '0.375rem'
-                    }
-                  }}
-                />
+              <PopoverContent className="w-auto p-0 border-2 border-sky-blue/20 shadow-xl" align="start">
+                <div className="bg-gradient-to-br from-white to-sky-blue/5 rounded-lg p-1">
+                  <DayPicker
+                    mode="single"
+                    selected={currentWeekDate}
+                    onSelect={handleDateSelect}
+                    showOutsideDays={true}
+                    className="rdp-soft-design p-3"
+                    modifiers={{
+                      currentWeek: {
+                        from: startOfWeek(currentWeekDate, { weekStartsOn: 1 }),
+                        to: endOfWeek(currentWeekDate, { weekStartsOn: 1 })
+                      }
+                    }}
+                    modifiersStyles={{
+                      currentWeek: {
+                        backgroundColor: 'rgba(79, 201, 176, 0.15)',
+                        borderRadius: '0.5rem',
+                        border: '2px solid rgba(79, 201, 176, 0.3)'
+                      }
+                    }}
+                    modifiersClassNames={{
+                      today: 'rdp-day_today',
+                      selected: 'rdp-day_selected',
+                      currentWeek: 'rdp-day_current_week'
+                    }}
+                  />
+                </div>
               </PopoverContent>
             </Popover>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               onClick={handleNextWeek}
+              className="bg-gradient-to-r from-mint-green/20 to-sky-blue/20 hover:from-mint-green/30 hover:to-sky-blue/30 border-2 border-mint-green/30 hover:border-mint-green/40 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105"
               data-testid="button-next-week"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4 text-turquoise" />
             </Button>
           </div>
 

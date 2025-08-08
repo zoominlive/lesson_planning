@@ -298,27 +298,28 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
       <div className={`flex ${drawerOpen ? 'gap-4' : ''}`}>
         {/* Calendar Grid */}
         <div className={`transition-all duration-300 ${drawerOpen ? 'flex-1' : 'w-full'}`}>
-          <Card className="material-shadow overflow-hidden">
+          <Card className="material-shadow overflow-hidden bg-gradient-to-br from-white to-sky-blue/5 border-2 border-sky-blue/10">
             <div className="grid grid-cols-6 gap-0">
           {/* Time Column */}
-          <div className="bg-gray-50 border-r border-gray-200">
-            <div className="h-16 border-b border-gray-200 flex items-center justify-center font-semibold text-gray-700">
+          <div className="bg-gradient-to-b from-mint-green/10 to-sky-blue/10 border-r-2 border-sky-blue/20">
+            <div className="h-16 border-b-2 border-sky-blue/20 flex items-center justify-center font-bold text-turquoise bg-white/50">
               Time
             </div>
             {timeSlots.map((slot) => (
-              <div key={slot.id} className="h-24 border-b border-gray-200 flex items-center justify-center text-sm font-medium text-gray-600">
-                <span data-testid={`time-slot-${slot.id}`}>{slot.label}</span>
+              <div key={slot.id} className="h-24 border-b border-sky-blue/10 flex flex-col items-center justify-center bg-white/30 hover:bg-white/50 transition-colors">
+                <span data-testid={`time-slot-${slot.id}`} className="text-sm font-semibold text-charcoal">{slot.label}</span>
+                <span className="text-xs text-gray-500 mt-1">{slot.name}</span>
               </div>
             ))}
           </div>
 
           {/* Days of Week */}
           {weekDays.map((day) => (
-            <div key={day.id} className="border-r border-gray-200 last:border-r-0">
+            <div key={day.id} className="border-r-2 border-sky-blue/10 last:border-r-0">
               {/* Day Header */}
-              <div className="h-16 bg-white text-black border-b border-gray-200 flex flex-col items-center justify-center">
-                <span className="font-bold text-xl tracking-wide" data-testid={`day-name-${day.id}`}>{day.name}</span>
-                <span className="text-xs text-gray-600 mt-1" data-testid={`day-date-${day.id}`}>{day.date}</span>
+              <div className="h-16 bg-gradient-to-b from-turquoise/10 to-mint-green/10 text-black border-b-2 border-sky-blue/20 flex flex-col items-center justify-center">
+                <span className="font-bold text-xl tracking-wide bg-gradient-to-r from-turquoise to-sky-blue bg-clip-text text-transparent" data-testid={`day-name-${day.id}`}>{day.name}</span>
+                <span className="text-xs text-gray-600 mt-1 font-semibold" data-testid={`day-date-${day.id}`}>{day.date}</span>
               </div>
               
               {/* Time Slots */}
@@ -328,7 +329,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                 return (
                   <div 
                     key={slot.id} 
-                    className="h-24 p-1 border border-gray-200 hover:border-turquoise transition-all"
+                    className="h-24 p-1.5 border border-sky-blue/10 hover:border-turquoise/40 transition-all bg-white/40 hover:bg-turquoise/5"
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, day.id, slot.id)}
@@ -358,9 +359,9 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                         </div>
                       </div>
                     ) : (
-                      <div className="h-full flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
-                        <Plus className="h-3 w-3 mr-1 opacity-50" />
-                        <span className="text-xs opacity-50">Drop Activity</span>
+                      <div className="h-full flex items-center justify-center text-gray-400 border-2 border-dashed border-turquoise/20 rounded-lg hover:border-turquoise/40 hover:bg-turquoise/5 transition-all group">
+                        <Plus className="h-3 w-3 mr-1 opacity-50 group-hover:opacity-70 text-turquoise" />
+                        <span className="text-xs opacity-50 group-hover:opacity-70 text-turquoise">Drop Activity</span>
                       </div>
                     )}
                   </div>
