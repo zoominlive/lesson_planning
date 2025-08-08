@@ -980,8 +980,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return matchesWeek && matchesLocation && matchesRoom;
         });
         
-        lessonPlanIds = weekLessonPlans.map(lp => lp.id);
-        console.log('[GET /api/scheduled-activities] Matching lesson plan IDs:', lessonPlanIds);
+        // IMPORTANT: Only use the most recent lesson plan to avoid duplicates
+        // Sort by ID (which are UUIDs) to get consistent results, or we could add a created_at field
+        if (weekLessonPlans.length > 0) {
+          // For now, just take the first one (or we could sort by some criteria)
+          // In production, we should prevent duplicate lesson plans from being created
+          const mostRecentPlan = weekLessonPlans[weekLessonPlans.length - 1]; // Take the last one added
+          lessonPlanIds = [mostRecentPlan.id];
+          console.log(`[GET /api/scheduled-activities] Found ${weekLessonPlans.length} lesson plans, using most recent:`, mostRecentPlan.id);
+        } else {
+          console.log('[GET /api/scheduled-activities] No matching lesson plans found');
+        }
       }
       
       // Filter by room, tenant, and optionally by lesson plan (week)
