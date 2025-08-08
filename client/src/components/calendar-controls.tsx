@@ -131,7 +131,7 @@ export function CalendarControls({
                     <Calendar className="mr-3 h-5 w-5 text-turquoise" />
                     <div className="text-center flex-1">
                       <h2
-                        className="text-lg font-bold bg-gradient-to-r from-turquoise to-sky-blue bg-clip-text text-transparent"
+                        className="text-lg font-bold text-charcoal"
                         data-testid="current-week"
                       >
                         {formatWeekRange(currentWeekDate)}
