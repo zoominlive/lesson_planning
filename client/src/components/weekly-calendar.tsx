@@ -9,10 +9,12 @@ import { Search, Plus, Play, Package, Filter, X, Trash2 } from "lucide-react";
 import DraggableActivity from "./draggable-activity";
 import { toast } from "@/hooks/use-toast";
 import type { Activity, Category, AgeGroup } from "@shared/schema";
+import { format, addDays, startOfWeek } from "date-fns";
 
 interface WeeklyCalendarProps {
   selectedLocation: string;
   selectedRoom: string;
+  currentWeekDate?: Date;
 }
 
 const timeSlots = [
@@ -31,15 +33,27 @@ const timeSlots = [
   { id: 12, label: "6:00 PM", name: "Pickup Time" },
 ];
 
-const weekDays = [
-  { id: 0, name: "Monday", date: "Mar 13" },
-  { id: 1, name: "Tuesday", date: "Mar 14" },
-  { id: 2, name: "Wednesday", date: "Mar 15" },
-  { id: 3, name: "Thursday", date: "Mar 16" },
-  { id: 4, name: "Friday", date: "Mar 17" },
-];
+const generateWeekDays = (weekStartDate: Date) => {
+  const days = [];
+  const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+  
+  for (let i = 0; i < 5; i++) {
+    const date = addDays(weekStartDate, i);
+    days.push({
+      id: i,
+      name: dayNames[i],
+      date: format(date, 'MMM d'),
+      fullDate: date
+    });
+  }
+  
+  return days;
+};
 
-export default function WeeklyCalendar({ selectedLocation, selectedRoom }: WeeklyCalendarProps) {
+export default function WeeklyCalendar({ selectedLocation, selectedRoom, currentWeekDate }: WeeklyCalendarProps) {
+  const weekStartDate = currentWeekDate || startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weekDays = generateWeekDays(weekStartDate);
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [draggedActivity, setDraggedActivity] = useState<Activity | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all-categories");

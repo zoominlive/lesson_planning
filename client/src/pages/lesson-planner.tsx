@@ -12,6 +12,7 @@ import WeeklyCalendar from "@/components/weekly-calendar";
 import { Settings, MapPin } from "lucide-react";
 import { useLocation } from "wouter";
 import { getUserInfo } from "@/lib/auth";
+import { startOfWeek } from "date-fns";
 
 type UserInfo = {
   tenantId: string;
@@ -24,7 +25,9 @@ type UserInfo = {
 };
 
 export default function LessonPlanner() {
-  const [currentWeek, setCurrentWeek] = useState("Week of March 13-17, 2024");
+  const [currentWeekDate, setCurrentWeekDate] = useState(() => 
+    startOfWeek(new Date(), { weekStartsOn: 1 }) // Start on Monday
+  );
   const [selectedRoom, setSelectedRoom] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [, setLocation] = useLocation();
@@ -40,14 +43,8 @@ export default function LessonPlanner() {
     }
   }, [selectedLocation]);
 
-  const handlePreviousWeek = () => {
-    // TODO: Implement week navigation
-    console.log("Previous week");
-  };
-
-  const handleNextWeek = () => {
-    // TODO: Implement week navigation
-    console.log("Next week");
+  const handleWeekChange = (newDate: Date) => {
+    setCurrentWeekDate(newDate);
   };
 
   const handleSubmitToSupervisor = () => {
@@ -135,11 +132,10 @@ export default function LessonPlanner() {
       {/* Navigation Tabs */}
       <NavigationTabs>
         <CalendarControls
-          currentWeek={currentWeek}
+          currentWeekDate={currentWeekDate}
           selectedRoom={selectedRoom}
           selectedLocation={selectedLocation}
-          onPreviousWeek={handlePreviousWeek}
-          onNextWeek={handleNextWeek}
+          onWeekChange={handleWeekChange}
           onRoomChange={setSelectedRoom}
           onLocationChange={setSelectedLocation}
           onSubmitToSupervisor={handleSubmitToSupervisor}
@@ -147,6 +143,7 @@ export default function LessonPlanner() {
         <WeeklyCalendar 
           selectedLocation={selectedLocation}
           selectedRoom={selectedRoom}
+          currentWeekDate={currentWeekDate}
         />
       </NavigationTabs>
 
