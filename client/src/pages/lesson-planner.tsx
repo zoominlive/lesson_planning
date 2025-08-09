@@ -33,7 +33,7 @@ export default function LessonPlanner() {
   const [currentWeekDate, setCurrentWeekDate] = useState(
     () => startOfWeek(new Date(), { weekStartsOn: 1 }), // Start on Monday
   );
-  const [selectedRoom, setSelectedRoom] = useState("all");
+  const [selectedRoom, setSelectedRoom] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [, setLocation] = useLocation();
 
@@ -41,12 +41,27 @@ export default function LessonPlanner() {
     queryKey: ["/api/user"],
   });
 
+  // Fetch all rooms to auto-select first room for location
+  const { data: allRooms = [] } = useQuery<any[]>({
+    queryKey: ["/api/rooms"],
+  });
+  
+  // Filter rooms for the selected location
+  const filteredRooms = allRooms.filter((room: any) => room.locationId === selectedLocation);
+
   // Reset room selection when location changes
   useEffect(() => {
     if (selectedLocation) {
       setSelectedRoom("");
     }
   }, [selectedLocation]);
+
+  // Auto-select first room when rooms are available and no room is selected
+  useEffect(() => {
+    if (filteredRooms.length > 0 && !selectedRoom && selectedLocation) {
+      setSelectedRoom(filteredRooms[0].id);
+    }
+  }, [filteredRooms, selectedRoom, selectedLocation]);
 
   // Listen for schedule type changes to refresh data
   useEffect(() => {
