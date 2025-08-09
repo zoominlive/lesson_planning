@@ -48,33 +48,48 @@ export function TabletHeader({
 
   return (
     <div className="bg-white shadow-lg border-b border-sky-blue/20">
-      {/* Top Bar */}
-      <div className="px-4 py-3 bg-gradient-to-r from-turquoise to-sky-blue text-white">
-        <div className="flex justify-end items-center">
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onActivityButtonClick}
-            className="text-white hover:bg-white/20"
-            data-testid="button-activities-drawer"
-          >
-            <Menu className="h-6 w-6" />
-          </Button>
-        </div>
-      </div>
+      {/* Main Header Row with Date Navigation and Mode Toggle */}
+      <div className="px-4 py-4 bg-gradient-to-r from-mint-green/5 to-sky-blue/5">
+        <div className="flex items-center justify-between">
+          {/* Week Navigation */}
+          <div className="flex items-center gap-3">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={handlePreviousWeek}
+              className="bg-white shadow-md hover:shadow-lg border border-gray-200 text-turquoise hover:bg-turquoise/5"
+              data-testid="button-prev-week-tablet"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            
+            <div className="bg-white px-6 py-3 rounded-xl shadow-md border border-gray-200">
+              <h2 className="text-lg font-bold text-charcoal text-center" data-testid="week-range-tablet">
+                {formatWeekRange(currentWeekDate)}
+              </h2>
+            </div>
 
-      {/* Mode Toggle */}
-      <div className="px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-        <div className="flex justify-center">
-          <div className="bg-white rounded-full p-1 shadow-inner flex gap-1">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={handleNextWeek}
+              className="bg-white shadow-md hover:shadow-lg border border-gray-200 text-turquoise hover:bg-turquoise/5"
+              data-testid="button-next-week-tablet"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {/* Mode Toggle */}
+          <div className="bg-white rounded-xl p-1 shadow-md border border-gray-200 flex gap-1">
             <Button
               size="sm"
               variant={viewMode === 'planning' ? 'default' : 'ghost'}
               onClick={() => onViewModeChange?.('planning')}
-              className={`rounded-full px-4 py-2 transition-all ${
+              className={`rounded-lg px-4 py-2 transition-all ${
                 viewMode === 'planning' 
-                  ? 'bg-gradient-to-r from-turquoise to-sky-blue text-white shadow-lg' 
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-gradient-to-r from-turquoise to-sky-blue text-white shadow-md' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
               data-testid="mode-planning-button"
             >
@@ -85,10 +100,10 @@ export function TabletHeader({
               size="sm"
               variant={viewMode === 'recording' ? 'default' : 'ghost'}
               onClick={() => onViewModeChange?.('recording')}
-              className={`rounded-full px-4 py-2 transition-all ${
+              className={`rounded-lg px-4 py-2 transition-all ${
                 viewMode === 'recording' 
-                  ? 'bg-gradient-to-r from-coral-red to-soft-yellow text-white shadow-lg' 
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-gradient-to-r from-coral-red to-soft-yellow text-white shadow-md' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
               data-testid="mode-recording-button"
             >
@@ -96,37 +111,16 @@ export function TabletHeader({
               Recording
             </Button>
           </div>
-        </div>
-      </div>
 
-      {/* Week Navigation */}
-      <div className="px-4 py-3 bg-gradient-to-r from-mint-green/10 to-sky-blue/10">
-        <div className="flex items-center justify-between">
+          {/* Menu Button */}
           <Button
             size="icon"
             variant="ghost"
-            onClick={handlePreviousWeek}
-            className="bg-white shadow-sm"
-            data-testid="button-prev-week-tablet"
+            onClick={onActivityButtonClick}
+            className="bg-white shadow-md hover:shadow-lg border border-gray-200 text-turquoise hover:bg-turquoise/5"
+            data-testid="button-activities-drawer"
           >
-            <ChevronLeft className="h-5 w-5 text-turquoise" />
-          </Button>
-          
-          <div className="text-center flex-1 mx-4">
-            <h2 className="text-lg font-bold text-charcoal" data-testid="week-range-tablet">
-              {formatWeekRange(currentWeekDate)}
-            </h2>
-            <p className="text-xs text-gray-500">Week View</p>
-          </div>
-
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={handleNextWeek}
-            className="bg-white shadow-sm"
-            data-testid="button-next-week-tablet"
-          >
-            <ChevronRight className="h-5 w-5 text-turquoise" />
+            <Menu className="h-6 w-6" />
           </Button>
         </div>
       </div>
