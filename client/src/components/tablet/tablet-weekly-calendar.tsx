@@ -481,7 +481,7 @@ export function TabletWeeklyCalendar({
                       <div
                         draggable={true}
                         onDragStart={(e) => handleDragStart(e, scheduledActivity)}
-                        className={`h-16 w-full p-1.5 rounded-lg bg-gradient-to-br ${getCategoryColor(scheduledActivity.activity?.category || '')} border-2 transition-all cursor-move active:scale-95 shadow-lg hover:shadow-xl ${
+                        className={`h-20 w-full p-2 rounded-lg bg-gradient-to-br ${getCategoryColor(scheduledActivity.activity?.category || '')} border-2 transition-all cursor-move active:scale-95 shadow-lg hover:shadow-xl ${
                           draggedActivity?.id === scheduledActivity.id ? 'opacity-50 scale-95' : ''
                         }`}
                         onTouchStart={(e) => handleTouchStart(e, scheduledActivity)}
@@ -492,23 +492,23 @@ export function TabletWeeklyCalendar({
                       >
                         <div className="h-full flex flex-col justify-between">
                           <div className="flex-1">
-                            <p className="text-[10px] font-bold line-clamp-1 text-gray-700">
+                            <p className="text-sm font-bold line-clamp-1 text-gray-700">
                               {scheduledActivity.activity?.title}
                             </p>
-                            <p className="text-[8px] text-gray-600 mt-0.5">
+                            <p className="text-xs text-gray-600 mt-1">
                               {scheduledActivity.activity?.category}
                             </p>
                           </div>
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-2.5 w-2.5 text-gray-600" />
-                              <span className="text-[9px] text-gray-600 font-medium">
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="h-4 w-4 text-gray-600" />
+                              <span className="text-xs text-gray-600 font-medium">
                                 {scheduledActivity.activity?.duration}m
                               </span>
                             </div>
                             {scheduledActivity.activity?.materialIds && scheduledActivity.activity.materialIds.length > 0 && (
                               <div title="Materials required">
-                                <Scissors className="h-2.5 w-2.5 text-gray-600" />
+                                <Scissors className="h-4 w-4 text-gray-600" />
                               </div>
                             )}
                           </div>
@@ -519,7 +519,7 @@ export function TabletWeeklyCalendar({
                         onDragOver={(e) => handleDragOver(e, day.id, slot.id)}
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, day.id, slot.id)}
-                        className={`h-16 w-full p-1 rounded-lg transition-all ${
+                        className={`h-20 w-full p-1 rounded-lg transition-all ${
                           dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id
                             ? 'bg-gradient-to-br from-turquoise/30 to-sky-blue/30 border-2 border-dashed border-turquoise scale-105'
                             : isSelected 
