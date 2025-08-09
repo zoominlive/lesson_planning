@@ -54,16 +54,22 @@ export default function LessonPlanner() {
   // Reset room selection when location changes
   useEffect(() => {
     if (selectedLocation) {
-      setSelectedRoom("");
+      // Don't reset if we're going to auto-select anyway
+      const roomsForLocation = allRooms.filter((room: any) => room.locationId === selectedLocation);
+      if (roomsForLocation.length > 0) {
+        setSelectedRoom(roomsForLocation[0].id);
+      } else {
+        setSelectedRoom("");
+      }
     }
-  }, [selectedLocation]);
+  }, [selectedLocation, allRooms]);
 
   // Auto-select first room when rooms are available and no room is selected
   useEffect(() => {
     if (filteredRooms.length > 0 && !selectedRoom && selectedLocation) {
       setSelectedRoom(filteredRooms[0].id);
     }
-  }, [filteredRooms, selectedRoom, selectedLocation]);
+  }, [filteredRooms.length, selectedLocation]); // Removed selectedRoom from deps to prevent infinite loop
 
   // Listen for schedule type changes to refresh data
   useEffect(() => {
