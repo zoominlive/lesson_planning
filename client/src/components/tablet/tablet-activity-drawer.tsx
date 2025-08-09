@@ -204,39 +204,47 @@ export function TabletActivityDrawer({
               {filteredActivities.map((activity) => (
                 <Card
                   key={activity.id}
-                  className="p-4 cursor-pointer bg-white/80 hover:bg-white hover:shadow-xl transition-all border-2 border-gray-100 hover:border-turquoise/30 hover:scale-[1.02] active:scale-[0.98]"
+                  className="p-4 cursor-pointer bg-white/80 hover:bg-white hover:shadow-xl transition-all border-2 border-gray-100 hover:border-turquoise/30 hover:scale-[1.02] active:scale-[0.98] h-32"
                   onClick={() => onActivitySelect(activity)}
                   data-testid={`activity-card-${activity.id}`}
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold text-charcoal line-clamp-2 flex-1">
-                      {activity.title}
-                    </h3>
-                    {activity.imageUrl && (
-                      <img 
-                        src={activity.imageUrl} 
-                        alt={activity.title}
-                        className="w-16 h-16 rounded-lg object-cover ml-3 shadow-sm"
-                      />
-                    )}
-                  </div>
-                  
-                  <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                    {activity.description}
-                  </p>
-                  
-                  <div className="flex items-center gap-3 text-xs">
-                    <span className={`px-3 py-1 rounded-full border ${getCategoryColor(activity.category)}`}>
-                      {activity.category}
-                    </span>
-                    <div className="flex items-center gap-1 text-gray-500">
-                      <Clock className="h-3 w-3" />
-                      <span>{activity.duration} min</span>
+                  <div className="flex gap-4 h-full">
+                    {/* Text content on the left */}
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-semibold text-charcoal line-clamp-2 mb-2">
+                          {activity.title}
+                        </h3>
+                        <p className="text-sm text-gray-600 line-clamp-2">
+                          {activity.description}
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className={`px-3 py-1 rounded-full border ${getCategoryColor(activity.category)}`}>
+                          {activity.category}
+                        </span>
+                        <div className="flex items-center gap-1 text-gray-500">
+                          <Clock className="h-3 w-3" />
+                          <span>{activity.duration} min</span>
+                        </div>
+                        {activity.groupSize && (
+                          <div className="flex items-center gap-1 text-gray-500">
+                            <Users className="h-3 w-3" />
+                            <span>{activity.groupSize}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    {activity.groupSize && (
-                      <div className="flex items-center gap-1 text-gray-500">
-                        <Users className="h-3 w-3" />
-                        <span>{activity.groupSize}</span>
+                    
+                    {/* Square image on the right */}
+                    {activity.imageUrl && (
+                      <div className="w-24 h-24 flex-shrink-0">
+                        <img 
+                          src={activity.imageUrl} 
+                          alt={activity.title}
+                          className="w-full h-full rounded-lg object-cover shadow-sm"
+                        />
                       </div>
                     )}
                   </div>
