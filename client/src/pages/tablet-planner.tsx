@@ -176,7 +176,7 @@ export default function TabletPlanner() {
             onTouchEnd={handleTouchEnd}
           >
             <div 
-              className="bg-gradient-to-t from-turquoise via-sky-blue to-mint-green backdrop-blur-sm shadow-[0_-4px_20px_rgba(0,0,0,0.15)] rounded-t-3xl px-6 py-3 cursor-pointer border-t-2 border-white/20"
+              className="bg-gradient-to-t from-teal-500 via-cyan-500 to-emerald-400 backdrop-blur-sm shadow-[0_-4px_20px_rgba(0,0,0,0.15)] rounded-t-3xl px-6 py-3 cursor-pointer border-t-2 border-white/20"
               onClick={() => setDrawerOpen(true)}
             >
               {/* Swipe indicator */}
