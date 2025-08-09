@@ -67,6 +67,14 @@ export function TabletActivityDrawer({
     }
   };
 
+  // Get age group names from IDs
+  const getAgeGroupNames = (ageGroupIds: string[] | undefined) => {
+    if (!ageGroupIds || ageGroupIds.length === 0) return [];
+    return ageGroupIds
+      .map(id => ageGroups.find(ag => ag.id === id)?.name)
+      .filter(Boolean) as string[];
+  };
+
   // Handle swipe down to close
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
@@ -220,8 +228,8 @@ export function TabletActivityDrawer({
                         </p>
                       </div>
                       
-                      <div className="flex items-center gap-3 text-xs">
-                        <span className="px-3 py-1 rounded-full border bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 border-pink-200 mt-[5px] mb-[5px]">
+                      <div className="flex items-center gap-2 text-xs flex-wrap">
+                        <span className={`px-3 py-1 rounded-full border ${getCategoryColor(activity.category)}`}>
                           {activity.category}
                         </span>
                         <div className="flex items-center gap-1 text-gray-500">
@@ -232,6 +240,12 @@ export function TabletActivityDrawer({
                           <div className="flex items-center gap-1 text-gray-500">
                             <Users className="h-3 w-3" />
                             <span>{activity.groupSize}</span>
+                          </div>
+                        )}
+                        {getAgeGroupNames(activity.ageGroupIds).length > 0 && (
+                          <div className="flex items-center gap-1 text-gray-500">
+                            <Tag className="h-3 w-3" />
+                            <span>{getAgeGroupNames(activity.ageGroupIds).join(", ")}</span>
                           </div>
                         )}
                       </div>
