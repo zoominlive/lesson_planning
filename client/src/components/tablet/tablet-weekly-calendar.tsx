@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
-import { Clock, Undo2, Package } from "lucide-react";
+import { Clock, Undo2, Package, Scissors } from "lucide-react";
 import type { Activity } from "@shared/schema";
 import {
   AlertDialog,
@@ -503,7 +503,7 @@ export function TabletWeeklyCalendar({
                             </div>
                             {scheduledActivity.activity?.materialIds && scheduledActivity.activity.materialIds.length > 0 && (
                               <div title="Materials required">
-                                <Package className="h-2.5 w-2.5 text-gray-600" />
+                                <Scissors className="h-2.5 w-2.5 text-gray-600" />
                               </div>
                             )}
                           </div>
