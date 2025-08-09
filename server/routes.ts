@@ -1201,6 +1201,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PATCH endpoint for partial updates (like drag and drop moves)
+  app.patch("/api/scheduled-activities/:id", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const data = insertScheduledActivitySchema.partial().parse(req.body);
+      
+      console.log('[PATCH /api/scheduled-activities] Updating activity:', id, 'with data:', data);
+      
+      // Get existing scheduled activity to check location access
+      const existing = await storage.getScheduledActivity(id);
+      if (!existing) {
+        return res.status(404).json({ error: "Scheduled activity not found" });
+      }
+      
+      // Validate access to existing location
+      const accessCheck = await validateLocationAccess(req, existing.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
+      // If changing location, validate access to new location
+      if (data.locationId && data.locationId !== existing.locationId) {
+        const newAccessCheck = await validateLocationAccess(req, data.locationId);
+        if (!newAccessCheck.allowed) {
+          return res.status(403).json({ error: `Cannot move to location: ${newAccessCheck.message}` });
+        }
+      }
+      
+      const scheduledActivity = await storage.updateScheduledActivity(id, data);
+      res.json(scheduledActivity);
+    } catch (error) {
+      console.error('[PATCH /api/scheduled-activities] Error:', error);
+      res.status(400).json({ error: "Invalid scheduled activity data" });
+    }
+  });
+
   app.delete("/api/scheduled-activities/:id", async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;

@@ -95,6 +95,8 @@ export function TabletWeeklyCalendar({
     endTime: '18:00',
     slotsPerDay: 8
   });
+  const [draggedActivity, setDraggedActivity] = useState<any>(null);
+  const [dragOverSlot, setDragOverSlot] = useState<{day: number, slot: number} | null>(null);
 
   // Load schedule settings from localStorage for the specific location
   useEffect(() => {
@@ -156,13 +158,7 @@ export function TabletWeeklyCalendar({
         }
       );
       if (!response.ok) throw new Error('Failed to fetch scheduled activities');
-      const data = await response.json();
-      console.log('Tablet Calendar - Scheduled Activities:', data);
-      console.log('Tablet Calendar - Room:', selectedRoom);
-      console.log('Tablet Calendar - Location:', selectedLocation);
-      console.log('Tablet Calendar - Week Start:', currentWeekDate.toISOString());
-      console.log('Tablet Calendar - Schedule Settings:', scheduleSettings);
-      return data;
+      return response.json();
     },
     enabled: !!selectedRoom && !!selectedLocation,
   });
@@ -214,16 +210,12 @@ export function TabletWeeklyCalendar({
   });
 
   const isSlotOccupied = (dayOfWeek: number, timeSlot: number) => {
-    const found = scheduledActivities.find(
+    return scheduledActivities.find(
       (scheduled: any) => 
         scheduled.dayOfWeek === dayOfWeek && 
         scheduled.timeSlot === timeSlot &&
         scheduled.roomId === selectedRoom
     );
-    if (found) {
-      console.log(`Tablet Calendar - Found activity for day ${dayOfWeek}, slot ${timeSlot}:`, found);
-    }
-    return found;
   };
 
   const getCategoryColor = (category: string) => {
@@ -330,10 +322,93 @@ export function TabletWeeklyCalendar({
     },
   });
 
+  // Move activity mutation for drag and drop
+  const moveActivityMutation = useMutation({
+    mutationFn: async ({ scheduledActivityId, newDay, newSlot }: { scheduledActivityId: string, newDay: number, newSlot: number }) => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`/api/scheduled-activities/${scheduledActivityId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          dayOfWeek: newDay,
+          timeSlot: newSlot,
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to move activity');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/scheduled-activities', selectedRoom, currentWeekDate.toISOString(), selectedLocation] 
+      });
+      toast({
+        title: "Activity Moved",
+        description: "The activity has been moved to the new time slot.",
+      });
+      setDraggedActivity(null);
+      setDragOverSlot(null);
+    },
+  });
+
   const handleUndo = () => {
     if (recentlyDeleted) {
       addScheduledMutation.mutate(recentlyDeleted);
     }
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, scheduledActivity: any) => {
+    setDraggedActivity(scheduledActivity);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', scheduledActivity.id);
+  };
+
+  const handleDragOver = (e: React.DragEvent, day: number, slot: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverSlot({ day, slot });
+  };
+
+  const handleDragLeave = () => {
+    setDragOverSlot(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetDay: number, targetSlot: number) => {
+    e.preventDefault();
+    setDragOverSlot(null);
+    
+    if (!draggedActivity) return;
+    
+    // Check if target slot is already occupied
+    const targetOccupied = isSlotOccupied(targetDay, targetSlot);
+    if (targetOccupied) {
+      toast({
+        title: "Cannot Move",
+        description: "The target time slot is already occupied.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Don't move if dropping on the same slot
+    if (draggedActivity.dayOfWeek === targetDay && draggedActivity.timeSlot === targetSlot) {
+      return;
+    }
+    
+    // Move the activity
+    moveActivityMutation.mutate({
+      scheduledActivityId: draggedActivity.id,
+      newDay: targetDay,
+      newSlot: targetSlot
+    });
   };
 
   // Clear undo state when adding a new activity
@@ -404,7 +479,11 @@ export function TabletWeeklyCalendar({
                   <div key={slot.id}>
                     {scheduledActivity ? (
                       <div
-                        className={`h-16 w-full p-1.5 rounded-lg bg-gradient-to-br ${getCategoryColor(scheduledActivity.activity?.category || '')} border-2 transition-all cursor-pointer active:scale-95 shadow-lg shadow-${getCategoryColor(scheduledActivity.activity?.category || '').split(' ')[4]}`}
+                        draggable={true}
+                        onDragStart={(e) => handleDragStart(e, scheduledActivity)}
+                        className={`h-16 w-full p-1.5 rounded-lg bg-gradient-to-br ${getCategoryColor(scheduledActivity.activity?.category || '')} border-2 transition-all cursor-move active:scale-95 shadow-lg hover:shadow-xl ${
+                          draggedActivity?.id === scheduledActivity.id ? 'opacity-50 scale-95' : ''
+                        }`}
                         onTouchStart={(e) => handleTouchStart(e, scheduledActivity)}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
@@ -424,23 +503,32 @@ export function TabletWeeklyCalendar({
                         </div>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => onSlotTap(day.id, slot.id)}
+                      <div
+                        onDragOver={(e) => handleDragOver(e, day.id, slot.id)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, day.id, slot.id)}
                         className={`h-16 w-full p-1 rounded-lg transition-all ${
-                          isSelected 
+                          dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id
+                            ? 'bg-gradient-to-br from-turquoise/30 to-sky-blue/30 border-2 border-dashed border-turquoise scale-105'
+                            : isSelected 
                             ? 'bg-gradient-to-br from-turquoise/20 to-sky-blue/20 border-2 border-dashed border-turquoise hover:from-turquoise/30 hover:to-sky-blue/30 shadow-inner' 
                             : 'bg-white border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
                         }`}
                         data-testid={`slot-${day.id}-${slot.id}`}
                       >
-                        <div className="h-full flex items-center justify-center">
-                          {isSelected ? (
+                        <button
+                          onClick={() => onSlotTap(day.id, slot.id)}
+                          className="h-full w-full flex items-center justify-center"
+                        >
+                          {dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? (
+                            <span className="text-xs font-bold text-turquoise animate-pulse">Drop Here</span>
+                          ) : isSelected ? (
                             <span className="text-xs font-bold text-turquoise animate-pulse">Tap</span>
                           ) : (
                             <span className="text-lg text-gray-300 hover:text-gray-400">+</span>
                           )}
-                        </div>
-                      </button>
+                        </button>
+                      </div>
                     )}
                   </div>
                 );

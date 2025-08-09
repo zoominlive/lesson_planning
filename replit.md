@@ -2,7 +2,12 @@
 
 This project is a comprehensive lesson planning application designed for early childhood educators. Its primary purpose is to streamline the creation and management of weekly lesson plans. Key capabilities include managing activities, materials, and developmental milestones, as well as creating structured weekly schedules that align with educational objectives and available resources. The application supports a multi-tenant and multi-location architecture, ensuring data isolation and secure access for various educational organizations and their facilities.
 
-## Recent Changes (January 2025)
+## Recent Changes (August 2025)
+- **Drag-and-drop activity management**: Implemented comprehensive drag-and-drop functionality allowing users to move scheduled activities between time slots on both desktop and tablet interfaces
+- **Enhanced tablet calendar UI**: Activities are now visually draggable with cursor changes, opacity effects during drag, and drop zone highlighting for improved user experience
+- **PATCH API endpoint**: Added dedicated PATCH endpoint for partial updates of scheduled activities, specifically optimized for drag-and-drop operations
+- **Real-time visual feedback**: Drop zones highlight when dragging over them, with "Drop Here" indicators and proper conflict detection for occupied slots
+- **Fixed week start consistency**: Resolved critical bug where tablet and desktop views used different week start days (Sunday vs Monday), ensuring proper activity display
 - **Fixed schedule type preservation**: Lesson plans now maintain their original schedule type (time-based or position-based) even when organization settings change
 - **Separate lesson plans by schedule type**: The system creates and maintains separate lesson plans for time-based vs position-based scheduling, allowing users to switch between modes without losing their work
 - **Schedule type filtering**: When fetching or creating lesson plans, the system now correctly filters by the current schedule type for the location
