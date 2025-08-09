@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Play, Package, Filter, X, Trash2 } from "lucide-react";
+import { Search, Plus, Play, Package, Filter, X, Trash2, Clock } from "lucide-react";
 import DraggableActivity from "./draggable-activity";
 import { toast } from "@/hooks/use-toast";
 import type { Activity, Category, AgeGroup } from "@shared/schema";
@@ -560,7 +560,15 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                           <p className="text-xs text-gray-600 mt-1">{scheduledActivity.activity?.category || 'Uncategorized'}</p>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500 font-medium">{scheduledActivity.activity?.duration || 30} min</span>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-2.5 w-2.5 text-gray-600" />
+                            <span className="text-xs text-gray-500 font-medium">{scheduledActivity.activity?.duration || 30}m</span>
+                          </div>
+                          {scheduledActivity.activity?.materialIds && scheduledActivity.activity.materialIds.length > 0 && (
+                            <div className="flex items-center" title="Materials required">
+                              <Package className="h-2.5 w-2.5 text-gray-600" />
+                            </div>
+                          )}
                         </div>
                       </div>
                     ) : (
