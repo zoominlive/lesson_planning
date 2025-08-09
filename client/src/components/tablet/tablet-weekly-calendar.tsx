@@ -442,7 +442,6 @@ export function TabletWeeklyCalendar({
           </Button>
         </div>
       )}
-      
       <div className="min-h-full">
         {/* Calendar Grid - Optimized for touch */}
         <div className="grid gap-2 bg-gradient-to-br from-white via-white to-gray-50 rounded-2xl shadow-2xl p-3 border border-gray-100" style={{gridTemplateColumns: "80px repeat(5, 1fr)"}}>
@@ -456,7 +455,7 @@ export function TabletWeeklyCalendar({
                 key={slot.id} 
                 className="h-16 flex items-center justify-center bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-sm border border-gray-100 text-center p-1"
               >
-                <span className="text-xs font-bold text-turquoise">Position {slot.label}</span>
+                <span className="text-xs font-bold text-[#000000]">Position {slot.label}</span>
               </div>
             ))}
           </div>
@@ -549,7 +548,6 @@ export function TabletWeeklyCalendar({
           ))}
         </div>
       </div>
-
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="max-w-[90%] sm:max-w-md">
