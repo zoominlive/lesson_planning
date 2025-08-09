@@ -6,6 +6,7 @@ This project is a comprehensive lesson planning application designed for early c
 - **Fixed schedule type preservation**: Lesson plans now maintain their original schedule type (time-based or position-based) even when organization settings change
 - **Separate lesson plans by schedule type**: The system creates and maintains separate lesson plans for time-based vs position-based scheduling, allowing users to switch between modes without losing their work
 - **Schedule type filtering**: When fetching or creating lesson plans, the system now correctly filters by the current schedule type for the location
+- **Settings manager location permissions**: Fixed security issue where settings manager was showing all organization locations instead of only user-permitted locations from userInfo storage
 
 # User Preferences
 

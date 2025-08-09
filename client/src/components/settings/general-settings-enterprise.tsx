@@ -69,6 +69,19 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
     slotsPerDay: 8
   });
 
+  // Get user's permitted locations from localStorage
+  const getUserPermittedLocations = () => {
+    const userInfoStr = localStorage.getItem('userInfo');
+    if (!userInfoStr) return [];
+    try {
+      const userInfo = JSON.parse(userInfoStr);
+      return userInfo.locations || [];
+    } catch (e) {
+      console.error('Failed to parse userInfo:', e);
+      return [];
+    }
+  };
+
   // Load settings from database
   const { data: dbSettings, isLoading } = useQuery({
     queryKey: ['/api/organization-settings'],
@@ -77,13 +90,21 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
   // Update local state when database settings load
   useEffect(() => {
     if (dbSettings) {
+      // Get user's permitted locations (these are names, not IDs)
+      const permittedLocationNames = getUserPermittedLocations();
+      
+      // Filter locations to only include those the user has access to (match by name)
+      const filteredLocations = (dbSettings.locations || []).filter((location: any) => 
+        permittedLocationNames.includes(location.name)
+      );
+      
       setSettings({
         locationSettings: dbSettings.locationSettings || {},
         defaultScheduleType: dbSettings.defaultScheduleType || 'time-based',
         defaultStartTime: dbSettings.defaultStartTime || '06:00',
         defaultEndTime: dbSettings.defaultEndTime || '18:00',
         defaultSlotsPerDay: dbSettings.defaultSlotsPerDay || 8,
-        locations: dbSettings.locations || []
+        locations: filteredLocations
       });
       
       // Set default values for the settings panels
@@ -96,9 +117,9 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
         slotsPerDay: dbSettings.defaultSlotsPerDay || 8
       });
       
-      // Update localStorage for each location's settings
-      if (dbSettings.locations) {
-        dbSettings.locations.forEach((location: any) => {
+      // Update localStorage for each permitted location's settings
+      if (filteredLocations.length > 0) {
+        filteredLocations.forEach((location: any) => {
           const locationSettings = dbSettings.locationSettings?.[location.id] || {
             scheduleType: dbSettings.defaultScheduleType || 'time-based',
             startTime: dbSettings.defaultStartTime || '06:00',
