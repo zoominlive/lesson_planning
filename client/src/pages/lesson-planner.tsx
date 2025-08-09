@@ -6,7 +6,11 @@ import { CalendarControls } from "@/components/calendar-controls";
 import { FloatingActionButton } from "@/components/floating-action-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import WeeklyCalendar from "@/components/weekly-calendar";
 import { Settings, MapPin } from "lucide-react";
@@ -25,8 +29,8 @@ type UserInfo = {
 };
 
 export default function LessonPlanner() {
-  const [currentWeekDate, setCurrentWeekDate] = useState(() => 
-    startOfWeek(new Date(), { weekStartsOn: 1 }) // Start on Monday
+  const [currentWeekDate, setCurrentWeekDate] = useState(
+    () => startOfWeek(new Date(), { weekStartsOn: 1 }), // Start on Monday
   );
   const [selectedRoom, setSelectedRoom] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("");
@@ -64,19 +68,30 @@ export default function LessonPlanner() {
         <CardContent className="p-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-charcoal mb-2" data-testid="app-title">
+              <h1
+                className="text-3xl font-bold text-charcoal mb-2"
+                data-testid="app-title"
+              >
                 Lesson Planning Studio
               </h1>
               <p className="text-gray-600" data-testid="app-subtitle">
-                Create engaging weekly lesson plans for your classroom
+                Create engaging weekly lesson plans for your classrooms
               </p>
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <p className="font-semibold text-charcoal" data-testid="teacher-name">
-                  {userInfo ? `${userInfo.userFirstName} ${userInfo.userLastName}` : "Teacher"}
+                <p
+                  className="font-semibold text-charcoal"
+                  data-testid="teacher-name"
+                >
+                  {userInfo
+                    ? `${userInfo.userFirstName} ${userInfo.userLastName}`
+                    : "Teacher"}
                 </p>
-                <p className="text-sm text-gray-500" data-testid="classroom-name">
+                <p
+                  className="text-sm text-gray-500"
+                  data-testid="classroom-name"
+                >
                   {userInfo?.role ? userInfo.role : "Loading..."}
                 </p>
                 {userInfo?.locations && userInfo.locations.length > 0 && (
@@ -84,9 +99,9 @@ export default function LessonPlanner() {
                     <MapPin className="h-3 w-3 text-gray-400" />
                     <div className="flex gap-1">
                       {userInfo.locations.map((location, idx) => (
-                        <Badge 
-                          key={idx} 
-                          variant="secondary" 
+                        <Badge
+                          key={idx}
+                          variant="secondary"
                           className="text-xs py-0 h-5"
                           data-testid={`location-badge-${idx}`}
                         >
@@ -118,8 +133,8 @@ export default function LessonPlanner() {
                 )}
                 <div className="w-12 h-12 bg-gradient-to-br from-coral-red to-turquoise rounded-full flex items-center justify-center text-white font-bold text-lg">
                   <span data-testid="teacher-initials">
-                    {userInfo && userInfo.userFirstName && userInfo.userLastName 
-                      ? `${userInfo.userFirstName[0]}${userInfo.userLastName[0]}` 
+                    {userInfo && userInfo.userFirstName && userInfo.userLastName
+                      ? `${userInfo.userFirstName[0]}${userInfo.userLastName[0]}`
                       : "?"}
                   </span>
                 </div>
@@ -140,7 +155,7 @@ export default function LessonPlanner() {
           onLocationChange={setSelectedLocation}
           onSubmitToSupervisor={handleSubmitToSupervisor}
         />
-        <WeeklyCalendar 
+        <WeeklyCalendar
           selectedLocation={selectedLocation}
           selectedRoom={selectedRoom}
           currentWeekDate={currentWeekDate}
