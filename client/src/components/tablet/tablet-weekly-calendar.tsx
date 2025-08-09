@@ -26,21 +26,37 @@ interface TabletWeeklyCalendarProps {
   onSlotTap: (day: number, slot: number) => void;
 }
 
-const timeSlots = [
-  { id: 0, label: "6:00", name: "Early" },
-  { id: 1, label: "7:00", name: "Breakfast" },
-  { id: 2, label: "8:00", name: "Play" },
-  { id: 3, label: "9:00", name: "Circle" },
-  { id: 4, label: "10:00", name: "Activity" },
-  { id: 5, label: "11:00", name: "Learning" },
-  { id: 6, label: "12:00", name: "Lunch" },
-  { id: 7, label: "1:00", name: "Rest" },
-  { id: 8, label: "2:00", name: "Activities" },
-  { id: 9, label: "3:00", name: "Snack" },
-  { id: 10, label: "4:00", name: "Outdoor" },
-  { id: 11, label: "5:00", name: "Free" },
-  { id: 12, label: "6:00", name: "Pickup" },
-];
+// Generate time slots based on schedule settings
+const generateTimeSlots = (scheduleSettings: any) => {
+  if (scheduleSettings?.type === 'position-based') {
+    const slots = [];
+    const slotsCount = scheduleSettings.slotsPerDay || 8;
+    for (let i = 0; i < slotsCount; i++) {
+      slots.push({
+        id: i,
+        label: `${i + 1}`,
+        name: `Slot ${i + 1}`
+      });
+    }
+    return slots;
+  } else {
+    // Time-based slots
+    const startHour = parseInt(scheduleSettings?.startTime?.split(':')[0] || '6');
+    const endHour = parseInt(scheduleSettings?.endTime?.split(':')[0] || '18');
+    const slots = [];
+    
+    for (let hour = startHour, id = 0; hour <= endHour; hour++, id++) {
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      const timeLabel = `${displayHour}:00`;
+      slots.push({
+        id,
+        label: timeLabel,
+        name: `Slot ${id + 1}`
+      });
+    }
+    return slots;
+  }
+};
 
 const generateWeekDays = (weekStartDate: Date) => {
   const days = [];
@@ -73,6 +89,42 @@ export function TabletWeeklyCalendar({
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
   const undoTimer = useRef<NodeJS.Timeout | null>(null);
+  const [scheduleSettings, setScheduleSettings] = useState<any>({
+    type: 'time-based',
+    startTime: '06:00',
+    endTime: '18:00',
+    slotsPerDay: 8
+  });
+
+  // Load schedule settings from localStorage
+  useEffect(() => {
+    const loadSettings = () => {
+      const savedSettings = localStorage.getItem('scheduleSettings');
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings);
+          setScheduleSettings(parsed);
+        } catch (error) {
+          console.error('Error loading schedule settings:', error);
+        }
+      }
+    };
+
+    loadSettings();
+
+    // Listen for settings changes
+    const handleSettingsChange = (event: CustomEvent) => {
+      setScheduleSettings(event.detail);
+    };
+
+    window.addEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
+    return () => {
+      window.removeEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
+    };
+  }, []);
+
+  // Generate time slots based on current settings
+  const timeSlots = generateTimeSlots(scheduleSettings);
 
   // Fetch scheduled activities
   const { data: scheduledActivities = [] } = useQuery<any[]>({

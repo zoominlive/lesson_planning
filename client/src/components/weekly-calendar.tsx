@@ -17,21 +17,37 @@ interface WeeklyCalendarProps {
   currentWeekDate?: Date;
 }
 
-const timeSlots = [
-  { id: 0, label: "6:00 AM", name: "Early Arrival" },
-  { id: 1, label: "7:00 AM", name: "Breakfast" },
-  { id: 2, label: "8:00 AM", name: "Free Play" },
-  { id: 3, label: "9:00 AM", name: "Morning Circle" },
-  { id: 4, label: "10:00 AM", name: "Activity Time" },
-  { id: 5, label: "11:00 AM", name: "Learning Centers" },
-  { id: 6, label: "12:00 PM", name: "Lunch" },
-  { id: 7, label: "1:00 PM", name: "Rest/Quiet Time" },
-  { id: 8, label: "2:00 PM", name: "Afternoon Activities" },
-  { id: 9, label: "3:00 PM", name: "Snack Time" },
-  { id: 10, label: "4:00 PM", name: "Outdoor Play" },
-  { id: 11, label: "5:00 PM", name: "Free Choice" },
-  { id: 12, label: "6:00 PM", name: "Pickup Time" },
-];
+// Generate time slots based on schedule settings
+const generateTimeSlots = (scheduleSettings: any) => {
+  if (scheduleSettings?.type === 'position-based') {
+    const slots = [];
+    const slotsCount = scheduleSettings.slotsPerDay || 8;
+    for (let i = 0; i < slotsCount; i++) {
+      slots.push({
+        id: i,
+        label: `Slot ${i + 1}`,
+        name: `Activity ${i + 1}`
+      });
+    }
+    return slots;
+  } else {
+    // Time-based slots
+    const startHour = parseInt(scheduleSettings?.startTime?.split(':')[0] || '6');
+    const endHour = parseInt(scheduleSettings?.endTime?.split(':')[0] || '18');
+    const slots = [];
+    
+    for (let hour = startHour, id = 0; hour <= endHour; hour++, id++) {
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      const period = hour < 12 ? 'AM' : 'PM';
+      slots.push({
+        id,
+        label: `${displayHour}:00 ${period}`,
+        name: `Time Slot ${id + 1}`
+      });
+    }
+    return slots;
+  }
+};
 
 const generateWeekDays = (weekStartDate: Date) => {
   const days = [];
@@ -59,6 +75,42 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   const [selectedCategory, setSelectedCategory] = useState<string>("all-categories");
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("all-age-groups");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [scheduleSettings, setScheduleSettings] = useState<any>({
+    type: 'time-based',
+    startTime: '06:00',
+    endTime: '18:00',
+    slotsPerDay: 8
+  });
+
+  // Load schedule settings from localStorage
+  useEffect(() => {
+    const loadSettings = () => {
+      const savedSettings = localStorage.getItem('scheduleSettings');
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings);
+          setScheduleSettings(parsed);
+        } catch (error) {
+          console.error('Error loading schedule settings:', error);
+        }
+      }
+    };
+
+    loadSettings();
+
+    // Listen for settings changes
+    const handleSettingsChange = (event: CustomEvent) => {
+      setScheduleSettings(event.detail);
+    };
+
+    window.addEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
+    return () => {
+      window.removeEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
+    };
+  }, []);
+
+  // Generate time slots based on current settings
+  const timeSlots = generateTimeSlots(scheduleSettings);
 
   const { data: activities = [], isLoading } = useQuery<Activity[]>({
     queryKey: ["/api/activities"],
