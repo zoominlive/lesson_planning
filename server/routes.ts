@@ -1260,6 +1260,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Lesson Plan Review API Routes
+  app.post("/api/lesson-plans/:id/submit", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get lesson plan to check access
+      const lessonPlan = await storage.getLessonPlan(id);
+      if (!lessonPlan) {
+        return res.status(404).json({ error: "Lesson plan not found" });
+      }
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, lessonPlan.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+
+      // Get current user from storage
+      const currentUser = await storage.getUserByUserId(req.userId!);
+      if (!currentUser) {
+        return res.status(403).json({ error: "User not found" });
+      }
+      
+      // Check if user is admin/superadmin - if so, auto-approve
+      const role = req.role?.toLowerCase();
+      if (role === 'admin' || role === 'superadmin') {
+        const approved = await storage.approveLessonPlan(id, currentUser.id, "Auto-approved by admin");
+        res.json(approved);
+      } else {
+        // Submit for review
+        const submitted = await storage.submitLessonPlanForReview(id, currentUser.id);
+        res.json(submitted);
+      }
+    } catch (error) {
+      console.error('Error submitting lesson plan:', error);
+      res.status(500).json({ error: "Failed to submit lesson plan" });
+    }
+  });
+
+  app.post("/api/lesson-plans/:id/approve", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { notes } = req.body;
+      
+      // Check user role
+      const role = req.role?.toLowerCase();
+      if (role !== 'director' && role !== 'assistant_director' && role !== 'admin' && role !== 'superadmin') {
+        return res.status(403).json({ error: "Insufficient permissions to approve lesson plans" });
+      }
+      
+      // Get lesson plan to check access
+      const lessonPlan = await storage.getLessonPlan(id);
+      if (!lessonPlan) {
+        return res.status(404).json({ error: "Lesson plan not found" });
+      }
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, lessonPlan.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+
+      // Get current user from storage
+      const currentUser = await storage.getUserByUserId(req.userId!);
+      if (!currentUser) {
+        return res.status(403).json({ error: "User not found" });
+      }
+      
+      const approved = await storage.approveLessonPlan(id, currentUser.id, notes);
+      res.json(approved);
+    } catch (error) {
+      console.error('Error approving lesson plan:', error);
+      res.status(500).json({ error: "Failed to approve lesson plan" });
+    }
+  });
+
+  app.post("/api/lesson-plans/:id/reject", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { notes } = req.body;
+      
+      // Check user role
+      const role = req.role?.toLowerCase();
+      if (role !== 'director' && role !== 'assistant_director' && role !== 'admin' && role !== 'superadmin') {
+        return res.status(403).json({ error: "Insufficient permissions to reject lesson plans" });
+      }
+      
+      if (!notes) {
+        return res.status(400).json({ error: "Review notes are required when rejecting" });
+      }
+      
+      // Get lesson plan to check access
+      const lessonPlan = await storage.getLessonPlan(id);
+      if (!lessonPlan) {
+        return res.status(404).json({ error: "Lesson plan not found" });
+      }
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, lessonPlan.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+
+      // Get current user from storage
+      const currentUser = await storage.getUserByUserId(req.userId!);
+      if (!currentUser) {
+        return res.status(403).json({ error: "User not found" });
+      }
+      
+      const rejected = await storage.rejectLessonPlan(id, currentUser.id, notes);
+      res.json(rejected);
+    } catch (error) {
+      console.error('Error rejecting lesson plan:', error);
+      res.status(500).json({ error: "Failed to reject lesson plan" });
+    }
+  });
+
+  app.get("/api/lesson-plans/review", async (req: AuthenticatedRequest, res) => {
+    try {
+      // Check user role
+      const role = req.role?.toLowerCase();
+      if (role !== 'director' && role !== 'assistant_director' && role !== 'admin' && role !== 'superadmin') {
+        return res.status(403).json({ error: "Insufficient permissions to view lesson plans for review" });
+      }
+      
+      // Get user's authorized location IDs
+      const authorizedLocationIds = await getUserAuthorizedLocationIds(req);
+      
+      // Get lesson plans for review
+      const allPlansForReview = await storage.getLessonPlansForReview();
+      
+      // Filter to only authorized locations
+      const filteredPlans = allPlansForReview.filter(plan => 
+        authorizedLocationIds.includes(plan.locationId)
+      );
+      
+      res.json(filteredPlans);
+    } catch (error) {
+      console.error('Error fetching lesson plans for review:', error);
+      res.status(500).json({ error: "Failed to fetch lesson plans for review" });
+    }
+  });
+
   // Settings API Routes - Locations
   app.get("/api/locations", async (req: AuthenticatedRequest, res) => {
     try {

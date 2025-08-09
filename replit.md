@@ -18,6 +18,12 @@ This project is a comprehensive lesson planning application designed for early c
 - **Cleaned up tablet header**: Removed menu button from tablet interface for cleaner, streamlined design
 - **Fixed automatic room selection**: Both desktop and tablet planners now consistently auto-select first room when switching locations for seamless user experience
 - **Updated position labels**: Removed "Position" prefix and converted numeric labels to written words (One, Two, Three, etc.) for cleaner calendar display
+- **Lesson Plan Review System**: Implemented comprehensive review workflow with role-based permissions. Teachers submit plans for review, directors/assistant directors/admins approve or reject with feedback
+- **Review Database Schema**: Added fields for tracking submission (submittedBy, submittedAt) and review (approvedBy, approvedAt, rejectedBy, rejectedAt, reviewNotes) in lesson plans table
+- **Review API Endpoints**: Created endpoints for /submit, /approve, /reject operations with proper location-based access control and user tracking
+- **Lesson Review Page**: Built dedicated review interface showing pending, approved, and rejected lesson plans with filtering by location and detailed review dialog
+- **Submit for Review Button**: Added submission functionality to lesson planner with automatic approval for admin/superadmin users
+- **Review Page Navigation**: Added review page link in header for authorized roles (director, assistant_director, admin, superadmin)
 
 # User Preferences
 

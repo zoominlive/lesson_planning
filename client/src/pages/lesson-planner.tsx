@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { NavigationTabs } from "@/components/navigation-tabs";
 import { CalendarControls } from "@/components/calendar-controls";
@@ -14,10 +14,11 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import WeeklyCalendar from "@/components/weekly-calendar";
-import { Settings, MapPin } from "lucide-react";
+import { Settings, MapPin, ClipboardCheck } from "lucide-react";
 import { useLocation } from "wouter";
 import { getUserInfo } from "@/lib/auth";
 import { startOfWeek } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 type UserInfo = {
   tenantId: string;
@@ -36,6 +37,7 @@ export default function LessonPlanner() {
   const [selectedRoom, setSelectedRoom] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const { data: userInfo } = useQuery<UserInfo>({
     queryKey: ["/api/user"],
@@ -80,19 +82,77 @@ export default function LessonPlanner() {
     };
   }, []);
 
+  // Fetch lesson plans to find the current one
+  const { data: lessonPlans = [] } = useQuery<any[]>({
+    queryKey: ["/api/lesson-plans"],
+    enabled: !!selectedLocation && !!selectedRoom,
+  });
+
+  // Find current lesson plan
+  const currentLessonPlan = lessonPlans.find((lp: any) => {
+    const lpWeekStart = new Date(lp.weekStart);
+    lpWeekStart.setHours(0, 0, 0, 0);
+    const currentWeek = new Date(currentWeekDate);
+    currentWeek.setHours(0, 0, 0, 0);
+    
+    return lpWeekStart.getTime() === currentWeek.getTime() &&
+           lp.locationId === selectedLocation &&
+           lp.roomId === selectedRoom;
+  });
+
+  // Submit lesson plan mutation
+  const submitMutation = useMutation({
+    mutationFn: async (lessonPlanId: string) => {
+      return apiRequest(`/api/lesson-plans/${lessonPlanId}/submit`, "POST");
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans"] });
+      const role = userInfo?.role?.toLowerCase();
+      if (role === 'admin' || role === 'superadmin') {
+        toast({
+          title: "Lesson Plan Approved",
+          description: "Your lesson plan has been automatically approved.",
+        });
+      } else {
+        toast({
+          title: "Submitted for Review",
+          description: "Your lesson plan has been submitted for review.",
+        });
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Submission Failed",
+        description: "Failed to submit the lesson plan for review.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleWeekChange = (newDate: Date) => {
     setCurrentWeekDate(newDate);
   };
 
   const handleSubmitToSupervisor = () => {
-    // TODO: Implement supervisor submission
-    console.log("Submit to supervisor");
+    if (!currentLessonPlan) {
+      toast({
+        title: "No Lesson Plan",
+        description: "Please create activities for this week before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    submitMutation.mutate(currentLessonPlan.id);
   };
 
   const handleQuickAddActivity = () => {
     // TODO: Implement quick add activity modal
     console.log("Quick add activity");
   };
+
+  // Check if user can access review page
+  const canReview = userInfo?.role && ['director', 'assistant_director', 'admin', 'superadmin'].includes(userInfo.role.toLowerCase());
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4" data-testid="lesson-planner">
@@ -146,6 +206,24 @@ export default function LessonPlanner() {
                 )}
               </div>
               <div className="flex items-center gap-2">
+                {canReview && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setLocation("/review")}
+                        data-testid="button-review"
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <ClipboardCheck className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Review Lesson Plans</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
                 {userInfo?.role === "Admin" && (
                   <Tooltip>
                     <TooltipTrigger asChild>

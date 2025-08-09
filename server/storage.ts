@@ -89,6 +89,10 @@ export interface IStorage {
   createLessonPlan(lessonPlan: InsertLessonPlan): Promise<LessonPlan>;
   updateLessonPlan(id: string, lessonPlan: Partial<InsertLessonPlan>): Promise<LessonPlan | undefined>;
   deleteLessonPlan(id: string): Promise<boolean>;
+  getLessonPlansForReview(locationId?: string): Promise<LessonPlan[]>;
+  submitLessonPlanForReview(id: string, userId: string): Promise<LessonPlan | undefined>;
+  approveLessonPlan(id: string, userId: string, notes?: string): Promise<LessonPlan | undefined>;
+  rejectLessonPlan(id: string, userId: string, notes: string): Promise<LessonPlan | undefined>;
 
   // Scheduled Activities
   getScheduledActivities(lessonPlanId: string, locationId?: string, roomId?: string): Promise<ScheduledActivity[]>;
@@ -544,6 +548,69 @@ export class DatabaseStorage implements IStorage {
     
     const result = await this.db.delete(lessonPlans).where(and(...conditions));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async getLessonPlansForReview(locationId?: string): Promise<LessonPlan[]> {
+    const conditions = [];
+    if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
+    if (locationId) conditions.push(eq(lessonPlans.locationId, locationId));
+    // Only get submitted or approved plans
+    conditions.push(sql`${lessonPlans.status} IN ('submitted', 'approved', 'rejected')`);
+    
+    return await this.db.select().from(lessonPlans).where(conditions.length ? and(...conditions) : undefined);
+  }
+
+  async submitLessonPlanForReview(id: string, userId: string): Promise<LessonPlan | undefined> {
+    const conditions = [eq(lessonPlans.id, id)];
+    if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
+    
+    const [lessonPlan] = await this.db
+      .update(lessonPlans)
+      .set({ 
+        status: 'submitted',
+        submittedAt: new Date(),
+        submittedBy: userId,
+        updatedAt: new Date()
+      })
+      .where(and(...conditions))
+      .returning();
+    return lessonPlan || undefined;
+  }
+
+  async approveLessonPlan(id: string, userId: string, notes?: string): Promise<LessonPlan | undefined> {
+    const conditions = [eq(lessonPlans.id, id)];
+    if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
+    
+    const [lessonPlan] = await this.db
+      .update(lessonPlans)
+      .set({ 
+        status: 'approved',
+        approvedAt: new Date(),
+        approvedBy: userId,
+        reviewNotes: notes,
+        updatedAt: new Date()
+      })
+      .where(and(...conditions))
+      .returning();
+    return lessonPlan || undefined;
+  }
+
+  async rejectLessonPlan(id: string, userId: string, notes: string): Promise<LessonPlan | undefined> {
+    const conditions = [eq(lessonPlans.id, id)];
+    if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
+    
+    const [lessonPlan] = await this.db
+      .update(lessonPlans)
+      .set({ 
+        status: 'rejected',
+        rejectedAt: new Date(),
+        rejectedBy: userId,
+        reviewNotes: notes,
+        updatedAt: new Date()
+      })
+      .where(and(...conditions))
+      .returning();
+    return lessonPlan || undefined;
   }
 
   // Scheduled Activities

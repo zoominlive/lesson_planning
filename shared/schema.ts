@@ -114,9 +114,16 @@ export const lessonPlans = pgTable("lesson_plans", {
   teacherId: varchar("teacher_id").notNull().references(() => users.id),
   weekStart: text("week_start").notNull(), // ISO date string
   scheduleType: varchar("schedule_type", { length: 50 }).notNull().default("time-based"), // "time-based" or "position-based"
-  status: text("status").notNull().default("draft"), // draft, submitted, approved
+  status: text("status").notNull().default("draft"), // draft, submitted, approved, rejected
   submittedAt: timestamp("submitted_at"),
+  submittedBy: varchar("submitted_by").references(() => users.id), // User who submitted for review
   approvedAt: timestamp("approved_at"),
+  approvedBy: varchar("approved_by").references(() => users.id), // User who approved
+  rejectedAt: timestamp("rejected_at"),
+  rejectedBy: varchar("rejected_by").references(() => users.id), // User who rejected
+  reviewNotes: text("review_notes"), // Notes from reviewer
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Activity usage tracking
