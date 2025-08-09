@@ -48,12 +48,19 @@ export default function TabletPlanner() {
     }
   }, [locations, selectedLocation]);
 
-  // Auto-select first room when location changes
+  // Reset room selection when location changes
   useEffect(() => {
-    if (rooms.length > 0 && !selectedRoom) {
+    if (selectedLocation) {
+      setSelectedRoom("");
+    }
+  }, [selectedLocation]);
+
+  // Auto-select first room when rooms are available
+  useEffect(() => {
+    if (rooms.length > 0 && !selectedRoom && selectedLocation) {
       setSelectedRoom(rooms[0].id);
     }
-  }, [rooms, selectedRoom]);
+  }, [rooms, selectedRoom, selectedLocation]);
 
   const handleWeekChange = (newDate: Date) => {
     setCurrentWeekDate(newDate);
