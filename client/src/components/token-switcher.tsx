@@ -12,23 +12,23 @@ import { User, ChevronDown } from "lucide-react";
 import { setAuthToken, getUserInfo } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
-// Test tokens for different user roles
+// Test tokens for different user roles (signed with 'dev-secret-key')
 const TEST_TOKENS = {
   admin: {
     label: "Admin User",
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImU1YjdmMGRlLWM4NjgtNGU0MC1hMGJkLWUxNTkzN2NiMzA5NyIsInVzZXJGaXJzdE5hbWUiOiJBZG1pbiIsInVzZXJMYXN0TmFtZSI6IlVzZXIiLCJ1c2VybmFtZSI6ImFkbWluQGV4YW1wbGUuY29tIiwicm9sZSI6IkFkbWluIiwibG9jYXRpb25zIjpbImJmZDFkYzE0LTZjNmItNGZhMy04OTBiLWU1YjA5NmNkMjlmNCJdLCJpYXQiOjE3NTQ3MjcwNjB9.KoPHYW2s7N5zhg-Yka9Io7j3lhJvgO81IAk6QHTuIzQ",
+    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImU1YjdmMGRlLWM4NjgtNGU0MC1hMGJkLWUxNTkzN2NiMzA5NyIsInVzZXJGaXJzdE5hbWUiOiJBZG1pbiIsInVzZXJMYXN0TmFtZSI6IlVzZXIiLCJ1c2VybmFtZSI6ImFkbWluQGV4YW1wbGUuY29tIiwicm9sZSI6IkFkbWluIiwibG9jYXRpb25zIjpbImJmZDFkYzE0LTZjNmItNGZhMy04OTBiLWU1YjA5NmNkMjlmNCJdLCJpYXQiOjE3NTQ3MjkxMTh9.vyjtu7YwAsZDUR-1PDjkuKGlPINMsIpAkRW6eVLmtYs",
     role: "Admin",
     username: "admin@example.com"
   },
   teacher: {
     label: "Teacher User",
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InRlYWNoZXIxMjMiLCJ1c2VyRmlyc3ROYW1lIjoiU2FyYWgiLCJ1c2VyTGFzdE5hbWUiOiJKb2huc29uIiwidXNlcm5hbWUiOiJ0ZWFjaGVyQGV4YW1wbGUuY29tIiwicm9sZSI6IlRlYWNoZXIiLCJsb2NhdGlvbnMiOlsiYmZkMWRjMTQtNmM2Yi00ZmEzLTg5MGItZTViMDk2Y2QyOWY0Il0sImlhdCI6MTc1NDcyNzA2MH0.h4wLJF5y7vElRLq2N4qfLJPBdU3lJIWzAGvHKZm_jdI",
+    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InRlYWNoZXIxMjMiLCJ1c2VyRmlyc3ROYW1lIjoiU2FyYWgiLCJ1c2VyTGFzdE5hbWUiOiJKb2huc29uIiwidXNlcm5hbWUiOiJ0ZWFjaGVyQGV4YW1wbGUuY29tIiwicm9sZSI6IlRlYWNoZXIiLCJsb2NhdGlvbnMiOlsiYmZkMWRjMTQtNmM2Yi00ZmEzLTg5MGItZTViMDk2Y2QyOWY0Il0sImlhdCI6MTc1NDcyOTExOH0.3gpkB3y0UE2uF5za2jWfnOEBcffmhPPmyVdLY56hvIY",
     role: "Teacher",
     username: "teacher@example.com"
   },
   director: {
     label: "Director User",
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImRpcmVjdG9yMTIzIiwidXNlckZpcnN0TmFtZSI6Ik1pY2hhZWwiLCJ1c2VyTGFzdE5hbWUiOiJCcm93biIsInVzZXJuYW1lIjoiZGlyZWN0b3JAZXhhbXBsZS5jb20iLCJyb2xlIjoiRGlyZWN0b3IiLCJsb2NhdGlvbnMiOlsiYmZkMWRjMTQtNmM2Yi00ZmEzLTg5MGItZTViMDk2Y2QyOWY0Il0sImlhdCI6MTc1NDcyNzA2MH0.rRHfCo1FhEkPAIlv5xaGVsIZFQQW9YxFpP6HYkVsslg",
+    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImRpcmVjdG9yMTIzIiwidXNlckZpcnN0TmFtZSI6Ik1pY2hhZWwiLCJ1c2VyTGFzdE5hbWUiOiJCcm93biIsInVzZXJuYW1lIjoiZGlyZWN0b3JAZXhhbXBsZS5jb20iLCJyb2xlIjoiRGlyZWN0b3IiLCJsb2NhdGlvbnMiOlsiYmZkMWRjMTQtNmM2Yi00ZmEzLTg5MGItZTViMDk2Y2QyOWY0Il0sImlhdCI6MTc1NDcyOTExOH0.2GuqMzWlVLyTXiMPSonT-Aqg5oGDdNkPe6NmM4o0JRg",
     role: "Director",
     username: "director@example.com"
   }
