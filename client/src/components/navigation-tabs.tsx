@@ -1,6 +1,6 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, School, Package, Trophy } from "lucide-react";
+import { Calendar, School, Package, Trophy, Scissors } from "lucide-react";
 import ActivityLibrary from "./activity-library";
 import MaterialsLibrary from "./materials-library";
 import MilestonesLibrary from "./milestones-library";
@@ -38,7 +38,7 @@ export function NavigationTabs({ children }: NavigationTabsProps) {
               className="flex items-center justify-center h-10 px-4 rounded-md font-semibold transition-all duration-300 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white data-[state=active]:!bg-sky-blue data-[state=active]:!text-white data-[state=active]:shadow-lg"
               data-testid="tab-materials"
             >
-              <Package className="mr-2 h-4 w-4" />
+              <Scissors className="mr-2 h-4 w-4" />
               Materials
             </TabsTrigger>
             <TabsTrigger 
