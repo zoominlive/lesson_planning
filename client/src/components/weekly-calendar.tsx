@@ -490,7 +490,6 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
           Activities
         </Button>
       </div>
-
       {/* Main Content Area with Calendar and Drawer */}
       <div className="flex">
         {/* Calendar Grid */}
@@ -499,7 +498,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
             <div className="grid gap-0" style={{gridTemplateColumns: "100px repeat(5, 1fr)"}}>
           {/* Position Column */}
           <div className="bg-gradient-to-b from-mint-green/10 to-sky-blue/10 border-r-2 border-sky-blue/20">
-            <div className="h-16 border-b-2 border-sky-blue/20 flex items-center justify-center font-bold text-turquoise bg-white/50">
+            <div className="h-16 border-b-2 border-sky-blue/20 flex items-center justify-center font-bold bg-white/50 text-[#000000]">
               {scheduleSettings.type === 'position-based' ? 'Position' : 'Time'}
             </div>
             {timeSlots.map((slot) => (
