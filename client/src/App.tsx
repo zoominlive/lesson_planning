@@ -9,6 +9,7 @@ import TabletPlanner from "@/pages/tablet-planner";
 import { Settings } from "@/pages/Settings";
 import { LessonReview } from "@/pages/lesson-review";
 import NotFound from "@/pages/not-found";
+import { TokenSwitcher } from "@/components/token-switcher";
 import { useEffect } from "react";
 
 function Router() {
@@ -34,6 +35,7 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
+        <TokenSwitcher />
       </TooltipProvider>
     </QueryClientProvider>
   );
