@@ -43,7 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve milestone images from object storage (public access for display in UI)
   app.get('/api/milestones/images/*', async (req, res) => {
     try {
-      const filePath = req.params[0]; // Gets everything after /api/milestones/images/
+      const filePath = (req.params as any)['0'] || ''; // Gets everything after /api/milestones/images/
       await milestoneStorage.downloadMilestoneImage(filePath, res);
     } catch (error) {
       console.error('Error serving milestone image:', error);
@@ -244,10 +244,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertMilestoneSchema.parse(req.body);
       
-      // Validate that user has access to the location they're creating the milestone in
-      const accessCheck = await validateLocationAccess(req, data.locationId);
-      if (!accessCheck.allowed) {
-        return res.status(403).json({ error: accessCheck.message });
+      // Validate that user has access to all locations they're creating the milestone in
+      if (data.locationIds && data.locationIds.length > 0) {
+        for (const locationId of data.locationIds) {
+          const accessCheck = await validateLocationAccess(req, locationId);
+          if (!accessCheck.allowed) {
+            return res.status(403).json({ error: accessCheck.message });
+          }
+        }
       }
       
       const milestone = await storage.createMilestone(data);
@@ -269,17 +273,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Milestone not found" });
       }
       
-      // Validate access to existing location
-      const accessCheck = await validateLocationAccess(req, existing.locationId);
-      if (!accessCheck.allowed) {
-        return res.status(403).json({ error: accessCheck.message });
+      // Validate access to existing locations
+      for (const locationId of existing.locationIds) {
+        const accessCheck = await validateLocationAccess(req, locationId);
+        if (!accessCheck.allowed) {
+          return res.status(403).json({ error: accessCheck.message });
+        }
       }
       
-      // If changing location, validate access to new location
-      if (data.locationId && data.locationId !== existing.locationId) {
-        const newAccessCheck = await validateLocationAccess(req, data.locationId);
-        if (!newAccessCheck.allowed) {
-          return res.status(403).json({ error: `Cannot move to location: ${newAccessCheck.message}` });
+      // If changing locations, validate access to new locations
+      if (data.locationIds) {
+        for (const locationId of data.locationIds) {
+          const newAccessCheck = await validateLocationAccess(req, locationId);
+          if (!newAccessCheck.allowed) {
+            return res.status(403).json({ error: `Cannot move to location: ${newAccessCheck.message}` });
+          }
         }
       }
       
@@ -301,7 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate location access - check if user has access to any of the milestone's locations
-      const userLocationIds = getUserAuthorizedLocationIds(req);
+      const userLocationIds = await getUserAuthorizedLocationIds(req);
       const hasAccess = milestone.locationIds.some(locId => userLocationIds.includes(locId));
       if (!hasAccess) {
         return res.status(403).json({ error: "Access denied. You don't have permission to access this milestone." });

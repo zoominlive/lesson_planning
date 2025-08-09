@@ -193,10 +193,7 @@ export class DatabaseStorage implements IStorage {
     const milestoneData = this.tenantId ? { ...insertMilestone, tenantId: this.tenantId } : insertMilestone;
     const [milestone] = await this.db
       .insert(milestones)
-      .values({
-        ...milestoneData,
-        locationIds: milestoneData.locationIds || []
-      })
+      .values(milestoneData as any)
       .returning();
     return milestone;
   }
@@ -266,7 +263,7 @@ export class DatabaseStorage implements IStorage {
     const materialData = this.tenantId ? { ...insertMaterial, tenantId: this.tenantId } : insertMaterial;
     const [material] = await this.db
       .insert(materials)
-      .values(materialData)
+      .values(materialData as any)
       .returning();
     return material;
   }
@@ -275,9 +272,17 @@ export class DatabaseStorage implements IStorage {
     const conditions = [eq(materials.id, id)];
     if (this.tenantId) conditions.push(eq(materials.tenantId, this.tenantId));
     
+    const updateData: any = { ...updates };
+    if (updates.locationIds) {
+      updateData.locationIds = Array.isArray(updates.locationIds) ? updates.locationIds : [];
+    }
+    if (updates.ageGroups) {
+      updateData.ageGroups = Array.isArray(updates.ageGroups) ? updates.ageGroups : [];
+    }
+    
     const [material] = await this.db
       .update(materials)
-      .set(updates)
+      .set(updateData)
       .where(and(...conditions))
       .returning();
     return material || undefined;
@@ -320,7 +325,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const [activity] = await this.db
         .insert(activities)
-        .values(activityData)
+        .values(activityData as any)
         .returning();
       console.log('[DatabaseStorage] Activity created successfully:', activity.id);
       return activity;
@@ -334,9 +339,32 @@ export class DatabaseStorage implements IStorage {
     const conditions = [eq(activities.id, id)];
     if (this.tenantId) conditions.push(eq(activities.tenantId, this.tenantId));
     
+    const updateData: any = { ...updates };
+    if (updates.ageGroupIds) {
+      updateData.ageGroupIds = Array.isArray(updates.ageGroupIds) ? updates.ageGroupIds : [];
+    }
+    if (updates.milestoneIds) {
+      updateData.milestoneIds = Array.isArray(updates.milestoneIds) ? updates.milestoneIds : [];
+    }
+    if (updates.materialIds) {
+      updateData.materialIds = Array.isArray(updates.materialIds) ? updates.materialIds : [];
+    }
+    if (updates.instructions) {
+      updateData.instructions = Array.isArray(updates.instructions) ? updates.instructions : [];
+    }
+    if (updates.objectives) {
+      updateData.objectives = Array.isArray(updates.objectives) ? updates.objectives : [];
+    }
+    if (updates.safetyConsiderations) {
+      updateData.safetyConsiderations = Array.isArray(updates.safetyConsiderations) ? updates.safetyConsiderations : [];
+    }
+    if (updates.variations) {
+      updateData.variations = Array.isArray(updates.variations) ? updates.variations : [];
+    }
+    
     const [activity] = await this.db
       .update(activities)
-      .set(updates)
+      .set(updateData)
       .where(and(...conditions))
       .returning();
     return activity || undefined;
@@ -747,7 +775,7 @@ export class DatabaseStorage implements IStorage {
       // Update existing settings
       const [updated] = await this.db
         .update(organizationSettings)
-        .set({ ...updates, updatedAt: new Date() })
+        .set({ ...updates, updatedAt: new Date() } as any)
         .where(eq(organizationSettings.tenantId, this.tenantId))
         .returning();
       return updated;
@@ -755,7 +783,7 @@ export class DatabaseStorage implements IStorage {
       // Create new settings
       const [created] = await this.db
         .insert(organizationSettings)
-        .values({ ...updates, tenantId: this.tenantId })
+        .values({ ...updates, tenantId: this.tenantId } as any)
         .returning();
       return created;
     }
