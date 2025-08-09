@@ -500,7 +500,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
           {/* Position Column */}
           <div className="bg-gradient-to-b from-mint-green/10 to-sky-blue/10 border-r-2 border-sky-blue/20">
             <div className="h-16 border-b-2 border-sky-blue/20 flex items-center justify-center font-bold text-turquoise bg-white/50">
-              Position
+              {scheduleSettings.type === 'position-based' ? 'Position' : 'Time'}
             </div>
             {timeSlots.map((slot) => (
               <div key={slot.id} className="h-24 border-b border-sky-blue/10 flex items-center justify-center bg-white/30 hover:bg-white/50 transition-colors">

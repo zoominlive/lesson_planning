@@ -449,7 +449,7 @@ export function TabletWeeklyCalendar({
           {/* Position Column */}
           <div className="space-y-2">
             <div className="h-12 flex items-center justify-center text-xs font-bold bg-gradient-to-r from-turquoise/20 to-sky-blue/20 rounded-lg">
-              Position
+              {scheduleSettings.type === 'position-based' ? 'Position' : 'Time'}
             </div>
             {timeSlots.map((slot) => (
               <div 
