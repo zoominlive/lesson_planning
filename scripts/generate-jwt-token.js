@@ -22,7 +22,7 @@
  *   - TOKEN_EXPIRY: Token expiry time in seconds (defaults to 3600 = 1 hour)
  */
 
-const jwt = require('jsonwebtoken');
+import jwt from 'jsonwebtoken';
 
 // Configuration from environment variables with defaults
 const config = {

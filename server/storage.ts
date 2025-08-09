@@ -23,6 +23,8 @@ import {
   type InsertCategory,
   type AgeGroup,
   type InsertAgeGroup,
+  type OrganizationSettings,
+  type InsertOrganizationSettings,
   users,
   milestones,
   materials,
@@ -34,7 +36,8 @@ import {
   locations,
   rooms,
   categories,
-  ageGroups
+  ageGroups,
+  organizationSettings
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, isNull } from "drizzle-orm";
@@ -118,6 +121,10 @@ export interface IStorage {
   createAgeGroup(ageGroup: InsertAgeGroup): Promise<AgeGroup>;
   updateAgeGroup(id: string, ageGroup: Partial<InsertAgeGroup>): Promise<AgeGroup | undefined>;
   deleteAgeGroup(id: string): Promise<boolean>;
+
+  // Organization Settings
+  getOrganizationSettings(): Promise<OrganizationSettings | undefined>;
+  updateOrganizationSettings(settings: Partial<InsertOrganizationSettings>): Promise<OrganizationSettings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -715,6 +722,42 @@ export class DatabaseStorage implements IStorage {
     const [tokenSecret] = await this.db.update(tokenSecrets).set(data)
       .where(eq(tokenSecrets.tenantId, tenantId)).returning();
     return tokenSecret;
+  }
+
+  // Organization Settings Implementation
+  async getOrganizationSettings(): Promise<OrganizationSettings | undefined> {
+    if (!this.tenantId) return undefined;
+    
+    const [settings] = await this.db
+      .select()
+      .from(organizationSettings)
+      .where(eq(organizationSettings.tenantId, this.tenantId));
+    
+    return settings || undefined;
+  }
+
+  async updateOrganizationSettings(updates: Partial<InsertOrganizationSettings>): Promise<OrganizationSettings> {
+    if (!this.tenantId) throw new Error("Tenant context not set");
+    
+    // Check if settings exist for this tenant
+    const existing = await this.getOrganizationSettings();
+    
+    if (existing) {
+      // Update existing settings
+      const [updated] = await this.db
+        .update(organizationSettings)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(organizationSettings.tenantId, this.tenantId))
+        .returning();
+      return updated;
+    } else {
+      // Create new settings
+      const [created] = await this.db
+        .insert(organizationSettings)
+        .values({ ...updates, tenantId: this.tenantId })
+        .returning();
+      return created;
+    }
   }
 }
 

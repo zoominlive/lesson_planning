@@ -31,7 +31,8 @@ import {
   type InsertCategory,
   insertCategorySchema,
   type InsertAgeGroup,
-  insertAgeGroupSchema
+  insertAgeGroupSchema,
+  insertOrganizationSettingsSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1497,6 +1498,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete age group" });
+    }
+  });
+
+  // Organization Settings API Routes
+  app.get("/api/organization-settings", async (req: AuthenticatedRequest, res) => {
+    try {
+      const settings = await storage.getOrganizationSettings();
+      
+      // Return default settings if none exist
+      if (!settings) {
+        return res.json({
+          scheduleType: 'time-based',
+          startTime: '06:00',
+          endTime: '18:00',
+          slotsPerDay: 8,
+          weekStartDay: 1,
+          autoSaveInterval: 5,
+          enableNotifications: true
+        });
+      }
+      
+      res.json(settings);
+    } catch (error) {
+      console.error("Organization settings fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch organization settings" });
+    }
+  });
+
+  app.put("/api/organization-settings", async (req: AuthenticatedRequest, res) => {
+    try {
+      const updates = insertOrganizationSettingsSchema.parse(req.body);
+      const settings = await storage.updateOrganizationSettings(updates);
+      res.json(settings);
+    } catch (error) {
+      console.error("Organization settings update error:", error);
+      res.status(400).json({ error: "Invalid settings data" });
     }
   });
 

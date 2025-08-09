@@ -43,122 +43,71 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
     endTime: '18:00',
     slotsPerDay: 8
   });
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Load settings from database
-  const { data: dbSettings, isLoading } = useQuery({
-    queryKey: ['/api/organization-settings'],
-  });
-
-  // Update local state when database settings load
+  // Load settings from localStorage on mount
   useEffect(() => {
-    if (dbSettings) {
-      const settings = {
-        type: dbSettings.scheduleType as 'time-based' | 'position-based',
-        startTime: dbSettings.startTime,
-        endTime: dbSettings.endTime,
-        slotsPerDay: dbSettings.slotsPerDay
-      };
-      setScheduleSettings(settings);
-      
-      // Also update localStorage for immediate calendar updates
-      localStorage.setItem('scheduleSettings', JSON.stringify(settings));
-      
-      // Dispatch custom event for calendar components
-      window.dispatchEvent(new CustomEvent('scheduleSettingsChanged', { detail: settings }));
+    const savedSettings = localStorage.getItem('scheduleSettings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        setScheduleSettings(parsed);
+      } catch (error) {
+        console.error('Error loading schedule settings:', error);
+      }
     }
-  }, [dbSettings]);
+  }, []);
 
-  // Save settings mutation
-  const saveSettingsMutation = useMutation({
-    mutationFn: async (settings: ScheduleSettings) => {
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
       // Validate settings
-      if (settings.type === 'time-based') {
-        if (!settings.startTime || !settings.endTime) {
+      if (scheduleSettings.type === 'time-based') {
+        if (!scheduleSettings.startTime || !scheduleSettings.endTime) {
           throw new Error('Please select both start and end times');
         }
-        const startHour = parseInt(settings.startTime.split(':')[0]);
-        const endHour = parseInt(settings.endTime.split(':')[0]);
+        const startHour = parseInt(scheduleSettings.startTime.split(':')[0]);
+        const endHour = parseInt(scheduleSettings.endTime.split(':')[0]);
         if (startHour >= endHour) {
           throw new Error('End time must be after start time');
         }
       } else {
-        if (!settings.slotsPerDay || settings.slotsPerDay < 1 || settings.slotsPerDay > 12) {
+        if (!scheduleSettings.slotsPerDay || scheduleSettings.slotsPerDay < 1 || scheduleSettings.slotsPerDay > 12) {
           throw new Error('Number of slots must be between 1 and 12');
         }
       }
 
-      const token = localStorage.getItem('authToken');
-      const response = await fetch('/api/organization-settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-        },
-        body: JSON.stringify({
-          tenantId,
-          scheduleType: settings.type,
-          startTime: settings.startTime,
-          endTime: settings.endTime,
-          slotsPerDay: settings.slotsPerDay
-        }),
-      });
+      // Save to localStorage
+      localStorage.setItem('scheduleSettings', JSON.stringify(scheduleSettings));
       
-      if (!response.ok) {
-        throw new Error('Failed to save settings');
-      }
+      // Trigger a custom event to notify calendar components
+      window.dispatchEvent(new CustomEvent('scheduleSettingsChanged', { detail: scheduleSettings }));
       
-      // Update localStorage immediately
-      localStorage.setItem('scheduleSettings', JSON.stringify(settings));
-      
-      // Trigger custom event for calendar components
-      window.dispatchEvent(new CustomEvent('scheduleSettingsChanged', { detail: settings }));
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/organization-settings'] });
       toast({
         title: "Settings saved",
-        description: "Your schedule settings have been saved to the database.",
+        description: "Schedule settings have been updated successfully",
       });
-    },
-    onError: (error: any) => {
-      console.error('Error saving settings:', error);
+    } catch (error: any) {
       toast({
         title: "Error saving settings",
-        description: error.message || "Failed to save settings. Please try again.",
-        variant: "destructive",
+        description: error.message,
+        variant: "destructive"
       });
+    } finally {
+      setIsSaving(false);
     }
-  });
-
-  const handleSave = () => {
-    saveSettingsMutation.mutate(scheduleSettings);
   };
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>General Settings</CardTitle>
-          <CardDescription>Loading settings...</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>General Settings</CardTitle>
-        <CardDescription>
-          Configure how your organization's schedule is displayed and managed.
-        </CardDescription>
+        <CardDescription>Configure how your schedule calendar is displayed</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Schedule Type Selection */}
         <div className="space-y-4">
-          <Label>Schedule Display Type</Label>
+          <Label className="text-base font-semibold">Schedule Type</Label>
           <RadioGroup
             value={scheduleSettings.type}
             onValueChange={(value: 'time-based' | 'position-based') => 
@@ -167,37 +116,36 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
           >
             <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50">
               <RadioGroupItem value="time-based" id="time-based" className="mt-1" />
-              <Label htmlFor="time-based" className="flex-1 cursor-pointer">
-                <div className="flex items-center gap-2 font-medium">
+              <div className="flex-1">
+                <Label htmlFor="time-based" className="flex items-center gap-2 cursor-pointer">
                   <Clock className="h-4 w-4" />
-                  Time-Based Schedule
-                </div>
+                  <span className="font-medium">Time Based</span>
+                </Label>
                 <p className="text-sm text-gray-600 mt-1">
-                  Display activities at specific times of day (e.g., 9:00 AM, 10:00 AM)
+                  Schedule activities based on specific time slots throughout the day
                 </p>
-              </Label>
+              </div>
             </div>
             
             <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50">
               <RadioGroupItem value="position-based" id="position-based" className="mt-1" />
-              <Label htmlFor="position-based" className="flex-1 cursor-pointer">
-                <div className="flex items-center gap-2 font-medium">
+              <div className="flex-1">
+                <Label htmlFor="position-based" className="flex items-center gap-2 cursor-pointer">
                   <Grid3x3 className="h-4 w-4" />
-                  Position-Based Schedule
-                </div>
+                  <span className="font-medium">Position Based</span>
+                </Label>
                 <p className="text-sm text-gray-600 mt-1">
-                  Display activities in numbered slots (e.g., Slot 1, Slot 2, Slot 3)
+                  Schedule activities in numbered slots without specific times
                 </p>
-              </Label>
+              </div>
             </div>
           </RadioGroup>
         </div>
 
-        {/* Conditional Settings based on type */}
-        {scheduleSettings.type === 'time-based' ? (
+        {/* Time-Based Options */}
+        {scheduleSettings.type === 'time-based' && (
           <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-            <h4 className="font-medium">Time-Based Settings</h4>
-            
+            <h4 className="font-medium text-sm">Time Range</h4>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="start-time">Start Time</Label>
@@ -219,7 +167,7 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
                   </SelectContent>
                 </Select>
               </div>
-
+              
               <div className="space-y-2">
                 <Label htmlFor="end-time">End Time</Label>
                 <Select
@@ -242,37 +190,44 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
               </div>
             </div>
           </div>
-        ) : (
+        )}
+
+        {/* Position-Based Options */}
+        {scheduleSettings.type === 'position-based' && (
           <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-            <h4 className="font-medium">Position-Based Settings</h4>
-            
+            <h4 className="font-medium text-sm">Schedule Configuration</h4>
             <div className="space-y-2">
-              <Label htmlFor="slots-per-day">Number of Activity Slots per Day</Label>
+              <Label htmlFor="slots-per-day">Number of Slots Per Day</Label>
               <Input
                 id="slots-per-day"
                 type="number"
                 min="1"
                 max="12"
-                value={scheduleSettings.slotsPerDay}
-                onChange={(e) => 
-                  setScheduleSettings({ ...scheduleSettings, slotsPerDay: parseInt(e.target.value) || 8 })
-                }
-                className="w-32"
+                value={scheduleSettings.slotsPerDay || ''}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (!isNaN(value) && value >= 1 && value <= 12) {
+                    setScheduleSettings({ ...scheduleSettings, slotsPerDay: value });
+                  }
+                }}
+                placeholder="Enter number of slots (1-12)"
+                className="max-w-xs"
               />
               <p className="text-sm text-gray-600">
-                Choose between 1 and 12 slots per day
+                Each day will have {scheduleSettings.slotsPerDay || 8} slots for activities
               </p>
             </div>
           </div>
         )}
 
         {/* Save Button */}
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-4">
           <Button 
             onClick={handleSave} 
-            disabled={saveSettingsMutation.isPending}
+            disabled={isSaving}
+            className="bg-gradient-to-r from-turquoise to-sky-blue hover:from-turquoise/90 hover:to-sky-blue/90"
           >
-            {saveSettingsMutation.isPending ? "Saving..." : "Save Settings"}
+            {isSaving ? "Saving..." : "Save Settings"}
           </Button>
         </div>
       </CardContent>

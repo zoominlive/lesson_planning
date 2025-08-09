@@ -252,6 +252,21 @@ export const ageGroups = pgTable("age_groups", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Organization Settings table for tenant-wide configuration
+export const organizationSettings = pgTable("organization_settings", {
+  id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull().unique(),
+  scheduleType: varchar("schedule_type", { length: 50 }).notNull().default("time-based"), // "time-based" or "position-based"
+  startTime: varchar("start_time", { length: 5 }).default("06:00"), // HH:MM format
+  endTime: varchar("end_time", { length: 5 }).default("18:00"), // HH:MM format
+  slotsPerDay: integer("slots_per_day").default(8), // For position-based scheduling
+  weekStartDay: integer("week_start_day").default(1), // 0=Sunday, 1=Monday
+  autoSaveInterval: integer("auto_save_interval").default(5), // minutes
+  enableNotifications: boolean("enable_notifications").default(true),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Settings schemas
 export const insertLocationSchema = createInsertSchema(locations).omit({
   id: true,
@@ -272,6 +287,16 @@ export const insertAgeGroupSchema = createInsertSchema(ageGroups).omit({
   id: true,
   createdAt: true,
 });
+
+export const insertOrganizationSettingsSchema = createInsertSchema(organizationSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Type exports for organization settings
+export type OrganizationSettings = typeof organizationSettings.$inferSelect;
+export type InsertOrganizationSettings = z.infer<typeof insertOrganizationSettingsSchema>;
 
 // Types
 export type Tenant = typeof tenants.$inferSelect;
