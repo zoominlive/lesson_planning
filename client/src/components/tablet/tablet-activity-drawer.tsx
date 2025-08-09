@@ -68,7 +68,7 @@ export function TabletActivityDrawer({
   };
 
   // Get age group names from IDs
-  const getAgeGroupNames = (ageGroupIds: string[] | undefined) => {
+  const getAgeGroupNames = (ageGroupIds: string[] | null | undefined) => {
     if (!ageGroupIds || ageGroupIds.length === 0) return [];
     return ageGroupIds
       .map(id => ageGroups.find(ag => ag.id === id)?.name)

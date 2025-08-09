@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { TabletWeeklyCalendar } from "../components/tablet/tablet-weekly-calendar";
 import { TabletHeader } from "../components/tablet/tablet-header";
 import { TabletActivityDrawer } from "../components/tablet/tablet-activity-drawer";
@@ -87,14 +88,80 @@ export default function TabletPlanner() {
     }
   };
 
-  const handleScheduleActivity = async (activity: Activity, day: number, slot: number) => {
-    // Implementation for scheduling
-    toast({
-      title: "Activity Scheduled",
-      description: `${activity.title} scheduled successfully`,
+  // Schedule activity mutation
+  const scheduleMutation = useMutation({
+    mutationFn: async ({ activityId, dayOfWeek, timeSlot, weekStart }: { activityId: string; dayOfWeek: number; timeSlot: number; weekStart: string }) => {
+      console.log('Scheduling activity:', { 
+        activityId, 
+        dayOfWeek, 
+        timeSlot, 
+        weekStart,
+        selectedLocation, 
+        selectedRoom
+      });
+      
+      if (!selectedLocation || !selectedRoom) {
+        throw new Error(`Missing required context: location ${selectedLocation ? 'exists' : 'missing'}, room ${selectedRoom ? 'exists' : 'missing'}`);
+      }
+      
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('/api/scheduled-activities', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          activityId,
+          dayOfWeek,
+          timeSlot,
+          roomId: selectedRoom,
+          locationId: selectedLocation,
+          weekStart,
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to schedule activity');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom, currentWeekDate.toISOString(), selectedLocation] });
+      toast({
+        title: "Activity Scheduled",
+        description: "The activity has been added to the calendar.",
+      });
+      setSelectedActivity(null);
+      setSelectedSlot(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Scheduling Failed",
+        description: error.message || "Unable to schedule the activity. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleScheduleActivity = (activity: Activity, day: number, slot: number) => {
+    if (!selectedLocation || !selectedRoom) {
+      toast({
+        title: "Cannot schedule activity",
+        description: "Please select a location and room first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    scheduleMutation.mutate({
+      activityId: activity.id,
+      dayOfWeek: day,
+      timeSlot: slot,
+      weekStart: currentWeekDate.toISOString(),
     });
-    setSelectedActivity(null);
-    setSelectedSlot(null);
   };
 
   // Handle swipe up gesture on the bottom tab
