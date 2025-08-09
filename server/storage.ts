@@ -359,12 +359,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Lesson Plans
-  async getLessonPlans(teacherId?: string, locationId?: string, roomId?: string): Promise<LessonPlan[]> {
+  async getLessonPlans(teacherId?: string, locationId?: string, roomId?: string, scheduleType?: string): Promise<LessonPlan[]> {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
     if (teacherId) conditions.push(eq(lessonPlans.teacherId, teacherId));
     if (locationId) conditions.push(eq(lessonPlans.locationId, locationId));
     if (roomId) conditions.push(eq(lessonPlans.roomId, roomId));
+    if (scheduleType) conditions.push(eq(lessonPlans.scheduleType, scheduleType));
     
     return await this.db.select().from(lessonPlans).where(conditions.length ? and(...conditions) : undefined);
   }

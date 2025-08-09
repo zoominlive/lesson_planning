@@ -1,212 +1,62 @@
 # Overview
 
-This is a comprehensive lesson planning application for early childhood educators, designed to streamline the creation and management of weekly lesson plans. The application provides tools for managing activities, materials, developmental milestones, and creating structured weekly schedules that align with educational objectives and available resources.
+This project is a comprehensive lesson planning application designed for early childhood educators. Its primary purpose is to streamline the creation and management of weekly lesson plans. Key capabilities include managing activities, materials, and developmental milestones, as well as creating structured weekly schedules that align with educational objectives and available resources. The application supports a multi-tenant and multi-location architecture, ensuring data isolation and secure access for various educational organizations and their facilities.
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-# Recent Changes
-
-## JWT Authentication & Location-Based Authorization (August 7, 2025)
-- ✅ **JWT Token System**: Implemented proper JWT authentication for iframe integration
-- ✅ **Multi-tenant Support**: Tokens include tenantId, userFirstName, userLastName, username, role, locations
-- ✅ **Location-Based Authorization**: Users can only access data for locations in their JWT token
-- ✅ **Server-Side Validation**: All API endpoints validate location access against JWT payload
-- ✅ **Client-Side Filtering**: UI components respect location restrictions from JWT
-- ✅ **URL Parameter Method**: Tokens passed via `?token=` query parameter for testing
-- ✅ **PostMessage Support**: Ready for iframe communication via postMessage
-- ✅ **User Display**: Header shows authenticated user name, role, and authorized locations
-- ✅ **Admin Access**: Settings gear icon appears for Admin role users
-- ✅ **Clean Navigation**: Removed redundant user info from navigation tabs
-
-## Recent Changes
-
-### Location-Based Categories, Rooms, and Age Groups (August 6, 2025)
-- ✅ **Categories Schema Update**: Added locationId field to categories table for location-specific organization
-- ✅ **Age Groups Schema Update**: Added locationId field to age_groups table for location-specific organization
-- ✅ **Database Migration**: Successfully migrated existing categories and age groups to include location association
-- ✅ **API Enhancement**: Updated categories and age groups API endpoints to support location filtering via locationId query parameter
-- ✅ **Storage Layer**: Enhanced storage methods to filter categories and age groups by both tenant and location
-- ✅ **Categories UI**: Built location-aware categories settings with location selector and form validation
-- ✅ **Complete Multi-Location Architecture**: Rooms, categories, and age groups are now properly associated with specific locations
-
-## Recent Fixes (August 7, 2025)
-- ✅ **Materials Age Group Safety**: Changed materials from category tracking to age group tracking for childcare safety
-- ✅ **Database Schema Update**: Renamed "categories" column to "age_groups" in materials table
-- ✅ **Safety-Based Material Assignment**: Updated existing materials with appropriate age groups (no scissors for infants, etc.)
-- ✅ **Settings Navigation**: Added back button to navigate from settings to main lesson planner
-- ✅ **Activity Images Added**: Generated and added images for 3 activities (Mystery Sorting Safari, Animal Movement Obstacle Course, Animal Action Obstacle Course)
-- ✅ **Local Image Storage**: Confirmed images are stored locally in `public/activity-images/images/` directory
-
-## Current Issues
-- Age groups settings UI needs to be updated to work with location context similar to categories
-
 # System Architecture
 
 ## Frontend Architecture
-The frontend is built with React 18 using TypeScript and follows a modern component-based architecture:
-
-- **UI Framework**: React with TypeScript for type safety and developer experience
-- **Styling**: Tailwind CSS with a comprehensive design system featuring custom childcare-themed colors
-- **Component Library**: Shadcn/ui components built on top of Radix UI primitives for accessibility and consistency
-- **State Management**: TanStack Query (React Query) for server state management with optimistic updates
-- **Routing**: Wouter for lightweight client-side routing
-- **Form Management**: React Hook Form with Zod validation for type-safe form handling
-- **Build Tool**: Vite for fast development and optimized production builds
-
-### Component Structure
-✅ **REFACTORED**: Main components properly modularized
-- **NavigationTabs**: Tab navigation with integrated content areas
-- **CalendarControls**: Week navigation and room selection controls  
-- **FloatingActionButton**: Quick action button component
-- **LessonPlanner**: Clean main page component with proper separation of concerns
+The frontend is built with React 18 and TypeScript, employing a modern component-based architecture. It utilizes Tailwind CSS for styling with a custom childcare-themed design system, Shadcn/ui for components (built on Radix UI), TanStack Query for server state management, Wouter for routing, and React Hook Form with Zod for form handling. Vite is used for fast development and optimized builds.
 
 ## Backend Architecture
-The backend follows a RESTful API pattern built with Express.js:
-
-- **Runtime**: Node.js with TypeScript using ESM modules
-- **Framework**: Express.js with structured route handling and middleware
-- **Database Layer**: Drizzle ORM with PostgreSQL for type-safe database operations
-- **Data Validation**: Zod schemas shared between frontend and backend for consistent validation
-- **Storage Interface**: Abstract storage interface pattern allowing for flexible data persistence implementations
+The backend follows a RESTful API pattern built with Node.js and Express.js. It uses Drizzle ORM with PostgreSQL for type-safe database operations and Zod schemas for consistent data validation across frontend and backend. An abstract storage interface allows flexible data persistence.
 
 ## Data Storage Solutions
-The application uses a PostgreSQL database with Drizzle ORM, successfully integrated and operational:
-
-- **Database**: PostgreSQL (configured with Neon Database)
-- **ORM**: Drizzle with TypeScript for compile-time type safety and serverless connection pooling
-- **Schema Management**: Centralized schema definitions in the shared directory
-- **Migrations**: Drizzle Kit for database schema migrations
-- **Connection**: Neon serverless PostgreSQL with connection pooling
-- **Seeding**: Automated database seeding with sample data for development
-
-### Database Integration Status
-✅ **COMPLETED**: PostgreSQL database with multi-tenant, multi-location architecture
-- UUID primary keys implemented across all tables for proper record deletion
-- **Multi-Location Support**: All lesson plan entities (milestones, materials, activities, lesson plans, scheduled activities) now require both tenantId AND locationId for proper data isolation
-- Complete tenant isolation - all tables reference tenant_id foreign key
-- **Location-based filtering**: API endpoints validate and filter based on user's authorized locations from JWT
-- **Room-based organization**: Lesson plans and scheduled activities now reference specific roomId for classroom-level organization
-- **Simplified room schema**: Removed age range requirements (ageRangeStart, ageRangeEnd) from rooms table for more flexible room management
-- DatabaseStorage class with composite tenant + location filtering for data isolation
-- Tenant-aware API endpoints automatically filter data by authenticated tenant and authorized locations
-- Sample data migrated with development tenant UUID (7cb6c28d-164c-49fa-b461-dfc47a8a3fed)
-- JWT authentication with location-based authorization (userFirstName, userLastName, username, role, locations)
-- Production-ready multi-tenant, multi-location data separation with server-side access control
+A PostgreSQL database, configured with Neon Database, serves as the primary data store. Drizzle ORM handles database operations and schema management, with Drizzle Kit for migrations. The database supports a multi-tenant, multi-location architecture, ensuring data isolation through UUID primary keys and tenantId/locationId foreign keys across all relevant tables. All lesson plan entities require both tenantId and locationId for proper data isolation, and API endpoints filter data based on authenticated tenant and authorized locations.
 
 ### Core Data Models
-- **Users**: Teacher profiles with classroom assignments
-- **Milestones**: Developmental milestones categorized by domain (Social, Emotional, Cognitive, Physical) - **requires tenantId + locationId**
-- **Materials**: Classroom materials with inventory tracking and location management - **requires tenantId + locationId**
-- **Activities**: Educational activities with age ranges, objectives, and material requirements - **requires tenantId + locationId**
-- **Lesson Plans**: Weekly planning containers with teacher assignments - **requires tenantId + locationId + roomId**
-- **Scheduled Activities**: Time-slotted activities within lesson plans - **requires tenantId + locationId + roomId**
-- **Settings**: Multi-location organizational structure
-  - **Locations**: Physical facilities - **requires tenantId only**
-  - **Rooms**: Classrooms within locations - **requires tenantId + locationId**
-  - **Categories**: Classification system for activities, materials, milestones - **requires tenantId + locationId**
-  - **Age Groups**: Developmental age ranges for content targeting - **requires tenantId + locationId**
+Key data models include Users, Milestones, Materials, Activities, Lesson Plans, Scheduled Activities, and Settings (Locations, Rooms, Categories, Age Groups). All relevant entities require `tenantId` and `locationId` for data isolation, except for `Locations` which only requires `tenantId`.
 
 ## Authentication and Authorization
-✅ **COMPLETED**: JWT-based multi-tenant authentication system with location-based authorization
-- Query parameter token passing (primary method) with URL cleaning for security
-- PostMessage token passing (fallback method) for iframe communication
-- Tenant-based data isolation with UUID-based tenant identification
-- Location-based access control - users can only access authorized locations from JWT
-- Server-side validation of location access on all API endpoints
-- User context extraction from JWT tokens (userFirstName, userLastName, username, role, locations)
-- Development mode with mock user data for testing (includes locations: ["Main Campus", "Third Location"])
-- Production-ready JWT validation with tenant-specific secrets
-- User information display in navigation interface including authorized locations
+The system uses a JWT-based multi-tenant authentication system with location-based authorization. JWT tokens include `tenantId`, user details, role, and authorized locations. Server-side validation of location access is enforced on all API endpoints. Tokens are passed via query parameters or postMessage for iframe communication.
 
 ## File Upload and Media Management
-**IMPORTANT**: Activity images are stored in the LOCAL FILE SYSTEM, not cloud storage.
-
-### Local File Storage (Current Implementation)
-- **Activity Images**: Stored locally in `public/activity-images/images/` directory
-- **Instruction Images**: Stored locally in `public/activity-images/instructions/` directory  
-- **Videos**: Stored locally in `public/activity-images/videos/` directory
-- **Serving**: Images served via `/api/activities/images/:filename` endpoint
-- **Storage Service**: ActivityStorageService handles all local file operations
-- **No Cloud Storage**: DO NOT use object storage or cloud storage for activity images
-
-### File Upload Components (Available but not for images)
-- **File Upload**: Uppy dashboard and drag-drop components
-- **Cloud Storage**: Google Cloud Storage integration (NOT USED for activity images)
-- **AWS S3**: Alternative storage option with Uppy S3 plugin (NOT USED for activity images)
-- **Progress Tracking**: Built-in upload progress indicators
+Activity and instruction images are stored locally in the `public/activity-images/` directory. They are served via a dedicated API endpoint (`/api/activities/images/:filename`) handled by an `ActivityStorageService`. Cloud storage solutions like Google Cloud Storage or AWS S3 are integrated with Uppy for general file uploads but are NOT used for activity images.
 
 ## Development and Build Process
-- **Development**: Vite dev server with HMR and TypeScript checking
-- **Production Build**: Vite for frontend bundling, esbuild for backend compilation
-- **Code Quality**: TypeScript strict mode with comprehensive type checking
-- **Development Tools**: Replit-specific plugins for enhanced development experience
+Development uses Vite for HMR and TypeScript checking. Production builds are optimized with Vite for the frontend and esbuild for the backend. TypeScript strict mode is enforced for code quality.
 
 ## API Design Patterns
-The REST API follows consistent patterns:
-
-- **CRUD Operations**: Standardized endpoints for Create, Read, Update, Delete operations
-- **Location-Based Access Control**: All endpoints validate user's authorized locations from JWT
-- **Server-Side Authorization**: Location validation occurs on server, not just client-side filtering
-- **Error Handling**: Centralized error middleware with consistent response formats
-- **Request Validation**: Zod schema validation for all incoming data
-- **Response Logging**: Structured logging for API requests and responses
-- **403 Forbidden**: Returned when user lacks access to requested location
+The REST API employs standard CRUD operations, with consistent location-based access control and server-side authorization on all endpoints. It features centralized error handling, Zod schema validation for incoming data, and structured logging.
 
 ## UI/UX Design System
-The application features a cohesive design system:
-
-- **Color Palette**: Custom childcare-themed colors (coral red, turquoise, sky blue, mint green, soft yellow)
-- **Typography**: Consistent font sizing and weight hierarchy
-- **Spacing**: Standardized margin and padding scales
-- **Components**: Reusable UI components with consistent styling and behavior
-- **Accessibility**: Built on Radix UI primitives ensuring WCAG compliance
-
-# API Documentation
-
-## Postman Collection
-A comprehensive Postman collection is available with all API endpoints:
-- **Collection File**: `Lesson_Planning_API.postman_collection.json`
-- **Environment File**: `Lesson_Planning_API.postman_environment.json`
-- **Features**: Complete CRUD operations, authentication examples, response validation
-- **Coverage**: All entities including settings management APIs
-
-## Settings Management APIs
-✅ **COMPLETED**: Complete CRUD endpoints for organizational settings
-- Locations: Physical facility management with capacity tracking
-- Rooms: Classroom management within locations with age range specifications
-- Categories: Classification system for activities, materials, and milestones
-- Age Groups: Developmental age range definitions for content targeting
-- Role-based access control (Admin users only)
-- Full tenant isolation and data filtering
+A cohesive design system is implemented with a custom childcare-themed color palette, consistent typography, standardized spacing, and reusable UI components. Accessibility is prioritized through the use of Radix UI primitives.
 
 # External Dependencies
 
 ## Database Services
-- **Neon Database**: Serverless PostgreSQL hosting with connection pooling
-- **Drizzle ORM**: Type-safe database operations and schema management
-
-## Cloud Storage
-- **Google Cloud Storage**: Primary file storage solution for media assets
-- **AWS S3**: Alternative cloud storage option with direct upload capabilities
+- **Neon Database**: Serverless PostgreSQL hosting with connection pooling.
+- **Drizzle ORM**: Type-safe database operations and schema management.
 
 ## UI and Component Libraries
-- **Radix UI**: Comprehensive set of accessible, unstyled UI primitives
-- **Shadcn/ui**: Pre-styled components built on Radix UI
-- **Lucide React**: Consistent icon library for UI elements
-- **TanStack Query**: Server state management with caching and synchronization
+- **React**: Frontend UI library.
+- **Shadcn/ui**: Pre-styled components built on Radix UI.
+- **Radix UI**: Accessible, unstyled UI primitives.
+- **Tailwind CSS**: Utility-first CSS framework for styling.
+- **Lucide React**: Icon library.
+- **TanStack Query**: Server state management.
 
 ## Development Tools
-- **Vite**: Build tool and development server
-- **TypeScript**: Static type checking and enhanced developer experience
-- **Tailwind CSS**: Utility-first CSS framework
-- **React Hook Form**: Form state management and validation
-- **Zod**: Runtime type validation and schema definition
+- **Vite**: Build tool and development server.
+- **TypeScript**: Programming language.
+- **Zod**: Runtime type validation and schema definition.
+- **React Hook Form**: Form state management and validation.
 
 ## File Upload
-- **Uppy**: Modular file uploader with dashboard, drag-drop, and cloud storage integration
-- **Multiple Storage Backends**: Support for both Google Cloud Storage and AWS S3
+- **Uppy**: Modular file uploader.
 
 ## Routing and Navigation
-- **Wouter**: Lightweight routing library for single-page application navigation
+- **Wouter**: Lightweight routing library.

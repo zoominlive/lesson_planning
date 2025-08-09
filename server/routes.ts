@@ -855,7 +855,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lesson Plans routes
   app.get("/api/lesson-plans", async (req: AuthenticatedRequest, res) => {
     try {
-      const { teacherId, locationId, roomId } = req.query;
+      const { teacherId, locationId, roomId, scheduleType } = req.query;
       
       // Validate location access if locationId is provided
       if (locationId) {
@@ -868,11 +868,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get authorized location IDs for filtering
       const authorizedLocationIds = await getUserAuthorizedLocationIds(req);
       
-      // Get lesson plans
+      // Get lesson plans with optional schedule type filter
       let lessonPlans = await storage.getLessonPlans(
         teacherId as string, 
         locationId as string, 
-        roomId as string
+        roomId as string,
+        scheduleType as string
       );
       
       // Filter to only authorized locations if no specific location requested
@@ -1506,20 +1507,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const settings = await storage.getOrganizationSettings();
       
+      // Get all locations for this tenant to include in response
+      const locations = await storage.getLocations();
+      
       // Return default settings if none exist
       if (!settings) {
         return res.json({
-          scheduleType: 'time-based',
-          startTime: '06:00',
-          endTime: '18:00',
-          slotsPerDay: 8,
+          locationSettings: {},
+          defaultScheduleType: 'time-based',
+          defaultStartTime: '06:00',
+          defaultEndTime: '18:00',
+          defaultSlotsPerDay: 8,
           weekStartDay: 1,
           autoSaveInterval: 5,
-          enableNotifications: true
+          enableNotifications: true,
+          locations: locations // Include locations for UI
         });
       }
       
-      res.json(settings);
+      res.json({
+        ...settings,
+        locations: locations // Include locations for UI
+      });
     } catch (error) {
       console.error("Organization settings fetch error:", error);
       res.status(500).json({ error: "Failed to fetch organization settings" });
@@ -1528,9 +1537,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/organization-settings", async (req: AuthenticatedRequest, res) => {
     try {
-      const updates = insertOrganizationSettingsSchema.parse(req.body);
+      const updates = req.body;
       const settings = await storage.updateOrganizationSettings(updates);
-      res.json(settings);
+      
+      // Get all locations for response
+      const locations = await storage.getLocations();
+      
+      res.json({
+        ...settings,
+        locations: locations
+      });
     } catch (error) {
       console.error("Organization settings update error:", error);
       res.status(400).json({ error: "Invalid settings data" });

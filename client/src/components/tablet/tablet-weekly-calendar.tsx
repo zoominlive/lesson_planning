@@ -96,16 +96,28 @@ export function TabletWeeklyCalendar({
     slotsPerDay: 8
   });
 
-  // Load schedule settings from localStorage
+  // Load schedule settings from localStorage for the specific location
   useEffect(() => {
     const loadSettings = () => {
-      const savedSettings = localStorage.getItem('scheduleSettings');
-      if (savedSettings) {
+      // Try to load location-specific settings first
+      const locationSettings = localStorage.getItem(`scheduleSettings_${selectedLocation}`);
+      if (locationSettings) {
         try {
-          const parsed = JSON.parse(savedSettings);
+          const parsed = JSON.parse(locationSettings);
           setScheduleSettings(parsed);
         } catch (error) {
-          console.error('Error loading schedule settings:', error);
+          console.error('Error loading location schedule settings:', error);
+        }
+      } else {
+        // Fall back to general settings if no location-specific settings exist
+        const savedSettings = localStorage.getItem('scheduleSettings');
+        if (savedSettings) {
+          try {
+            const parsed = JSON.parse(savedSettings);
+            setScheduleSettings(parsed);
+          } catch (error) {
+            console.error('Error loading schedule settings:', error);
+          }
         }
       }
     };
@@ -114,14 +126,18 @@ export function TabletWeeklyCalendar({
 
     // Listen for settings changes
     const handleSettingsChange = (event: CustomEvent) => {
-      setScheduleSettings(event.detail);
+      // Only update if the change is for the current location or a general update
+      if (!event.detail.locationId || event.detail.locationId === selectedLocation) {
+        const { locationId, ...settings } = event.detail;
+        setScheduleSettings(settings);
+      }
     };
 
     window.addEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
     return () => {
       window.removeEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
     };
-  }, []);
+  }, [selectedLocation]);
 
   // Generate time slots based on current settings
   const timeSlots = generateTimeSlots(scheduleSettings);
