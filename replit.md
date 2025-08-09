@@ -22,7 +22,7 @@ This project is a comprehensive lesson planning application designed for early c
 - **Review Database Schema**: Added fields for tracking submission (submittedBy, submittedAt) and review (approvedBy, approvedAt, rejectedBy, rejectedAt, reviewNotes) in lesson plans table
 - **Review API Endpoints**: Created endpoints for /submit, /approve, /reject operations with proper location-based access control and user tracking
 - **Lesson Review Page**: Built dedicated review interface showing pending, approved, and rejected lesson plans with filtering by location and detailed review dialog
-- **Submit for Review Button**: Added submission functionality to lesson planner with automatic approval for admin/superadmin users
+- **Submit for Review Button**: Fixed submission logic to create lesson plan if needed and submit current week's plan, with automatic approval for admin/superadmin users
 - **Review Page Navigation**: Moved review functionality to main navigation tabs for better accessibility - appears as 5th tab for authorized roles (director, assistant_director, admin, superadmin)
 
 # User Preferences

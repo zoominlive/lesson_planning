@@ -88,6 +88,12 @@ export default function LessonPlanner() {
     enabled: !!selectedLocation && !!selectedRoom,
   });
 
+  // Fetch location settings to get schedule type
+  const { data: locationSettings } = useQuery({
+    queryKey: [`/api/locations/${selectedLocation}/settings`],
+    enabled: !!selectedLocation,
+  });
+
   // Find current lesson plan
   const currentLessonPlan = lessonPlans.find((lp: any) => {
     const lpWeekStart = new Date(lp.weekStart);
@@ -95,35 +101,54 @@ export default function LessonPlanner() {
     const currentWeek = new Date(currentWeekDate);
     currentWeek.setHours(0, 0, 0, 0);
     
+    // Match by week, location, room, and schedule type
     return lpWeekStart.getTime() === currentWeek.getTime() &&
            lp.locationId === selectedLocation &&
-           lp.roomId === selectedRoom;
+           lp.roomId === selectedRoom &&
+           lp.scheduleType === (locationSettings?.scheduleType || 'position-based');
   });
 
-  // Submit lesson plan mutation
+  // Create or submit lesson plan mutation
   const submitMutation = useMutation({
-    mutationFn: async (lessonPlanId: string) => {
-      return apiRequest(`/api/lesson-plans/${lessonPlanId}/submit`, "POST");
+    mutationFn: async () => {
+      if (currentLessonPlan) {
+        // Submit existing plan
+        return apiRequest(`/api/lesson-plans/${currentLessonPlan.id}/submit`, "POST");
+      } else {
+        // Create a new lesson plan first, then submit it
+        const scheduleType = locationSettings?.scheduleType || 'position-based';
+        const newPlan = await apiRequest(`/api/lesson-plans`, "POST", {
+          weekStart: currentWeekDate.toISOString(),
+          locationId: selectedLocation,
+          roomId: selectedRoom,
+          scheduleType: scheduleType,
+          status: 'draft'
+        });
+        
+        // Now submit the newly created plan
+        return apiRequest(`/api/lesson-plans/${newPlan.id}/submit`, "POST");
+      }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/scheduled-activities"] });
       const role = userInfo?.role?.toLowerCase();
       if (role === 'admin' || role === 'superadmin') {
         toast({
           title: "Lesson Plan Approved",
-          description: "Your lesson plan has been automatically approved.",
+          description: "Your lesson plan has been automatically approved for this week.",
         });
       } else {
         toast({
           title: "Submitted for Review",
-          description: "Your lesson plan has been submitted for review.",
+          description: "Your lesson plan for this week has been submitted for review.",
         });
       }
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Submission Failed",
-        description: "Failed to submit the lesson plan for review.",
+        description: error.message || "Failed to submit the lesson plan for review.",
         variant: "destructive",
       });
     },
@@ -134,16 +159,16 @@ export default function LessonPlanner() {
   };
 
   const handleSubmitToSupervisor = () => {
-    if (!currentLessonPlan) {
+    if (!selectedLocation || !selectedRoom) {
       toast({
-        title: "No Lesson Plan",
-        description: "Please create activities for this week before submitting.",
+        title: "Missing Information",
+        description: "Please select a location and room before submitting.",
         variant: "destructive",
       });
       return;
     }
 
-    submitMutation.mutate(currentLessonPlan.id);
+    submitMutation.mutate();
   };
 
   const handleQuickAddActivity = () => {
