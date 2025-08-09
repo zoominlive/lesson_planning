@@ -27,6 +27,8 @@ This project is a comprehensive lesson planning application designed for early c
 - **Fixed JWT location handling**: Updated auth middleware to accept both location names and IDs in JWT tokens for backward compatibility
 - **Fixed room filtering**: Resolved issue where rooms weren't loading due to JWT location name/ID mismatch - now properly filters rooms based on user's authorized locations
 - **Fixed Submit for Review errors**: Corrected apiRequest parameter order in lesson-planner.tsx to properly submit lesson plans for review
+- **Token Switcher Component**: Added role switching capability for testing with Admin, Teacher, and Director tokens. Located in bottom-right corner for easy access
+- **Fixed Authentication Override**: Modified auth initialization to respect manually set tokens from token switcher, preventing automatic override to admin token
 
 # User Preferences
 

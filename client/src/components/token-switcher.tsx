@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { User, ChevronDown } from "lucide-react";
-import { setAuthToken } from "@/lib/auth";
+import { setAuthToken, getUserInfo } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 // Test tokens for different user roles
@@ -35,13 +35,33 @@ const TEST_TOKENS = {
 };
 
 export function TokenSwitcher() {
-  const [currentUser, setCurrentUser] = useState<keyof typeof TEST_TOKENS>("admin");
+  // Get current user from token
+  const userInfo = getUserInfo();
+  const getCurrentUserType = (): keyof typeof TEST_TOKENS => {
+    if (!userInfo) return "admin";
+    
+    // Match by userId to determine which test token is active
+    switch(userInfo.userId) {
+      case "teacher123":
+        return "teacher";
+      case "director123":
+        return "director";
+      case "e5b7f0de-c868-4e40-a0bd-e15937cb3097":
+      default:
+        return "admin";
+    }
+  };
+  
+  const [currentUser, setCurrentUser] = useState<keyof typeof TEST_TOKENS>(getCurrentUserType());
   const { toast } = useToast();
 
   const switchUser = (userType: keyof typeof TEST_TOKENS) => {
     const user = TEST_TOKENS[userType];
     setAuthToken(user.token);
     setCurrentUser(userType);
+    
+    // Mark that the token was manually set
+    localStorage.setItem('tokenManuallySet', 'true');
     
     toast({
       title: "User Switched",
