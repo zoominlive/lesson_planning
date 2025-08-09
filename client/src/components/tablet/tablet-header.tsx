@@ -50,20 +50,7 @@ export function TabletHeader({
     <div className="bg-white shadow-lg border-b border-sky-blue/20">
       {/* Top Bar */}
       <div className="px-4 py-3 bg-gradient-to-r from-turquoise to-sky-blue text-white">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">
-                {userInfo?.userFirstName?.[0]}{userInfo?.userLastName?.[0]}
-              </span>
-            </div>
-            <div>
-              <p className="font-semibold text-sm">
-                {userInfo ? `${userInfo.userFirstName} ${userInfo.userLastName}` : "Teacher"}
-              </p>
-              <p className="text-xs opacity-90">{userInfo?.role || "Loading..."}</p>
-            </div>
-          </div>
+        <div className="flex justify-end items-center">
           <Button
             size="icon"
             variant="ghost"
