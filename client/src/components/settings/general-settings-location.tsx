@@ -3,13 +3,14 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
-import { Clock, Grid3x3, AlertCircle, Building2, Settings } from "lucide-react";
+import { Clock, Grid3x3, AlertCircle, ChevronRight, ChevronLeft, ChevronsRight, ChevronsLeft, Search } from "lucide-react";
 
 interface GeneralSettingsProps {
   tenantId: string;
@@ -55,11 +56,15 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
     defaultSlotsPerDay: 8,
     locations: []
   });
-  const [showScheduleChangeAlert, setShowScheduleChangeAlert] = useState(false);
-  const [pendingLocationChange, setPendingLocationChange] = useState<{
-    locationId: string;
-    newType: 'time-based' | 'position-based';
-  } | null>(null);
+  const [selectedLocationIds, setSelectedLocationIds] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
+  const [timeBasedSettings, setTimeBasedSettings] = useState({
+    startTime: '06:00',
+    endTime: '18:00'
+  });
+  const [positionBasedSettings, setPositionBasedSettings] = useState({
+    slotsPerDay: 8
+  });
 
   // Load settings from database
   const { data: dbSettings, isLoading } = useQuery({

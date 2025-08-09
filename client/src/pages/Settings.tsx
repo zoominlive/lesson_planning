@@ -6,7 +6,7 @@ import { LocationsSettings } from "@/components/settings/locations-settings";
 import { RoomsSettings } from "@/components/settings/rooms-settings";
 import { CategoriesSettings } from "@/components/settings/categories-settings";
 import { AgeGroupsSettings } from "@/components/settings/age-groups-settings";
-import { GeneralSettings } from "@/components/settings/general-settings-location";
+import { GeneralSettings } from "@/components/settings/general-settings-enterprise";
 import { MapPin, Building, Tag, Users, ArrowLeft, Settings as SettingsIcon } from "lucide-react";
 import { useLocation } from "wouter";
 
