@@ -2,6 +2,11 @@
 
 This project is a comprehensive lesson planning application designed for early childhood educators. Its primary purpose is to streamline the creation and management of weekly lesson plans. Key capabilities include managing activities, materials, and developmental milestones, as well as creating structured weekly schedules that align with educational objectives and available resources. The application supports a multi-tenant and multi-location architecture, ensuring data isolation and secure access for various educational organizations and their facilities.
 
+## Recent Changes (January 2025)
+- **Fixed schedule type preservation**: Lesson plans now maintain their original schedule type (time-based or position-based) even when organization settings change
+- **Separate lesson plans by schedule type**: The system creates and maintains separate lesson plans for time-based vs position-based scheduling, allowing users to switch between modes without losing their work
+- **Schedule type filtering**: When fetching or creating lesson plans, the system now correctly filters by the current schedule type for the location
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.

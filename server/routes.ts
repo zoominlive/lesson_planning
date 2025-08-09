@@ -960,9 +960,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter lesson plans by week, location, and room if weekStart is provided
       let lessonPlanIds: string[] = [];
       if (weekStart && locationId) {
+        // Get organization settings to determine current schedule type for this location
+        const orgSettings = await storage.getOrganizationSettings();
+        let currentScheduleType: 'time-based' | 'position-based' = 'time-based'; // default
+        
+        if (orgSettings && orgSettings.locationSettings) {
+          const locationSettings = orgSettings.locationSettings[locationId as string];
+          if (locationSettings && locationSettings.scheduleType) {
+            currentScheduleType = locationSettings.scheduleType as 'time-based' | 'position-based';
+          } else if (orgSettings.defaultScheduleType) {
+            currentScheduleType = orgSettings.defaultScheduleType as 'time-based' | 'position-based';
+          }
+        }
+        
         const allLessonPlans = await storage.getLessonPlans();
         
-        // Filter lesson plans by the week start date, location, and room
+        // Filter lesson plans by the week start date, location, room AND schedule type
         const weekLessonPlans = allLessonPlans.filter(lp => {
           // Parse the dates and compare only the date part (not time)
           const lpWeekStart = new Date(lp.weekStart);
@@ -975,6 +988,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const matchesWeek = lpWeekStart.getTime() === requestedWeekStart.getTime();
           const matchesLocation = lp.locationId === locationId;
           const matchesRoom = lp.roomId === roomId;
+          const matchesScheduleType = lp.scheduleType === currentScheduleType;
           
           console.log('[GET /api/scheduled-activities] Checking lesson plan:', {
             lpId: lp.id,
@@ -982,12 +996,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             requestedWeekStart: requestedWeekStart.toISOString(),
             lpLocation: lp.locationId,
             lpRoom: lp.roomId,
+            lpScheduleType: lp.scheduleType,
+            currentScheduleType,
             matchesWeek,
             matchesLocation,
-            matchesRoom
+            matchesRoom,
+            matchesScheduleType
           });
           
-          return matchesWeek && matchesLocation && matchesRoom;
+          return matchesWeek && matchesLocation && matchesRoom && matchesScheduleType;
         });
         
         // IMPORTANT: Only use the most recent lesson plan to avoid duplicates
@@ -1069,7 +1086,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log('[POST /api/scheduled-activities] Target week start:', targetWeekStart.toISOString());
         
-        // First try to find existing lesson plan for this week/location/room
+        // Get organization settings to determine schedule type for this location
+        const orgSettings = await storage.getOrganizationSettings();
+        let currentScheduleType: 'time-based' | 'position-based' = 'time-based'; // default
+        
+        if (orgSettings && orgSettings.locationSettings) {
+          const locationSettings = orgSettings.locationSettings[otherData.locationId];
+          if (locationSettings && locationSettings.scheduleType) {
+            currentScheduleType = locationSettings.scheduleType as 'time-based' | 'position-based';
+          } else if (orgSettings.defaultScheduleType) {
+            currentScheduleType = orgSettings.defaultScheduleType as 'time-based' | 'position-based';
+          }
+        }
+        
+        // First try to find existing lesson plan for this week/location/room with matching schedule type
         const allLessonPlans = await storage.getLessonPlans();
         const existingLessonPlan = allLessonPlans.find(lp => {
           const lpWeekStart = new Date(lp.weekStart);
@@ -1078,7 +1108,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return lpWeekStart.getTime() === targetWeekStart.getTime() &&
                  lp.locationId === otherData.locationId &&
                  lp.roomId === otherData.roomId &&
-                 lp.tenantId === req.tenantId;
+                 lp.tenantId === req.tenantId &&
+                 lp.scheduleType === currentScheduleType;
         });
         
         if (existingLessonPlan) {
@@ -1107,12 +1138,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             teacherId = defaultUser.id;
           }
           
+          // Use the already fetched schedule type from above
           const lessonPlan = await storage.createLessonPlan({
             tenantId: req.tenantId!,
             locationId: otherData.locationId,
             roomId: otherData.roomId,
             teacherId: teacherId,
             weekStart: targetWeekStart.toISOString(),
+            scheduleType: currentScheduleType,
             status: 'draft'
           });
           
