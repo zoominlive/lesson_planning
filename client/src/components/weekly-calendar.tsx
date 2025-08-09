@@ -120,8 +120,20 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
     };
 
     window.addEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
+    
+    // Listen for global schedule type changes
+    const handleScheduleTypeChange = () => {
+      // Reload settings from localStorage
+      loadSettings();
+      // Invalidate queries to refetch data
+      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities'] });
+    };
+    
+    window.addEventListener('scheduleTypeChanged', handleScheduleTypeChange);
+    
     return () => {
       window.removeEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
+      window.removeEventListener('scheduleTypeChanged', handleScheduleTypeChange);
     };
   }, [selectedLocation]);
 

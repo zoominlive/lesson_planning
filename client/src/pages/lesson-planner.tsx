@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { NavigationTabs } from "@/components/navigation-tabs";
 import { CalendarControls } from "@/components/calendar-controls";
@@ -46,6 +47,23 @@ export default function LessonPlanner() {
       setSelectedRoom("");
     }
   }, [selectedLocation]);
+
+  // Listen for schedule type changes to refresh data
+  useEffect(() => {
+    const handleScheduleTypeChange = () => {
+      // Invalidate all calendar-related queries to force refresh
+      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/lesson-plans'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/activities'] });
+    };
+
+    window.addEventListener('scheduleTypeChanged', handleScheduleTypeChange);
+    
+    return () => {
+      window.removeEventListener('scheduleTypeChanged', handleScheduleTypeChange);
+    };
+  }, []);
 
   const handleWeekChange = (newDate: Date) => {
     setCurrentWeekDate(newDate);

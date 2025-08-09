@@ -183,7 +183,14 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate all relevant queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['/api/organization-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/lesson-plans'] });
+      
+      // Emit global event to notify all calendar components
+      window.dispatchEvent(new CustomEvent('scheduleTypeChanged'));
+      
       toast({
         title: "Settings saved",
         description: "Your schedule settings have been saved to the database.",
