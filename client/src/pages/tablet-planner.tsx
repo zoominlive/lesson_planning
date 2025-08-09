@@ -11,7 +11,7 @@ import type { Activity } from "@shared/schema";
 
 export default function TabletPlanner() {
   const [currentWeekDate, setCurrentWeekDate] = useState(() => 
-    startOfWeek(new Date(), { weekStartsOn: 0 }) // Use Sunday as week start to match database
+    startOfWeek(new Date(), { weekStartsOn: 1 }) // Use Monday as week start to match system
   );
   const [selectedRoom, setSelectedRoom] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");

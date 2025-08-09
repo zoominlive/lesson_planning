@@ -156,7 +156,13 @@ export function TabletWeeklyCalendar({
         }
       );
       if (!response.ok) throw new Error('Failed to fetch scheduled activities');
-      return response.json();
+      const data = await response.json();
+      console.log('Tablet Calendar - Scheduled Activities:', data);
+      console.log('Tablet Calendar - Room:', selectedRoom);
+      console.log('Tablet Calendar - Location:', selectedLocation);
+      console.log('Tablet Calendar - Week Start:', currentWeekDate.toISOString());
+      console.log('Tablet Calendar - Schedule Settings:', scheduleSettings);
+      return data;
     },
     enabled: !!selectedRoom && !!selectedLocation,
   });
@@ -208,12 +214,16 @@ export function TabletWeeklyCalendar({
   });
 
   const isSlotOccupied = (dayOfWeek: number, timeSlot: number) => {
-    return scheduledActivities.find(
+    const found = scheduledActivities.find(
       (scheduled: any) => 
         scheduled.dayOfWeek === dayOfWeek && 
         scheduled.timeSlot === timeSlot &&
         scheduled.roomId === selectedRoom
     );
+    if (found) {
+      console.log(`Tablet Calendar - Found activity for day ${dayOfWeek}, slot ${timeSlot}:`, found);
+    }
+    return found;
   };
 
   const getCategoryColor = (category: string) => {
