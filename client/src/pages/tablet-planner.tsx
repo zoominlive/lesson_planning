@@ -176,18 +176,18 @@ export default function TabletPlanner() {
             onTouchEnd={handleTouchEnd}
           >
             <div 
-              className="bg-gradient-to-t from-turquoise/15 via-sky-blue/10 to-mint-green/15 backdrop-blur-sm shadow-[0_-4px_20px_rgba(0,0,0,0.15)] rounded-t-3xl px-6 py-3 cursor-pointer border-t border-turquoise/20"
+              className="bg-gradient-to-t from-turquoise/40 via-sky-blue/30 to-mint-green/40 backdrop-blur-sm shadow-[0_-4px_20px_rgba(0,0,0,0.15)] rounded-t-3xl px-6 py-3 cursor-pointer border-t-2 border-turquoise/50"
               onClick={() => setDrawerOpen(true)}
             >
               {/* Swipe indicator */}
-              <div className="w-12 h-1 bg-turquoise/40 rounded-full mx-auto mb-2" />
+              <div className="w-12 h-1 bg-white rounded-full mx-auto mb-2 shadow-sm" />
               
               <div className="flex items-center justify-center gap-2">
-                <Sparkles className="h-5 w-5 text-turquoise animate-pulse" />
-                <span className="text-sm font-semibold text-charcoal">
+                <Sparkles className="h-5 w-5 text-white drop-shadow-sm animate-pulse" />
+                <span className="text-sm font-semibold text-white drop-shadow-sm">
                   Swipe up for Activities
                 </span>
-                <ChevronUp className="h-5 w-5 text-turquoise animate-bounce" />
+                <ChevronUp className="h-5 w-5 text-white drop-shadow-sm animate-bounce" />
               </div>
             </div>
           </div>
