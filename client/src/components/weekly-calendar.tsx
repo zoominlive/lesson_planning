@@ -374,10 +374,14 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                         </div>
                       </div>
                     ) : (
-                      <div className="h-full flex items-center justify-center text-gray-400 border-2 border-dashed border-turquoise/20 rounded-lg hover:border-turquoise/40 hover:bg-turquoise/5 transition-all group">
+                      <button 
+                        className="h-full w-full flex items-center justify-center text-gray-400 border-2 border-dashed border-turquoise/20 rounded-lg hover:border-turquoise/40 hover:bg-turquoise/5 transition-all group cursor-pointer"
+                        onClick={() => setDrawerOpen(true)}
+                        data-testid={`empty-slot-${day.id}-${slot.id}`}
+                      >
                         <Plus className="h-3 w-3 mr-1 opacity-50 group-hover:opacity-70 text-turquoise" />
                         <span className="text-xs opacity-50 group-hover:opacity-70 text-turquoise">Drop Activity</span>
-                      </div>
+                      </button>
                     )}
                   </div>
                 );
