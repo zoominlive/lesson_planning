@@ -490,29 +490,27 @@ export function TabletWeeklyCalendar({
                         onTouchCancel={handleTouchEnd}
                         data-testid={`scheduled-activity-${day.id}-${slot.id}`}
                       >
-                        <div className="h-full flex flex-col justify-between">
-                          <div className="flex-1">
+                        <div className="h-full flex flex-col justify-between relative">
+                          {scheduledActivity.activity?.materialIds && scheduledActivity.activity.materialIds.length > 0 && (
+                            <div className="absolute top-0 right-0" title="Materials required">
+                              <Scissors className="h-3.5 w-3.5 text-gray-600" />
+                            </div>
+                          )}
+                          <div className="flex-1 pr-5">
                             <p className="text-sm font-bold line-clamp-2 text-gray-700 leading-tight">
                               {scheduledActivity.activity?.title}
                             </p>
                           </div>
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3.5 w-3.5 text-gray-600" />
-                                <span className="text-xs text-gray-600 font-medium">
-                                  {scheduledActivity.activity?.duration}m
-                                </span>
-                              </div>
-                              <span className="text-xs text-gray-600">
-                                {scheduledActivity.activity?.category}
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3.5 w-3.5 text-gray-600" />
+                              <span className="text-xs text-gray-600 font-medium">
+                                {scheduledActivity.activity?.duration}m
                               </span>
                             </div>
-                            {scheduledActivity.activity?.materialIds && scheduledActivity.activity.materialIds.length > 0 && (
-                              <div title="Materials required">
-                                <Scissors className="h-3.5 w-3.5 text-gray-600" />
-                              </div>
-                            )}
+                            <span className="text-xs text-gray-600">
+                              {scheduledActivity.activity?.category}
+                            </span>
                           </div>
                         </div>
                       </div>
