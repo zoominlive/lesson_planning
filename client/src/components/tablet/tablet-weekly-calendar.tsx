@@ -26,6 +26,16 @@ interface TabletWeeklyCalendarProps {
   onSlotTap: (day: number, slot: number) => void;
 }
 
+// Convert numbers to written words
+const numberToWord = (num: number): string => {
+  const words = [
+    'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 
+    'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen',
+    'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen', 'Twenty'
+  ];
+  return words[num - 1] || `${num}`;
+};
+
 // Generate time slots based on schedule settings
 const generateTimeSlots = (scheduleSettings: any) => {
   if (scheduleSettings?.type === 'position-based') {
@@ -34,7 +44,7 @@ const generateTimeSlots = (scheduleSettings: any) => {
     for (let i = 0; i < slotsCount; i++) {
       slots.push({
         id: i,
-        label: `${i + 1}`,
+        label: numberToWord(i + 1),
         name: `Position ${i + 1}`
       });
     }
@@ -455,7 +465,7 @@ export function TabletWeeklyCalendar({
                 key={slot.id} 
                 className="h-16 flex items-center justify-center bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-sm border border-gray-100 text-center p-1"
               >
-                <span className="text-xs font-bold text-[#4a4a4a]">Position {slot.label}</span>
+                <span className="text-xs font-bold text-[#4a4a4a]">{slot.label}</span>
               </div>
             ))}
           </div>

@@ -17,6 +17,16 @@ interface WeeklyCalendarProps {
   currentWeekDate?: Date;
 }
 
+// Convert numbers to written words
+const numberToWord = (num: number): string => {
+  const words = [
+    'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 
+    'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen',
+    'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen', 'Twenty'
+  ];
+  return words[num - 1] || `${num}`;
+};
+
 // Generate time slots based on schedule settings
 const generateTimeSlots = (scheduleSettings: any) => {
   if (scheduleSettings?.type === 'position-based') {
@@ -25,7 +35,7 @@ const generateTimeSlots = (scheduleSettings: any) => {
     for (let i = 0; i < slotsCount; i++) {
       slots.push({
         id: i,
-        label: `Position ${i + 1}`,
+        label: numberToWord(i + 1),
         name: `Activity ${i + 1}`
       });
     }
