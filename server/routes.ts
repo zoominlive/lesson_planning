@@ -1433,8 +1433,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const locations = await storage.getLocations();
       
       // Filter locations to only those the user has access to
+      // Check both location ID and name for backward compatibility
       const filteredLocations = locations.filter(loc => 
-        req.locations && req.locations.includes(loc.name)
+        req.locations && (
+          req.locations.includes(loc.id) || 
+          req.locations.includes(loc.name)
+        )
       );
       
       res.json(filteredLocations);
