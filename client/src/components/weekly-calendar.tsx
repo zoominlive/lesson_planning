@@ -311,9 +311,9 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
       </div>
 
       {/* Main Content Area with Calendar and Drawer */}
-      <div className={`flex ${drawerOpen ? 'gap-4' : ''}`}>
+      <div className="flex">
         {/* Calendar Grid */}
-        <div className={`transition-all duration-300 ${drawerOpen ? 'flex-1' : 'w-full'}`}>
+        <div className={`transition-all duration-300 ${drawerOpen ? 'w-[calc(100%-416px)] mr-4' : 'w-full'}`}>
           <Card className="material-shadow overflow-hidden bg-gradient-to-br from-white to-sky-blue/5 border-2 border-sky-blue/10">
             <div className="grid grid-cols-6 gap-0">
           {/* Time Column */}
