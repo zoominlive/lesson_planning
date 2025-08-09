@@ -492,23 +492,25 @@ export function TabletWeeklyCalendar({
                       >
                         <div className="h-full flex flex-col justify-between">
                           <div className="flex-1">
-                            <p className="text-sm font-bold line-clamp-1 text-gray-700">
+                            <p className="text-sm font-bold line-clamp-2 text-gray-700 leading-tight">
                               {scheduledActivity.activity?.title}
-                            </p>
-                            <p className="text-xs text-gray-600 mt-1">
-                              {scheduledActivity.activity?.category}
                             </p>
                           </div>
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                              <Clock className="h-4 w-4 text-gray-600" />
-                              <span className="text-xs text-gray-600 font-medium">
-                                {scheduledActivity.activity?.duration}m
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3.5 w-3.5 text-gray-600" />
+                                <span className="text-xs text-gray-600 font-medium">
+                                  {scheduledActivity.activity?.duration}m
+                                </span>
+                              </div>
+                              <span className="text-xs text-gray-600">
+                                {scheduledActivity.activity?.category}
                               </span>
                             </div>
                             {scheduledActivity.activity?.materialIds && scheduledActivity.activity.materialIds.length > 0 && (
                               <div title="Materials required">
-                                <Scissors className="h-4 w-4 text-gray-600" />
+                                <Scissors className="h-3.5 w-3.5 text-gray-600" />
                               </div>
                             )}
                           </div>
