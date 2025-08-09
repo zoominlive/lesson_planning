@@ -303,7 +303,7 @@ export function TabletWeeklyCalendar({
                 key={slot.id} 
                 className="h-16 flex items-center justify-center bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-sm border border-gray-100 text-center p-1"
               >
-                <span className="text-xs font-bold bg-gradient-to-r from-turquoise to-sky-blue bg-clip-text text-transparent">{slot.label}</span>
+                <span className="text-xs font-bold text-turquoise">{slot.label}</span>
               </div>
             ))}
           </div>
@@ -357,7 +357,7 @@ export function TabletWeeklyCalendar({
                       >
                         <div className="h-full flex items-center justify-center">
                           {isSelected ? (
-                            <span className="text-xs font-bold bg-gradient-to-r from-turquoise to-sky-blue bg-clip-text text-transparent animate-pulse">Tap</span>
+                            <span className="text-xs font-bold text-turquoise animate-pulse">Tap</span>
                           ) : (
                             <span className="text-lg text-gray-300 hover:text-gray-400">+</span>
                           )}

@@ -333,7 +333,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
             <div key={day.id} className="border-r-2 border-sky-blue/10 last:border-r-0">
               {/* Day Header */}
               <div className="h-16 bg-gradient-to-b from-turquoise/10 to-mint-green/10 text-black border-b-2 border-sky-blue/20 flex flex-col items-center justify-center">
-                <span className="font-bold text-xl tracking-wide bg-gradient-to-r from-turquoise to-sky-blue bg-clip-text text-transparent" data-testid={`day-name-${day.id}`}>{day.name}</span>
+                <span className="font-bold text-xl tracking-wide text-turquoise" data-testid={`day-name-${day.id}`}>{day.name}</span>
                 <span className="text-xs text-gray-600 mt-1 font-semibold" data-testid={`day-date-${day.id}`}>{day.date}</span>
               </div>
               
