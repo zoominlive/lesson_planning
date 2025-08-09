@@ -224,7 +224,7 @@ export default function LessonPlanner() {
                     </TooltipContent>
                   </Tooltip>
                 )}
-                {userInfo?.role === "Admin" && (
+                {userInfo?.role?.toLowerCase() === "admin" && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
