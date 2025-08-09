@@ -170,16 +170,7 @@ export function TabletHeader({
             </Button>
           </div>
 
-          {/* Menu Button */}
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onActivityButtonClick}
-            className="bg-white shadow-md hover:shadow-lg border border-gray-200 text-turquoise hover:bg-turquoise/5"
-            data-testid="button-activities-drawer"
-          >
-            <Menu className="h-6 w-6" />
-          </Button>
+
         </div>
       </div>
 

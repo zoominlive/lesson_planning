@@ -13,6 +13,8 @@ This project is a comprehensive lesson planning application designed for early c
 - **Schedule type filtering**: When fetching or creating lesson plans, the system now correctly filters by the current schedule type for the location
 - **Settings manager location permissions**: Fixed security issue where settings manager was showing all organization locations instead of only user-permitted locations from userInfo storage
 - **Auto-refresh on schedule type changes**: Implemented custom event system that automatically refreshes calendar data when schedule types change, preventing users from seeing cached activities from wrong schedule types
+- **Cleaned up tablet header**: Removed menu button from tablet interface for cleaner, streamlined design
+- **Fixed automatic room selection**: Desktop planner now auto-selects first room when switching locations, matching tablet behavior for consistent user experience
 
 # User Preferences
 
