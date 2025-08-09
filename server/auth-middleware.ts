@@ -66,6 +66,20 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
     req.role = verified.role;
     req.locations = verified.locations;
     
+    // Track user login in database (don't block the request)
+    storage.setTenantContext(verified.tenantId);
+    storage.upsertUserFromToken({
+      userId: verified.userId,
+      username: verified.username,
+      firstName: verified.userFirstName,
+      lastName: verified.userLastName,
+      role: verified.role,
+      locations: verified.locations || [],
+      fullPayload: verified,
+    }).catch(err => {
+      console.error('Failed to track user login:', err);
+    });
+    
     next();
   } catch (err) {
     return res.status(403).json({ error: 'Invalid or expired token' });

@@ -48,8 +48,19 @@ import * as schema from "@shared/schema";
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
+  getUserByUserId(userId: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
+  upsertUserFromToken(tokenData: {
+    userId: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    locations: string[];
+    fullPayload?: any;
+  }): Promise<User>;
 
   // Milestones
   getMilestones(): Promise<Milestone[]>;
@@ -144,6 +155,14 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getUserByUserId(userId: string): Promise<User | undefined> {
+    const conditions = [eq(users.userId, userId)];
+    if (this.tenantId) conditions.push(eq(users.tenantId, this.tenantId));
+    
+    const [user] = await this.db.select().from(users).where(and(...conditions));
+    return user || undefined;
+  }
+
   async getUserByUsername(username: string): Promise<User | undefined> {
     const conditions = [eq(users.username, username)];
     if (this.tenantId) conditions.push(eq(users.tenantId, this.tenantId));
@@ -153,12 +172,104 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const userData = this.tenantId ? { ...insertUser, tenantId: this.tenantId } : insertUser;
+    if (!this.tenantId && !insertUser.tenantId) {
+      throw new Error('Tenant ID is required to create a user');
+    }
+    
+    const userData = {
+      tenantId: insertUser.tenantId || this.tenantId!,
+      userId: insertUser.userId,
+      username: insertUser.username,
+      firstName: insertUser.firstName,
+      lastName: insertUser.lastName,
+      role: insertUser.role,
+      locations: insertUser.locations || [],
+      lastTokenPayload: insertUser.lastTokenPayload,
+    };
+    
     const [user] = await this.db
       .insert(users)
       .values(userData)
       .returning();
     return user;
+  }
+
+  async updateUser(id: string, updateData: Partial<InsertUser>): Promise<User | undefined> {
+    const conditions = [eq(users.id, id)];
+    if (this.tenantId) conditions.push(eq(users.tenantId, this.tenantId));
+    
+    const updateValues: any = {};
+    if (updateData.userId !== undefined) updateValues.userId = updateData.userId;
+    if (updateData.username !== undefined) updateValues.username = updateData.username;
+    if (updateData.firstName !== undefined) updateValues.firstName = updateData.firstName;
+    if (updateData.lastName !== undefined) updateValues.lastName = updateData.lastName;
+    if (updateData.role !== undefined) updateValues.role = updateData.role;
+    if (updateData.locations !== undefined) updateValues.locations = updateData.locations;
+    if (updateData.lastTokenPayload !== undefined) updateValues.lastTokenPayload = updateData.lastTokenPayload;
+    updateValues.updatedAt = new Date();
+    
+    const [updated] = await this.db
+      .update(users)
+      .set(updateValues)
+      .where(and(...conditions))
+      .returning();
+    
+    return updated || undefined;
+  }
+
+  async upsertUserFromToken(tokenData: {
+    userId: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    locations: string[];
+    fullPayload?: any;
+  }): Promise<User> {
+    if (!this.tenantId) {
+      throw new Error('Tenant context is required for user upsert');
+    }
+
+    // Check if user exists by userId
+    const existingUser = await this.getUserByUserId(tokenData.userId);
+    
+    if (existingUser) {
+      // Update existing user
+      const updated = await this.db
+        .update(users)
+        .set({
+          username: tokenData.username,
+          firstName: tokenData.firstName,
+          lastName: tokenData.lastName,
+          role: tokenData.role,
+          locations: tokenData.locations,
+          lastLoginDate: new Date(),
+          loginCount: sql`${users.loginCount} + 1`,
+          lastTokenPayload: tokenData.fullPayload,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(users.userId, tokenData.userId),
+          eq(users.tenantId, this.tenantId)
+        ))
+        .returning();
+      
+      return updated[0];
+    } else {
+      // Create new user
+      const newUser = await this.createUser({
+        tenantId: this.tenantId,
+        userId: tokenData.userId,
+        username: tokenData.username,
+        firstName: tokenData.firstName,
+        lastName: tokenData.lastName,
+        role: tokenData.role,
+        locations: tokenData.locations,
+        lastTokenPayload: tokenData.fullPayload,
+      });
+      
+      return newUser;
+    }
   }
 
   // Milestones
