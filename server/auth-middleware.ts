@@ -109,7 +109,7 @@ export async function validateLocationAccess(
     };
   }
 
-  // Get the location details to match name with ID
+  // Get the location details to verify it exists
   const location = await storage.getLocation(requestedLocationId);
   if (!location) {
     return { 
@@ -118,8 +118,9 @@ export async function validateLocationAccess(
     };
   }
 
-  // Check if the location name is in the user's authorized locations
-  const hasAccess = req.locations.includes(location.name);
+  // Check if the location ID is in the user's authorized locations
+  // The locations array in JWT contains location IDs, not names
+  const hasAccess = req.locations.includes(requestedLocationId);
   
   if (!hasAccess) {
     return { 
@@ -143,8 +144,9 @@ export async function getUserAuthorizedLocationIds(
   const allLocations = await storage.getLocations();
   
   // Filter to only locations the user has access to
+  // The locations array in JWT contains location IDs, not names
   const authorizedLocations = allLocations.filter(loc => 
-    req.locations!.includes(loc.name)
+    req.locations!.includes(loc.id)
   );
 
   return authorizedLocations.map(loc => loc.id);
