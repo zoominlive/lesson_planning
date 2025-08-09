@@ -25,7 +25,7 @@ const generateTimeSlots = (scheduleSettings: any) => {
     for (let i = 0; i < slotsCount; i++) {
       slots.push({
         id: i,
-        label: `Slot ${i + 1}`,
+        label: `Position ${i + 1}`,
         name: `Activity ${i + 1}`
       });
     }
@@ -496,11 +496,11 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
         {/* Calendar Grid */}
         <div className={`transition-all duration-300 ${drawerOpen ? 'w-[calc(100%-416px)] mr-4' : 'w-full'}`}>
           <Card className="material-shadow overflow-hidden bg-gradient-to-br from-white to-sky-blue/5 border-2 border-sky-blue/10">
-            <div className="grid grid-cols-6 gap-0">
-          {/* Time Column */}
+            <div className="grid gap-0" style={{gridTemplateColumns: "100px repeat(5, 1fr)"}}>
+          {/* Position Column */}
           <div className="bg-gradient-to-b from-mint-green/10 to-sky-blue/10 border-r-2 border-sky-blue/20">
             <div className="h-16 border-b-2 border-sky-blue/20 flex items-center justify-center font-bold text-turquoise bg-white/50">
-              Time
+              Position
             </div>
             {timeSlots.map((slot) => (
               <div key={slot.id} className="h-24 border-b border-sky-blue/10 flex items-center justify-center bg-white/30 hover:bg-white/50 transition-colors">

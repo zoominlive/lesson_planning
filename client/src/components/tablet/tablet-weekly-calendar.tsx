@@ -35,7 +35,7 @@ const generateTimeSlots = (scheduleSettings: any) => {
       slots.push({
         id: i,
         label: `${i + 1}`,
-        name: `Slot ${i + 1}`
+        name: `Position ${i + 1}`
       });
     }
     return slots;
@@ -51,7 +51,7 @@ const generateTimeSlots = (scheduleSettings: any) => {
       slots.push({
         id,
         label: timeLabel,
-        name: `Slot ${id + 1}`
+        name: `Time Slot ${id + 1}`
       });
     }
     return slots;
@@ -445,18 +445,18 @@ export function TabletWeeklyCalendar({
       
       <div className="min-h-full">
         {/* Calendar Grid - Optimized for touch */}
-        <div className="grid grid-cols-6 gap-2 bg-gradient-to-br from-white via-white to-gray-50 rounded-2xl shadow-2xl p-3 border border-gray-100">
-          {/* Time Column */}
+        <div className="grid gap-2 bg-gradient-to-br from-white via-white to-gray-50 rounded-2xl shadow-2xl p-3 border border-gray-100" style={{gridTemplateColumns: "80px repeat(5, 1fr)"}}>
+          {/* Position Column */}
           <div className="space-y-2">
             <div className="h-12 flex items-center justify-center text-xs font-bold bg-gradient-to-r from-turquoise/20 to-sky-blue/20 rounded-lg">
-              Time
+              Position
             </div>
             {timeSlots.map((slot) => (
               <div 
                 key={slot.id} 
                 className="h-16 flex items-center justify-center bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-sm border border-gray-100 text-center p-1"
               >
-                <span className="text-xs font-bold text-turquoise">{slot.label}</span>
+                <span className="text-xs font-bold text-turquoise">Position {slot.label}</span>
               </div>
             ))}
           </div>
