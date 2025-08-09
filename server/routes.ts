@@ -899,7 +899,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/lesson-plans", async (req: AuthenticatedRequest, res) => {
     try {
-      const data = insertLessonPlanSchema.parse(req.body);
+      console.log('[POST /api/lesson-plans] Request body:', req.body);
+      console.log('[POST /api/lesson-plans] Auth info:', { tenantId: req.tenantId, userId: req.userId });
+      
+      // Get current user from storage to get teacherId
+      const currentUser = await storage.getUserByUserId(req.userId!);
+      if (!currentUser) {
+        return res.status(403).json({ error: "User not found" });
+      }
+      
+      // Add tenantId and teacherId to the request body
+      const dataWithIds = {
+        ...req.body,
+        tenantId: req.tenantId,
+        teacherId: currentUser.id
+      };
+      
+      console.log('[POST /api/lesson-plans] Data with IDs:', dataWithIds);
+      const data = insertLessonPlanSchema.parse(dataWithIds);
       
       // Validate location access
       const accessCheck = await validateLocationAccess(req, data.locationId);
@@ -910,6 +927,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lessonPlan = await storage.createLessonPlan(data);
       res.status(201).json(lessonPlan);
     } catch (error) {
+      console.error('[POST /api/lesson-plans] Validation error:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Invalid lesson plan data", 
+          details: error.errors 
+        });
+      }
       res.status(400).json({ error: "Invalid lesson plan data" });
     }
   });
