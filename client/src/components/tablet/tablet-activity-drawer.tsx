@@ -221,7 +221,7 @@ export function TabletActivityDrawer({
                       </div>
                       
                       <div className="flex items-center gap-3 text-xs">
-                        <span className={`px-3 py-1 rounded-full border ${getCategoryColor(activity.category)}`}>
+                        <span className="px-3 py-1 rounded-full border bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 border-pink-200 mt-[5px] mb-[5px]">
                           {activity.category}
                         </span>
                         <div className="flex items-center gap-1 text-gray-500">
