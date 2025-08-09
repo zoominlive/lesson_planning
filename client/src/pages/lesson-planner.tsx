@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import WeeklyCalendar from "@/components/weekly-calendar";
-import { Settings, MapPin, ClipboardCheck } from "lucide-react";
+import { Settings, MapPin } from "lucide-react";
 import { useLocation } from "wouter";
 import { getUserInfo } from "@/lib/auth";
 import { startOfWeek } from "date-fns";
@@ -151,8 +151,7 @@ export default function LessonPlanner() {
     console.log("Quick add activity");
   };
 
-  // Check if user can access review page
-  const canReview = userInfo?.role && ['director', 'assistant_director', 'admin', 'superadmin'].includes(userInfo.role.toLowerCase());
+
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4" data-testid="lesson-planner">
@@ -206,24 +205,6 @@ export default function LessonPlanner() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {canReview && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setLocation("/review")}
-                        data-testid="button-review"
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        <ClipboardCheck className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Review Lesson Plans</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
                 {userInfo?.role?.toLowerCase() === "admin" && (
                   <Tooltip>
                     <TooltipTrigger asChild>

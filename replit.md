@@ -23,7 +23,7 @@ This project is a comprehensive lesson planning application designed for early c
 - **Review API Endpoints**: Created endpoints for /submit, /approve, /reject operations with proper location-based access control and user tracking
 - **Lesson Review Page**: Built dedicated review interface showing pending, approved, and rejected lesson plans with filtering by location and detailed review dialog
 - **Submit for Review Button**: Added submission functionality to lesson planner with automatic approval for admin/superadmin users
-- **Review Page Navigation**: Added review page link in header for authorized roles (director, assistant_director, admin, superadmin)
+- **Review Page Navigation**: Moved review functionality to main navigation tabs for better accessibility - appears as 5th tab for authorized roles (director, assistant_director, admin, superadmin)
 
 # User Preferences
 
