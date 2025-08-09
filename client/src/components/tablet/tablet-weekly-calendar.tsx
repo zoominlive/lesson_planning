@@ -455,7 +455,7 @@ export function TabletWeeklyCalendar({
                 key={slot.id} 
                 className="h-16 flex items-center justify-center bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-sm border border-gray-100 text-center p-1"
               >
-                <span className="text-xs font-bold text-[#000000]">Position {slot.label}</span>
+                <span className="text-xs font-bold text-[#4a4a4a]">Position {slot.label}</span>
               </div>
             ))}
           </div>
