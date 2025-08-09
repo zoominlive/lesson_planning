@@ -119,11 +119,11 @@ export default function LessonPlanner() {
     mutationFn: async () => {
       if (currentLessonPlan) {
         // Submit existing plan
-        return apiRequest(`/api/lesson-plans/${currentLessonPlan.id}/submit`, "POST");
+        return apiRequest("POST", `/api/lesson-plans/${currentLessonPlan.id}/submit`);
       } else {
         // Create a new lesson plan first, then submit it
         const scheduleType = locationSettings?.scheduleType || 'position-based';
-        const newPlan = await apiRequest(`/api/lesson-plans`, "POST", {
+        const newPlan = await apiRequest("POST", `/api/lesson-plans`, {
           weekStart: currentWeekDate.toISOString(),
           locationId: selectedLocation,
           roomId: selectedRoom,
@@ -132,7 +132,7 @@ export default function LessonPlanner() {
         });
         
         // Now submit the newly created plan
-        return apiRequest(`/api/lesson-plans/${newPlan.id}/submit`, "POST");
+        return apiRequest("POST", `/api/lesson-plans/${newPlan.id}/submit`);
       }
     },
     onSuccess: (data) => {

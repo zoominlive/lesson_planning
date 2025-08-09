@@ -24,6 +24,9 @@ This project is a comprehensive lesson planning application designed for early c
 - **Lesson Review Page**: Built dedicated review interface showing pending, approved, and rejected lesson plans with filtering by location and detailed review dialog
 - **Submit for Review Button**: Fixed submission logic to create lesson plan if needed and submit current week's plan, with automatic approval for admin/superadmin users
 - **Review Page Navigation**: Moved review functionality to main navigation tabs for better accessibility - appears as 5th tab for authorized roles (director, assistant_director, admin, superadmin)
+- **Fixed JWT location handling**: Updated auth middleware to accept both location names and IDs in JWT tokens for backward compatibility
+- **Fixed room filtering**: Resolved issue where rooms weren't loading due to JWT location name/ID mismatch - now properly filters rooms based on user's authorized locations
+- **Fixed Submit for Review errors**: Corrected apiRequest parameter order in lesson-planner.tsx to properly submit lesson plans for review
 
 # User Preferences
 
