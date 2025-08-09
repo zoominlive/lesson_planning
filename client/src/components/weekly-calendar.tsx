@@ -72,6 +72,8 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   
   const [searchTerm, setSearchTerm] = useState("");
   const [draggedActivity, setDraggedActivity] = useState<Activity | null>(null);
+  const [draggedScheduledActivity, setDraggedScheduledActivity] = useState<any>(null);
+  const [dragOverSlot, setDragOverSlot] = useState<{day: number, slot: number} | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all-categories");
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("all-age-groups");
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -216,9 +218,28 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
     setDraggedActivity(activity);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleScheduledActivityDragStart = (e: React.DragEvent, scheduledActivity: any) => {
+    console.log('[handleScheduledActivityDragStart] Setting dragged scheduled activity:', scheduledActivity.activity?.title);
+    setDraggedScheduledActivity(scheduledActivity);
+    setDraggedActivity(null); // Clear any dragged new activity
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    console.log('[handleDragEnd] Clearing drag state');
+    setDraggedActivity(null);
+    setDraggedScheduledActivity(null);
+    setDragOverSlot(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, dayOfWeek?: number, timeSlot?: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    
+    if (dayOfWeek !== undefined && timeSlot !== undefined) {
+      setDragOverSlot({ day: dayOfWeek, slot: timeSlot });
+    }
+    
     const dropZone = e.currentTarget as HTMLElement;
     dropZone.classList.add("drag-over");
   };
@@ -226,6 +247,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   const handleDragLeave = (e: React.DragEvent) => {
     const dropZone = e.currentTarget as HTMLElement;
     dropZone.classList.remove("drag-over");
+    setDragOverSlot(null);
   };
 
 
@@ -262,6 +284,47 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
       toast({
         title: "Delete Failed",
         description: "Unable to remove the activity. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Move activity mutation for drag and drop
+  const moveActivityMutation = useMutation({
+    mutationFn: async ({ scheduledActivityId, newDay, newSlot }: { scheduledActivityId: string, newDay: number, newSlot: number }) => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`/api/scheduled-activities/${scheduledActivityId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          dayOfWeek: newDay,
+          timeSlot: newSlot,
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to move activity');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom, weekStartDate.toISOString(), selectedLocation] });
+      toast({
+        title: "Activity Moved",
+        description: "The activity has been moved to the new time slot.",
+      });
+      setDraggedScheduledActivity(null);
+      setDragOverSlot(null);
+    },
+    onError: () => {
+      toast({
+        title: "Move Failed",
+        description: "Unable to move the activity. Please try again.",
         variant: "destructive",
       });
     },
@@ -331,13 +394,40 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
     e.stopPropagation();
     const dropZone = e.currentTarget as HTMLElement;
     dropZone.classList.remove("drag-over");
+    setDragOverSlot(null);
     
-    console.log('[handleDrop] draggedActivity:', draggedActivity);
-    console.log('[handleDrop] dayOfWeek:', dayOfWeek, 'timeSlot:', timeSlot);
-    console.log('[handleDrop] selectedLocation:', selectedLocation);
-    console.log('[handleDrop] selectedRoom:', selectedRoom);
+    // Check if the target slot is already occupied (for move operations)
+    const existingActivity = isSlotOccupied(dayOfWeek, timeSlot);
     
-    if (draggedActivity) {
+    if (draggedScheduledActivity) {
+      // Moving an existing scheduled activity
+      console.log('[handleDrop] Moving scheduled activity:', draggedScheduledActivity.activity?.title);
+      
+      // Check if we're dropping on the same slot (no change needed)
+      if (draggedScheduledActivity.dayOfWeek === dayOfWeek && draggedScheduledActivity.timeSlot === timeSlot) {
+        console.log('[handleDrop] Same slot, no action needed');
+        setDraggedScheduledActivity(null);
+        return;
+      }
+      
+      // Check if target slot is occupied by a different activity
+      if (existingActivity && existingActivity.id !== draggedScheduledActivity.id) {
+        toast({
+          title: "Cannot move activity",
+          description: "Target slot is already occupied by another activity",
+          variant: "destructive"
+        });
+        setDraggedScheduledActivity(null);
+        return;
+      }
+      
+      moveActivityMutation.mutate({
+        scheduledActivityId: draggedScheduledActivity.id,
+        newDay: dayOfWeek,
+        newSlot: timeSlot,
+      });
+    } else if (draggedActivity) {
+      // Adding a new activity
       console.log(`[handleDrop] Scheduling: ${draggedActivity.title} on ${weekDays[dayOfWeek].name} at ${timeSlots[timeSlot].label}`);
       
       if (!selectedLocation || !selectedRoom) {
@@ -347,6 +437,17 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
           description: "Please select a location and room first",
           variant: "destructive"
         });
+        return;
+      }
+      
+      // Check if target slot is occupied
+      if (existingActivity) {
+        toast({
+          title: "Cannot schedule activity",
+          description: "This time slot is already occupied",
+          variant: "destructive"
+        });
+        setDraggedActivity(null);
         return;
       }
       
@@ -424,14 +525,23 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                 return (
                   <div 
                     key={slot.id} 
-                    className="h-24 p-1.5 border border-sky-blue/10 hover:border-turquoise/40 transition-all bg-white/40 hover:bg-turquoise/5"
-                    onDragOver={handleDragOver}
+                    className={`h-24 p-1.5 border border-sky-blue/10 hover:border-turquoise/40 transition-all bg-white/40 hover:bg-turquoise/5 ${
+                      dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? 'border-turquoise border-2 bg-turquoise/10' : ''
+                    }`}
+                    onDragOver={(e) => handleDragOver(e, day.id, slot.id)}
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, day.id, slot.id)}
                     data-testid={`calendar-slot-${day.id}-${slot.id}`}
                   >
                     {scheduledActivity ? (
-                      <div className={`bg-gradient-to-br ${getCategoryGradient(scheduledActivity.activity?.category || 'Other')} border border-gray-200 rounded-lg p-2 h-full flex flex-col justify-between cursor-move shadow-sm hover:shadow-md transition-all relative group`}>
+                      <div 
+                        draggable={true}
+                        onDragStart={(e) => handleScheduledActivityDragStart(e, scheduledActivity)}
+                        onDragEnd={handleDragEnd}
+                        className={`bg-gradient-to-br ${getCategoryGradient(scheduledActivity.activity?.category || 'Other')} border border-gray-200 rounded-lg p-2 h-full flex flex-col justify-between cursor-move shadow-sm hover:shadow-md transition-all relative group ${
+                          draggedScheduledActivity?.id === scheduledActivity.id ? 'opacity-50 scale-95' : ''
+                        }`}
+                      >
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -455,12 +565,20 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                       </div>
                     ) : (
                       <button 
-                        className="h-full w-full flex items-center justify-center text-gray-400 border-2 border-dashed border-turquoise/20 rounded-lg hover:border-turquoise/40 hover:bg-turquoise/5 transition-all group cursor-pointer"
+                        className={`h-full w-full flex items-center justify-center text-gray-400 border-2 border-dashed border-turquoise/20 rounded-lg hover:border-turquoise/40 hover:bg-turquoise/5 transition-all group cursor-pointer ${
+                          dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? 'border-turquoise bg-turquoise/10' : ''
+                        }`}
                         onClick={() => setDrawerOpen(true)}
                         data-testid={`empty-slot-${day.id}-${slot.id}`}
                       >
-                        <Plus className="h-3 w-3 mr-1 opacity-50 group-hover:opacity-70 text-turquoise" />
-                        <span className="text-xs opacity-50 group-hover:opacity-70 text-turquoise">Drop Activity</span>
+                        {dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? (
+                          <span className="text-xs text-turquoise font-semibold">Drop Here</span>
+                        ) : (
+                          <>
+                            <Plus className="h-3 w-3 mr-1 opacity-50 group-hover:opacity-70 text-turquoise" />
+                            <span className="text-xs opacity-50 group-hover:opacity-70 text-turquoise">Drop Activity</span>
+                          </>
+                        )}
                       </button>
                     )}
                   </div>

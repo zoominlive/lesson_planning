@@ -188,6 +188,23 @@
   .bg-mint-green {
     background-color: var(--mint-green);
   }
+
+  /* Drag and Drop Styles */
+  .drag-over {
+    background-color: rgba(79, 201, 176, 0.1) !important;
+    border-color: var(--turquoise) !important;
+    border-width: 2px !important;
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+    }
+  }
 }
 
 /* Beautiful Soft Calendar Styles */
