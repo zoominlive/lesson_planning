@@ -491,9 +491,14 @@ export function TabletWeeklyCalendar({
                         data-testid={`scheduled-activity-${day.id}-${slot.id}`}
                       >
                         <div className="h-full flex flex-col justify-between">
-                          <p className="text-[10px] font-bold line-clamp-2 text-gray-700">
-                            {scheduledActivity.activity?.title}
-                          </p>
+                          <div className="flex-1">
+                            <p className="text-[10px] font-bold line-clamp-1 text-gray-700">
+                              {scheduledActivity.activity?.title}
+                            </p>
+                            <p className="text-[8px] text-gray-600 mt-0.5">
+                              {scheduledActivity.activity?.category}
+                            </p>
+                          </div>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1">
                               <Clock className="h-2.5 w-2.5 text-gray-600" />
