@@ -1,17 +1,23 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { NavigationTabs } from "@/components/navigation-tabs";
 import { CalendarControls } from "@/components/calendar-controls";
 import { FloatingActionButton } from "@/components/floating-action-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import WeeklyCalendar from "@/components/weekly-calendar";
 import { Settings, MapPin } from "lucide-react";
 import { useLocation } from "wouter";
 import { getUserInfo } from "@/lib/auth";
+import { startOfWeek } from "date-fns";
 
 type UserInfo = {
   tenantId: string;
@@ -24,14 +30,24 @@ type UserInfo = {
 };
 
 export default function LessonPlanner() {
-  const [currentWeek, setCurrentWeek] = useState("Week of March 13-17, 2024");
-  const [selectedRoom, setSelectedRoom] = useState("all");
+  const [currentWeekDate, setCurrentWeekDate] = useState(
+    () => startOfWeek(new Date(), { weekStartsOn: 1 }), // Start on Monday
+  );
+  const [selectedRoom, setSelectedRoom] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [, setLocation] = useLocation();
 
   const { data: userInfo } = useQuery<UserInfo>({
     queryKey: ["/api/user"],
   });
+
+  // Fetch all rooms to auto-select first room for location
+  const { data: allRooms = [] } = useQuery<any[]>({
+    queryKey: ["/api/rooms"],
+  });
+  
+  // Filter rooms for the selected location
+  const filteredRooms = allRooms.filter((room: any) => room.locationId === selectedLocation);
 
   // Reset room selection when location changes
   useEffect(() => {
@@ -40,14 +56,32 @@ export default function LessonPlanner() {
     }
   }, [selectedLocation]);
 
-  const handlePreviousWeek = () => {
-    // TODO: Implement week navigation
-    console.log("Previous week");
-  };
+  // Auto-select first room when rooms are available and no room is selected
+  useEffect(() => {
+    if (filteredRooms.length > 0 && !selectedRoom && selectedLocation) {
+      setSelectedRoom(filteredRooms[0].id);
+    }
+  }, [filteredRooms, selectedRoom, selectedLocation]);
 
-  const handleNextWeek = () => {
-    // TODO: Implement week navigation
-    console.log("Next week");
+  // Listen for schedule type changes to refresh data
+  useEffect(() => {
+    const handleScheduleTypeChange = () => {
+      // Invalidate all calendar-related queries to force refresh
+      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/lesson-plans'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/activities'] });
+    };
+
+    window.addEventListener('scheduleTypeChanged', handleScheduleTypeChange);
+    
+    return () => {
+      window.removeEventListener('scheduleTypeChanged', handleScheduleTypeChange);
+    };
+  }, []);
+
+  const handleWeekChange = (newDate: Date) => {
+    setCurrentWeekDate(newDate);
   };
 
   const handleSubmitToSupervisor = () => {
@@ -67,19 +101,30 @@ export default function LessonPlanner() {
         <CardContent className="p-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-charcoal mb-2" data-testid="app-title">
+              <h1
+                className="text-3xl font-bold text-charcoal mb-2"
+                data-testid="app-title"
+              >
                 Lesson Planning Studio
               </h1>
               <p className="text-gray-600" data-testid="app-subtitle">
-                Create engaging weekly lesson plans for your classroom
+                Create engaging weekly lesson plans for your classrooms
               </p>
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <p className="font-semibold text-charcoal" data-testid="teacher-name">
-                  {userInfo ? `${userInfo.userFirstName} ${userInfo.userLastName}` : "Teacher"}
+                <p
+                  className="font-semibold text-charcoal"
+                  data-testid="teacher-name"
+                >
+                  {userInfo
+                    ? `${userInfo.userFirstName} ${userInfo.userLastName}`
+                    : "Teacher"}
                 </p>
-                <p className="text-sm text-gray-500" data-testid="classroom-name">
+                <p
+                  className="text-sm text-gray-500"
+                  data-testid="classroom-name"
+                >
                   {userInfo?.role ? userInfo.role : "Loading..."}
                 </p>
                 {userInfo?.locations && userInfo.locations.length > 0 && (
@@ -87,9 +132,9 @@ export default function LessonPlanner() {
                     <MapPin className="h-3 w-3 text-gray-400" />
                     <div className="flex gap-1">
                       {userInfo.locations.map((location, idx) => (
-                        <Badge 
-                          key={idx} 
-                          variant="secondary" 
+                        <Badge
+                          key={idx}
+                          variant="secondary"
                           className="text-xs py-0 h-5"
                           data-testid={`location-badge-${idx}`}
                         >
@@ -121,8 +166,8 @@ export default function LessonPlanner() {
                 )}
                 <div className="w-12 h-12 bg-gradient-to-br from-coral-red to-turquoise rounded-full flex items-center justify-center text-white font-bold text-lg">
                   <span data-testid="teacher-initials">
-                    {userInfo && userInfo.userFirstName && userInfo.userLastName 
-                      ? `${userInfo.userFirstName[0]}${userInfo.userLastName[0]}` 
+                    {userInfo && userInfo.userFirstName && userInfo.userLastName
+                      ? `${userInfo.userFirstName[0]}${userInfo.userLastName[0]}`
                       : "?"}
                   </span>
                 </div>
@@ -135,18 +180,18 @@ export default function LessonPlanner() {
       {/* Navigation Tabs */}
       <NavigationTabs>
         <CalendarControls
-          currentWeek={currentWeek}
+          currentWeekDate={currentWeekDate}
           selectedRoom={selectedRoom}
           selectedLocation={selectedLocation}
-          onPreviousWeek={handlePreviousWeek}
-          onNextWeek={handleNextWeek}
+          onWeekChange={handleWeekChange}
           onRoomChange={setSelectedRoom}
           onLocationChange={setSelectedLocation}
           onSubmitToSupervisor={handleSubmitToSupervisor}
         />
-        <WeeklyCalendar 
+        <WeeklyCalendar
           selectedLocation={selectedLocation}
           selectedRoom={selectedRoom}
+          currentWeekDate={currentWeekDate}
         />
       </NavigationTabs>
 

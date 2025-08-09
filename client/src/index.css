@@ -188,4 +188,248 @@
   .bg-mint-green {
     background-color: var(--mint-green);
   }
+
+  /* Drag and Drop Styles */
+  .drag-over {
+    background-color: rgba(79, 201, 176, 0.1) !important;
+    border-color: var(--turquoise) !important;
+    border-width: 2px !important;
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+    }
+  }
+}
+
+/* Beautiful Soft Calendar Styles */
+.rdp-soft-design {
+  --rdp-cell-size: 42px;
+  --rdp-accent-color: var(--turquoise);
+  --rdp-background-color: transparent;
+  --rdp-outline: 2px solid var(--turquoise);
+  --rdp-outline-selected: 2px solid var(--sky-blue);
+}
+
+.rdp-soft-design .rdp-months {
+  font-family: 'Roboto', 'Inter', system-ui, sans-serif;
+}
+
+.rdp-soft-design .rdp-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(135deg, var(--sky-blue), var(--turquoise));
+  color: white;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
+
+.rdp-soft-design .rdp-caption_label {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.rdp-soft-design .rdp-nav_button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 0.375rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.rdp-soft-design .rdp-nav_button:hover:not([disabled]) {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.rdp-soft-design .rdp-nav_button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rdp-soft-design .rdp-head_cell {
+  color: var(--charcoal);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rdp-soft-design .rdp-day {
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  position: relative;
+  font-weight: 500;
+  color: var(--charcoal);
+}
+
+.rdp-soft-design .rdp-day:not([disabled]):not(.rdp-day_selected):hover {
+  background: linear-gradient(135deg, rgba(79, 201, 176, 0.1), rgba(93, 188, 232, 0.1));
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.rdp-soft-design .rdp-day_today {
+  font-weight: 700;
+  position: relative;
+}
+
+.rdp-soft-design .rdp-day_today::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: var(--coral-red);
+  border-radius: 50%;
+}
+
+.rdp-soft-design .rdp-day_selected {
+  background: linear-gradient(135deg, var(--turquoise), var(--sky-blue)) !important;
+  color: white !important;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(79, 201, 176, 0.3);
+}
+
+.rdp-soft-design .rdp-day_selected:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(79, 201, 176, 0.4);
+}
+
+.rdp-soft-design .rdp-day_outside {
+  opacity: 0.4;
+}
+
+.rdp-soft-design .rdp-day_disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.rdp-soft-design .rdp-day_current_week {
+  position: relative;
+  font-weight: 600;
+}
+
+.rdp-soft-design .rdp-day_current_week:not(.rdp-day_selected) {
+  color: var(--turquoise);
+}
+
+/* Soft focus styles */
+.rdp-soft-design .rdp-day:focus-visible {
+  outline: 2px solid var(--sky-blue);
+  outline-offset: 2px;
+}
+
+.rdp-soft-design .rdp-button:focus-visible {
+  outline: 2px solid var(--sky-blue);
+  outline-offset: 2px;
+}
+
+/* Tablet and Mobile Specific Styles */
+@media (max-width: 1024px) {
+  .tablet-planner {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    overscroll-behavior: contain;
+  }
+  
+  /* Optimize touch targets */
+  .tablet-planner button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent text selection on interactive elements */
+  .tablet-planner button,
+  .tablet-planner [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Smooth scrolling */
+  .tablet-planner * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Animation for drawer */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* Touch-friendly hover states */
+@media (hover: none) {
+  .hover\:bg-gray-100:hover {
+    background-color: transparent;
+  }
+  
+  .hover\:shadow-lg:hover {
+    box-shadow: none;
+  }
+  
+  /* Add active states for touch feedback */
+  button:active,
+  [role="button"]:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
+
+/* Tablet viewport optimizations */
+.tablet-viewport {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+
+/* Safe area insets for iOS */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
 }

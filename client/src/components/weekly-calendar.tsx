@@ -5,46 +5,152 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Play, Package, Filter, X, Trash2 } from "lucide-react";
+import { Search, Plus, Play, Package, Filter, X, Trash2, Clock, Scissors } from "lucide-react";
 import DraggableActivity from "./draggable-activity";
 import { toast } from "@/hooks/use-toast";
 import type { Activity, Category, AgeGroup } from "@shared/schema";
+import { format, addDays, startOfWeek } from "date-fns";
 
 interface WeeklyCalendarProps {
   selectedLocation: string;
   selectedRoom: string;
+  currentWeekDate?: Date;
 }
 
-const timeSlots = [
-  { id: 0, label: "6:00 AM", name: "Early Arrival" },
-  { id: 1, label: "7:00 AM", name: "Breakfast" },
-  { id: 2, label: "8:00 AM", name: "Free Play" },
-  { id: 3, label: "9:00 AM", name: "Morning Circle" },
-  { id: 4, label: "10:00 AM", name: "Activity Time" },
-  { id: 5, label: "11:00 AM", name: "Learning Centers" },
-  { id: 6, label: "12:00 PM", name: "Lunch" },
-  { id: 7, label: "1:00 PM", name: "Rest/Quiet Time" },
-  { id: 8, label: "2:00 PM", name: "Afternoon Activities" },
-  { id: 9, label: "3:00 PM", name: "Snack Time" },
-  { id: 10, label: "4:00 PM", name: "Outdoor Play" },
-  { id: 11, label: "5:00 PM", name: "Free Choice" },
-  { id: 12, label: "6:00 PM", name: "Pickup Time" },
-];
+// Convert numbers to written words
+const numberToWord = (num: number): string => {
+  const words = [
+    'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 
+    'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen',
+    'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen', 'Twenty'
+  ];
+  return words[num - 1] || `${num}`;
+};
 
-const weekDays = [
-  { id: 0, name: "Monday", date: "Mar 13" },
-  { id: 1, name: "Tuesday", date: "Mar 14" },
-  { id: 2, name: "Wednesday", date: "Mar 15" },
-  { id: 3, name: "Thursday", date: "Mar 16" },
-  { id: 4, name: "Friday", date: "Mar 17" },
-];
+// Generate time slots based on schedule settings
+const generateTimeSlots = (scheduleSettings: any) => {
+  if (scheduleSettings?.type === 'position-based') {
+    const slots = [];
+    const slotsCount = scheduleSettings.slotsPerDay || 8;
+    for (let i = 0; i < slotsCount; i++) {
+      slots.push({
+        id: i,
+        label: numberToWord(i + 1),
+        name: `Activity ${i + 1}`
+      });
+    }
+    return slots;
+  } else {
+    // Time-based slots
+    const startHour = parseInt(scheduleSettings?.startTime?.split(':')[0] || '6');
+    const endHour = parseInt(scheduleSettings?.endTime?.split(':')[0] || '18');
+    const slots = [];
+    
+    for (let hour = startHour, id = 0; hour <= endHour; hour++, id++) {
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      const period = hour < 12 ? 'AM' : 'PM';
+      slots.push({
+        id,
+        label: `${displayHour}:00 ${period}`,
+        name: `Time Slot ${id + 1}`
+      });
+    }
+    return slots;
+  }
+};
 
-export default function WeeklyCalendar({ selectedLocation, selectedRoom }: WeeklyCalendarProps) {
+const generateWeekDays = (weekStartDate: Date) => {
+  const days = [];
+  const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+  
+  for (let i = 0; i < 5; i++) {
+    const date = addDays(weekStartDate, i);
+    days.push({
+      id: i,
+      name: dayNames[i],
+      date: format(date, 'MMM d'),
+      fullDate: date
+    });
+  }
+  
+  return days;
+};
+
+export default function WeeklyCalendar({ selectedLocation, selectedRoom, currentWeekDate }: WeeklyCalendarProps) {
+  const weekStartDate = currentWeekDate || startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weekDays = generateWeekDays(weekStartDate);
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [draggedActivity, setDraggedActivity] = useState<Activity | null>(null);
+  const [draggedScheduledActivity, setDraggedScheduledActivity] = useState<any>(null);
+  const [dragOverSlot, setDragOverSlot] = useState<{day: number, slot: number} | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all-categories");
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("all-age-groups");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [scheduleSettings, setScheduleSettings] = useState<any>({
+    type: 'time-based',
+    startTime: '06:00',
+    endTime: '18:00',
+    slotsPerDay: 8
+  });
+
+  // Load schedule settings from localStorage for the specific location
+  useEffect(() => {
+    const loadSettings = () => {
+      // Try to load location-specific settings first
+      const locationSettings = localStorage.getItem(`scheduleSettings_${selectedLocation}`);
+      if (locationSettings) {
+        try {
+          const parsed = JSON.parse(locationSettings);
+          setScheduleSettings(parsed);
+        } catch (error) {
+          console.error('Error loading location schedule settings:', error);
+        }
+      } else {
+        // Fall back to general settings if no location-specific settings exist
+        const savedSettings = localStorage.getItem('scheduleSettings');
+        if (savedSettings) {
+          try {
+            const parsed = JSON.parse(savedSettings);
+            setScheduleSettings(parsed);
+          } catch (error) {
+            console.error('Error loading schedule settings:', error);
+          }
+        }
+      }
+    };
+
+    loadSettings();
+
+    // Listen for settings changes
+    const handleSettingsChange = (event: CustomEvent) => {
+      // Only update if the change is for the current location or a general update
+      if (!event.detail.locationId || event.detail.locationId === selectedLocation) {
+        const { locationId, ...settings } = event.detail;
+        setScheduleSettings(settings);
+      }
+    };
+
+    window.addEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
+    
+    // Listen for global schedule type changes
+    const handleScheduleTypeChange = () => {
+      // Reload settings from localStorage
+      loadSettings();
+      // Invalidate queries to refetch data
+      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities'] });
+    };
+    
+    window.addEventListener('scheduleTypeChanged', handleScheduleTypeChange);
+    
+    return () => {
+      window.removeEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
+      window.removeEventListener('scheduleTypeChanged', handleScheduleTypeChange);
+    };
+  }, [selectedLocation]);
+
+  // Generate time slots based on current settings
+  const timeSlots = generateTimeSlots(scheduleSettings);
 
   const { data: activities = [], isLoading } = useQuery<Activity[]>({
     queryKey: ["/api/activities"],
@@ -58,10 +164,23 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
     queryKey: ["/api/age-groups"],
   });
 
-  // Fetch scheduled activities for the current room
+  // Fetch scheduled activities for the current room and week
   const { data: scheduledActivities = [] } = useQuery<any[]>({
-    queryKey: ["/api/scheduled-activities", selectedRoom],
-    enabled: !!selectedRoom && selectedRoom !== "all",
+    queryKey: ["/api/scheduled-activities", selectedRoom, weekStartDate.toISOString(), selectedLocation],
+    queryFn: async () => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `/api/scheduled-activities/${selectedRoom}?weekStart=${encodeURIComponent(weekStartDate.toISOString())}&locationId=${encodeURIComponent(selectedLocation)}`,
+        {
+          headers: {
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+          },
+        }
+      );
+      if (!response.ok) throw new Error('Failed to fetch scheduled activities');
+      return response.json();
+    },
+    enabled: !!selectedRoom && selectedRoom !== "all" && !!selectedLocation,
   });
 
   const filteredActivities = activities.filter(activity => {
@@ -109,9 +228,28 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
     setDraggedActivity(activity);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleScheduledActivityDragStart = (e: React.DragEvent, scheduledActivity: any) => {
+    console.log('[handleScheduledActivityDragStart] Setting dragged scheduled activity:', scheduledActivity.activity?.title);
+    setDraggedScheduledActivity(scheduledActivity);
+    setDraggedActivity(null); // Clear any dragged new activity
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    console.log('[handleDragEnd] Clearing drag state');
+    setDraggedActivity(null);
+    setDraggedScheduledActivity(null);
+    setDragOverSlot(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, dayOfWeek?: number, timeSlot?: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    
+    if (dayOfWeek !== undefined && timeSlot !== undefined) {
+      setDragOverSlot({ day: dayOfWeek, slot: timeSlot });
+    }
+    
     const dropZone = e.currentTarget as HTMLElement;
     dropZone.classList.add("drag-over");
   };
@@ -119,6 +257,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
   const handleDragLeave = (e: React.DragEvent) => {
     const dropZone = e.currentTarget as HTMLElement;
     dropZone.classList.remove("drag-over");
+    setDragOverSlot(null);
   };
 
 
@@ -145,7 +284,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom] });
+      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom, weekStartDate.toISOString(), selectedLocation] });
       toast({
         title: "Activity Removed",
         description: "The activity has been removed from the schedule.",
@@ -160,12 +299,54 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
     },
   });
 
+  // Move activity mutation for drag and drop
+  const moveActivityMutation = useMutation({
+    mutationFn: async ({ scheduledActivityId, newDay, newSlot }: { scheduledActivityId: string, newDay: number, newSlot: number }) => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`/api/scheduled-activities/${scheduledActivityId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          dayOfWeek: newDay,
+          timeSlot: newSlot,
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to move activity');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom, weekStartDate.toISOString(), selectedLocation] });
+      toast({
+        title: "Activity Moved",
+        description: "The activity has been moved to the new time slot.",
+      });
+      setDraggedScheduledActivity(null);
+      setDragOverSlot(null);
+    },
+    onError: () => {
+      toast({
+        title: "Move Failed",
+        description: "Unable to move the activity. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const scheduleMutation = useMutation({
-    mutationFn: async ({ activityId, dayOfWeek, timeSlot }: { activityId: string; dayOfWeek: number; timeSlot: number }) => {
+    mutationFn: async ({ activityId, dayOfWeek, timeSlot, weekStart }: { activityId: string; dayOfWeek: number; timeSlot: number; weekStart: string }) => {
       console.log('Scheduling activity:', { 
         activityId, 
         dayOfWeek, 
         timeSlot, 
+        weekStart,
         selectedLocation, 
         selectedRoom
       });
@@ -188,6 +369,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
           timeSlot,
           roomId: selectedRoom,
           locationId: selectedLocation,
+          weekStart,
           // lessonPlanId is optional - backend will create one if needed
         }),
       });
@@ -201,7 +383,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom] });
+      queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom, weekStartDate.toISOString(), selectedLocation] });
       toast({
         title: "Activity Scheduled",
         description: "The activity has been added to the calendar.",
@@ -222,13 +404,40 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
     e.stopPropagation();
     const dropZone = e.currentTarget as HTMLElement;
     dropZone.classList.remove("drag-over");
+    setDragOverSlot(null);
     
-    console.log('[handleDrop] draggedActivity:', draggedActivity);
-    console.log('[handleDrop] dayOfWeek:', dayOfWeek, 'timeSlot:', timeSlot);
-    console.log('[handleDrop] selectedLocation:', selectedLocation);
-    console.log('[handleDrop] selectedRoom:', selectedRoom);
+    // Check if the target slot is already occupied (for move operations)
+    const existingActivity = isSlotOccupied(dayOfWeek, timeSlot);
     
-    if (draggedActivity) {
+    if (draggedScheduledActivity) {
+      // Moving an existing scheduled activity
+      console.log('[handleDrop] Moving scheduled activity:', draggedScheduledActivity.activity?.title);
+      
+      // Check if we're dropping on the same slot (no change needed)
+      if (draggedScheduledActivity.dayOfWeek === dayOfWeek && draggedScheduledActivity.timeSlot === timeSlot) {
+        console.log('[handleDrop] Same slot, no action needed');
+        setDraggedScheduledActivity(null);
+        return;
+      }
+      
+      // Check if target slot is occupied by a different activity
+      if (existingActivity && existingActivity.id !== draggedScheduledActivity.id) {
+        toast({
+          title: "Cannot move activity",
+          description: "Target slot is already occupied by another activity",
+          variant: "destructive"
+        });
+        setDraggedScheduledActivity(null);
+        return;
+      }
+      
+      moveActivityMutation.mutate({
+        scheduledActivityId: draggedScheduledActivity.id,
+        newDay: dayOfWeek,
+        newSlot: timeSlot,
+      });
+    } else if (draggedActivity) {
+      // Adding a new activity
       console.log(`[handleDrop] Scheduling: ${draggedActivity.title} on ${weekDays[dayOfWeek].name} at ${timeSlots[timeSlot].label}`);
       
       if (!selectedLocation || !selectedRoom) {
@@ -241,11 +450,23 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
         return;
       }
       
+      // Check if target slot is occupied
+      if (existingActivity) {
+        toast({
+          title: "Cannot schedule activity",
+          description: "This time slot is already occupied",
+          variant: "destructive"
+        });
+        setDraggedActivity(null);
+        return;
+      }
+      
       console.log('[handleDrop] Calling scheduleMutation.mutate');
       scheduleMutation.mutate({
         activityId: draggedActivity.id,
         dayOfWeek,
         timeSlot,
+        weekStart: weekStartDate.toISOString(),
       });
       setDraggedActivity(null);
     } else {
@@ -279,32 +500,31 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
           Activities
         </Button>
       </div>
-
       {/* Main Content Area with Calendar and Drawer */}
-      <div className={`flex ${drawerOpen ? 'gap-4' : ''}`}>
+      <div className="flex">
         {/* Calendar Grid */}
-        <div className={`transition-all duration-300 ${drawerOpen ? 'flex-1' : 'w-full'}`}>
-          <Card className="material-shadow overflow-hidden">
-            <div className="grid grid-cols-6 gap-0">
-          {/* Time Column */}
-          <div className="bg-gray-50 border-r border-gray-200">
-            <div className="h-16 border-b border-gray-200 flex items-center justify-center font-semibold text-gray-700">
-              Time
+        <div className={`transition-all duration-300 ${drawerOpen ? 'w-[calc(100%-416px)] mr-4' : 'w-full'}`}>
+          <Card className="material-shadow overflow-hidden bg-gradient-to-br from-white to-sky-blue/5 border-2 border-sky-blue/10">
+            <div className="grid gap-0" style={{gridTemplateColumns: "100px repeat(5, 1fr)"}}>
+          {/* Position Column */}
+          <div className="bg-gradient-to-b from-mint-green/10 to-sky-blue/10 border-r-2 border-sky-blue/20">
+            <div className="h-16 border-b-2 border-sky-blue/20 flex items-center justify-center font-bold bg-white/50 text-[#000000]">
+              {scheduleSettings.type === 'position-based' ? 'Position' : 'Time'}
             </div>
             {timeSlots.map((slot) => (
-              <div key={slot.id} className="h-24 border-b border-gray-200 flex items-center justify-center text-sm font-medium text-gray-600">
-                <span data-testid={`time-slot-${slot.id}`}>{slot.label}</span>
+              <div key={slot.id} className="h-24 border-b border-sky-blue/10 flex items-center justify-center bg-white/30 hover:bg-white/50 transition-colors">
+                <span data-testid={`time-slot-${slot.id}`} className="text-sm font-semibold text-charcoal">{slot.label}</span>
               </div>
             ))}
           </div>
 
           {/* Days of Week */}
           {weekDays.map((day) => (
-            <div key={day.id} className="border-r border-gray-200 last:border-r-0">
+            <div key={day.id} className="border-r-2 border-sky-blue/10 last:border-r-0">
               {/* Day Header */}
-              <div className="h-16 bg-white text-black border-b border-gray-200 flex flex-col items-center justify-center">
-                <span className="font-bold text-xl tracking-wide" data-testid={`day-name-${day.id}`}>{day.name}</span>
-                <span className="text-xs text-gray-600 mt-1" data-testid={`day-date-${day.id}`}>{day.date}</span>
+              <div className="h-16 bg-gradient-to-b from-turquoise/10 to-mint-green/10 text-black border-b-2 border-sky-blue/20 flex flex-col items-center justify-center">
+                <span className="font-bold text-xl tracking-wide text-turquoise" data-testid={`day-name-${day.id}`}>{day.name}</span>
+                <span className="text-xs text-gray-600 mt-1 font-semibold" data-testid={`day-date-${day.id}`}>{day.date}</span>
               </div>
               
               {/* Time Slots */}
@@ -314,14 +534,23 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
                 return (
                   <div 
                     key={slot.id} 
-                    className="h-24 p-1 border border-gray-200 hover:border-turquoise transition-all"
-                    onDragOver={handleDragOver}
+                    className={`h-24 p-1.5 border border-sky-blue/10 hover:border-turquoise/40 transition-all bg-white/40 hover:bg-turquoise/5 ${
+                      dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? 'border-turquoise border-2 bg-turquoise/10' : ''
+                    }`}
+                    onDragOver={(e) => handleDragOver(e, day.id, slot.id)}
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, day.id, slot.id)}
                     data-testid={`calendar-slot-${day.id}-${slot.id}`}
                   >
                     {scheduledActivity ? (
-                      <div className={`bg-gradient-to-br ${getCategoryGradient(scheduledActivity.activity?.category || 'Other')} border border-gray-200 rounded-lg p-2 h-full flex flex-col justify-between cursor-move shadow-sm hover:shadow-md transition-all relative group`}>
+                      <div 
+                        draggable={true}
+                        onDragStart={(e) => handleScheduledActivityDragStart(e, scheduledActivity)}
+                        onDragEnd={handleDragEnd}
+                        className={`bg-gradient-to-br ${getCategoryGradient(scheduledActivity.activity?.category || 'Other')} border border-gray-200 rounded-lg p-2 h-full flex flex-col justify-between cursor-move shadow-sm hover:shadow-md transition-all relative group ${
+                          draggedScheduledActivity?.id === scheduledActivity.id ? 'opacity-50 scale-95' : ''
+                        }`}
+                      >
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -340,14 +569,34 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom }: Weekl
                           <p className="text-xs text-gray-600 mt-1">{scheduledActivity.activity?.category || 'Uncategorized'}</p>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500 font-medium">{scheduledActivity.activity?.duration || 30} min</span>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-2.5 w-2.5 text-gray-600" />
+                            <span className="text-xs text-gray-500 font-medium">{scheduledActivity.activity?.duration || 30}m</span>
+                          </div>
+                          {scheduledActivity.activity?.materialIds && scheduledActivity.activity.materialIds.length > 0 && (
+                            <div className="flex items-center" title="Materials required">
+                              <Scissors className="h-2.5 w-2.5 text-gray-600" />
+                            </div>
+                          )}
                         </div>
                       </div>
                     ) : (
-                      <div className="h-full flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
-                        <Plus className="h-3 w-3 mr-1 opacity-50" />
-                        <span className="text-xs opacity-50">Drop Activity</span>
-                      </div>
+                      <button 
+                        className={`h-full w-full flex items-center justify-center text-gray-400 border-2 border-dashed border-turquoise/20 rounded-lg hover:border-turquoise/40 hover:bg-turquoise/5 transition-all group cursor-pointer ${
+                          dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? 'border-turquoise bg-turquoise/10' : ''
+                        }`}
+                        onClick={() => setDrawerOpen(true)}
+                        data-testid={`empty-slot-${day.id}-${slot.id}`}
+                      >
+                        {dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? (
+                          <span className="text-xs text-turquoise font-semibold">Drop Here</span>
+                        ) : (
+                          <>
+                            <Plus className="h-3 w-3 mr-1 opacity-50 group-hover:opacity-70 text-turquoise" />
+                            <span className="text-xs opacity-50 group-hover:opacity-70 text-turquoise">Drop Activity</span>
+                          </>
+                        )}
+                      </button>
                     )}
                   </div>
                 );

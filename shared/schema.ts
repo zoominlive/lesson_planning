@@ -106,6 +106,7 @@ export const lessonPlans = pgTable("lesson_plans", {
   roomId: varchar("room_id").notNull().references(() => rooms.id),
   teacherId: varchar("teacher_id").notNull().references(() => users.id),
   weekStart: text("week_start").notNull(), // ISO date string
+  scheduleType: varchar("schedule_type", { length: 50 }).notNull().default("time-based"), // "time-based" or "position-based"
   status: text("status").notNull().default("draft"), // draft, submitted, approved
   submittedAt: timestamp("submitted_at"),
   approvedAt: timestamp("approved_at"),
@@ -252,6 +253,31 @@ export const ageGroups = pgTable("age_groups", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Organization Settings table for tenant-wide configuration
+export const organizationSettings = pgTable("organization_settings", {
+  id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull().unique(),
+  // Location-specific schedule settings
+  locationSettings: json("location_settings").$type<{
+    [locationId: string]: {
+      scheduleType: "time-based" | "position-based";
+      startTime?: string; // HH:MM format for time-based
+      endTime?: string; // HH:MM format for time-based
+      slotsPerDay?: number; // For position-based scheduling
+    }
+  }>().default({}),
+  // Default settings for new locations
+  defaultScheduleType: varchar("default_schedule_type", { length: 50 }).notNull().default("time-based"),
+  defaultStartTime: varchar("default_start_time", { length: 5 }).default("06:00"),
+  defaultEndTime: varchar("default_end_time", { length: 5 }).default("18:00"),
+  defaultSlotsPerDay: integer("default_slots_per_day").default(8),
+  weekStartDay: integer("week_start_day").default(1), // 0=Sunday, 1=Monday
+  autoSaveInterval: integer("auto_save_interval").default(5), // minutes
+  enableNotifications: boolean("enable_notifications").default(true),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Settings schemas
 export const insertLocationSchema = createInsertSchema(locations).omit({
   id: true,
@@ -272,6 +298,16 @@ export const insertAgeGroupSchema = createInsertSchema(ageGroups).omit({
   id: true,
   createdAt: true,
 });
+
+export const insertOrganizationSettingsSchema = createInsertSchema(organizationSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Type exports for organization settings
+export type OrganizationSettings = typeof organizationSettings.$inferSelect;
+export type InsertOrganizationSettings = z.infer<typeof insertOrganizationSettingsSchema>;
 
 // Types
 export type Tenant = typeof tenants.$inferSelect;

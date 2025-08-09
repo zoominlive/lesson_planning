@@ -31,7 +31,8 @@ import {
   type InsertCategory,
   insertCategorySchema,
   type InsertAgeGroup,
-  insertAgeGroupSchema
+  insertAgeGroupSchema,
+  insertOrganizationSettingsSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -42,7 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve milestone images from object storage (public access for display in UI)
   app.get('/api/milestones/images/*', async (req, res) => {
     try {
-      const filePath = req.params[0]; // Gets everything after /api/milestones/images/
+      const filePath = (req.params as any)['0'] || ''; // Gets everything after /api/milestones/images/
       await milestoneStorage.downloadMilestoneImage(filePath, res);
     } catch (error) {
       console.error('Error serving milestone image:', error);
@@ -243,10 +244,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertMilestoneSchema.parse(req.body);
       
-      // Validate that user has access to the location they're creating the milestone in
-      const accessCheck = await validateLocationAccess(req, data.locationId);
-      if (!accessCheck.allowed) {
-        return res.status(403).json({ error: accessCheck.message });
+      // Validate that user has access to all locations they're creating the milestone in
+      if (data.locationIds && data.locationIds.length > 0) {
+        for (const locationId of data.locationIds) {
+          const accessCheck = await validateLocationAccess(req, locationId);
+          if (!accessCheck.allowed) {
+            return res.status(403).json({ error: accessCheck.message });
+          }
+        }
       }
       
       const milestone = await storage.createMilestone(data);
@@ -268,17 +273,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Milestone not found" });
       }
       
-      // Validate access to existing location
-      const accessCheck = await validateLocationAccess(req, existing.locationId);
-      if (!accessCheck.allowed) {
-        return res.status(403).json({ error: accessCheck.message });
+      // Validate access to existing locations
+      for (const locationId of existing.locationIds) {
+        const accessCheck = await validateLocationAccess(req, locationId);
+        if (!accessCheck.allowed) {
+          return res.status(403).json({ error: accessCheck.message });
+        }
       }
       
-      // If changing location, validate access to new location
-      if (data.locationId && data.locationId !== existing.locationId) {
-        const newAccessCheck = await validateLocationAccess(req, data.locationId);
-        if (!newAccessCheck.allowed) {
-          return res.status(403).json({ error: `Cannot move to location: ${newAccessCheck.message}` });
+      // If changing locations, validate access to new locations
+      if (data.locationIds) {
+        for (const locationId of data.locationIds) {
+          const newAccessCheck = await validateLocationAccess(req, locationId);
+          if (!newAccessCheck.allowed) {
+            return res.status(403).json({ error: `Cannot move to location: ${newAccessCheck.message}` });
+          }
         }
       }
       
@@ -300,7 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate location access - check if user has access to any of the milestone's locations
-      const userLocationIds = getUserAuthorizedLocationIds(req);
+      const userLocationIds = await getUserAuthorizedLocationIds(req);
       const hasAccess = milestone.locationIds.some(locId => userLocationIds.includes(locId));
       if (!hasAccess) {
         return res.status(403).json({ error: "Access denied. You don't have permission to access this milestone." });
@@ -854,7 +863,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lesson Plans routes
   app.get("/api/lesson-plans", async (req: AuthenticatedRequest, res) => {
     try {
-      const { teacherId, locationId, roomId } = req.query;
+      const { teacherId, locationId, roomId, scheduleType } = req.query;
       
       // Validate location access if locationId is provided
       if (locationId) {
@@ -867,11 +876,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get authorized location IDs for filtering
       const authorizedLocationIds = await getUserAuthorizedLocationIds(req);
       
-      // Get lesson plans
+      // Get lesson plans with optional schedule type filter
       let lessonPlans = await storage.getLessonPlans(
         teacherId as string, 
         locationId as string, 
-        roomId as string
+        roomId as string,
+        scheduleType as string
       );
       
       // Filter to only authorized locations if no specific location requested
@@ -940,14 +950,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/scheduled-activities/:roomId", async (req: AuthenticatedRequest, res) => {
     try {
       const { roomId } = req.params;
+      const { weekStart, locationId } = req.query;
+      
+      console.log('[GET /api/scheduled-activities] Params:', { roomId, weekStart, locationId });
       
       // Get all scheduled activities for this room
       const allScheduledActivities = await storage.getAllScheduledActivities();
       
-      // Filter by room and tenant
-      const roomScheduledActivities = allScheduledActivities.filter(
-        sa => sa.roomId === roomId && sa.tenantId === req.tenantId
-      );
+      // Filter lesson plans by week, location, and room if weekStart is provided
+      let lessonPlanIds: string[] = [];
+      if (weekStart && locationId) {
+        // Get organization settings to determine current schedule type for this location
+        const orgSettings = await storage.getOrganizationSettings();
+        let currentScheduleType: 'time-based' | 'position-based' = 'time-based'; // default
+        
+        if (orgSettings && orgSettings.locationSettings) {
+          const locationSettings = orgSettings.locationSettings[locationId as string];
+          if (locationSettings && locationSettings.scheduleType) {
+            currentScheduleType = locationSettings.scheduleType as 'time-based' | 'position-based';
+          } else if (orgSettings.defaultScheduleType) {
+            currentScheduleType = orgSettings.defaultScheduleType as 'time-based' | 'position-based';
+          }
+        }
+        
+        const allLessonPlans = await storage.getLessonPlans();
+        
+        // Filter lesson plans by the week start date, location, room AND schedule type
+        const weekLessonPlans = allLessonPlans.filter(lp => {
+          // Parse the dates and compare only the date part (not time)
+          const lpWeekStart = new Date(lp.weekStart);
+          const requestedWeekStart = new Date(weekStart as string);
+          
+          // Set both dates to start of day for comparison
+          lpWeekStart.setHours(0, 0, 0, 0);
+          requestedWeekStart.setHours(0, 0, 0, 0);
+          
+          const matchesWeek = lpWeekStart.getTime() === requestedWeekStart.getTime();
+          const matchesLocation = lp.locationId === locationId;
+          const matchesRoom = lp.roomId === roomId;
+          const matchesScheduleType = lp.scheduleType === currentScheduleType;
+          
+          console.log('[GET /api/scheduled-activities] Checking lesson plan:', {
+            lpId: lp.id,
+            lpWeekStart: lpWeekStart.toISOString(),
+            requestedWeekStart: requestedWeekStart.toISOString(),
+            lpLocation: lp.locationId,
+            lpRoom: lp.roomId,
+            lpScheduleType: lp.scheduleType,
+            currentScheduleType,
+            matchesWeek,
+            matchesLocation,
+            matchesRoom,
+            matchesScheduleType
+          });
+          
+          return matchesWeek && matchesLocation && matchesRoom && matchesScheduleType;
+        });
+        
+        // IMPORTANT: Only use the most recent lesson plan to avoid duplicates
+        // Sort by ID (which are UUIDs) to get consistent results, or we could add a created_at field
+        if (weekLessonPlans.length > 0) {
+          // For now, just take the first one (or we could sort by some criteria)
+          // In production, we should prevent duplicate lesson plans from being created
+          const mostRecentPlan = weekLessonPlans[weekLessonPlans.length - 1]; // Take the last one added
+          lessonPlanIds = [mostRecentPlan.id];
+          console.log(`[GET /api/scheduled-activities] Found ${weekLessonPlans.length} lesson plans, using most recent:`, mostRecentPlan.id);
+        } else {
+          console.log('[GET /api/scheduled-activities] No matching lesson plans found');
+        }
+      }
+      
+      // Filter by room, tenant, and optionally by lesson plan (week)
+      const roomScheduledActivities = allScheduledActivities.filter(sa => {
+        const matchesRoom = sa.roomId === roomId;
+        const matchesTenant = sa.tenantId === req.tenantId;
+        const matchesWeek = !weekStart || lessonPlanIds.includes(sa.lessonPlanId);
+        return matchesRoom && matchesTenant && matchesWeek;
+      });
+      
+      console.log('[GET /api/scheduled-activities] Filtered activities count:', roomScheduledActivities.length);
       
       // Populate activity data for each scheduled activity
       const populatedActivities = await Promise.all(
@@ -984,43 +1065,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/scheduled-activities", async (req: AuthenticatedRequest, res) => {
     try {
-      let { lessonPlanId, ...otherData } = req.body;
+      let { lessonPlanId, weekStart, ...otherData } = req.body;
       
-      // If no lesson plan ID provided, try to create one automatically
+      console.log('[POST /api/scheduled-activities] Request body:', { lessonPlanId, weekStart, ...otherData });
+      
+      // If no lesson plan ID provided, try to find or create one
       if (!lessonPlanId && otherData.locationId && otherData.roomId) {
-        // Use the authenticated user as the teacher
-        let teacherId = req.userId || 'default-teacher';
+        // Determine the week start date
+        let targetWeekStart: Date;
+        if (weekStart) {
+          targetWeekStart = new Date(weekStart);
+        } else {
+          // Default to current week if not provided
+          targetWeekStart = new Date();
+          const dayOfWeek = targetWeekStart.getDay();
+          const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+          targetWeekStart.setDate(targetWeekStart.getDate() + daysToMonday);
+        }
+        targetWeekStart.setHours(0, 0, 0, 0);
         
-        // Try to get existing user by ID
-        let teacher = await storage.getUser(teacherId);
+        console.log('[POST /api/scheduled-activities] Target week start:', targetWeekStart.toISOString());
         
-        if (!teacher) {
-          // Create a default teacher if none exists
-          const defaultUser = await storage.createUser({
-            tenantId: req.tenantId!,
-            username: 'default.teacher',
-            password: 'temp123',
-            name: 'Default Teacher',
-            email: 'teacher@example.com',
-            classroom: 'Main Room'
-          });
-          teacherId = defaultUser.id;
+        // Get organization settings to determine schedule type for this location
+        const orgSettings = await storage.getOrganizationSettings();
+        let currentScheduleType: 'time-based' | 'position-based' = 'time-based'; // default
+        
+        if (orgSettings && orgSettings.locationSettings) {
+          const locationSettings = orgSettings.locationSettings[otherData.locationId];
+          if (locationSettings && locationSettings.scheduleType) {
+            currentScheduleType = locationSettings.scheduleType as 'time-based' | 'position-based';
+          } else if (orgSettings.defaultScheduleType) {
+            currentScheduleType = orgSettings.defaultScheduleType as 'time-based' | 'position-based';
+          }
         }
         
-        // Create a lesson plan for the current week
-        const weekStart = new Date();
-        weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Start of week
-        
-        const lessonPlan = await storage.createLessonPlan({
-          tenantId: req.tenantId!,
-          locationId: otherData.locationId,
-          roomId: otherData.roomId,
-          teacherId: teacherId,
-          weekStart: weekStart.toISOString(),
-          status: 'draft'
+        // First try to find existing lesson plan for this week/location/room with matching schedule type
+        const allLessonPlans = await storage.getLessonPlans();
+        const existingLessonPlan = allLessonPlans.find(lp => {
+          const lpWeekStart = new Date(lp.weekStart);
+          lpWeekStart.setHours(0, 0, 0, 0);
+          
+          return lpWeekStart.getTime() === targetWeekStart.getTime() &&
+                 lp.locationId === otherData.locationId &&
+                 lp.roomId === otherData.roomId &&
+                 lp.tenantId === req.tenantId &&
+                 lp.scheduleType === currentScheduleType;
         });
         
-        lessonPlanId = lessonPlan.id;
+        if (existingLessonPlan) {
+          console.log('[POST /api/scheduled-activities] Found existing lesson plan:', existingLessonPlan.id);
+          lessonPlanId = existingLessonPlan.id;
+        } else {
+          // Create new lesson plan if none exists
+          console.log('[POST /api/scheduled-activities] Creating new lesson plan');
+          
+          // Use the authenticated user as the teacher
+          let teacherId = req.userId || 'default-teacher';
+          
+          // Try to get existing user by ID
+          let teacher = await storage.getUser(teacherId);
+          
+          if (!teacher) {
+            // Create a default teacher if none exists
+            const defaultUser = await storage.createUser({
+              tenantId: req.tenantId!,
+              username: 'default.teacher',
+              password: 'temp123',
+              name: 'Default Teacher',
+              email: 'teacher@example.com',
+              classroom: 'Main Room'
+            });
+            teacherId = defaultUser.id;
+          }
+          
+          // Use the already fetched schedule type from above
+          const lessonPlan = await storage.createLessonPlan({
+            tenantId: req.tenantId!,
+            locationId: otherData.locationId,
+            roomId: otherData.roomId,
+            teacherId: teacherId,
+            weekStart: targetWeekStart.toISOString(),
+            scheduleType: currentScheduleType,
+            status: 'draft'
+          });
+          
+          console.log('[POST /api/scheduled-activities] Created lesson plan:', lessonPlan.id);
+          lessonPlanId = lessonPlan.id;
+        }
       }
       
       // Now create the scheduled activity with the lesson plan ID
@@ -1066,6 +1197,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const scheduledActivity = await storage.updateScheduledActivity(id, data);
       res.json(scheduledActivity);
     } catch (error) {
+      res.status(400).json({ error: "Invalid scheduled activity data" });
+    }
+  });
+
+  // PATCH endpoint for partial updates (like drag and drop moves)
+  app.patch("/api/scheduled-activities/:id", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const data = insertScheduledActivitySchema.partial().parse(req.body);
+      
+      console.log('[PATCH /api/scheduled-activities] Updating activity:', id, 'with data:', data);
+      
+      // Get existing scheduled activity to check location access
+      const existing = await storage.getScheduledActivity(id);
+      if (!existing) {
+        return res.status(404).json({ error: "Scheduled activity not found" });
+      }
+      
+      // Validate access to existing location
+      const accessCheck = await validateLocationAccess(req, existing.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
+      // If changing location, validate access to new location
+      if (data.locationId && data.locationId !== existing.locationId) {
+        const newAccessCheck = await validateLocationAccess(req, data.locationId);
+        if (!newAccessCheck.allowed) {
+          return res.status(403).json({ error: `Cannot move to location: ${newAccessCheck.message}` });
+        }
+      }
+      
+      const scheduledActivity = await storage.updateScheduledActivity(id, data);
+      res.json(scheduledActivity);
+    } catch (error) {
+      console.error('[PATCH /api/scheduled-activities] Error:', error);
       res.status(400).json({ error: "Invalid scheduled activity data" });
     }
   });
@@ -1409,6 +1576,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete age group" });
+    }
+  });
+
+  // Organization Settings API Routes
+  app.get("/api/organization-settings", async (req: AuthenticatedRequest, res) => {
+    try {
+      const settings = await storage.getOrganizationSettings();
+      
+      // Get all locations for this tenant to include in response
+      const locations = await storage.getLocations();
+      
+      // Return default settings if none exist
+      if (!settings) {
+        return res.json({
+          locationSettings: {},
+          defaultScheduleType: 'time-based',
+          defaultStartTime: '06:00',
+          defaultEndTime: '18:00',
+          defaultSlotsPerDay: 8,
+          weekStartDay: 1,
+          autoSaveInterval: 5,
+          enableNotifications: true,
+          locations: locations // Include locations for UI
+        });
+      }
+      
+      res.json({
+        ...settings,
+        locations: locations // Include locations for UI
+      });
+    } catch (error) {
+      console.error("Organization settings fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch organization settings" });
+    }
+  });
+
+  app.put("/api/organization-settings", async (req: AuthenticatedRequest, res) => {
+    try {
+      const updates = req.body;
+      const settings = await storage.updateOrganizationSettings(updates);
+      
+      // Get all locations for response
+      const locations = await storage.getLocations();
+      
+      res.json({
+        ...settings,
+        locations: locations
+      });
+    } catch (error) {
+      console.error("Organization settings update error:", error);
+      res.status(400).json({ error: "Invalid settings data" });
     }
   });
 

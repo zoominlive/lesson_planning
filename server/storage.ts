@@ -23,6 +23,8 @@ import {
   type InsertCategory,
   type AgeGroup,
   type InsertAgeGroup,
+  type OrganizationSettings,
+  type InsertOrganizationSettings,
   users,
   milestones,
   materials,
@@ -34,7 +36,8 @@ import {
   locations,
   rooms,
   categories,
-  ageGroups
+  ageGroups,
+  organizationSettings
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, isNull } from "drizzle-orm";
@@ -118,6 +121,10 @@ export interface IStorage {
   createAgeGroup(ageGroup: InsertAgeGroup): Promise<AgeGroup>;
   updateAgeGroup(id: string, ageGroup: Partial<InsertAgeGroup>): Promise<AgeGroup | undefined>;
   deleteAgeGroup(id: string): Promise<boolean>;
+
+  // Organization Settings
+  getOrganizationSettings(): Promise<OrganizationSettings | undefined>;
+  updateOrganizationSettings(settings: Partial<InsertOrganizationSettings>): Promise<OrganizationSettings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -186,10 +193,7 @@ export class DatabaseStorage implements IStorage {
     const milestoneData = this.tenantId ? { ...insertMilestone, tenantId: this.tenantId } : insertMilestone;
     const [milestone] = await this.db
       .insert(milestones)
-      .values({
-        ...milestoneData,
-        locationIds: milestoneData.locationIds || []
-      })
+      .values(milestoneData as any)
       .returning();
     return milestone;
   }
@@ -259,7 +263,7 @@ export class DatabaseStorage implements IStorage {
     const materialData = this.tenantId ? { ...insertMaterial, tenantId: this.tenantId } : insertMaterial;
     const [material] = await this.db
       .insert(materials)
-      .values(materialData)
+      .values(materialData as any)
       .returning();
     return material;
   }
@@ -268,9 +272,17 @@ export class DatabaseStorage implements IStorage {
     const conditions = [eq(materials.id, id)];
     if (this.tenantId) conditions.push(eq(materials.tenantId, this.tenantId));
     
+    const updateData: any = { ...updates };
+    if (updates.locationIds) {
+      updateData.locationIds = Array.isArray(updates.locationIds) ? updates.locationIds : [];
+    }
+    if (updates.ageGroups) {
+      updateData.ageGroups = Array.isArray(updates.ageGroups) ? updates.ageGroups : [];
+    }
+    
     const [material] = await this.db
       .update(materials)
-      .set(updates)
+      .set(updateData)
       .where(and(...conditions))
       .returning();
     return material || undefined;
@@ -313,7 +325,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const [activity] = await this.db
         .insert(activities)
-        .values(activityData)
+        .values(activityData as any)
         .returning();
       console.log('[DatabaseStorage] Activity created successfully:', activity.id);
       return activity;
@@ -327,9 +339,32 @@ export class DatabaseStorage implements IStorage {
     const conditions = [eq(activities.id, id)];
     if (this.tenantId) conditions.push(eq(activities.tenantId, this.tenantId));
     
+    const updateData: any = { ...updates };
+    if (updates.ageGroupIds) {
+      updateData.ageGroupIds = Array.isArray(updates.ageGroupIds) ? updates.ageGroupIds : [];
+    }
+    if (updates.milestoneIds) {
+      updateData.milestoneIds = Array.isArray(updates.milestoneIds) ? updates.milestoneIds : [];
+    }
+    if (updates.materialIds) {
+      updateData.materialIds = Array.isArray(updates.materialIds) ? updates.materialIds : [];
+    }
+    if (updates.instructions) {
+      updateData.instructions = Array.isArray(updates.instructions) ? updates.instructions : [];
+    }
+    if (updates.objectives) {
+      updateData.objectives = Array.isArray(updates.objectives) ? updates.objectives : [];
+    }
+    if (updates.safetyConsiderations) {
+      updateData.safetyConsiderations = Array.isArray(updates.safetyConsiderations) ? updates.safetyConsiderations : [];
+    }
+    if (updates.variations) {
+      updateData.variations = Array.isArray(updates.variations) ? updates.variations : [];
+    }
+    
     const [activity] = await this.db
       .update(activities)
-      .set(updates)
+      .set(updateData)
       .where(and(...conditions))
       .returning();
     return activity || undefined;
@@ -352,12 +387,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Lesson Plans
-  async getLessonPlans(teacherId?: string, locationId?: string, roomId?: string): Promise<LessonPlan[]> {
+  async getLessonPlans(teacherId?: string, locationId?: string, roomId?: string, scheduleType?: string): Promise<LessonPlan[]> {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
     if (teacherId) conditions.push(eq(lessonPlans.teacherId, teacherId));
     if (locationId) conditions.push(eq(lessonPlans.locationId, locationId));
     if (roomId) conditions.push(eq(lessonPlans.roomId, roomId));
+    if (scheduleType) conditions.push(eq(lessonPlans.scheduleType, scheduleType));
     
     return await this.db.select().from(lessonPlans).where(conditions.length ? and(...conditions) : undefined);
   }
@@ -715,6 +751,42 @@ export class DatabaseStorage implements IStorage {
     const [tokenSecret] = await this.db.update(tokenSecrets).set(data)
       .where(eq(tokenSecrets.tenantId, tenantId)).returning();
     return tokenSecret;
+  }
+
+  // Organization Settings Implementation
+  async getOrganizationSettings(): Promise<OrganizationSettings | undefined> {
+    if (!this.tenantId) return undefined;
+    
+    const [settings] = await this.db
+      .select()
+      .from(organizationSettings)
+      .where(eq(organizationSettings.tenantId, this.tenantId));
+    
+    return settings || undefined;
+  }
+
+  async updateOrganizationSettings(updates: Partial<InsertOrganizationSettings>): Promise<OrganizationSettings> {
+    if (!this.tenantId) throw new Error("Tenant context not set");
+    
+    // Check if settings exist for this tenant
+    const existing = await this.getOrganizationSettings();
+    
+    if (existing) {
+      // Update existing settings
+      const [updated] = await this.db
+        .update(organizationSettings)
+        .set({ ...updates, updatedAt: new Date() } as any)
+        .where(eq(organizationSettings.tenantId, this.tenantId))
+        .returning();
+      return updated;
+    } else {
+      // Create new settings
+      const [created] = await this.db
+        .insert(organizationSettings)
+        .values({ ...updates, tenantId: this.tenantId } as any)
+        .returning();
+      return created;
+    }
   }
 }
 
