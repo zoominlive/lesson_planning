@@ -39,9 +39,8 @@ export default function LessonPlanner() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const { data: userInfo } = useQuery<UserInfo>({
-    queryKey: ["/api/user"],
-  });
+  // Get user info directly from the token
+  const userInfo = getUserInfo();
 
   // Fetch all rooms to auto-select first room for location
   const { data: allRooms = [] } = useQuery<any[]>({
@@ -95,7 +94,7 @@ export default function LessonPlanner() {
   });
 
   // Fetch location settings to get schedule type
-  const { data: locationSettings } = useQuery({
+  const { data: locationSettings } = useQuery<{ scheduleType: 'time-based' | 'position-based' }>({
     queryKey: [`/api/locations/${selectedLocation}/settings`],
     enabled: !!selectedLocation,
   });
@@ -236,7 +235,7 @@ export default function LessonPlanner() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {userInfo?.role?.toLowerCase() === "admin" && (
+                {(userInfo?.role?.toLowerCase() === "admin" || userInfo?.role?.toLowerCase() === "superadmin") && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
