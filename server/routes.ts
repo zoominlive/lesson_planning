@@ -1834,7 +1834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/permissions/overrides", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       console.log("POST /api/permissions/overrides - Request body:", req.body);
-      console.log("User role:", req.user?.role);
+      console.log("User role:", req.role);
       
       const tenantId = req.tenantId;
       if (!tenantId) {
@@ -1842,9 +1842,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only admin and superadmin can manage permissions
-      const userRole = req.user?.role?.toLowerCase();
+      const userRole = req.role?.toLowerCase();
       if (userRole !== 'admin' && userRole !== 'superadmin') {
-        console.log("Permission denied - User role:", req.user?.role);
+        console.log("Permission denied - User role:", req.role);
         return res.status(403).json({ error: "Insufficient permissions" });
       }
       
@@ -1873,7 +1873,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("PATCH /api/permissions/overrides/:id - ID:", req.params.id);
       console.log("Request body:", req.body);
-      console.log("User role:", req.user?.role);
+      console.log("User role:", req.role);
       
       const tenantId = req.tenantId;
       if (!tenantId) {
@@ -1881,9 +1881,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only admin and superadmin can manage permissions
-      const userRole = req.user?.role?.toLowerCase();
+      const userRole = req.role?.toLowerCase();
       if (userRole !== 'admin' && userRole !== 'superadmin') {
-        console.log("Permission denied - User role:", req.user?.role);
+        console.log("Permission denied - User role:", req.role);
         return res.status(403).json({ error: "Insufficient permissions" });
       }
       
@@ -1920,8 +1920,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const permission = await storage.checkUserPermission(
-        req.user?.userId || '',
-        req.user?.role || '',
+        req.userId || '',
+        req.role || '',
         resource,
         action,
         tenantId
