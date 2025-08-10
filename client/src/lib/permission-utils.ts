@@ -1,9 +1,44 @@
 import { getUserInfo } from './auth';
 
+// Cache for permission overrides
+let permissionOverridesCache: { [key: string]: string[] } | null = null;
+
+/**
+ * Fetch permission overrides from localStorage (synced from backend)
+ */
+function getPermissionOverrides(): { [key: string]: string[] } {
+  if (permissionOverridesCache) {
+    return permissionOverridesCache;
+  }
+  
+  try {
+    const stored = localStorage.getItem('permissionOverrides');
+    if (stored) {
+      permissionOverridesCache = JSON.parse(stored);
+      return permissionOverridesCache;
+    }
+  } catch (e) {
+    console.warn('Could not parse permission overrides:', e);
+  }
+  
+  return {};
+}
+
+/**
+ * Store permission overrides in localStorage
+ */
+export function setPermissionOverrides(overrides: Array<{ permissionName: string; autoApproveRoles: string[] }>) {
+  const overrideMap: { [key: string]: string[] } = {};
+  overrides.forEach(override => {
+    overrideMap[override.permissionName] = override.autoApproveRoles || [];
+  });
+  localStorage.setItem('permissionOverrides', JSON.stringify(overrideMap));
+  permissionOverridesCache = overrideMap;
+}
+
 /**
  * Check if the current user has permission for a specific action.
- * For now, this does a simple role-based check, but can be extended
- * to check against permission overrides from the backend.
+ * First checks permission overrides from backend, then falls back to defaults.
  */
 export function hasPermission(permissionName: string): boolean {
   const userInfo = getUserInfo();
@@ -14,9 +49,15 @@ export function hasPermission(permissionName: string): boolean {
     return true;
   }
   
-  // Define default permissions by role (matching backend configuration)
+  // First check permission overrides from backend
+  const overrides = getPermissionOverrides();
+  if (overrides[permissionName]) {
+    return role ? overrides[permissionName].includes(role) : false;
+  }
+  
+  // Fall back to default permissions (matching backend configuration)
   const defaultPermissions: { [key: string]: string[] } = {
-    'settings.access': ['admin'],  // Only admin and superadmin
+    'settings.access': ['admin'],  // Only admin and superadmin by default
     'settings.manage': ['admin'],  // Backend uses settings.manage
     'lesson_plan.approve': ['director', 'assistant_director', 'admin'],
     'lesson_plan.reject': ['director', 'assistant_director', 'admin'],

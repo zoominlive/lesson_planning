@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Info, Save, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { setPermissionOverrides } from '@/lib/permission-utils';
 
 interface PermissionOverride {
   id?: string;
@@ -95,8 +96,13 @@ export default function PermissionSettings() {
       });
       return Promise.all(promises);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/permissions/overrides'] });
+      // Update the cached permission overrides in localStorage
+      setPermissionOverrides(variables.map(override => ({
+        permissionName: override.permissionName,
+        autoApproveRoles: override.autoApproveRoles
+      })));
       toast({
         title: 'Success',
         description: 'Permission settings saved successfully',
