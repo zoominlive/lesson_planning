@@ -74,6 +74,12 @@ export function TokenSwitcher() {
 
   const switchUser = (userType: keyof typeof TEST_TOKENS) => {
     const user = TEST_TOKENS[userType];
+    
+    // Clear any old cached tokens first
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userInfo');
+    
+    // Set the new token
     setAuthToken(user.token);
     setCurrentUser(userType);
     
