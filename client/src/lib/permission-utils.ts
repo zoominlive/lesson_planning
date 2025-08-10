@@ -9,8 +9,11 @@ export function hasPermission(permissionName: string): boolean {
   const userInfo = getUserInfo();
   const role = userInfo?.role?.toLowerCase();
   
+  console.log('[hasPermission] Checking permission:', permissionName, 'for role:', role, 'Original role:', userInfo?.role);
+  
   // Superadmin always has all permissions
   if (role === 'superadmin') {
+    console.log('[hasPermission] Superadmin detected, returning true');
     return true;
   }
   
@@ -29,7 +32,9 @@ export function hasPermission(permissionName: string): boolean {
   };
   
   const allowedRoles = defaultPermissions[permissionName] || [];
-  return role ? allowedRoles.includes(role) : false;
+  const hasAccess = role ? allowedRoles.includes(role) : false;
+  console.log('[hasPermission] Allowed roles:', allowedRoles, 'Has access:', hasAccess);
+  return hasAccess;
 }
 
 /**
