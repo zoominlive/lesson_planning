@@ -1032,14 +1032,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return matchesWeek && matchesLocation && matchesRoom && matchesScheduleType;
         });
         
-        // IMPORTANT: Only use the most recent lesson plan to avoid duplicates
-        // Sort by ID (which are UUIDs) to get consistent results, or we could add a created_at field
+        // IMPORTANT: When multiple lesson plans exist, select the one with activities
         if (weekLessonPlans.length > 0) {
-          // For now, just take the first one (or we could sort by some criteria)
-          // In production, we should prevent duplicate lesson plans from being created
-          const mostRecentPlan = weekLessonPlans[weekLessonPlans.length - 1]; // Take the last one added
-          lessonPlanIds = [mostRecentPlan.id];
-          console.log(`[GET /api/scheduled-activities] Found ${weekLessonPlans.length} lesson plans, using most recent:`, mostRecentPlan.id);
+          // If there are multiple lesson plans, check which ones have activities
+          const plansWithActivityCount = await Promise.all(
+            weekLessonPlans.map(async (lp) => {
+              const activities = allScheduledActivities.filter(sa => 
+                sa.lessonPlanId === lp.id && sa.tenantId === req.tenantId
+              );
+              return { plan: lp, activityCount: activities.length };
+            })
+          );
+          
+          // Sort by activity count (descending) and then by created_at for consistency
+          plansWithActivityCount.sort((a, b) => {
+            if (b.activityCount !== a.activityCount) {
+              return b.activityCount - a.activityCount; // More activities first
+            }
+            // If same activity count, use the more recent one
+            return b.plan.createdAt > a.plan.createdAt ? 1 : -1;
+          });
+          
+          const selectedPlan = plansWithActivityCount[0].plan;
+          lessonPlanIds = [selectedPlan.id];
+          console.log(`[GET /api/scheduled-activities] Found ${weekLessonPlans.length} lesson plans, selected plan with ${plansWithActivityCount[0].activityCount} activities:`, selectedPlan.id);
         } else {
           console.log('[GET /api/scheduled-activities] No matching lesson plans found');
         }
