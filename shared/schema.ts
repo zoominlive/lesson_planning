@@ -94,6 +94,8 @@ export const activities = pgTable("activities", {
   safetyConsiderations: json("safety_considerations").$type<string[]>().default([]),
   spaceRequired: text("space_required"), // Indoor/Outdoor/Both
   groupSize: text("group_size"), // e.g. "1-4 children"
+  minChildren: integer("min_children").default(1), // Minimum number of children for this activity
+  maxChildren: integer("max_children").default(10), // Maximum number of children for this activity
   messLevel: text("mess_level"), // Low/Medium/High
   variations: json("variations").$type<string[]>().default([]), // Activity variations
   // System fields

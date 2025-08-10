@@ -29,6 +29,9 @@ This project is a comprehensive lesson planning application designed for early c
 - **Fixed Submit for Review errors**: Corrected apiRequest parameter order in lesson-planner.tsx to properly submit lesson plans for review
 - **Token Switcher Component**: Added role switching capability for testing with Admin, Teacher, and Director tokens. Located in bottom-right corner for easy access
 - **Fixed Authentication Override**: Modified auth initialization to respect manually set tokens from token switcher, preventing automatic override to admin token
+- **Activity Capacity Management**: Added min_children and max_children fields to activities table for specifying supported children ranges per activity
+- **Enhanced Activity Form**: Updated activity form to include minimum and maximum children input fields with proper validation
+- **Activity Library Display**: Modified activity cards to show children capacity ranges alongside duration for better planning visibility
 
 # User Preferences
 

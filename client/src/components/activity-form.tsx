@@ -78,8 +78,15 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
         safetyConsiderations: initialData.safetyConsiderations,
         spaceRequired: initialData.spaceRequired,
         groupSize: initialData.groupSize,
+        minChildren: initialData.minChildren || activity?.minChildren || 1,
+        maxChildren: initialData.maxChildren || activity?.maxChildren || 10,
         messLevel: initialData.messLevel,
         variations: initialData.variations,
+      }),
+      // Include min/max children even when not from AI data
+      ...(!initialData && {
+        minChildren: activity?.minChildren || 1,
+        maxChildren: activity?.maxChildren || 10,
       }),
     },
   });
@@ -428,6 +435,32 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                 data-testid="input-activity-duration"
               />
               {errors.duration && <p className="text-red-500 text-sm">{errors.duration.message}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="minChildren">Min Children</Label>
+                <Input 
+                  id="minChildren" 
+                  type="number" 
+                  min="1"
+                  {...register("minChildren", { valueAsNumber: true })} 
+                  data-testid="input-min-children"
+                />
+                {errors.minChildren && <p className="text-red-500 text-sm">{errors.minChildren.message}</p>}
+              </div>
+              
+              <div>
+                <Label htmlFor="maxChildren">Max Children</Label>
+                <Input 
+                  id="maxChildren" 
+                  type="number" 
+                  min="1"
+                  {...register("maxChildren", { valueAsNumber: true })} 
+                  data-testid="input-max-children"
+                />
+                {errors.maxChildren && <p className="text-red-500 text-sm">{errors.maxChildren.message}</p>}
+              </div>
             </div>
           </CardContent>
         </Card>
