@@ -111,6 +111,7 @@ export function TokenSwitcher() {
               <div className="flex flex-col">
                 <div className="font-medium">{user.label}</div>
                 <div className="text-xs text-muted-foreground">{user.username}</div>
+                <div className="text-xs text-muted-foreground">{user.role}</div>
               </div>
             </DropdownMenuItem>
           ))}
