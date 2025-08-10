@@ -29,8 +29,7 @@ const ROLES = [
 const PERMISSION_GROUPS = {
   'Lesson Plans': [
     { name: 'lesson_plan.submit', description: 'Submit lesson plans for review' },
-    { name: 'lesson_plan.approve', description: 'Approve submitted lesson plans' },
-    { name: 'lesson_plan.reject', description: 'Reject submitted lesson plans' },
+    { name: 'lesson_plan.approve', description: 'Review lesson plans (approve/reject)', isReviewPermission: true },
   ],
   'Activities': [
     { name: 'activity.create', description: 'Create new activities' },
@@ -64,6 +63,16 @@ export default function PermissionSettings() {
       existingOverrides.forEach((override: PermissionOverride) => {
         overrideMap[override.permissionName] = override;
       });
+      
+      // Sync lesson_plan.approve with lesson_plan.reject (use approve as the source of truth for the UI)
+      // If only reject exists, copy it to approve for the UI
+      if (overrideMap['lesson_plan.reject'] && !overrideMap['lesson_plan.approve']) {
+        overrideMap['lesson_plan.approve'] = {
+          ...overrideMap['lesson_plan.reject'],
+          permissionName: 'lesson_plan.approve'
+        };
+      }
+      
       setOverrides(overrideMap);
     }
   }, [existingOverrides]);
@@ -133,7 +142,26 @@ export default function PermissionSettings() {
 
   const handleSave = () => {
     const updates = Object.values(overrides);
-    saveMutation.mutate(updates);
+    
+    // If lesson_plan.approve is being saved, also sync lesson_plan.reject with the same settings
+    const approveOverride = overrides['lesson_plan.approve'];
+    if (approveOverride) {
+      // Create or update reject permission to match approve permission
+      const rejectOverride = {
+        ...approveOverride,
+        permissionName: 'lesson_plan.reject',
+        id: overrides['lesson_plan.reject']?.id // Preserve existing ID if it exists
+      };
+      updates.push(rejectOverride);
+    }
+    
+    // Remove duplicates by permission name (keeping the last one)
+    const uniqueUpdates = updates.reduce((acc, curr) => {
+      acc[curr.permissionName] = curr;
+      return acc;
+    }, {} as { [key: string]: PermissionOverride });
+    
+    saveMutation.mutate(Object.values(uniqueUpdates));
   };
 
   const handleReset = () => {
@@ -178,6 +206,42 @@ export default function PermissionSettings() {
                 {permissions.map(permission => {
                   const override = overrides[permission.name];
                   
+                  // For review permissions, only show which roles can access the review tab
+                  if ((permission as any).isReviewPermission) {
+                    return (
+                      <Card key={permission.name} className="p-4">
+                        <div className="mb-4">
+                          <h4 className="font-semibold">{permission.description}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Select which roles can access the Review tab and approve or reject submitted lesson plans
+                          </p>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">Roles with Review Access</Label>
+                            <div className="grid grid-cols-2 gap-3">
+                              {ROLES.filter(r => r.id !== 'superadmin').map(role => (
+                                <div key={role.id} className="flex items-center space-x-2">
+                                  <Switch
+                                    id={`${permission.name}-${role.id}-access`}
+                                    checked={override?.autoApproveRoles?.includes(role.id) || false}
+                                    onCheckedChange={() => handleRoleToggle(permission.name, role.id, 'autoApprove')}
+                                    data-testid={`switch-review-access-${role.id}`}
+                                  />
+                                  <Label htmlFor={`${permission.name}-${role.id}-access`} className="text-sm">
+                                    {role.name}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  }
+                  
+                  // Regular permissions show both requires approval and auto-approve
                   return (
                     <Card key={permission.name} className="p-4">
                       <div className="mb-4">
