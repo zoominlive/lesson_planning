@@ -36,6 +36,8 @@ export function getAuthToken(): string | null {
 
 export function clearAuthToken() {
   authToken = null;
+  superAdminLocations = null;
+  locationsFetchPromise = null;
   localStorage.removeItem('authToken');
   localStorage.removeItem('userInfo');
   console.log('Cleared auth token and user info from storage');
@@ -61,6 +63,36 @@ export interface UserInfo {
   locations: string[];
 }
 
+// Store SuperAdmin locations in memory to avoid repeated fetches
+let superAdminLocations: string[] | null = null;
+let locationsFetchPromise: Promise<void> | null = null;
+
+async function fetchAllLocationsForSuperAdmin(token: string): Promise<string[]> {
+  try {
+    const response = await fetch('/api/locations', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      console.warn('Failed to fetch locations for SuperAdmin');
+      return [];
+    }
+    
+    const locations = await response.json();
+    if (Array.isArray(locations)) {
+      const locationNames = locations.map(loc => loc.name);
+      console.log('SuperAdmin has access to all locations:', locationNames);
+      return locationNames;
+    }
+    return [];
+  } catch (error) {
+    console.warn('Error fetching locations for SuperAdmin:', error);
+    return [];
+  }
+}
+
 export function getUserInfo(): UserInfo | null {
   const token = getAuthToken();
   if (!token) return null;
@@ -77,15 +109,30 @@ export function getUserInfo(): UserInfo | null {
       locations: payload.locations || []
     };
     
-    // SuperAdmin should have access to all locations
-    // Check localStorage for cached all locations
+    // SuperAdmin should have access to all locations from the database
     if (payload.role === 'SuperAdmin') {
-      const cachedLocations = localStorage.getItem('allLocationNames');
-      if (cachedLocations) {
-        try {
-          userInfo.locations = JSON.parse(cachedLocations);
-        } catch {
-          // If parsing fails, keep original locations
+      // First check if we have locations in memory
+      if (superAdminLocations) {
+        userInfo.locations = superAdminLocations;
+      } else {
+        // Try to get from localStorage first
+        const cachedLocations = localStorage.getItem('allLocationNames');
+        if (cachedLocations) {
+          try {
+            userInfo.locations = JSON.parse(cachedLocations);
+            superAdminLocations = userInfo.locations;
+          } catch {
+            // If parsing fails, keep original locations
+          }
+        }
+        
+        // Trigger a background fetch to update the locations
+        if (!locationsFetchPromise && token) {
+          locationsFetchPromise = fetchAllLocationsForSuperAdmin(token).then(locations => {
+            superAdminLocations = locations;
+            localStorage.setItem('allLocationNames', JSON.stringify(locations));
+            locationsFetchPromise = null;
+          });
         }
       }
     }

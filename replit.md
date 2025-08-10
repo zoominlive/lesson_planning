@@ -4,6 +4,12 @@ This project is a comprehensive lesson planning application designed for early c
 
 ## Recent Changes (January 2025)
 
+### SuperAdmin Full Location Access (January 13, 2025)
+- **SuperAdmin universal access**: Modified backend to give SuperAdmin users access to ALL locations in database, not just those in JWT payload
+- **Backend bypass for SuperAdmin**: Updated /api/locations endpoint to skip location filtering when user role is 'SuperAdmin'
+- **Dynamic location fetching**: SuperAdmin users now fetch all locations from database dynamically regardless of JWT content
+- **All 3 locations available**: SuperAdmin can now access "Test Frontend Location", "Main Campus", and "Third Location"
+
 ### JWT Token Location Format Fix (January 13, 2025)
 - **Fixed location array format in test tokens**: Updated all test tokens in token-switcher to use exact location names (`["Main Campus", "Third Location"]`) instead of UUIDs
 - **Parent app compatibility**: Ensured tokens match the format expected by parent application which sends location names in the JWT payload

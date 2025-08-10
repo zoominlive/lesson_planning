@@ -1433,6 +1433,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const locations = await storage.getLocations();
       
+      // SuperAdmin gets access to all locations
+      if (req.role === 'SuperAdmin') {
+        res.json(locations);
+        return;
+      }
+      
       // Filter locations to only those the user has access to
       // Check both location ID and name for backward compatibility
       const filteredLocations = locations.filter(loc => 
