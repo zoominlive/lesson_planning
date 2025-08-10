@@ -83,6 +83,7 @@ export default function PermissionSettings() {
   // Save permission overrides
   const saveMutation = useMutation({
     mutationFn: async (updates: PermissionOverride[]) => {
+      console.log('Saving permission overrides:', updates);
       const promises = updates.map(override => 
         apiRequest(
           override.id ? `/api/permissions/overrides/${override.id}` : '/api/permissions/overrides',
@@ -101,6 +102,7 @@ export default function PermissionSettings() {
       setHasChanges(false);
     },
     onError: (error) => {
+      console.error('Failed to save permission settings:', error);
       toast({
         title: 'Error',
         description: 'Failed to save permission settings',

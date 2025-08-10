@@ -1833,26 +1833,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new permission override
   app.post("/api/permissions/overrides", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
+      console.log("POST /api/permissions/overrides - Request body:", req.body);
+      console.log("User role:", req.user?.role);
+      
       const tenantId = req.tenantId;
       if (!tenantId) {
         return res.status(401).json({ error: "Tenant context required" });
       }
       
       // Only admin and superadmin can manage permissions
-      if (req.user?.role !== 'Admin' && req.user?.role !== 'superadmin') {
+      const userRole = req.user?.role?.toLowerCase();
+      if (userRole !== 'admin' && userRole !== 'superadmin') {
+        console.log("Permission denied - User role:", req.user?.role);
         return res.status(403).json({ error: "Insufficient permissions" });
       }
       
       const validation = insertOrganizationPermissionOverrideSchema.safeParse(req.body);
       if (!validation.success) {
+        console.log("Validation failed:", validation.error);
         return res.status(400).json({ error: "Invalid permission override data", details: validation.error });
       }
       
+      console.log("Creating permission override:", validation.data);
       const override = await storage.createOrganizationPermissionOverride({
         ...validation.data,
         organizationId: tenantId
       });
       
+      console.log("Permission override created:", override);
       res.json(override);
     } catch (error) {
       console.error("Permission override creation error:", error);
@@ -1863,25 +1871,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update a permission override
   app.patch("/api/permissions/overrides/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
+      console.log("PATCH /api/permissions/overrides/:id - ID:", req.params.id);
+      console.log("Request body:", req.body);
+      console.log("User role:", req.user?.role);
+      
       const tenantId = req.tenantId;
       if (!tenantId) {
         return res.status(401).json({ error: "Tenant context required" });
       }
       
       // Only admin and superadmin can manage permissions
-      if (req.user?.role !== 'Admin' && req.user?.role !== 'superadmin') {
+      const userRole = req.user?.role?.toLowerCase();
+      if (userRole !== 'admin' && userRole !== 'superadmin') {
+        console.log("Permission denied - User role:", req.user?.role);
         return res.status(403).json({ error: "Insufficient permissions" });
       }
       
       const { id } = req.params;
       const updates = req.body;
       
+      console.log("Updating permission override:", id, updates);
       const override = await storage.updateOrganizationPermissionOverride(id, updates);
       
       if (!override) {
+        console.log("Permission override not found:", id);
         return res.status(404).json({ error: "Permission override not found" });
       }
       
+      console.log("Permission override updated:", override);
       res.json(override);
     } catch (error) {
       console.error("Permission override update error:", error);
