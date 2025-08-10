@@ -67,7 +67,7 @@ export function getUserInfo(): UserInfo | null {
   
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
-    return {
+    const userInfo = {
       tenantId: payload.tenantId,
       userId: payload.userId,
       userFirstName: payload.userFirstName,
@@ -76,6 +76,21 @@ export function getUserInfo(): UserInfo | null {
       role: payload.role,
       locations: payload.locations || []
     };
+    
+    // SuperAdmin should have access to all locations
+    // Check localStorage for cached all locations
+    if (payload.role === 'SuperAdmin') {
+      const cachedLocations = localStorage.getItem('allLocationNames');
+      if (cachedLocations) {
+        try {
+          userInfo.locations = JSON.parse(cachedLocations);
+        } catch {
+          // If parsing fails, keep original locations
+        }
+      }
+    }
+    
+    return userInfo;
   } catch (e) {
     console.warn('Could not decode user info from token:', e);
     return null;

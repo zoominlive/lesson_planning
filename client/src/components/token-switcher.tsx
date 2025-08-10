@@ -86,6 +86,24 @@ export function TokenSwitcher() {
     // Mark that the token was manually set
     localStorage.setItem('tokenManuallySet', 'true');
     
+    // If switching to SuperAdmin, ensure all locations are fetched and cached
+    if (user.role === 'SuperAdmin') {
+      fetch('/api/locations', {
+        headers: {
+          'Authorization': `Bearer ${user.token}`
+        }
+      })
+        .then(res => res.json())
+        .then(locations => {
+          if (Array.isArray(locations)) {
+            const locationNames = locations.map(loc => loc.name);
+            localStorage.setItem('allLocationNames', JSON.stringify(locationNames));
+            console.log('SuperAdmin: Cached all location names:', locationNames);
+          }
+        })
+        .catch(err => console.warn('Could not fetch locations for SuperAdmin:', err));
+    }
+    
     toast({
       title: "User Switched",
       description: `Now logged in as ${user.label} (${user.role})`,
