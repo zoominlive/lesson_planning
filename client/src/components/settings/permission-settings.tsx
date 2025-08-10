@@ -52,7 +52,7 @@ export default function PermissionSettings() {
   const [hasChanges, setHasChanges] = useState(false);
 
   // Get organization ID from auth context
-  const tenantId = localStorage.getItem('tenantId') || '';
+  const tenantId = localStorage.getItem('tenantId') || '7cb6c28d-164c-49fa-b461-dfc47a8a3fed';
 
   // Fetch existing permission overrides
   const { data: existingOverrides, isLoading } = useQuery({
@@ -86,8 +86,8 @@ export default function PermissionSettings() {
       console.log('Saving permission overrides:', updates);
       const promises = updates.map(override => 
         apiRequest(
-          override.id ? `/api/permissions/overrides/${override.id}` : '/api/permissions/overrides',
           override.id ? 'PATCH' : 'POST',
+          override.id ? `/api/permissions/overrides/${override.id}` : '/api/permissions/overrides',
           override
         )
       );
