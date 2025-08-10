@@ -16,7 +16,7 @@ import WeeklyCalendar from "@/components/weekly-calendar";
 import { Settings } from "lucide-react";
 import { useLocation } from "wouter";
 import { getUserInfo } from "@/lib/auth";
-import { hasPermission } from "@/lib/permission-utils";
+import { hasPermission, requiresLessonPlanApproval } from "@/lib/permission-utils";
 import { startOfWeek } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -137,11 +137,11 @@ export default function LessonPlanner() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans"] });
       queryClient.invalidateQueries({ queryKey: ["/api/scheduled-activities"] });
-      const role = userInfo?.role?.toLowerCase();
-      if (role === 'admin' || role === 'superadmin') {
+      const requiresApproval = requiresLessonPlanApproval();
+      if (!requiresApproval) {
         toast({
-          title: "Lesson Plan Approved",
-          description: "Your lesson plan has been automatically approved for this week.",
+          title: "Lesson Plan Finalized",
+          description: "Your lesson plan has been finalized for this week.",
         });
       } else {
         toast({

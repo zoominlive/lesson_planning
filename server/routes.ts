@@ -1324,13 +1324,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "User not found" });
       }
       
-      // Check if user is admin/superadmin - if so, auto-approve
+      // Check if user's role has auto-approval permissions
       const role = req.role?.toLowerCase();
-      if (role === 'admin' || role === 'superadmin') {
-        const approved = await storage.approveLessonPlan(id, currentUser.id, "Auto-approved by admin");
+      const autoApproveRoles = ['assistant_director', 'director', 'admin', 'superadmin'];
+      
+      if (role && autoApproveRoles.includes(role)) {
+        // Auto-approve for roles with auto-approval permission
+        const approved = await storage.approveLessonPlan(id, currentUser.id, "Auto-approved");
         res.json(approved);
       } else {
-        // Submit for review
+        // Submit for review for roles requiring approval
         const submitted = await storage.submitLessonPlanForReview(id, currentUser.id);
         res.json(submitted);
       }

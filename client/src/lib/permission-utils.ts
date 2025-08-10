@@ -75,6 +75,28 @@ export function hasPermission(permissionName: string): boolean {
 }
 
 /**
+ * Check if the current user's lesson plan submissions require approval
+ */
+export function requiresLessonPlanApproval(): boolean {
+  const userInfo = getUserInfo();
+  const role = userInfo?.role?.toLowerCase();
+  
+  // Check permission overrides first
+  const overrides = getPermissionOverrides();
+  
+  // Check if there's a specific override for lesson plan approval
+  if (overrides['lesson_plan.auto_approve']) {
+    return role ? !overrides['lesson_plan.auto_approve'].includes(role) : true;
+  }
+  
+  // Default auto-approve roles
+  const autoApproveRoles = ['assistant_director', 'director', 'admin', 'superadmin'];
+  
+  // If user's role is in auto-approve list, they don't require approval
+  return role ? !autoApproveRoles.includes(role) : true;
+}
+
+/**
  * Hook to check permissions with React Query
  * This will eventually fetch permission overrides from the backend
  */
