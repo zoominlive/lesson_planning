@@ -171,6 +171,7 @@ export interface IStorage {
   
   // Tenant Permission Overrides
   getTenantPermissionOverride(tenantId: string, permissionName: string): Promise<TenantPermissionOverride | undefined>;
+  getTenantPermissionOverrides(tenantId: string): Promise<TenantPermissionOverride[]>;
   createTenantPermissionOverride(override: InsertTenantPermissionOverride): Promise<TenantPermissionOverride>;
   updateTenantPermissionOverride(id: string, override: Partial<InsertTenantPermissionOverride>): Promise<TenantPermissionOverride | undefined>;
   
@@ -1096,6 +1097,13 @@ export class DatabaseStorage implements IStorage {
         eq(tenantPermissionOverrides.permissionName, permissionName)
       ));
     return override || undefined;
+  }
+  
+  async getTenantPermissionOverrides(tenantId: string): Promise<TenantPermissionOverride[]> {
+    return await this.db
+      .select()
+      .from(tenantPermissionOverrides)
+      .where(eq(tenantPermissionOverrides.tenantId, tenantId));
   }
   
   async createTenantPermissionOverride(insertOverride: InsertTenantPermissionOverride): Promise<TenantPermissionOverride> {

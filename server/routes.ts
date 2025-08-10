@@ -1812,16 +1812,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Tenant context required" });
       }
       
-      // Get all permissions to check for overrides
-      const permissions = await storage.getPermissions();
-      const overrides = [];
-      
-      for (const permission of permissions) {
-        const override = await storage.getTenantPermissionOverride(tenantId, permission.name);
-        if (override) {
-          overrides.push(override);
-        }
-      }
+      // Get all overrides for this tenant directly from database
+      const overrides = await storage.getTenantPermissionOverrides(tenantId);
       
       res.json(overrides);
     } catch (error) {
