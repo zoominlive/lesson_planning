@@ -11,15 +11,40 @@ import PermissionSettings from "@/components/settings/permission-settings";
 import { MapPin, Building, Tag, Users, ArrowLeft, Settings as SettingsIcon, Shield } from "lucide-react";
 import { useLocation } from "wouter";
 import { getUserInfo } from "@/lib/auth";
+import { hasPermission } from "@/lib/permission-utils";
 
 export function Settings() {
   const [, setLocation] = useLocation();
   const userInfo = getUserInfo();
   const isSuperAdmin = userInfo?.role?.toLowerCase() === 'superadmin';
 
+  // Check if user has permission to access settings
+  const hasAccess = hasPermission('settings.access');
+  
   const handleBackToPlanner = () => {
     setLocation('/');
   };
+
+  // Redirect if no access
+  if (!hasAccess) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-red-600">Access Denied</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">
+              You don't have permission to access the Settings page.
+            </p>
+            <Button onClick={handleBackToPlanner} className="w-full">
+              Return to Lesson Planner
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">

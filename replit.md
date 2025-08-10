@@ -4,6 +4,11 @@ This project is a comprehensive lesson planning application designed for early c
 
 ## Recent Changes (January 2025)
 
+### Page-Level Security Implementation (January 13, 2025)
+- **Added route-level authorization checks**: Settings and Review pages now check permissions before rendering, preventing unauthorized access via direct URL navigation
+- **Access denied screens**: Users without proper permissions see a clear "Access Denied" message with a button to return to the main application
+- **Fixed security vulnerability**: Previously only UI buttons were hidden but pages were still accessible via URL - now properly secured at the component level
+
 ### Multi-tenant Permission System (January 10, 2025)
 - **Added tenantId to permission tables**: Updated permissions, roles, and role_permissions tables to include tenant_id for proper multi-tenant data isolation
 - **Database migration**: Successfully migrated existing permission data to include tenant references
