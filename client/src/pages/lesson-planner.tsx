@@ -42,6 +42,11 @@ export default function LessonPlanner() {
   // Get user info directly from the token
   const userInfo = getUserInfo();
 
+  // Fetch all locations to map IDs to names
+  const { data: allLocations = [] } = useQuery<any[]>({
+    queryKey: ["/api/locations"],
+  });
+
   // Fetch all rooms to auto-select first room for location
   const { data: allRooms = [] } = useQuery<any[]>({
     queryKey: ["/api/rooms"],
@@ -220,16 +225,19 @@ export default function LessonPlanner() {
                   <div className="flex items-center gap-1 mt-1">
                     <MapPin className="h-3 w-3 text-gray-400" />
                     <div className="flex gap-1">
-                      {userInfo.locations.map((location, idx) => (
-                        <Badge
-                          key={idx}
-                          variant="secondary"
-                          className="text-xs py-0 h-5"
-                          data-testid={`location-badge-${idx}`}
-                        >
-                          {location}
-                        </Badge>
-                      ))}
+                      {userInfo.locations.map((locationId, idx) => {
+                        const locationName = allLocations.find((loc: any) => loc.id === locationId)?.name || locationId;
+                        return (
+                          <Badge
+                            key={idx}
+                            variant="secondary"
+                            className="text-xs py-0 h-5"
+                            data-testid={`location-badge-${idx}`}
+                          >
+                            {locationName}
+                          </Badge>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
