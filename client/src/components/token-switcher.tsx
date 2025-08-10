@@ -32,6 +32,12 @@ const TEST_TOKENS = {
     role: "Director",
     username: "director@example.com"
   },
+  assistant_director: {
+    label: "Assistant Director",
+    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImFzc2lzdGFudF9kaXJlY3RvcjEyMyIsInVzZXJGaXJzdE5hbWUiOiJFbWlseSIsInVzZXJMYXN0TmFtZSI6IkRhdmlzIiwidXNlcm5hbWUiOiJhc3Npc3RhbnRfZGlyZWN0b3JAZXhhbXBsZS5jb20iLCJyb2xlIjoiYXNzaXN0YW50X2RpcmVjdG9yIiwibG9jYXRpb25zIjpbImJmZDFkYzE0LTZjNmItNGZhMy04OTBiLWU1YjA5NmNkMjlmNCJdLCJpYXQiOjE3NTQ3OTk5NzB9.Wdprw6NUTHhKaCMb5NXSydB1vJAKdXcnF51FT1j_8tk",
+    role: "Assistant Director",
+    username: "assistant_director@example.com"
+  },
   superadmin: {
     label: "Super Admin User",
     token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InN1cGVyYWRtaW4xMjMiLCJ1c2VyRmlyc3ROYW1lIjoiU3VwZXIiLCJ1c2VyTGFzdE5hbWUiOiJBZG1pbiIsInVzZXJuYW1lIjoic3VwZXJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJTdXBlckFkbWluIiwibG9jYXRpb25zIjpbImJmZDFkYzE0LTZjNmItNGZhMy04OTBiLWU1YjA5NmNkMjlmNCJdLCJpYXQiOjE3NTQ3OTU4ODV9.I-XQ_2jwyPfrzGrB5eZWubkt8Vrdw6fTAQ1qCKqR5OU",
@@ -52,6 +58,8 @@ export function TokenSwitcher() {
         return "teacher";
       case "director123":
         return "director";
+      case "assistant_director123":
+        return "assistant_director";
       case "superadmin123":
         return "superadmin";
       case "e5b7f0de-c868-4e40-a0bd-e15937cb3097":
