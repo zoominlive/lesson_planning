@@ -110,20 +110,26 @@ export function initializeIframeAuth() {
     return;
   }
   
-  // In development, force the proper JWT token to fix authentication
+  // Check if we have a valid token in storage
   const currentToken = getAuthToken();
-  const properToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InVzZXIxMjMiLCJ1c2VyRmlyc3ROYW1lIjoiSm9obiIsInVzZXJMYXN0TmFtZSI6IkRvZSIsInVzZXJuYW1lIjoiam9obi5kb2VAa2luZGVydGFsZXMuY29tIiwicm9sZSI6IkFkbWluIiwibG9jYXRpb25zIjpbIk1haW4gQ2FtcHVzIiwiVGhpcmQgTG9jYXRpb24iXSwiaWF0IjoxNzU0NTM2MTg1fQ.uyZzqREEpTYvQZpj2bbs6CkmpDqh2x7vFWIlW12nRdw';
   
-  console.log('Current token:', currentToken ? currentToken.substring(0, 30) + '...' : 'null');
-  console.log('Proper token:', properToken.substring(0, 30) + '...');
-  console.log('Tokens match:', currentToken === properToken);
+  // Check if token was manually set (by token switcher)
+  const isManuallySet = localStorage.getItem('tokenManuallySet') === 'true';
   
-  // Force replace with proper JWT token if it's different
-  if (currentToken !== properToken) {
-    console.log('Updating to proper development JWT token');
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userInfo');
-    setAuthToken(properToken);
+  if (isManuallySet && currentToken) {
+    console.log('Using manually set token from token switcher');
+    return;
+  }
+  
+  // Default admin token for development (signed with 'dev-secret-key')
+  const defaultToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImU1YjdmMGRlLWM4NjgtNGU0MC1hMGJkLWUxNTkzN2NiMzA5NyIsInVzZXJGaXJzdE5hbWUiOiJBZG1pbiIsInVzZXJMYXN0TmFtZSI6IlVzZXIiLCJ1c2VybmFtZSI6ImFkbWluQGV4YW1wbGUuY29tIiwicm9sZSI6IkFkbWluIiwibG9jYXRpb25zIjpbImJmZDFkYzE0LTZjNmItNGZhMy04OTBiLWU1YjA5NmNkMjlmNCJdLCJpYXQiOjE3NTQ3MjkxMTh9.vyjtu7YwAsZDUR-1PDjkuKGlPINMsIpAkRW6eVLmtYs';
+  
+  // If no token or invalid token, set default
+  if (!currentToken) {
+    console.log('No token found, setting default admin token');
+    setAuthToken(defaultToken);
+    // Don't mark as manually set
+    localStorage.removeItem('tokenManuallySet');
     // Reload to apply the new token
     setTimeout(() => window.location.reload(), 100);
     return;
@@ -136,6 +142,7 @@ export function initializeIframeAuth() {
     if (event.data?.type === 'AUTH_TOKEN' && event.data?.token) {
       console.log('Received auth token via postMessage');
       setAuthToken(event.data.token);
+      localStorage.removeItem('tokenManuallySet');
       
       // Reload the page to apply the new token
       window.location.reload();

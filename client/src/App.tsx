@@ -7,7 +7,9 @@ import { initializeIframeAuth } from "./lib/auth";
 import LessonPlanner from "@/pages/lesson-planner";
 import TabletPlanner from "@/pages/tablet-planner";
 import { Settings } from "@/pages/Settings";
+import { LessonReview } from "@/pages/lesson-review";
 import NotFound from "@/pages/not-found";
+import { TokenSwitcher } from "@/components/token-switcher";
 import { useEffect } from "react";
 
 function Router() {
@@ -16,6 +18,7 @@ function Router() {
       <Route path="/" component={LessonPlanner} />
       <Route path="/tablet" component={TabletPlanner} />
       <Route path="/settings" component={Settings} />
+      <Route path="/review" component={LessonReview} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -32,6 +35,7 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
+        <TokenSwitcher />
       </TooltipProvider>
     </QueryClientProvider>
   );

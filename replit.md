@@ -2,7 +2,9 @@
 
 This project is a comprehensive lesson planning application designed for early childhood educators. Its primary purpose is to streamline the creation and management of weekly lesson plans. Key capabilities include managing activities, materials, and developmental milestones, as well as creating structured weekly schedules that align with educational objectives and available resources. The application supports a multi-tenant and multi-location architecture, ensuring data isolation and secure access for various educational organizations and their facilities.
 
-## Recent Changes (August 2025)
+## Recent Changes (January 2025)
+- **User tracking system**: Revamped Users table to track all users accessing the system via JWT tokens. Now captures first login date, last login date, login count, and user details from JWT tokens. Automatically creates/updates user records on each login.
+- **Fixed tablet activity scheduling**: Resolved issue where selecting activities from drawer and tapping schedule slots wasn't saving to database. Now properly uses API mutations with error handling.
 - **Drag-and-drop activity management**: Implemented comprehensive drag-and-drop functionality allowing users to move scheduled activities between time slots on both desktop and tablet interfaces
 - **Enhanced tablet calendar UI**: Activities are now visually draggable with cursor changes, opacity effects during drag, and drop zone highlighting for improved user experience
 - **PATCH API endpoint**: Added dedicated PATCH endpoint for partial updates of scheduled activities, specifically optimized for drag-and-drop operations
@@ -16,6 +18,22 @@ This project is a comprehensive lesson planning application designed for early c
 - **Cleaned up tablet header**: Removed menu button from tablet interface for cleaner, streamlined design
 - **Fixed automatic room selection**: Both desktop and tablet planners now consistently auto-select first room when switching locations for seamless user experience
 - **Updated position labels**: Removed "Position" prefix and converted numeric labels to written words (One, Two, Three, etc.) for cleaner calendar display
+- **Lesson Plan Review System**: Implemented comprehensive review workflow with role-based permissions. Teachers submit plans for review, directors/assistant directors/admins approve or reject with feedback
+- **Review Database Schema**: Added fields for tracking submission (submittedBy, submittedAt) and review (approvedBy, approvedAt, rejectedBy, rejectedAt, reviewNotes) in lesson plans table
+- **Review API Endpoints**: Created endpoints for /submit, /approve, /reject operations with proper location-based access control and user tracking
+- **Lesson Review Page**: Built dedicated review interface showing pending, approved, and rejected lesson plans with filtering by location and detailed review dialog
+- **Submit for Review Button**: Fixed submission logic to create lesson plan if needed and submit current week's plan, with automatic approval for admin/superadmin users
+- **Review Page Navigation**: Moved review functionality to main navigation tabs for better accessibility - appears as 5th tab for authorized roles (director, assistant_director, admin, superadmin)
+- **Fixed JWT location handling**: Updated auth middleware to accept both location names and IDs in JWT tokens for backward compatibility
+- **Fixed room filtering**: Resolved issue where rooms weren't loading due to JWT location name/ID mismatch - now properly filters rooms based on user's authorized locations
+- **Fixed Submit for Review errors**: Corrected apiRequest parameter order in lesson-planner.tsx to properly submit lesson plans for review
+- **Token Switcher Component**: Added role switching capability for testing with Admin, Teacher, and Director tokens. Located in bottom-right corner for easy access
+- **Fixed Authentication Override**: Modified auth initialization to respect manually set tokens from token switcher, preventing automatic override to admin token
+- **Activity Capacity Management**: Added min_children and max_children fields to activities table for specifying supported children ranges per activity
+- **Enhanced Activity Form**: Updated activity form to include minimum and maximum children input fields with proper validation
+- **Activity Library Display**: Modified activity cards to show children capacity ranges alongside duration for better planning visibility
+- **Soft Delete for Activities**: Implemented soft delete functionality with is_active flag and deleted_on timestamp. Activities are marked as inactive instead of being permanently deleted
+- **Removed Steps Button**: Simplified activity cards to only show Edit and Delete buttons, removing the Steps button for cleaner interface
 
 # User Preferences
 

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, List, Trash2, Play, Package } from "lucide-react";
+import { Plus, Edit, List, Trash2, Play, Package, Clock, Users } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import ActivityForm from "./activity-form";
@@ -399,8 +399,16 @@ export default function ActivityLibrary() {
                 
                 <div className="flex justify-between items-center text-sm text-gray-500 mb-4">
                   <span data-testid={`activity-duration-${activity.id}`}>
-                    Duration: {activity.duration} minutes
+                    <Clock className="inline h-3 w-3 mr-1" />
+                    {activity.duration} min
                   </span>
+                  <span data-testid={`activity-children-${activity.id}`}>
+                    <Users className="inline h-3 w-3 mr-1" />
+                    {activity.minChildren || 1}-{activity.maxChildren || 10} children
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center text-sm text-gray-500 mb-4">
                   <span data-testid={`activity-age-${activity.id}`}>
                     {activity.ageGroupIds && activity.ageGroupIds.length > 0 ? (
                       <span className="flex items-center gap-1">
@@ -437,21 +445,12 @@ export default function ActivityLibrary() {
                   <Button 
                     variant="outline"
                     size="sm"
-                    className="flex-1"
-                    onClick={() => handleViewSteps(activity)}
-                    data-testid={`button-steps-${activity.id}`}
-                  >
-                    <List className="mr-1 h-3 w-3" />
-                    Steps
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    size="sm"
+                    className="flex-1 hover:bg-red-50 hover:text-red-600 hover:border-red-300"
                     onClick={() => handleDelete(activity)}
                     data-testid={`button-delete-${activity.id}`}
-                    className="hover:bg-red-50 hover:text-red-600 hover:border-red-300"
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="mr-1 h-3 w-3" />
+                    Delete
                   </Button>
                 </div>
               </CardContent>

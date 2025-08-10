@@ -48,8 +48,19 @@ import * as schema from "@shared/schema";
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
+  getUserByUserId(userId: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
+  upsertUserFromToken(tokenData: {
+    userId: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    locations: string[];
+    fullPayload?: any;
+  }): Promise<User>;
 
   // Milestones
   getMilestones(): Promise<Milestone[]>;
@@ -78,6 +89,10 @@ export interface IStorage {
   createLessonPlan(lessonPlan: InsertLessonPlan): Promise<LessonPlan>;
   updateLessonPlan(id: string, lessonPlan: Partial<InsertLessonPlan>): Promise<LessonPlan | undefined>;
   deleteLessonPlan(id: string): Promise<boolean>;
+  getLessonPlansForReview(locationId?: string): Promise<LessonPlan[]>;
+  submitLessonPlanForReview(id: string, userId: string): Promise<LessonPlan | undefined>;
+  approveLessonPlan(id: string, userId: string, notes?: string): Promise<LessonPlan | undefined>;
+  rejectLessonPlan(id: string, userId: string, notes: string): Promise<LessonPlan | undefined>;
 
   // Scheduled Activities
   getScheduledActivities(lessonPlanId: string, locationId?: string, roomId?: string): Promise<ScheduledActivity[]>;
@@ -144,6 +159,14 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getUserByUserId(userId: string): Promise<User | undefined> {
+    const conditions = [eq(users.userId, userId)];
+    if (this.tenantId) conditions.push(eq(users.tenantId, this.tenantId));
+    
+    const [user] = await this.db.select().from(users).where(and(...conditions));
+    return user || undefined;
+  }
+
   async getUserByUsername(username: string): Promise<User | undefined> {
     const conditions = [eq(users.username, username)];
     if (this.tenantId) conditions.push(eq(users.tenantId, this.tenantId));
@@ -153,12 +176,104 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const userData = this.tenantId ? { ...insertUser, tenantId: this.tenantId } : insertUser;
+    if (!this.tenantId && !insertUser.tenantId) {
+      throw new Error('Tenant ID is required to create a user');
+    }
+    
+    const userData = {
+      tenantId: insertUser.tenantId || this.tenantId!,
+      userId: insertUser.userId,
+      username: insertUser.username,
+      firstName: insertUser.firstName,
+      lastName: insertUser.lastName,
+      role: insertUser.role,
+      locations: insertUser.locations || [],
+      lastTokenPayload: insertUser.lastTokenPayload,
+    };
+    
     const [user] = await this.db
       .insert(users)
-      .values(userData)
+      .values(userData as any)
       .returning();
     return user;
+  }
+
+  async updateUser(id: string, updateData: Partial<InsertUser>): Promise<User | undefined> {
+    const conditions = [eq(users.id, id)];
+    if (this.tenantId) conditions.push(eq(users.tenantId, this.tenantId));
+    
+    const updateValues: any = {};
+    if (updateData.userId !== undefined) updateValues.userId = updateData.userId;
+    if (updateData.username !== undefined) updateValues.username = updateData.username;
+    if (updateData.firstName !== undefined) updateValues.firstName = updateData.firstName;
+    if (updateData.lastName !== undefined) updateValues.lastName = updateData.lastName;
+    if (updateData.role !== undefined) updateValues.role = updateData.role;
+    if (updateData.locations !== undefined) updateValues.locations = updateData.locations;
+    if (updateData.lastTokenPayload !== undefined) updateValues.lastTokenPayload = updateData.lastTokenPayload;
+    updateValues.updatedAt = new Date();
+    
+    const [updated] = await this.db
+      .update(users)
+      .set(updateValues)
+      .where(and(...conditions))
+      .returning();
+    
+    return updated || undefined;
+  }
+
+  async upsertUserFromToken(tokenData: {
+    userId: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    locations: string[];
+    fullPayload?: any;
+  }): Promise<User> {
+    if (!this.tenantId) {
+      throw new Error('Tenant context is required for user upsert');
+    }
+
+    // Check if user exists by userId
+    const existingUser = await this.getUserByUserId(tokenData.userId);
+    
+    if (existingUser) {
+      // Update existing user
+      const updated = await this.db
+        .update(users)
+        .set({
+          username: tokenData.username,
+          firstName: tokenData.firstName,
+          lastName: tokenData.lastName,
+          role: tokenData.role,
+          locations: tokenData.locations,
+          lastLoginDate: new Date(),
+          loginCount: sql`${users.loginCount} + 1`,
+          lastTokenPayload: tokenData.fullPayload,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(users.userId, tokenData.userId),
+          eq(users.tenantId, this.tenantId)
+        ))
+        .returning();
+      
+      return updated[0];
+    } else {
+      // Create new user
+      const newUser = await this.createUser({
+        tenantId: this.tenantId,
+        userId: tokenData.userId,
+        username: tokenData.username,
+        firstName: tokenData.firstName,
+        lastName: tokenData.lastName,
+        role: tokenData.role,
+        locations: tokenData.locations,
+        lastTokenPayload: tokenData.fullPayload,
+      });
+      
+      return newUser;
+    }
   }
 
   // Milestones
@@ -301,8 +416,10 @@ export class DatabaseStorage implements IStorage {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(activities.tenantId, this.tenantId));
     if (locationId) conditions.push(eq(activities.locationId, locationId));
-    // Filter out soft-deleted activities
+    // Filter out soft-deleted activities - check both isActive flag and deletedAt/deletedOn
+    conditions.push(eq(activities.isActive, true));
     conditions.push(isNull(activities.deletedAt));
+    conditions.push(isNull(activities.deletedOn));
     
     return await this.db.select().from(activities).where(conditions.length ? and(...conditions) : undefined);
   }
@@ -310,8 +427,10 @@ export class DatabaseStorage implements IStorage {
   async getActivity(id: string): Promise<Activity | undefined> {
     const conditions = [eq(activities.id, id)];
     if (this.tenantId) conditions.push(eq(activities.tenantId, this.tenantId));
-    // Filter out soft-deleted activities
+    // Filter out soft-deleted activities - check both isActive flag and deletedAt/deletedOn
+    conditions.push(eq(activities.isActive, true));
     conditions.push(isNull(activities.deletedAt));
+    conditions.push(isNull(activities.deletedOn));
     
     const [activity] = await this.db.select().from(activities).where(and(...conditions));
     return activity || undefined;
@@ -374,11 +493,13 @@ export class DatabaseStorage implements IStorage {
     const conditions = [eq(activities.id, id)];
     if (this.tenantId) conditions.push(eq(activities.tenantId, this.tenantId));
     
-    // Soft delete: set deletedAt timestamp and status to disabled
+    // Soft delete: set deletedOn timestamp, isActive to false, and status to disabled
     const result = await this.db
       .update(activities)
       .set({ 
+        deletedOn: new Date(),
         deletedAt: new Date(),
+        isActive: false,
         status: 'disabled',
         updatedAt: new Date()
       })
@@ -433,6 +554,69 @@ export class DatabaseStorage implements IStorage {
     
     const result = await this.db.delete(lessonPlans).where(and(...conditions));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async getLessonPlansForReview(locationId?: string): Promise<LessonPlan[]> {
+    const conditions = [];
+    if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
+    if (locationId) conditions.push(eq(lessonPlans.locationId, locationId));
+    // Only get submitted or approved plans
+    conditions.push(sql`${lessonPlans.status} IN ('submitted', 'approved', 'rejected')`);
+    
+    return await this.db.select().from(lessonPlans).where(conditions.length ? and(...conditions) : undefined);
+  }
+
+  async submitLessonPlanForReview(id: string, userId: string): Promise<LessonPlan | undefined> {
+    const conditions = [eq(lessonPlans.id, id)];
+    if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
+    
+    const [lessonPlan] = await this.db
+      .update(lessonPlans)
+      .set({ 
+        status: 'submitted',
+        submittedAt: new Date(),
+        submittedBy: userId,
+        updatedAt: new Date()
+      })
+      .where(and(...conditions))
+      .returning();
+    return lessonPlan || undefined;
+  }
+
+  async approveLessonPlan(id: string, userId: string, notes?: string): Promise<LessonPlan | undefined> {
+    const conditions = [eq(lessonPlans.id, id)];
+    if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
+    
+    const [lessonPlan] = await this.db
+      .update(lessonPlans)
+      .set({ 
+        status: 'approved',
+        approvedAt: new Date(),
+        approvedBy: userId,
+        reviewNotes: notes,
+        updatedAt: new Date()
+      })
+      .where(and(...conditions))
+      .returning();
+    return lessonPlan || undefined;
+  }
+
+  async rejectLessonPlan(id: string, userId: string, notes: string): Promise<LessonPlan | undefined> {
+    const conditions = [eq(lessonPlans.id, id)];
+    if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
+    
+    const [lessonPlan] = await this.db
+      .update(lessonPlans)
+      .set({ 
+        status: 'rejected',
+        rejectedAt: new Date(),
+        rejectedBy: userId,
+        reviewNotes: notes,
+        updatedAt: new Date()
+      })
+      .where(and(...conditions))
+      .returning();
+    return lessonPlan || undefined;
   }
 
   // Scheduled Activities

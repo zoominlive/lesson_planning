@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { NavigationTabs } from "@/components/navigation-tabs";
 import { CalendarControls } from "@/components/calendar-controls";
@@ -18,6 +18,7 @@ import { Settings, MapPin } from "lucide-react";
 import { useLocation } from "wouter";
 import { getUserInfo } from "@/lib/auth";
 import { startOfWeek } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 type UserInfo = {
   tenantId: string;
@@ -36,6 +37,7 @@ export default function LessonPlanner() {
   const [selectedRoom, setSelectedRoom] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const { data: userInfo } = useQuery<UserInfo>({
     queryKey: ["/api/user"],
@@ -52,16 +54,22 @@ export default function LessonPlanner() {
   // Reset room selection when location changes
   useEffect(() => {
     if (selectedLocation) {
-      setSelectedRoom("");
+      // Don't reset if we're going to auto-select anyway
+      const roomsForLocation = allRooms.filter((room: any) => room.locationId === selectedLocation);
+      if (roomsForLocation.length > 0) {
+        setSelectedRoom(roomsForLocation[0].id);
+      } else {
+        setSelectedRoom("");
+      }
     }
-  }, [selectedLocation]);
+  }, [selectedLocation, allRooms]);
 
   // Auto-select first room when rooms are available and no room is selected
   useEffect(() => {
     if (filteredRooms.length > 0 && !selectedRoom && selectedLocation) {
       setSelectedRoom(filteredRooms[0].id);
     }
-  }, [filteredRooms, selectedRoom, selectedLocation]);
+  }, [filteredRooms.length, selectedLocation]); // Removed selectedRoom from deps to prevent infinite loop
 
   // Listen for schedule type changes to refresh data
   useEffect(() => {
@@ -80,19 +88,101 @@ export default function LessonPlanner() {
     };
   }, []);
 
+  // Fetch lesson plans to find the current one
+  const { data: lessonPlans = [] } = useQuery<any[]>({
+    queryKey: ["/api/lesson-plans"],
+    enabled: !!selectedLocation && !!selectedRoom,
+  });
+
+  // Fetch location settings to get schedule type
+  const { data: locationSettings } = useQuery({
+    queryKey: [`/api/locations/${selectedLocation}/settings`],
+    enabled: !!selectedLocation,
+  });
+
+  // Find current lesson plan
+  const currentLessonPlan = lessonPlans.find((lp: any) => {
+    const lpWeekStart = new Date(lp.weekStart);
+    lpWeekStart.setHours(0, 0, 0, 0);
+    const currentWeek = new Date(currentWeekDate);
+    currentWeek.setHours(0, 0, 0, 0);
+    
+    // Match by week, location, room, and schedule type
+    return lpWeekStart.getTime() === currentWeek.getTime() &&
+           lp.locationId === selectedLocation &&
+           lp.roomId === selectedRoom &&
+           lp.scheduleType === (locationSettings?.scheduleType || 'position-based');
+  });
+
+  // Create or submit lesson plan mutation
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      if (currentLessonPlan) {
+        // Submit existing plan
+        return apiRequest("POST", `/api/lesson-plans/${currentLessonPlan.id}/submit`);
+      } else {
+        // Create a new lesson plan first, then submit it
+        const scheduleType = locationSettings?.scheduleType || 'position-based';
+        const newPlan = await apiRequest("POST", `/api/lesson-plans`, {
+          weekStart: currentWeekDate.toISOString(),
+          locationId: selectedLocation,
+          roomId: selectedRoom,
+          scheduleType: scheduleType,
+          status: 'draft'
+        });
+        
+        // Now submit the newly created plan
+        return apiRequest("POST", `/api/lesson-plans/${newPlan.id}/submit`);
+      }
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/scheduled-activities"] });
+      const role = userInfo?.role?.toLowerCase();
+      if (role === 'admin' || role === 'superadmin') {
+        toast({
+          title: "Lesson Plan Approved",
+          description: "Your lesson plan has been automatically approved for this week.",
+        });
+      } else {
+        toast({
+          title: "Submitted for Review",
+          description: "Your lesson plan for this week has been submitted for review.",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Submission Failed",
+        description: error.message || "Failed to submit the lesson plan for review.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleWeekChange = (newDate: Date) => {
     setCurrentWeekDate(newDate);
   };
 
   const handleSubmitToSupervisor = () => {
-    // TODO: Implement supervisor submission
-    console.log("Submit to supervisor");
+    if (!selectedLocation || !selectedRoom) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a location and room before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    submitMutation.mutate();
   };
 
   const handleQuickAddActivity = () => {
     // TODO: Implement quick add activity modal
     console.log("Quick add activity");
   };
+
+
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4" data-testid="lesson-planner">
@@ -146,7 +236,7 @@ export default function LessonPlanner() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {userInfo?.role === "Admin" && (
+                {userInfo?.role?.toLowerCase() === "admin" && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button

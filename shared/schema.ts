@@ -20,15 +20,22 @@ export const tokenSecrets = pgTable("token_secrets", {
   isActive: boolean("is_active").default(true).notNull(),
 });
 
-// Users table (teachers)
+// Users table - tracks users from JWT tokens
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
-  username: text("username").notNull(),
-  password: text("password").notNull(),
-  name: text("name").notNull(),
-  email: text("email").notNull(),
-  classroom: text("classroom"),
+  userId: text("user_id").notNull(), // User ID from JWT token
+  username: text("username").notNull(), // Username/email from JWT token
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  role: text("role").notNull(), // Admin, Teacher, etc.
+  locations: json("locations").$type<string[]>().notNull().default([]), // Array of location names from JWT
+  firstLoginDate: timestamp("first_login_date").notNull().defaultNow(),
+  lastLoginDate: timestamp("last_login_date").notNull().defaultNow(),
+  loginCount: integer("login_count").notNull().default(1),
+  lastTokenPayload: json("last_token_payload"), // Store complete JWT payload for reference
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Developmental milestones
@@ -87,10 +94,14 @@ export const activities = pgTable("activities", {
   safetyConsiderations: json("safety_considerations").$type<string[]>().default([]),
   spaceRequired: text("space_required"), // Indoor/Outdoor/Both
   groupSize: text("group_size"), // e.g. "1-4 children"
+  minChildren: integer("min_children").default(1), // Minimum number of children for this activity
+  maxChildren: integer("max_children").default(10), // Maximum number of children for this activity
   messLevel: text("mess_level"), // Low/Medium/High
   variations: json("variations").$type<string[]>().default([]), // Activity variations
   // System fields
   status: text("status").notNull().default("active"), // active, disabled
+  isActive: boolean("is_active").default(true).notNull(), // Soft delete flag
+  deletedOn: timestamp("deleted_on"), // Timestamp when soft deleted
   usageCount: integer("usage_count").default(0),
   lastUsedAt: timestamp("last_used_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -107,9 +118,16 @@ export const lessonPlans = pgTable("lesson_plans", {
   teacherId: varchar("teacher_id").notNull().references(() => users.id),
   weekStart: text("week_start").notNull(), // ISO date string
   scheduleType: varchar("schedule_type", { length: 50 }).notNull().default("time-based"), // "time-based" or "position-based"
-  status: text("status").notNull().default("draft"), // draft, submitted, approved
+  status: text("status").notNull().default("draft"), // draft, submitted, approved, rejected
   submittedAt: timestamp("submitted_at"),
+  submittedBy: varchar("submitted_by").references(() => users.id), // User who submitted for review
   approvedAt: timestamp("approved_at"),
+  approvedBy: varchar("approved_by").references(() => users.id), // User who approved
+  rejectedAt: timestamp("rejected_at"),
+  rejectedBy: varchar("rejected_by").references(() => users.id), // User who rejected
+  reviewNotes: text("review_notes"), // Notes from reviewer
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Activity usage tracking
@@ -164,11 +182,13 @@ export const insertTokenSecretSchema = createInsertSchema(tokenSecrets).pick({
 
 export const insertUserSchema = createInsertSchema(users).pick({
   tenantId: true,
+  userId: true,
   username: true,
-  password: true,
-  name: true,
-  email: true,
-  classroom: true,
+  firstName: true,
+  lastName: true,
+  role: true,
+  locations: true,
+  lastTokenPayload: true,
 });
 
 export const insertMilestoneSchema = createInsertSchema(milestones).omit({

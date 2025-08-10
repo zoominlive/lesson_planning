@@ -66,6 +66,20 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
     req.role = verified.role;
     req.locations = verified.locations;
     
+    // Track user login in database (don't block the request)
+    storage.setTenantContext(verified.tenantId);
+    storage.upsertUserFromToken({
+      userId: verified.userId,
+      username: verified.username,
+      firstName: verified.userFirstName,
+      lastName: verified.userLastName,
+      role: verified.role,
+      locations: verified.locations || [],
+      fullPayload: verified,
+    }).catch(err => {
+      console.error('Failed to track user login:', err);
+    });
+    
     next();
   } catch (err) {
     return res.status(403).json({ error: 'Invalid or expired token' });
@@ -95,7 +109,7 @@ export async function validateLocationAccess(
     };
   }
 
-  // Get the location details to match name with ID
+  // Get the location details to verify it exists
   const location = await storage.getLocation(requestedLocationId);
   if (!location) {
     return { 
@@ -104,8 +118,11 @@ export async function validateLocationAccess(
     };
   }
 
-  // Check if the location name is in the user's authorized locations
-  const hasAccess = req.locations.includes(location.name);
+  // Check if the location ID or name is in the user's authorized locations
+  // The locations array in JWT can contain either location IDs (UUIDs) or names
+  const hasAccess = req.locations.some(jwtLocation => 
+    jwtLocation === requestedLocationId || jwtLocation === location.name
+  );
   
   if (!hasAccess) {
     return { 
@@ -129,9 +146,13 @@ export async function getUserAuthorizedLocationIds(
   const allLocations = await storage.getLocations();
   
   // Filter to only locations the user has access to
-  const authorizedLocations = allLocations.filter(loc => 
-    req.locations!.includes(loc.name)
-  );
+  // The locations array in JWT can contain either location IDs (UUIDs) or names
+  const authorizedLocations = allLocations.filter(loc => {
+    // Check if any location in the JWT matches either the ID or name
+    return req.locations!.some(jwtLocation => 
+      jwtLocation === loc.id || jwtLocation === loc.name
+    );
+  });
 
   return authorizedLocations.map(loc => loc.id);
 }
