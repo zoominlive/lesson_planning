@@ -31,6 +31,12 @@ const TEST_TOKENS = {
     token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImRpcmVjdG9yMTIzIiwidXNlckZpcnN0TmFtZSI6Ik1pY2hhZWwiLCJ1c2VyTGFzdE5hbWUiOiJCcm93biIsInVzZXJuYW1lIjoiZGlyZWN0b3JAZXhhbXBsZS5jb20iLCJyb2xlIjoiRGlyZWN0b3IiLCJsb2NhdGlvbnMiOlsiYmZkMWRjMTQtNmM2Yi00ZmEzLTg5MGItZTViMDk2Y2QyOWY0Il0sImlhdCI6MTc1NDcyOTExOH0.2GuqMzWlVLyTXiMPSonT-Aqg5oGDdNkPe6NmM4o0JRg",
     role: "Director",
     username: "director@example.com"
+  },
+  superadmin: {
+    label: "Super Admin User",
+    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InN1cGVyYWRtaW4xMjMiLCJ1c2VyRmlyc3ROYW1lIjoiU3VwZXIiLCJ1c2VyTGFzdE5hbWUiOiJBZG1pbiIsInVzZXJuYW1lIjoic3VwZXJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJTdXBlckFkbWluIiwibG9jYXRpb25zIjpbImJmZDFkYzE0LTZjNmItNGZhMy04OTBiLWU1YjA5NmNkMjlmNCJdLCJpYXQiOjE3NTQ3MjkxMTh9.uR-F0ePOvdUxGJZ3gZJqiEdtGT7OAOHtGI0z69eQjmU",
+    role: "SuperAdmin",
+    username: "superadmin@example.com"
   }
 };
 
@@ -46,6 +52,8 @@ export function TokenSwitcher() {
         return "teacher";
       case "director123":
         return "director";
+      case "superadmin123":
+        return "superadmin";
       case "e5b7f0de-c868-4e40-a0bd-e15937cb3097":
       default:
         return "admin";
