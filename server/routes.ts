@@ -32,7 +32,7 @@ import {
   insertCategorySchema,
   type InsertAgeGroup,
   insertAgeGroupSchema,
-  insertOrganizationSettingsSchema,
+  insertTenantSettingsSchema,
   insertTenantPermissionOverrideSchema
 } from "@shared/schema";
 
@@ -985,8 +985,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter lesson plans by week, location, and room if weekStart is provided
       let lessonPlanIds: string[] = [];
       if (weekStart && locationId) {
-        // Get organization settings to determine current schedule type for this location
-        const orgSettings = await storage.getOrganizationSettings();
+        // Get tenant settings to determine current schedule type for this location
+        const orgSettings = await storage.getTenantSettings();
         let currentScheduleType: 'time-based' | 'position-based' = 'time-based'; // default
         
         if (orgSettings && orgSettings.locationSettings) {
@@ -1111,8 +1111,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log('[POST /api/scheduled-activities] Target week start:', targetWeekStart.toISOString());
         
-        // Get organization settings to determine schedule type for this location
-        const orgSettings = await storage.getOrganizationSettings();
+        // Get tenant settings to determine schedule type for this location
+        const orgSettings = await storage.getTenantSettings();
         let currentScheduleType: 'time-based' | 'position-based' = 'time-based'; // default
         
         if (orgSettings && orgSettings.locationSettings) {
@@ -1754,7 +1754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Organization Settings API Routes
   app.get("/api/organization-settings", async (req: AuthenticatedRequest, res) => {
     try {
-      const settings = await storage.getOrganizationSettings();
+      const settings = await storage.getTenantSettings();
       
       // Get all locations for this tenant to include in response
       const locations = await storage.getLocations();
@@ -1787,7 +1787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/organization-settings", async (req: AuthenticatedRequest, res) => {
     try {
       const updates = req.body;
-      const settings = await storage.updateOrganizationSettings(updates);
+      const settings = await storage.updateTenantSettings(updates);
       
       // Get all locations for response
       const locations = await storage.getLocations();

@@ -23,8 +23,8 @@ import {
   type InsertCategory,
   type AgeGroup,
   type InsertAgeGroup,
-  type OrganizationSettings,
-  type InsertOrganizationSettings,
+  type TenantSettings,
+  type InsertTenantSettings,
   users,
   milestones,
   materials,
@@ -37,7 +37,7 @@ import {
   rooms,
   categories,
   ageGroups,
-  organizationSettings,
+  tenantSettings,
   type Permission,
   type InsertPermission,
   type Role,
@@ -149,9 +149,9 @@ export interface IStorage {
   updateAgeGroup(id: string, ageGroup: Partial<InsertAgeGroup>): Promise<AgeGroup | undefined>;
   deleteAgeGroup(id: string): Promise<boolean>;
 
-  // Organization Settings
-  getOrganizationSettings(): Promise<OrganizationSettings | undefined>;
-  updateOrganizationSettings(settings: Partial<InsertOrganizationSettings>): Promise<OrganizationSettings>;
+  // Tenant Settings
+  getTenantSettings(): Promise<TenantSettings | undefined>;
+  updateTenantSettings(settings: Partial<InsertTenantSettings>): Promise<TenantSettings>;
   
   // Permissions
   getPermissions(): Promise<Permission[]>;
@@ -974,35 +974,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Organization Settings Implementation
-  async getOrganizationSettings(): Promise<OrganizationSettings | undefined> {
+  async getTenantSettings(): Promise<TenantSettings | undefined> {
     if (!this.tenantId) return undefined;
     
     const [settings] = await this.db
       .select()
-      .from(organizationSettings)
-      .where(eq(organizationSettings.tenantId, this.tenantId));
+      .from(tenantSettings)
+      .where(eq(tenantSettings.tenantId, this.tenantId));
     
     return settings || undefined;
   }
 
-  async updateOrganizationSettings(updates: Partial<InsertOrganizationSettings>): Promise<OrganizationSettings> {
+  async updateTenantSettings(updates: Partial<InsertTenantSettings>): Promise<TenantSettings> {
     if (!this.tenantId) throw new Error("Tenant context not set");
     
     // Check if settings exist for this tenant
-    const existing = await this.getOrganizationSettings();
+    const existing = await this.getTenantSettings();
     
     if (existing) {
       // Update existing settings
       const [updated] = await this.db
-        .update(organizationSettings)
+        .update(tenantSettings)
         .set({ ...updates, updatedAt: new Date() } as any)
-        .where(eq(organizationSettings.tenantId, this.tenantId))
+        .where(eq(tenantSettings.tenantId, this.tenantId))
         .returning();
       return updated;
     } else {
       // Create new settings
       const [created] = await this.db
-        .insert(organizationSettings)
+        .insert(tenantSettings)
         .values({ ...updates, tenantId: this.tenantId } as any)
         .returning();
       return created;

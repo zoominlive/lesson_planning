@@ -341,7 +341,7 @@ export const ageGroups = pgTable("age_groups", {
 });
 
 // Organization Settings table for tenant-wide configuration
-export const organizationSettings = pgTable("organization_settings", {
+export const tenantSettings = pgTable("tenant_settings", {
   id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   tenantId: varchar("tenant_id").references(() => tenants.id).notNull().unique(),
   // Location-specific schedule settings
@@ -386,15 +386,15 @@ export const insertAgeGroupSchema = createInsertSchema(ageGroups).omit({
   createdAt: true,
 });
 
-export const insertOrganizationSettingsSchema = createInsertSchema(organizationSettings).omit({
+export const insertTenantSettingsSchema = createInsertSchema(tenantSettings).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 
 // Type exports for organization settings
-export type OrganizationSettings = typeof organizationSettings.$inferSelect;
-export type InsertOrganizationSettings = z.infer<typeof insertOrganizationSettingsSchema>;
+export type TenantSettings = typeof tenantSettings.$inferSelect;
+export type InsertTenantSettings = z.infer<typeof insertTenantSettingsSchema>;
 
 // Types
 export type Tenant = typeof tenants.$inferSelect;
