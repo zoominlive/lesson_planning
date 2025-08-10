@@ -14,9 +14,10 @@ export function hasPermission(permissionName: string): boolean {
     return true;
   }
   
-  // Define default permissions by role
+  // Define default permissions by role (matching backend configuration)
   const defaultPermissions: { [key: string]: string[] } = {
-    'settings.access': ['admin', 'director', 'assistant_director'],
+    'settings.access': ['admin'],  // Only admin and superadmin
+    'settings.manage': ['admin'],  // Backend uses settings.manage
     'lesson_plan.approve': ['director', 'assistant_director', 'admin'],
     'lesson_plan.reject': ['director', 'assistant_director', 'admin'],
     'lesson_plan.submit': ['teacher', 'director', 'assistant_director', 'admin'],
