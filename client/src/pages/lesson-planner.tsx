@@ -16,6 +16,7 @@ import WeeklyCalendar from "@/components/weekly-calendar";
 import { Settings } from "lucide-react";
 import { useLocation } from "wouter";
 import { getUserInfo } from "@/lib/auth";
+import { hasPermission } from "@/lib/permission-utils";
 import { startOfWeek } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -217,7 +218,7 @@ export default function LessonPlanner() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                {(userInfo?.role?.toLowerCase() === "admin" || userInfo?.role?.toLowerCase() === "superadmin") && (
+                {hasPermission('settings.access') && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button

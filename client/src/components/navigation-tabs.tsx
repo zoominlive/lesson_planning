@@ -6,6 +6,7 @@ import MaterialsLibrary from "./materials-library";
 import MilestonesLibrary from "./milestones-library";
 import { LessonReview } from "@/pages/lesson-review";
 import { getUserInfo } from "@/lib/auth";
+import { hasPermission } from "@/lib/permission-utils";
 
 
 interface NavigationTabsProps {
@@ -14,7 +15,7 @@ interface NavigationTabsProps {
 
 export function NavigationTabs({ children }: NavigationTabsProps) {
   const userInfo = getUserInfo();
-  const canReview = userInfo?.role && ['director', 'assistant_director', 'admin', 'superadmin'].includes(userInfo.role.toLowerCase());
+  const canReview = hasPermission('lesson_plan.approve');
   const gridCols = canReview ? 'grid-cols-5' : 'grid-cols-4';
   
   return (

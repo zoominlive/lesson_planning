@@ -41,6 +41,9 @@ const PERMISSION_GROUPS = {
     { name: 'material.update', description: 'Edit existing materials' },
     { name: 'material.delete', description: 'Delete materials' },
   ],
+  'Settings': [
+    { name: 'settings.access', description: 'Access Settings Page', isSettingsPermission: true },
+  ],
 };
 
 export default function PermissionSettings() {
@@ -194,10 +197,11 @@ export default function PermissionSettings() {
         </Alert>
 
         <Tabs defaultValue="lesson-plans" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="lesson-plans">Lesson Plans</TabsTrigger>
             <TabsTrigger value="activities">Activities</TabsTrigger>
             <TabsTrigger value="materials">Materials</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
           {Object.entries(PERMISSION_GROUPS).map(([groupName, permissions]) => (
@@ -228,6 +232,41 @@ export default function PermissionSettings() {
                                     checked={override?.autoApproveRoles?.includes(role.id) || false}
                                     onCheckedChange={() => handleRoleToggle(permission.name, role.id, 'autoApprove')}
                                     data-testid={`switch-review-access-${role.id}`}
+                                  />
+                                  <Label htmlFor={`${permission.name}-${role.id}-access`} className="text-sm">
+                                    {role.name}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  }
+                  
+                  // For Settings permissions, only show which roles can access Settings
+                  if ((permission as any).isSettingsPermission) {
+                    return (
+                      <Card key={permission.name} className="p-4">
+                        <div className="mb-4">
+                          <h4 className="font-semibold">{permission.description}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Select which roles can access the Settings page and configure organization settings
+                          </p>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">Roles with Settings Access</Label>
+                            <div className="grid grid-cols-2 gap-3">
+                              {ROLES.filter(r => r.id !== 'superadmin').map(role => (
+                                <div key={role.id} className="flex items-center space-x-2">
+                                  <Switch
+                                    id={`${permission.name}-${role.id}-access`}
+                                    checked={override?.autoApproveRoles?.includes(role.id) || false}
+                                    onCheckedChange={() => handleRoleToggle(permission.name, role.id, 'autoApprove')}
+                                    data-testid={`switch-settings-access-${role.id}`}
                                   />
                                   <Label htmlFor={`${permission.name}-${role.id}-access`} className="text-sm">
                                     {role.name}
