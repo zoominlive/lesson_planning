@@ -32,7 +32,8 @@ import {
   insertCategorySchema,
   type InsertAgeGroup,
   insertAgeGroupSchema,
-  insertOrganizationSettingsSchema
+  insertOrganizationSettingsSchema,
+  insertOrganizationPermissionOverrideSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1798,6 +1799,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Organization settings update error:", error);
       res.status(400).json({ error: "Invalid settings data" });
+    }
+  });
+  
+  // Permission Management Routes
+  
+  // Get all permission overrides for the organization
+  app.get("/api/permissions/overrides", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Tenant context required" });
+      }
+      
+      // Get all permissions to check for overrides
+      const permissions = await storage.getPermissions();
+      const overrides = [];
+      
+      for (const permission of permissions) {
+        const override = await storage.getOrganizationPermissionOverride(tenantId, permission.name);
+        if (override) {
+          overrides.push(override);
+        }
+      }
+      
+      res.json(overrides);
+    } catch (error) {
+      console.error("Permission overrides fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch permission overrides" });
+    }
+  });
+  
+  // Create a new permission override
+  app.post("/api/permissions/overrides", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Tenant context required" });
+      }
+      
+      // Only admin and superadmin can manage permissions
+      if (req.user?.role !== 'Admin' && req.user?.role !== 'superadmin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const validation = insertOrganizationPermissionOverrideSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid permission override data", details: validation.error });
+      }
+      
+      const override = await storage.createOrganizationPermissionOverride({
+        ...validation.data,
+        organizationId: tenantId
+      });
+      
+      res.json(override);
+    } catch (error) {
+      console.error("Permission override creation error:", error);
+      res.status(500).json({ error: "Failed to create permission override" });
+    }
+  });
+  
+  // Update a permission override
+  app.patch("/api/permissions/overrides/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Tenant context required" });
+      }
+      
+      // Only admin and superadmin can manage permissions
+      if (req.user?.role !== 'Admin' && req.user?.role !== 'superadmin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const { id } = req.params;
+      const updates = req.body;
+      
+      const override = await storage.updateOrganizationPermissionOverride(id, updates);
+      
+      if (!override) {
+        return res.status(404).json({ error: "Permission override not found" });
+      }
+      
+      res.json(override);
+    } catch (error) {
+      console.error("Permission override update error:", error);
+      res.status(500).json({ error: "Failed to update permission override" });
+    }
+  });
+  
+  // Check user permission for a specific action
+  app.post("/api/permissions/check", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Tenant context required" });
+      }
+      
+      const { resource, action } = req.body;
+      if (!resource || !action) {
+        return res.status(400).json({ error: "Resource and action are required" });
+      }
+      
+      const permission = await storage.checkUserPermission(
+        req.user?.userId || '',
+        req.user?.role || '',
+        resource,
+        action,
+        tenantId
+      );
+      
+      res.json(permission);
+    } catch (error) {
+      console.error("Permission check error:", error);
+      res.status(500).json({ error: "Failed to check permission" });
     }
   });
 

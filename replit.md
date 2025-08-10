@@ -34,6 +34,11 @@ This project is a comprehensive lesson planning application designed for early c
 - **Activity Library Display**: Modified activity cards to show children capacity ranges alongside duration for better planning visibility
 - **Soft Delete for Activities**: Implemented soft delete functionality with is_active flag and deleted_on timestamp. Activities are marked as inactive instead of being permanently deleted
 - **Removed Steps Button**: Simplified activity cards to only show Edit and Delete buttons, removing the Steps button for cleaner interface
+- **Permission Management System (RBAC)**: Implemented Role-Based Access Control with configurable permissions replacing hardcoded role checks. Organizations can now customize approval workflows through the UI
+- **Permission Database Schema**: Added permissions, roles, role_permissions, and organization_permission_overrides tables for flexible permission management
+- **Permission Settings UI**: Created comprehensive permission management interface in Settings page allowing admins to configure which roles require approval vs auto-approval for different actions
+- **Permission API Routes**: Added /api/permissions endpoints for managing permission overrides with role-based access control
+- **Permission Checking Middleware**: Implemented middleware to check user permissions dynamically based on role and organization-specific overrides
 
 # User Preferences
 

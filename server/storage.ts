@@ -37,7 +37,19 @@ import {
   rooms,
   categories,
   ageGroups,
-  organizationSettings
+  organizationSettings,
+  type Permission,
+  type InsertPermission,
+  type Role,
+  type InsertRole,
+  type RolePermission,
+  type InsertRolePermission,
+  type OrganizationPermissionOverride,
+  type InsertOrganizationPermissionOverride,
+  permissions,
+  roles,
+  rolePermissions,
+  organizationPermissionOverrides
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, isNull } from "drizzle-orm";
@@ -140,6 +152,30 @@ export interface IStorage {
   // Organization Settings
   getOrganizationSettings(): Promise<OrganizationSettings | undefined>;
   updateOrganizationSettings(settings: Partial<InsertOrganizationSettings>): Promise<OrganizationSettings>;
+  
+  // Permissions
+  getPermissions(): Promise<Permission[]>;
+  getPermission(id: string): Promise<Permission | undefined>;
+  createPermission(permission: InsertPermission): Promise<Permission>;
+  
+  // Roles
+  getRoles(): Promise<Role[]>;
+  getRole(id: string): Promise<Role | undefined>;
+  createRole(role: InsertRole): Promise<Role>;
+  updateRole(id: string, role: Partial<InsertRole>): Promise<Role | undefined>;
+  
+  // Role Permissions
+  getRolePermissions(roleId: string): Promise<RolePermission[]>;
+  addRolePermission(rolePermission: InsertRolePermission): Promise<RolePermission>;
+  removeRolePermission(roleId: string, permissionId: string): Promise<boolean>;
+  
+  // Organization Permission Overrides
+  getOrganizationPermissionOverride(organizationId: string, permissionName: string): Promise<OrganizationPermissionOverride | undefined>;
+  createOrganizationPermissionOverride(override: InsertOrganizationPermissionOverride): Promise<OrganizationPermissionOverride>;
+  updateOrganizationPermissionOverride(id: string, override: Partial<InsertOrganizationPermissionOverride>): Promise<OrganizationPermissionOverride | undefined>;
+  
+  // Permission Checking
+  checkUserPermission(userId: string, role: string, resource: string, action: string, organizationId: string): Promise<{ hasPermission: boolean; requiresApproval: boolean; reason?: string }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -971,6 +1007,193 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return created;
     }
+  }
+  
+  // Permission Management Implementation
+  async getPermissions(): Promise<Permission[]> {
+    return await this.db.select().from(permissions);
+  }
+  
+  async getPermission(id: string): Promise<Permission | undefined> {
+    const [permission] = await this.db
+      .select()
+      .from(permissions)
+      .where(eq(permissions.id, id));
+    return permission || undefined;
+  }
+  
+  async createPermission(insertPermission: InsertPermission): Promise<Permission> {
+    const [permission] = await this.db
+      .insert(permissions)
+      .values(insertPermission)
+      .returning();
+    return permission;
+  }
+  
+  // Roles
+  async getRoles(): Promise<Role[]> {
+    return await this.db.select().from(roles);
+  }
+  
+  async getRole(id: string): Promise<Role | undefined> {
+    const [role] = await this.db
+      .select()
+      .from(roles)
+      .where(eq(roles.id, id));
+    return role || undefined;
+  }
+  
+  async createRole(insertRole: InsertRole): Promise<Role> {
+    const [role] = await this.db
+      .insert(roles)
+      .values(insertRole)
+      .returning();
+    return role;
+  }
+  
+  async updateRole(id: string, updates: Partial<InsertRole>): Promise<Role | undefined> {
+    const [role] = await this.db
+      .update(roles)
+      .set({ ...updates, updatedAt: new Date() } as any)
+      .where(eq(roles.id, id))
+      .returning();
+    return role || undefined;
+  }
+  
+  // Role Permissions
+  async getRolePermissions(roleId: string): Promise<RolePermission[]> {
+    return await this.db
+      .select()
+      .from(rolePermissions)
+      .where(eq(rolePermissions.roleId, roleId));
+  }
+  
+  async addRolePermission(insertRolePermission: InsertRolePermission): Promise<RolePermission> {
+    const [rolePermission] = await this.db
+      .insert(rolePermissions)
+      .values(insertRolePermission)
+      .returning();
+    return rolePermission;
+  }
+  
+  async removeRolePermission(roleId: string, permissionId: string): Promise<boolean> {
+    const result = await this.db
+      .delete(rolePermissions)
+      .where(and(
+        eq(rolePermissions.roleId, roleId),
+        eq(rolePermissions.permissionId, permissionId)
+      ));
+    return (result.rowCount ?? 0) > 0;
+  }
+  
+  // Organization Permission Overrides
+  async getOrganizationPermissionOverride(organizationId: string, permissionName: string): Promise<OrganizationPermissionOverride | undefined> {
+    const [override] = await this.db
+      .select()
+      .from(organizationPermissionOverrides)
+      .where(and(
+        eq(organizationPermissionOverrides.organizationId, organizationId),
+        eq(organizationPermissionOverrides.permissionName, permissionName)
+      ));
+    return override || undefined;
+  }
+  
+  async createOrganizationPermissionOverride(insertOverride: InsertOrganizationPermissionOverride): Promise<OrganizationPermissionOverride> {
+    const [override] = await this.db
+      .insert(organizationPermissionOverrides)
+      .values(insertOverride as any)
+      .returning();
+    return override;
+  }
+  
+  async updateOrganizationPermissionOverride(id: string, updates: Partial<InsertOrganizationPermissionOverride>): Promise<OrganizationPermissionOverride | undefined> {
+    const [override] = await this.db
+      .update(organizationPermissionOverrides)
+      .set({ ...updates, updatedAt: new Date() } as any)
+      .where(eq(organizationPermissionOverrides.id, id))
+      .returning();
+    return override || undefined;
+  }
+  
+  // Permission Checking
+  async checkUserPermission(
+    userId: string, 
+    role: string, 
+    resource: string, 
+    action: string, 
+    organizationId: string
+  ): Promise<{ hasPermission: boolean; requiresApproval: boolean; reason?: string }> {
+    // Check for superadmin - has all permissions
+    if (role.toLowerCase() === 'superadmin') {
+      return { hasPermission: true, requiresApproval: false };
+    }
+    
+    const permissionName = `${resource}.${action}`;
+    
+    // Check organization-specific overrides
+    const override = await this.getOrganizationPermissionOverride(organizationId, permissionName);
+    
+    if (override) {
+      const roleLower = role.toLowerCase();
+      const requiresApproval = override.rolesRequired.includes(roleLower);
+      const autoApprove = override.autoApproveRoles.includes(roleLower);
+      
+      if (autoApprove) {
+        return { hasPermission: true, requiresApproval: false };
+      }
+      
+      if (requiresApproval) {
+        return { hasPermission: true, requiresApproval: true, reason: 'Role requires approval for this action' };
+      }
+    }
+    
+    // Default permission checking based on role
+    const defaultPermissions: { [key: string]: string[] } = {
+      'teacher': [
+        'lesson_plan.create', 'lesson_plan.read', 'lesson_plan.update', 'lesson_plan.submit',
+        'activity.read', 'activity.create',
+        'material.read',
+        'milestone.read'
+      ],
+      'assistant_director': [
+        'lesson_plan.create', 'lesson_plan.read', 'lesson_plan.update', 'lesson_plan.submit',
+        'lesson_plan.approve', 'lesson_plan.reject',
+        'activity.create', 'activity.read', 'activity.update', 'activity.delete',
+        'material.create', 'material.read', 'material.update',
+        'milestone.read', 'milestone.create'
+      ],
+      'director': [
+        'lesson_plan.manage',
+        'activity.manage',
+        'material.manage',
+        'milestone.manage',
+        'user.read', 'user.update',
+        'room.manage',
+        'location.read'
+      ],
+      'admin': [
+        'lesson_plan.manage',
+        'activity.manage',
+        'material.manage',
+        'milestone.manage',
+        'user.manage',
+        'settings.manage',
+        'location.manage',
+        'room.manage'
+      ]
+    };
+    
+    const rolePermissions = defaultPermissions[role.toLowerCase()] || [];
+    const hasPermission = rolePermissions.includes(permissionName) || rolePermissions.includes(`${resource}.manage`);
+    
+    // Check if this action requires approval for this role
+    const requiresApproval = permissionName === 'lesson_plan.submit' && role.toLowerCase() === 'teacher';
+    
+    return {
+      hasPermission,
+      requiresApproval,
+      reason: hasPermission ? undefined : `Role ${role} does not have permission for ${permissionName}`
+    };
   }
 }
 

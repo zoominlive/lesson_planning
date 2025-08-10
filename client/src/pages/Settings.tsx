@@ -7,7 +7,8 @@ import { RoomsSettings } from "@/components/settings/rooms-settings";
 import { CategoriesSettings } from "@/components/settings/categories-settings";
 import { AgeGroupsSettings } from "@/components/settings/age-groups-settings";
 import { GeneralSettings } from "@/components/settings/general-settings-enterprise";
-import { MapPin, Building, Tag, Users, ArrowLeft, Settings as SettingsIcon } from "lucide-react";
+import PermissionSettings from "@/components/settings/permission-settings";
+import { MapPin, Building, Tag, Users, ArrowLeft, Settings as SettingsIcon, Shield } from "lucide-react";
 import { useLocation } from "wouter";
 
 export function Settings() {
@@ -39,7 +40,7 @@ export function Settings() {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <SettingsIcon className="h-4 w-4" />
             General
@@ -59,6 +60,10 @@ export function Settings() {
           <TabsTrigger value="age-groups" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Age Groups
+          </TabsTrigger>
+          <TabsTrigger value="permissions" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Permissions
           </TabsTrigger>
         </TabsList>
 
@@ -120,6 +125,10 @@ export function Settings() {
               <AgeGroupsSettings />
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="permissions" className="space-y-4">
+          <PermissionSettings />
         </TabsContent>
       </Tabs>
     </div>
