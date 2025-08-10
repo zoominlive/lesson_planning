@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface PermissionOverride {
   id?: string;
-  organizationId: string;
+  tenantId: string;
   permissionName: string;
   rolesRequired: string[];
   autoApproveRoles: string[];
@@ -116,7 +116,7 @@ export default function PermissionSettings() {
   const handleRoleToggle = (permissionName: string, role: string, type: 'require' | 'autoApprove') => {
     setOverrides(prev => {
       const current = prev[permissionName] || {
-        organizationId: tenantId,
+        tenantId: tenantId,
         permissionName,
         rolesRequired: [],
         autoApproveRoles: [],

@@ -26,9 +26,9 @@ export interface RolePermission {
   createdAt: Date;
 }
 
-export interface OrganizationPermissionOverride {
+export interface TenantPermissionOverride {
   id: string;
-  organizationId: string; // tenantId
+  tenantId: string;
   permissionName: string; // e.g., "lesson_plan.submit"
   rolesRequired: string[]; // Array of role names that require this permission
   autoApproveRoles: string[]; // Roles that bypass approval

@@ -33,7 +33,7 @@ import {
   type InsertAgeGroup,
   insertAgeGroupSchema,
   insertOrganizationSettingsSchema,
-  insertOrganizationPermissionOverrideSchema
+  insertTenantPermissionOverrideSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1817,7 +1817,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const overrides = [];
       
       for (const permission of permissions) {
-        const override = await storage.getOrganizationPermissionOverride(tenantId, permission.name);
+        const override = await storage.getTenantPermissionOverride(tenantId, permission.name);
         if (override) {
           overrides.push(override);
         }
@@ -1848,16 +1848,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Insufficient permissions" });
       }
       
-      const validation = insertOrganizationPermissionOverrideSchema.safeParse(req.body);
+      const validation = insertTenantPermissionOverrideSchema.safeParse(req.body);
       if (!validation.success) {
         console.log("Validation failed:", validation.error);
         return res.status(400).json({ error: "Invalid permission override data", details: validation.error });
       }
       
       console.log("Creating permission override:", validation.data);
-      const override = await storage.createOrganizationPermissionOverride({
+      const override = await storage.createTenantPermissionOverride({
         ...validation.data,
-        organizationId: tenantId
+        tenantId: tenantId
       });
       
       console.log("Permission override created:", override);
@@ -1892,7 +1892,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { createdAt, updatedAt, id: bodyId, ...updates } = req.body;
       
       console.log("Updating permission override:", id, updates);
-      const override = await storage.updateOrganizationPermissionOverride(id, updates);
+      const override = await storage.updateTenantPermissionOverride(id, updates);
       
       if (!override) {
         console.log("Permission override not found:", id);

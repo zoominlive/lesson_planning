@@ -9,6 +9,7 @@ This project is a comprehensive lesson planning application designed for early c
 - **Database migration**: Successfully migrated existing permission data to include tenant references
 - **Fixed permission saving**: Resolved authentication issues where req.user.role was undefined by using req.role directly
 - **Removed timestamp conflicts**: Fixed PATCH operations by excluding createdAt/updatedAt from updates
+- **Unified naming convention**: Changed from "organization" to "tenant" terminology throughout permission system for consistency. Renamed organization_permission_overrides table to tenant_permission_overrides and updated all related code references
 
 ## Recent Changes (January 2025)
 - **User tracking system**: Revamped Users table to track all users accessing the system via JWT tokens. Now captures first login date, last login date, login count, and user details from JWT tokens. Automatically creates/updates user records on each login.

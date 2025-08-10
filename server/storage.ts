@@ -44,12 +44,12 @@ import {
   type InsertRole,
   type RolePermission,
   type InsertRolePermission,
-  type OrganizationPermissionOverride,
-  type InsertOrganizationPermissionOverride,
+  type TenantPermissionOverride,
+  type InsertTenantPermissionOverride,
   permissions,
   roles,
   rolePermissions,
-  organizationPermissionOverrides
+  tenantPermissionOverrides
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, isNull } from "drizzle-orm";
@@ -169,13 +169,13 @@ export interface IStorage {
   addRolePermission(rolePermission: InsertRolePermission): Promise<RolePermission>;
   removeRolePermission(roleId: string, permissionId: string): Promise<boolean>;
   
-  // Organization Permission Overrides
-  getOrganizationPermissionOverride(organizationId: string, permissionName: string): Promise<OrganizationPermissionOverride | undefined>;
-  createOrganizationPermissionOverride(override: InsertOrganizationPermissionOverride): Promise<OrganizationPermissionOverride>;
-  updateOrganizationPermissionOverride(id: string, override: Partial<InsertOrganizationPermissionOverride>): Promise<OrganizationPermissionOverride | undefined>;
+  // Tenant Permission Overrides
+  getTenantPermissionOverride(tenantId: string, permissionName: string): Promise<TenantPermissionOverride | undefined>;
+  createTenantPermissionOverride(override: InsertTenantPermissionOverride): Promise<TenantPermissionOverride>;
+  updateTenantPermissionOverride(id: string, override: Partial<InsertTenantPermissionOverride>): Promise<TenantPermissionOverride | undefined>;
   
   // Permission Checking
-  checkUserPermission(userId: string, role: string, resource: string, action: string, organizationId: string): Promise<{ hasPermission: boolean; requiresApproval: boolean; reason?: string }>;
+  checkUserPermission(userId: string, role: string, resource: string, action: string, tenantId: string): Promise<{ hasPermission: boolean; requiresApproval: boolean; reason?: string }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1086,31 +1086,31 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
   
-  // Organization Permission Overrides
-  async getOrganizationPermissionOverride(organizationId: string, permissionName: string): Promise<OrganizationPermissionOverride | undefined> {
+  // Tenant Permission Overrides
+  async getTenantPermissionOverride(tenantId: string, permissionName: string): Promise<TenantPermissionOverride | undefined> {
     const [override] = await this.db
       .select()
-      .from(organizationPermissionOverrides)
+      .from(tenantPermissionOverrides)
       .where(and(
-        eq(organizationPermissionOverrides.organizationId, organizationId),
-        eq(organizationPermissionOverrides.permissionName, permissionName)
+        eq(tenantPermissionOverrides.tenantId, tenantId),
+        eq(tenantPermissionOverrides.permissionName, permissionName)
       ));
     return override || undefined;
   }
   
-  async createOrganizationPermissionOverride(insertOverride: InsertOrganizationPermissionOverride): Promise<OrganizationPermissionOverride> {
+  async createTenantPermissionOverride(insertOverride: InsertTenantPermissionOverride): Promise<TenantPermissionOverride> {
     const [override] = await this.db
-      .insert(organizationPermissionOverrides)
+      .insert(tenantPermissionOverrides)
       .values(insertOverride as any)
       .returning();
     return override;
   }
   
-  async updateOrganizationPermissionOverride(id: string, updates: Partial<InsertOrganizationPermissionOverride>): Promise<OrganizationPermissionOverride | undefined> {
+  async updateTenantPermissionOverride(id: string, updates: Partial<InsertTenantPermissionOverride>): Promise<TenantPermissionOverride | undefined> {
     const [override] = await this.db
-      .update(organizationPermissionOverrides)
+      .update(tenantPermissionOverrides)
       .set({ ...updates, updatedAt: new Date() } as any)
-      .where(eq(organizationPermissionOverrides.id, id))
+      .where(eq(tenantPermissionOverrides.id, id))
       .returning();
     return override || undefined;
   }
@@ -1121,7 +1121,7 @@ export class DatabaseStorage implements IStorage {
     role: string, 
     resource: string, 
     action: string, 
-    organizationId: string
+    tenantId: string
   ): Promise<{ hasPermission: boolean; requiresApproval: boolean; reason?: string }> {
     // Check for superadmin - has all permissions
     if (role.toLowerCase() === 'superadmin') {
@@ -1130,8 +1130,8 @@ export class DatabaseStorage implements IStorage {
     
     const permissionName = `${resource}.${action}`;
     
-    // Check organization-specific overrides
-    const override = await this.getOrganizationPermissionOverride(organizationId, permissionName);
+    // Check tenant-specific overrides
+    const override = await this.getTenantPermissionOverride(tenantId, permissionName);
     
     if (override) {
       const roleLower = role.toLowerCase();

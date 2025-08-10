@@ -52,10 +52,10 @@ export const rolePermissions = pgTable("role_permissions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Organization-specific permission overrides
-export const organizationPermissionOverrides = pgTable("organization_permission_overrides", {
+// Tenant-specific permission overrides
+export const tenantPermissionOverrides = pgTable("tenant_permission_overrides", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  organizationId: varchar("organization_id").notNull().references(() => tenants.id),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
   permissionName: text("permission_name").notNull(), // e.g., "lesson_plan.submit"
   rolesRequired: json("roles_required").$type<string[]>().notNull().default([]), // Roles that need approval
   autoApproveRoles: json("auto_approve_roles").$type<string[]>().notNull().default([]), // Roles that bypass approval
@@ -288,7 +288,7 @@ export const insertRolePermissionSchema = createInsertSchema(rolePermissions).om
   createdAt: true,
 });
 
-export const insertOrganizationPermissionOverrideSchema = createInsertSchema(organizationPermissionOverrides).omit({
+export const insertTenantPermissionOverrideSchema = createInsertSchema(tenantPermissionOverrides).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -447,8 +447,8 @@ export type Role = typeof roles.$inferSelect;
 export type InsertRole = z.infer<typeof insertRoleSchema>;
 export type RolePermission = typeof rolePermissions.$inferSelect;
 export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
-export type OrganizationPermissionOverride = typeof organizationPermissionOverrides.$inferSelect;
-export type InsertOrganizationPermissionOverride = z.infer<typeof insertOrganizationPermissionOverrideSchema>;
+export type TenantPermissionOverride = typeof tenantPermissionOverrides.$inferSelect;
+export type InsertTenantPermissionOverride = z.infer<typeof insertTenantPermissionOverrideSchema>;
 
 // Relations for settings tables
 export const locationsRelations = relations(locations, ({ one, many }) => ({
