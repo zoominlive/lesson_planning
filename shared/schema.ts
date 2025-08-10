@@ -23,7 +23,8 @@ export const tokenSecrets = pgTable("token_secrets", {
 // Permissions table
 export const permissions = pgTable("permissions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull().unique(), // e.g., "lesson_plan.submit"
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  name: text("name").notNull(), // e.g., "lesson_plan.submit"
   resource: text("resource").notNull(), // e.g., "lesson_plan"
   action: text("action").notNull(), // e.g., "submit"
   description: text("description").notNull(),
@@ -34,7 +35,8 @@ export const permissions = pgTable("permissions", {
 // Roles table
 export const roles = pgTable("roles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull().unique(), // "teacher", "director", etc.
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  name: text("name").notNull(), // "teacher", "director", etc.
   description: text("description").notNull(),
   isSystem: boolean("is_system").default(false).notNull(), // System roles can't be deleted
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -44,6 +46,7 @@ export const roles = pgTable("roles", {
 // Role-Permission junction table
 export const rolePermissions = pgTable("role_permissions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
   roleId: varchar("role_id").notNull().references(() => roles.id),
   permissionId: varchar("permission_id").notNull().references(() => permissions.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),

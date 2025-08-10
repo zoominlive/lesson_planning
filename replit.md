@@ -3,6 +3,14 @@
 This project is a comprehensive lesson planning application designed for early childhood educators. Its primary purpose is to streamline the creation and management of weekly lesson plans. Key capabilities include managing activities, materials, and developmental milestones, as well as creating structured weekly schedules that align with educational objectives and available resources. The application supports a multi-tenant and multi-location architecture, ensuring data isolation and secure access for various educational organizations and their facilities.
 
 ## Recent Changes (January 2025)
+
+### Multi-tenant Permission System (January 10, 2025)
+- **Added tenantId to permission tables**: Updated permissions, roles, and role_permissions tables to include tenant_id for proper multi-tenant data isolation
+- **Database migration**: Successfully migrated existing permission data to include tenant references
+- **Fixed permission saving**: Resolved authentication issues where req.user.role was undefined by using req.role directly
+- **Removed timestamp conflicts**: Fixed PATCH operations by excluding createdAt/updatedAt from updates
+
+## Recent Changes (January 2025)
 - **User tracking system**: Revamped Users table to track all users accessing the system via JWT tokens. Now captures first login date, last login date, login count, and user details from JWT tokens. Automatically creates/updates user records on each login.
 - **Fixed tablet activity scheduling**: Resolved issue where selecting activities from drawer and tapping schedule slots wasn't saving to database. Now properly uses API mutations with error handling.
 - **Drag-and-drop activity management**: Implemented comprehensive drag-and-drop functionality allowing users to move scheduled activities between time slots on both desktop and tablet interfaces
