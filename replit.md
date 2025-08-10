@@ -5,7 +5,7 @@ This project is a comprehensive lesson planning application designed for early c
 ## Recent Changes (January 2025)
 
 ### JWT Token Location Format Fix (January 13, 2025)
-- **Fixed location array format in test tokens**: Updated all test tokens in token-switcher to use location names (`["Main", "Third"]`) instead of UUIDs
+- **Fixed location array format in test tokens**: Updated all test tokens in token-switcher to use exact location names (`["Main Campus", "Third Location"]`) instead of UUIDs
 - **Parent app compatibility**: Ensured tokens match the format expected by parent application which sends location names in the JWT payload
 - **All roles updated**: Applied location name format to admin, teacher, director, assistant_director, and superadmin tokens
 - **Backend compatibility**: System accepts both location names and location IDs for backward compatibility
