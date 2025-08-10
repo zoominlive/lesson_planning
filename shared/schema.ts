@@ -100,6 +100,8 @@ export const activities = pgTable("activities", {
   variations: json("variations").$type<string[]>().default([]), // Activity variations
   // System fields
   status: text("status").notNull().default("active"), // active, disabled
+  isActive: boolean("is_active").default(true).notNull(), // Soft delete flag
+  deletedOn: timestamp("deleted_on"), // Timestamp when soft deleted
   usageCount: integer("usage_count").default(0),
   lastUsedAt: timestamp("last_used_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

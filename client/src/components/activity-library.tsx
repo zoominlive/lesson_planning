@@ -445,21 +445,12 @@ export default function ActivityLibrary() {
                   <Button 
                     variant="outline"
                     size="sm"
-                    className="flex-1"
-                    onClick={() => handleViewSteps(activity)}
-                    data-testid={`button-steps-${activity.id}`}
-                  >
-                    <List className="mr-1 h-3 w-3" />
-                    Steps
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    size="sm"
+                    className="flex-1 hover:bg-red-50 hover:text-red-600 hover:border-red-300"
                     onClick={() => handleDelete(activity)}
                     data-testid={`button-delete-${activity.id}`}
-                    className="hover:bg-red-50 hover:text-red-600 hover:border-red-300"
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="mr-1 h-3 w-3" />
+                    Delete
                   </Button>
                 </div>
               </CardContent>

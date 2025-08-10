@@ -32,6 +32,8 @@ This project is a comprehensive lesson planning application designed for early c
 - **Activity Capacity Management**: Added min_children and max_children fields to activities table for specifying supported children ranges per activity
 - **Enhanced Activity Form**: Updated activity form to include minimum and maximum children input fields with proper validation
 - **Activity Library Display**: Modified activity cards to show children capacity ranges alongside duration for better planning visibility
+- **Soft Delete for Activities**: Implemented soft delete functionality with is_active flag and deleted_on timestamp. Activities are marked as inactive instead of being permanently deleted
+- **Removed Steps Button**: Simplified activity cards to only show Edit and Delete buttons, removing the Steps button for cleaner interface
 
 # User Preferences
 

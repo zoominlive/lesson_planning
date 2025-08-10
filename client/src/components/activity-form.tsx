@@ -5,11 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, X, Upload, ImageIcon, VideoIcon } from "lucide-react";
-import { insertActivitySchema, type Activity, type InstructionStep } from "@shared/schema";
+import {
+  insertActivitySchema,
+  type Activity,
+  type InstructionStep,
+} from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -22,42 +32,69 @@ interface ActivityFormProps {
   initialData?: any; // AI-generated data
 }
 
-export default function ActivityForm({ activity, onSuccess, onCancel, selectedLocationId, initialData }: ActivityFormProps) {
+export default function ActivityForm({
+  activity,
+  onSuccess,
+  onCancel,
+  selectedLocationId,
+  initialData,
+}: ActivityFormProps) {
   const { toast } = useToast();
-  
+
   // Use AI-generated data if available, otherwise use activity data
   const [instructions, setInstructions] = useState<InstructionStep[]>(
-    initialData?.instructions || activity?.instructions || [{ text: "" }]
+    initialData?.instructions || activity?.instructions || [{ text: "" }],
   );
   const [selectedAgeGroups, setSelectedAgeGroups] = useState<string[]>(
-    activity?.ageGroupIds || (initialData?.selectedAgeGroupId ? [initialData.selectedAgeGroupId] : [])
+    activity?.ageGroupIds ||
+      (initialData?.selectedAgeGroupId ? [initialData.selectedAgeGroupId] : []),
   );
   const [selectedMilestones, setSelectedMilestones] = useState<string[]>(
-    activity?.milestoneIds || []
+    activity?.milestoneIds || [],
   );
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>(
-    activity?.materialIds || []
+    activity?.materialIds || [],
   );
-  const [materialCategoryFilter, setMaterialCategoryFilter] = useState<string>("all");
-  const [materialAgeGroupFilter, setMaterialAgeGroupFilter] = useState<string>("all");
-  const [milestoneCategoryFilter, setMilestoneCategoryFilter] = useState<string>("all");
-  const [milestoneAgeGroupFilter, setMilestoneAgeGroupFilter] = useState<string>("all");
+  const [materialCategoryFilter, setMaterialCategoryFilter] =
+    useState<string>("all");
+  const [materialAgeGroupFilter, setMaterialAgeGroupFilter] =
+    useState<string>("all");
+  const [milestoneCategoryFilter, setMilestoneCategoryFilter] =
+    useState<string>("all");
+  const [milestoneAgeGroupFilter, setMilestoneAgeGroupFilter] =
+    useState<string>("all");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
-  const [uploadingInstructionImage, setUploadingInstructionImage] = useState<number | null>(null);
-  const [activityImageUrl, setActivityImageUrl] = useState(activity?.imageUrl || "");
-  const [activityVideoUrl, setActivityVideoUrl] = useState(activity?.videoUrl || "");
-  
+  const [uploadingInstructionImage, setUploadingInstructionImage] = useState<
+    number | null
+  >(null);
+  const [activityImageUrl, setActivityImageUrl] = useState(
+    activity?.imageUrl || "",
+  );
+  const [activityVideoUrl, setActivityVideoUrl] = useState(
+    activity?.videoUrl || "",
+  );
+
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
-  const instructionImageRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
+  const instructionImageRefs = useRef<{
+    [key: number]: HTMLInputElement | null;
+  }>({});
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
-    resolver: zodResolver(insertActivitySchema.omit({ 
-      id: true,
-      tenantId: true,
-      locationId: true
-    })),
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm({
+    resolver: zodResolver(
+      insertActivitySchema.omit({
+        id: true,
+        tenantId: true,
+        locationId: true,
+      }),
+    ),
     defaultValues: {
       title: initialData?.title || activity?.title || "",
       description: initialData?.description || activity?.description || "",
@@ -94,9 +131,12 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
   // Fetch age groups for the selected location
   const { data: ageGroups = [] } = useQuery({
     queryKey: ["/api/age-groups", selectedLocationId],
-    queryFn: selectedLocationId 
+    queryFn: selectedLocationId
       ? async () => {
-          const data = await apiRequest("GET", `/api/age-groups?locationId=${selectedLocationId}`);
+          const data = await apiRequest(
+            "GET",
+            `/api/age-groups?locationId=${selectedLocationId}`,
+          );
           return data;
         }
       : undefined,
@@ -106,9 +146,12 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
   // Fetch milestones for the selected location
   const { data: milestones = [] } = useQuery({
     queryKey: ["/api/milestones", selectedLocationId],
-    queryFn: selectedLocationId 
+    queryFn: selectedLocationId
       ? async () => {
-          const data = await apiRequest("GET", `/api/milestones?locationId=${selectedLocationId}`);
+          const data = await apiRequest(
+            "GET",
+            `/api/milestones?locationId=${selectedLocationId}`,
+          );
           return data;
         }
       : undefined,
@@ -118,9 +161,12 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
   // Fetch categories for the selected location
   const { data: categories = [] } = useQuery({
     queryKey: ["/api/categories", selectedLocationId],
-    queryFn: selectedLocationId 
+    queryFn: selectedLocationId
       ? async () => {
-          const data = await apiRequest("GET", `/api/categories?locationId=${selectedLocationId}`);
+          const data = await apiRequest(
+            "GET",
+            `/api/categories?locationId=${selectedLocationId}`,
+          );
           return data;
         }
       : undefined,
@@ -130,9 +176,12 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
   // Fetch materials for the selected location
   const { data: materials = [] } = useQuery({
     queryKey: ["/api/materials", selectedLocationId],
-    queryFn: selectedLocationId 
+    queryFn: selectedLocationId
       ? async () => {
-          const data = await apiRequest("GET", `/api/materials?locationId=${selectedLocationId}`);
+          const data = await apiRequest(
+            "GET",
+            `/api/materials?locationId=${selectedLocationId}`,
+          );
           return data;
         }
       : undefined,
@@ -140,21 +189,27 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
   });
 
   const uploadImageMutation = useMutation({
-    mutationFn: async ({ file, type }: { file: File; type: 'image' | 'video' | 'instruction' }) => {
+    mutationFn: async ({
+      file,
+      type,
+    }: {
+      file: File;
+      type: "image" | "video" | "instruction";
+    }) => {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('type', type);
-      
-      const token = localStorage.getItem('authToken');
-      const response = await fetch('/api/activities/upload', {
-        method: 'POST',
+      formData.append("file", file);
+      formData.append("type", type);
+
+      const token = localStorage.getItem("authToken");
+      const response = await fetch("/api/activities/upload", {
+        method: "POST",
         headers: {
-          ...(token && { 'Authorization': `Bearer ${token}` }),
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: formData,
       });
-      
-      if (!response.ok) throw new Error('Upload failed');
+
+      if (!response.ok) throw new Error("Upload failed");
       return response.json();
     },
     onError: (error) => {
@@ -166,15 +221,20 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
     },
   });
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setUploadingImage(true);
     try {
-      const result = await uploadImageMutation.mutateAsync({ file, type: 'image' });
+      const result = await uploadImageMutation.mutateAsync({
+        file,
+        type: "image",
+      });
       setActivityImageUrl(result.url);
-      setValue('imageUrl', result.url);
+      setValue("imageUrl", result.url);
       toast({
         title: "Image uploaded",
         description: "The activity image has been uploaded successfully.",
@@ -184,15 +244,20 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
     }
   };
 
-  const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVideoUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setUploadingVideo(true);
     try {
-      const result = await uploadImageMutation.mutateAsync({ file, type: 'video' });
+      const result = await uploadImageMutation.mutateAsync({
+        file,
+        type: "video",
+      });
       setActivityVideoUrl(result.url);
-      setValue('videoUrl', result.url);
+      setValue("videoUrl", result.url);
       toast({
         title: "Video uploaded",
         description: "The activity video has been uploaded successfully.",
@@ -202,13 +267,19 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
     }
   };
 
-  const handleInstructionImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, index: number) => {
+  const handleInstructionImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    index: number,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setUploadingInstructionImage(index);
     try {
-      const result = await uploadImageMutation.mutateAsync({ file, type: 'instruction' });
+      const result = await uploadImageMutation.mutateAsync({
+        file,
+        type: "instruction",
+      });
       const updated = [...instructions];
       updated[index] = { ...updated[index], imageUrl: result.url };
       setInstructions(updated);
@@ -223,12 +294,12 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem("authToken");
       const response = await fetch("/api/activities", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          ...(token && { 'Authorization': `Bearer ${token}` }),
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify(data),
       });
@@ -243,12 +314,12 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem("authToken");
       const response = await fetch(`/api/activities/${activity!.id}`, {
         method: "PUT",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          ...(token && { 'Authorization': `Bearer ${token}` }),
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify(data),
       });
@@ -262,8 +333,8 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
   });
 
   const onSubmit = (data: any) => {
-    console.log('[ActivityForm] Submitting activity with raw data:', data);
-    
+    console.log("[ActivityForm] Submitting activity with raw data:", data);
+
     // Remove only the imagePrompt field as it's not stored in the database
     const { imagePrompt, ...dataWithoutPrompt } = data;
 
@@ -272,7 +343,9 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
       ageGroupIds: selectedAgeGroups,
       milestoneIds: selectedMilestones,
       materialIds: selectedMaterials,
-      instructions: instructions.filter(inst => inst.text.trim() !== "" || inst.imageUrl),
+      instructions: instructions.filter(
+        (inst) => inst.text.trim() !== "" || inst.imageUrl,
+      ),
       locationId: dataWithoutPrompt.locationId || selectedLocationId,
       imageUrl: activityImageUrl,
       videoUrl: activityVideoUrl,
@@ -286,7 +359,7 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
       variations: dataWithoutPrompt.variations || [],
     };
 
-    console.log('[ActivityForm] Final form data being sent:', formData);
+    console.log("[ActivityForm] Final form data being sent:", formData);
 
     if (activity) {
       updateMutation.mutate(formData);
@@ -310,50 +383,62 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
   };
 
   const toggleAgeGroup = (ageGroupId: string) => {
-    setSelectedAgeGroups(prev => 
-      prev.includes(ageGroupId) 
-        ? prev.filter(id => id !== ageGroupId)
-        : [...prev, ageGroupId]
+    setSelectedAgeGroups((prev) =>
+      prev.includes(ageGroupId)
+        ? prev.filter((id) => id !== ageGroupId)
+        : [...prev, ageGroupId],
     );
   };
 
   const toggleMilestone = (milestoneId: string) => {
-    setSelectedMilestones(prev => 
-      prev.includes(milestoneId) 
-        ? prev.filter(id => id !== milestoneId)
-        : [...prev, milestoneId]
+    setSelectedMilestones((prev) =>
+      prev.includes(milestoneId)
+        ? prev.filter((id) => id !== milestoneId)
+        : [...prev, milestoneId],
     );
   };
 
   const toggleMaterial = (materialId: string) => {
-    setSelectedMaterials(prev => 
-      prev.includes(materialId) 
-        ? prev.filter(id => id !== materialId)
-        : [...prev, materialId]
+    setSelectedMaterials((prev) =>
+      prev.includes(materialId)
+        ? prev.filter((id) => id !== materialId)
+        : [...prev, materialId],
     );
   };
 
   // Filter materials based on selected filters
   const filteredMaterials = materials.filter((material: any) => {
-    const categoryMatch = materialCategoryFilter === "all" || material.category === materialCategoryFilter;
-    const ageGroupMatch = materialAgeGroupFilter === "all" || 
-      (material.ageGroups && material.ageGroups.includes(materialAgeGroupFilter));
+    const categoryMatch =
+      materialCategoryFilter === "all" ||
+      material.category === materialCategoryFilter;
+    const ageGroupMatch =
+      materialAgeGroupFilter === "all" ||
+      (material.ageGroups &&
+        material.ageGroups.includes(materialAgeGroupFilter));
     return categoryMatch && ageGroupMatch;
   });
 
   // Get unique categories from materials
-  const materialCategories = Array.from(new Set(materials.map((m: any) => m.category).filter(Boolean)));
+  const materialCategories = Array.from(
+    new Set(materials.map((m: any) => m.category).filter(Boolean)),
+  );
 
   // Filter milestones based on selected filters
   const filteredMilestones = milestones.filter((milestone: any) => {
-    const categoryMatch = milestoneCategoryFilter === "all" || milestone.category === milestoneCategoryFilter;
-    const ageGroupMatch = milestoneAgeGroupFilter === "all" || 
-      (milestone.ageGroupIds && milestone.ageGroupIds.includes(milestoneAgeGroupFilter));
+    const categoryMatch =
+      milestoneCategoryFilter === "all" ||
+      milestone.category === milestoneCategoryFilter;
+    const ageGroupMatch =
+      milestoneAgeGroupFilter === "all" ||
+      (milestone.ageGroupIds &&
+        milestone.ageGroupIds.includes(milestoneAgeGroupFilter));
     return categoryMatch && ageGroupMatch;
   });
 
   // Get unique categories from milestones
-  const milestoneCategories = Array.from(new Set(milestones.map((m: any) => m.category).filter(Boolean)));
+  const milestoneCategories = Array.from(
+    new Set(milestones.map((m: any) => m.category).filter(Boolean)),
+  );
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -362,31 +447,40 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
         <Card>
           <CardContent className="p-4 space-y-4">
             <h3 className="font-semibold text-lg">Basic Information</h3>
-            
+
             <div>
               <Label htmlFor="title">Activity Title *</Label>
-              <Input 
-                id="title" 
-                {...register("title")} 
+              <Input
+                id="title"
+                {...register("title")}
                 data-testid="input-activity-title"
               />
-              {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
+              {errors.title && (
+                <p className="text-red-500 text-sm">{errors.title.message}</p>
+              )}
             </div>
 
             <div>
               <Label htmlFor="description">Description *</Label>
-              <Textarea 
-                id="description" 
-                {...register("description")} 
+              <Textarea
+                id="description"
+                {...register("description")}
                 rows={3}
                 data-testid="textarea-activity-description"
               />
-              {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
+              {errors.description && (
+                <p className="text-red-500 text-sm">
+                  {errors.description.message}
+                </p>
+              )}
             </div>
 
             <div>
               <Label htmlFor="category">Category *</Label>
-              <Select onValueChange={(value) => setValue("category", value)} defaultValue={initialData?.category || activity?.category}>
+              <Select
+                onValueChange={(value) => setValue("category", value)}
+                defaultValue={initialData?.category || activity?.category}
+              >
                 <SelectTrigger data-testid="select-activity-category">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -398,7 +492,11 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                   ))}
                 </SelectContent>
               </Select>
-              {errors.category && <p className="text-red-500 text-sm">{errors.category.message}</p>}
+              {errors.category && (
+                <p className="text-red-500 text-sm">
+                  {errors.category.message}
+                </p>
+              )}
             </div>
 
             <div>
@@ -416,50 +514,65 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                       htmlFor={`age-group-${group.id}`}
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
-                      {group.name} ({group.ageRangeStart}-{group.ageRangeEnd} months)
+                      {group.name} ({group.ageRangeStart}-{group.ageRangeEnd}{" "}
+                      months)
                     </label>
                   </div>
                 ))}
               </div>
               {selectedAgeGroups.length === 0 && (
-                <p className="text-amber-600 text-sm mt-1">Please select at least one age group</p>
+                <p className="text-amber-600 text-sm mt-1">
+                  Please select at least one age group
+                </p>
               )}
             </div>
 
             <div>
               <Label htmlFor="duration">Duration (minutes) *</Label>
-              <Input 
-                id="duration" 
-                type="number" 
-                {...register("duration", { valueAsNumber: true })} 
+              <Input
+                id="duration"
+                type="number"
+                {...register("duration", { valueAsNumber: true })}
                 data-testid="input-activity-duration"
               />
-              {errors.duration && <p className="text-red-500 text-sm">{errors.duration.message}</p>}
+              {errors.duration && (
+                <p className="text-red-500 text-sm">
+                  {errors.duration.message}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="minChildren">Min Children</Label>
-                <Input 
-                  id="minChildren" 
-                  type="number" 
+                <Label htmlFor="minChildren">Min Children Recomended</Label>
+                <Input
+                  id="minChildren"
+                  type="number"
                   min="1"
-                  {...register("minChildren", { valueAsNumber: true })} 
+                  {...register("minChildren", { valueAsNumber: true })}
                   data-testid="input-min-children"
                 />
-                {errors.minChildren && <p className="text-red-500 text-sm">{errors.minChildren.message}</p>}
+                {errors.minChildren && (
+                  <p className="text-red-500 text-sm">
+                    {errors.minChildren.message}
+                  </p>
+                )}
               </div>
-              
+
               <div>
-                <Label htmlFor="maxChildren">Max Children</Label>
-                <Input 
-                  id="maxChildren" 
-                  type="number" 
+                <Label htmlFor="maxChildren">Max Children Recomended</Label>
+                <Input
+                  id="maxChildren"
+                  type="number"
                   min="1"
-                  {...register("maxChildren", { valueAsNumber: true })} 
+                  {...register("maxChildren", { valueAsNumber: true })}
                   data-testid="input-max-children"
                 />
-                {errors.maxChildren && <p className="text-red-500 text-sm">{errors.maxChildren.message}</p>}
+                {errors.maxChildren && (
+                  <p className="text-red-500 text-sm">
+                    {errors.maxChildren.message}
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -470,17 +583,21 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
           <Card>
             <CardContent className="p-4 space-y-4">
               <h3 className="font-semibold text-lg">Additional Details</h3>
-              
+
               {initialData.objectives && (
                 <div>
                   <Label>Learning Objectives</Label>
                   <div className="space-y-2">
-                    {initialData.objectives.map((objective: string, index: number) => (
-                      <div key={index} className="flex items-start gap-2">
-                        <span className="text-sm text-gray-500 mt-0.5">•</span>
-                        <p className="text-sm">{objective}</p>
-                      </div>
-                    ))}
+                    {initialData.objectives.map(
+                      (objective: string, index: number) => (
+                        <div key={index} className="flex items-start gap-2">
+                          <span className="text-sm text-gray-500 mt-0.5">
+                            •
+                          </span>
+                          <p className="text-sm">{objective}</p>
+                        </div>
+                      ),
+                    )}
                   </div>
                 </div>
               )}
@@ -488,7 +605,9 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
               {initialData.preparationTime && (
                 <div>
                   <Label>Preparation Time</Label>
-                  <p className="text-sm">{initialData.preparationTime} minutes</p>
+                  <p className="text-sm">
+                    {initialData.preparationTime} minutes
+                  </p>
                 </div>
               )}
 
@@ -513,30 +632,39 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                 </div>
               )}
 
-              {initialData.safetyConsiderations && initialData.safetyConsiderations.length > 0 && (
-                <div>
-                  <Label>Safety Considerations</Label>
-                  <div className="space-y-2">
-                    {initialData.safetyConsiderations.map((safety: string, index: number) => (
-                      <div key={index} className="flex items-start gap-2">
-                        <span className="text-sm text-amber-500 mt-0.5">⚠</span>
-                        <p className="text-sm">{safety}</p>
-                      </div>
-                    ))}
+              {initialData.safetyConsiderations &&
+                initialData.safetyConsiderations.length > 0 && (
+                  <div>
+                    <Label>Safety Considerations</Label>
+                    <div className="space-y-2">
+                      {initialData.safetyConsiderations.map(
+                        (safety: string, index: number) => (
+                          <div key={index} className="flex items-start gap-2">
+                            <span className="text-sm text-amber-500 mt-0.5">
+                              ⚠
+                            </span>
+                            <p className="text-sm">{safety}</p>
+                          </div>
+                        ),
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {initialData.variations && initialData.variations.length > 0 && (
                 <div>
                   <Label>Activity Variations</Label>
                   <div className="space-y-2">
-                    {initialData.variations.map((variation: string, index: number) => (
-                      <div key={index} className="flex items-start gap-2">
-                        <span className="text-sm text-turquoise mt-0.5">✦</span>
-                        <p className="text-sm">{variation}</p>
-                      </div>
-                    ))}
+                    {initialData.variations.map(
+                      (variation: string, index: number) => (
+                        <div key={index} className="flex items-start gap-2">
+                          <span className="text-sm text-turquoise mt-0.5">
+                            ✦
+                          </span>
+                          <p className="text-sm">{variation}</p>
+                        </div>
+                      ),
+                    )}
                   </div>
                 </div>
               )}
@@ -548,15 +676,15 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
         <Card>
           <CardContent className="p-4 space-y-4">
             <h3 className="font-semibold text-lg">Media</h3>
-            
+
             <div>
               <Label>Activity Image</Label>
               <div className="border-2 border-dashed rounded-lg p-4 text-center">
                 {activityImageUrl ? (
                   <div className="relative">
-                    <img 
-                      src={activityImageUrl} 
-                      alt="Activity" 
+                    <img
+                      src={activityImageUrl}
+                      alt="Activity"
                       className="max-h-32 mx-auto rounded"
                     />
                     <Button
@@ -641,12 +769,18 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
       <Card>
         <CardContent className="p-4 space-y-4">
           <h3 className="font-semibold text-lg">Learning Milestones</h3>
-          
+
           {/* Milestone Filters */}
           <div className="flex gap-3 items-center">
             <div className="flex-1">
-              <Select value={milestoneCategoryFilter} onValueChange={setMilestoneCategoryFilter}>
-                <SelectTrigger className="h-8 text-sm" data-testid="filter-milestone-category">
+              <Select
+                value={milestoneCategoryFilter}
+                onValueChange={setMilestoneCategoryFilter}
+              >
+                <SelectTrigger
+                  className="h-8 text-sm"
+                  data-testid="filter-milestone-category"
+                >
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -660,8 +794,14 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
               </Select>
             </div>
             <div className="flex-1">
-              <Select value={milestoneAgeGroupFilter} onValueChange={setMilestoneAgeGroupFilter}>
-                <SelectTrigger className="h-8 text-sm" data-testid="filter-milestone-age-group">
+              <Select
+                value={milestoneAgeGroupFilter}
+                onValueChange={setMilestoneAgeGroupFilter}
+              >
+                <SelectTrigger
+                  className="h-8 text-sm"
+                  data-testid="filter-milestone-age-group"
+                >
                   <SelectValue placeholder="Filter by age group" />
                 </SelectTrigger>
                 <SelectContent>
@@ -674,11 +814,12 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                 </SelectContent>
               </Select>
             </div>
-            {(milestoneCategoryFilter !== "all" || milestoneAgeGroupFilter !== "all") && (
-              <Button 
-                type="button" 
-                variant="ghost" 
-                size="sm" 
+            {(milestoneCategoryFilter !== "all" ||
+              milestoneAgeGroupFilter !== "all") && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setMilestoneCategoryFilter("all");
                   setMilestoneAgeGroupFilter("all");
@@ -689,42 +830,56 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
               </Button>
             )}
           </div>
-          
+
           <div className="space-y-2 max-h-64 overflow-y-auto border rounded-md p-3">
             {filteredMilestones.length > 0 ? (
               filteredMilestones.map((milestone: any) => (
-              <div key={milestone.id} className="flex items-start space-x-2">
-                <Checkbox
-                  id={`milestone-${milestone.id}`}
-                  checked={selectedMilestones.includes(milestone.id)}
-                  onCheckedChange={() => toggleMilestone(milestone.id)}
-                  data-testid={`checkbox-milestone-${milestone.id}`}
-                  className="mt-1"
-                />
-                <label
-                  htmlFor={`milestone-${milestone.id}`}
-                  className="text-sm leading-relaxed cursor-pointer"
-                >
-                  <span className="font-medium">{milestone.title}</span>
-                  <span className="text-gray-600 ml-2">({milestone.category})</span>
-                  <p className="text-xs text-gray-500">{milestone.description}</p>
-                </label>
-              </div>
-            ))
+                <div key={milestone.id} className="flex items-start space-x-2">
+                  <Checkbox
+                    id={`milestone-${milestone.id}`}
+                    checked={selectedMilestones.includes(milestone.id)}
+                    onCheckedChange={() => toggleMilestone(milestone.id)}
+                    data-testid={`checkbox-milestone-${milestone.id}`}
+                    className="mt-1"
+                  />
+                  <label
+                    htmlFor={`milestone-${milestone.id}`}
+                    className="text-sm leading-relaxed cursor-pointer"
+                  >
+                    <span className="font-medium">{milestone.title}</span>
+                    <span className="text-gray-600 ml-2">
+                      ({milestone.category})
+                    </span>
+                    <p className="text-xs text-gray-500">
+                      {milestone.description}
+                    </p>
+                  </label>
+                </div>
+              ))
             ) : milestones.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <p className="text-sm mb-2">No milestones found for this location</p>
-                <p className="text-xs">Add milestones in the Milestones Library to select them here</p>
+                <p className="text-sm mb-2">
+                  No milestones found for this location
+                </p>
+                <p className="text-xs">
+                  Add milestones in the Milestones Library to select them here
+                </p>
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
-                <p className="text-sm mb-2">No milestones match the selected filters</p>
-                <p className="text-xs">Try adjusting or clearing the filters above</p>
+                <p className="text-sm mb-2">
+                  No milestones match the selected filters
+                </p>
+                <p className="text-xs">
+                  Try adjusting or clearing the filters above
+                </p>
               </div>
             )}
           </div>
           {selectedMilestones.length === 0 && filteredMilestones.length > 0 && (
-            <p className="text-amber-600 text-sm">Consider selecting relevant milestones for this activity</p>
+            <p className="text-amber-600 text-sm">
+              Consider selecting relevant milestones for this activity
+            </p>
           )}
         </CardContent>
       </Card>
@@ -735,15 +890,22 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-lg">Materials Required</h3>
             <span className="text-sm text-gray-500">
-              {selectedMaterials.length} item{selectedMaterials.length !== 1 ? 's' : ''} selected
+              {selectedMaterials.length} item
+              {selectedMaterials.length !== 1 ? "s" : ""} selected
             </span>
           </div>
-          
+
           {/* Materials Filters */}
           <div className="flex gap-3 items-center">
             <div className="flex-1">
-              <Select value={materialCategoryFilter} onValueChange={setMaterialCategoryFilter}>
-                <SelectTrigger className="h-8 text-sm" data-testid="filter-material-category">
+              <Select
+                value={materialCategoryFilter}
+                onValueChange={setMaterialCategoryFilter}
+              >
+                <SelectTrigger
+                  className="h-8 text-sm"
+                  data-testid="filter-material-category"
+                >
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -757,8 +919,14 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
               </Select>
             </div>
             <div className="flex-1">
-              <Select value={materialAgeGroupFilter} onValueChange={setMaterialAgeGroupFilter}>
-                <SelectTrigger className="h-8 text-sm" data-testid="filter-material-age-group">
+              <Select
+                value={materialAgeGroupFilter}
+                onValueChange={setMaterialAgeGroupFilter}
+              >
+                <SelectTrigger
+                  className="h-8 text-sm"
+                  data-testid="filter-material-age-group"
+                >
                   <SelectValue placeholder="Filter by age group" />
                 </SelectTrigger>
                 <SelectContent>
@@ -771,11 +939,12 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                 </SelectContent>
               </Select>
             </div>
-            {(materialCategoryFilter !== "all" || materialAgeGroupFilter !== "all") && (
-              <Button 
-                type="button" 
-                variant="ghost" 
-                size="sm" 
+            {(materialCategoryFilter !== "all" ||
+              materialAgeGroupFilter !== "all") && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setMaterialCategoryFilter("all");
                   setMaterialAgeGroupFilter("all");
@@ -789,7 +958,10 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
           <div className="space-y-3 max-h-64 overflow-y-auto border rounded-md p-3">
             {filteredMaterials.length > 0 ? (
               filteredMaterials.map((material: any) => (
-                <div key={material.id} className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-md transition-colors">
+                <div
+                  key={material.id}
+                  className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-md transition-colors"
+                >
                   <Checkbox
                     id={`material-${material.id}`}
                     checked={selectedMaterials.includes(material.id)}
@@ -803,21 +975,30 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                       className="text-sm leading-relaxed cursor-pointer block"
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-gray-900">{material.name}</span>
+                        <span className="font-medium text-gray-900">
+                          {material.name}
+                        </span>
                         <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
                           {material.category}
                         </span>
-                        {material.ageGroups && material.ageGroups.length > 0 && (
-                          <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
-                            {material.ageGroups.map((ageGroupId: string) => {
-                              const ageGroup = ageGroups.find((ag: any) => ag.id === ageGroupId);
-                              return ageGroup?.name || 'Unknown';
-                            }).join(', ')}
-                          </span>
-                        )}
+                        {material.ageGroups &&
+                          material.ageGroups.length > 0 && (
+                            <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                              {material.ageGroups
+                                .map((ageGroupId: string) => {
+                                  const ageGroup = ageGroups.find(
+                                    (ag: any) => ag.id === ageGroupId,
+                                  );
+                                  return ageGroup?.name || "Unknown";
+                                })
+                                .join(", ")}
+                            </span>
+                          )}
                       </div>
                       {material.description && (
-                        <p className="text-xs text-gray-600 mt-1">{material.description}</p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          {material.description}
+                        </p>
                       )}
                       <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                         {material.safetyNotes && (
@@ -826,7 +1007,7 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                             Safety notes available
                           </span>
                         )}
-                        <span>Quantity: {material.quantity || 'N/A'}</span>
+                        <span>Quantity: {material.quantity || "N/A"}</span>
                         {material.location && (
                           <span>Location: {material.location}</span>
                         )}
@@ -837,18 +1018,28 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
               ))
             ) : materials.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <p className="text-sm mb-2">No materials found for this location</p>
-                <p className="text-xs">Add materials in the Materials Library to select them here</p>
+                <p className="text-sm mb-2">
+                  No materials found for this location
+                </p>
+                <p className="text-xs">
+                  Add materials in the Materials Library to select them here
+                </p>
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
-                <p className="text-sm mb-2">No materials match the selected filters</p>
-                <p className="text-xs">Try adjusting or clearing the filters above</p>
+                <p className="text-sm mb-2">
+                  No materials match the selected filters
+                </p>
+                <p className="text-xs">
+                  Try adjusting or clearing the filters above
+                </p>
               </div>
             )}
           </div>
           {selectedMaterials.length === 0 && filteredMaterials.length > 0 && (
-            <p className="text-amber-600 text-sm">Select the materials needed for this activity</p>
+            <p className="text-amber-600 text-sm">
+              Select the materials needed for this activity
+            </p>
           )}
           {selectedMaterials.length > 0 && (
             <div className="bg-blue-50 p-3 rounded-md">
@@ -857,9 +1048,14 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
               </p>
               <div className="flex flex-wrap gap-1">
                 {selectedMaterials.map((materialId) => {
-                  const material = materials.find((m: any) => m.id === materialId);
+                  const material = materials.find(
+                    (m: any) => m.id === materialId,
+                  );
                   return material ? (
-                    <span key={materialId} className="text-xs bg-blue-200 text-blue-900 px-2 py-1 rounded-full">
+                    <span
+                      key={materialId}
+                      className="text-xs bg-blue-200 text-blue-900 px-2 py-1 rounded-full"
+                    >
                       {material.name}
                     </span>
                   ) : null;
@@ -875,12 +1071,17 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
         <CardContent className="p-4 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-lg">Step-by-step Instructions</h3>
-            <Button type="button" onClick={addInstruction} size="sm" variant="outline">
+            <Button
+              type="button"
+              onClick={addInstruction}
+              size="sm"
+              variant="outline"
+            >
               <Plus className="h-4 w-4 mr-1" />
               Add Step
             </Button>
           </div>
-          
+
           {instructions.map((instruction, index) => (
             <div key={index} className="space-y-2 p-3 border rounded-lg">
               <div className="flex gap-2">
@@ -888,27 +1089,31 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                   {index + 1}
                 </span>
                 <div className="flex-1 space-y-2">
-                  <Input 
+                  <Input
                     value={instruction.text}
-                    onChange={(e) => updateInstructionText(index, e.target.value)}
+                    onChange={(e) =>
+                      updateInstructionText(index, e.target.value)
+                    }
                     placeholder="Enter instruction step..."
                     data-testid={`input-instruction-${index}`}
                   />
-                  
+
                   {/* Instruction Image Upload */}
                   <div className="flex items-center gap-2">
                     {instruction.imageUrl ? (
                       <div className="flex items-center gap-2">
-                        <img 
-                          src={instruction.imageUrl} 
-                          alt={`Step ${index + 1}`} 
+                        <img
+                          src={instruction.imageUrl}
+                          alt={`Step ${index + 1}`}
                           className="h-16 w-16 object-cover rounded"
                         />
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => instructionImageRefs.current[index]?.click()}
+                          onClick={() =>
+                            instructionImageRefs.current[index]?.click()
+                          }
                         >
                           Change Image
                         </Button>
@@ -918,15 +1123,21 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => instructionImageRefs.current[index]?.click()}
+                        onClick={() =>
+                          instructionImageRefs.current[index]?.click()
+                        }
                         disabled={uploadingInstructionImage === index}
                       >
                         <Upload className="h-4 w-4 mr-1" />
-                        {uploadingInstructionImage === index ? "Uploading..." : "Add Image"}
+                        {uploadingInstructionImage === index
+                          ? "Uploading..."
+                          : "Add Image"}
                       </Button>
                     )}
                     <input
-                      ref={(el) => { instructionImageRefs.current[index] = el; }}
+                      ref={(el) => {
+                        instructionImageRefs.current[index] = el;
+                      }}
                       type="file"
                       accept="image/*"
                       className="hidden"
@@ -935,10 +1146,10 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
                   </div>
                 </div>
                 {instructions.length > 1 && (
-                  <Button 
-                    type="button" 
-                    onClick={() => removeInstruction(index)} 
-                    size="sm" 
+                  <Button
+                    type="button"
+                    onClick={() => removeInstruction(index)}
+                    size="sm"
                     variant="outline"
                     data-testid={`button-remove-instruction-${index}`}
                   >
@@ -953,11 +1164,16 @@ export default function ActivityForm({ activity, onSuccess, onCancel, selectedLo
 
       {/* Form Actions */}
       <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel} data-testid="button-cancel">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          data-testid="button-cancel"
+        >
           Cancel
         </Button>
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           className="bg-gradient-to-r from-coral-red to-turquoise text-white"
           disabled={createMutation.isPending || updateMutation.isPending}
           data-testid="button-save-activity"
