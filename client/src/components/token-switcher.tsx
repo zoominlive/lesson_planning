@@ -27,6 +27,12 @@ const TEST_TOKENS = {
     role: "Teacher",
     username: "teacher@example.com"
   },
+  teacher2: {
+    label: "Teacher 2",
+    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InRlYWNoZXIyXzEyMyIsInVzZXJGaXJzdE5hbWUiOiJKZW5uaWZlciIsInVzZXJMYXN0TmFtZSI6IldpbHNvbiIsInVzZXJuYW1lIjoidGVhY2hlcjJAZXhhbXBsZS5jb20iLCJyb2xlIjoiVGVhY2hlciIsImxvY2F0aW9ucyI6WyJUZXN0IEZyb250ZW5kIExvY2F0aW9uIl0sImlhdCI6MTc1NDgwMzAzNH0.y93D9cP2Ct0J42CyC3DPuXcOIVClh7HGE6C6YRWdNMU",
+    role: "Teacher",
+    username: "teacher2@example.com"
+  },
   director: {
     label: "Director User",
     token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImRpcmVjdG9yMTIzIiwidXNlckZpcnN0TmFtZSI6Ik1pY2hhZWwiLCJ1c2VyTGFzdE5hbWUiOiJCcm93biIsInVzZXJuYW1lIjoiZGlyZWN0b3JAZXhhbXBsZS5jb20iLCJyb2xlIjoiRGlyZWN0b3IiLCJsb2NhdGlvbnMiOlsiTWFpbiBDYW1wdXMiLCJUaGlyZCBMb2NhdGlvbiJdLCJpYXQiOjE3NTQ4MDMwMzR9.5lPRnjVNB_r52opefcfqDMmX0Tg08kfiHfTlBCdLMBk",
@@ -57,6 +63,8 @@ export function TokenSwitcher() {
     switch(userInfo.userId) {
       case "teacher123":
         return "teacher";
+      case "teacher2_123":
+        return "teacher2";
       case "director123":
         return "director";
       case "assistant_director123":
