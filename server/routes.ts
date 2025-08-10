@@ -1888,7 +1888,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const { id } = req.params;
-      const updates = req.body;
+      // Remove timestamp fields and id from updates
+      const { createdAt, updatedAt, id: bodyId, ...updates } = req.body;
       
       console.log("Updating permission override:", id, updates);
       const override = await storage.updateOrganizationPermissionOverride(id, updates);

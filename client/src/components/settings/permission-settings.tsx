@@ -84,13 +84,15 @@ export default function PermissionSettings() {
   const saveMutation = useMutation({
     mutationFn: async (updates: PermissionOverride[]) => {
       console.log('Saving permission overrides:', updates);
-      const promises = updates.map(override => 
-        apiRequest(
+      const promises = updates.map(override => {
+        // Remove timestamp fields for updates
+        const { createdAt, updatedAt, ...cleanData } = override;
+        return apiRequest(
           override.id ? 'PATCH' : 'POST',
           override.id ? `/api/permissions/overrides/${override.id}` : '/api/permissions/overrides',
-          override
-        )
-      );
+          cleanData
+        );
+      });
       return Promise.all(promises);
     },
     onSuccess: () => {
