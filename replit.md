@@ -4,6 +4,12 @@ This project is a comprehensive lesson planning application designed for early c
 
 ## Recent Changes (January 2025)
 
+### JWT Token Location Format Fix (January 13, 2025)
+- **Fixed location array format in test tokens**: Updated all test tokens in token-switcher to use location names (`["Main", "Third"]`) instead of UUIDs
+- **Parent app compatibility**: Ensured tokens match the format expected by parent application which sends location names in the JWT payload
+- **All roles updated**: Applied location name format to admin, teacher, director, assistant_director, and superadmin tokens
+- **Backend compatibility**: System accepts both location names and location IDs for backward compatibility
+
 ### Page-Level Security Implementation (January 13, 2025)
 - **Added route-level authorization checks**: Settings and Review pages now check permissions before rendering, preventing unauthorized access via direct URL navigation
 - **Access denied screens**: Users without proper permissions see a clear "Access Denied" message with a button to return to the main application
