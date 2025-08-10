@@ -16,7 +16,6 @@ export function Settings() {
   const [, setLocation] = useLocation();
   const userInfo = getUserInfo();
   const isSuperAdmin = userInfo?.role?.toLowerCase() === 'superadmin';
-  const tabCount = isSuperAdmin ? 6 : 5;
 
   const handleBackToPlanner = () => {
     setLocation('/');
@@ -44,7 +43,7 @@ export function Settings() {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className={`grid w-full grid-cols-${tabCount}`}>
+        <TabsList className={isSuperAdmin ? "grid w-full grid-cols-6" : "grid w-full grid-cols-5"}>
           <TabsTrigger value="general" className="flex items-center gap-2">
             <SettingsIcon className="h-4 w-4" />
             General
