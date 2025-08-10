@@ -12,9 +12,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
 import WeeklyCalendar from "@/components/weekly-calendar";
-import { Settings, MapPin } from "lucide-react";
+import { Settings } from "lucide-react";
 import { useLocation } from "wouter";
 import { getUserInfo } from "@/lib/auth";
 import { startOfWeek } from "date-fns";
@@ -41,11 +40,6 @@ export default function LessonPlanner() {
 
   // Get user info directly from the token
   const userInfo = getUserInfo();
-
-  // Fetch all locations to map IDs to names
-  const { data: allLocations = [] } = useQuery<any[]>({
-    queryKey: ["/api/locations"],
-  });
 
   // Fetch all rooms to auto-select first room for location
   const { data: allRooms = [] } = useQuery<any[]>({
@@ -221,26 +215,6 @@ export default function LessonPlanner() {
                 >
                   {userInfo?.role ? userInfo.role : "Loading..."}
                 </p>
-                {userInfo?.locations && userInfo.locations.length > 0 && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <MapPin className="h-3 w-3 text-gray-400" />
-                    <div className="flex gap-1">
-                      {userInfo.locations.map((locationId, idx) => {
-                        const locationName = allLocations.find((loc: any) => loc.id === locationId)?.name || locationId;
-                        return (
-                          <Badge
-                            key={idx}
-                            variant="secondary"
-                            className="text-xs py-0 h-5"
-                            data-testid={`location-badge-${idx}`}
-                          >
-                            {locationName}
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
               </div>
               <div className="flex items-center gap-2">
                 {(userInfo?.role?.toLowerCase() === "admin" || userInfo?.role?.toLowerCase() === "superadmin") && (
