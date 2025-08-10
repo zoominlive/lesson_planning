@@ -59,7 +59,14 @@ A PostgreSQL database, configured with Neon Database, serves as the primary data
 Key data models include Users, Milestones, Materials, Activities, Lesson Plans, Scheduled Activities, and Settings (Locations, Rooms, Categories, Age Groups). All relevant entities require `tenantId` and `locationId` for data isolation, except for `Locations` which only requires `tenantId`.
 
 ## Authentication and Authorization
-The system uses a JWT-based multi-tenant authentication system with location-based authorization. JWT tokens include `tenantId`, user details, role, and authorized locations. Server-side validation of location access is enforced on all API endpoints. Tokens are passed via query parameters or postMessage for iframe communication.
+The system uses a JWT-based multi-tenant authentication system with location-based authorization and Role-Based Access Control (RBAC). JWT tokens include `tenantId`, user details, role, and authorized locations. Server-side validation of location access is enforced on all API endpoints. Tokens are passed via query parameters or postMessage for iframe communication.
+
+The RBAC system allows organizations to:
+- Configure which roles require approval for specific actions
+- Set auto-approval for certain roles
+- Customize permission workflows through a visual interface in Settings
+- Track approval history with submission and review metadata
+- Define permissions at resource and action level (e.g., lesson_plan.submit, activity.create)
 
 ## File Upload and Media Management
 Activity and instruction images are stored locally in the `public/activity-images/` directory. They are served via a dedicated API endpoint (`/api/activities/images/:filename`) handled by an `ActivityStorageService`. Cloud storage solutions like Google Cloud Storage or AWS S3 are integrated with Uppy for general file uploads but are NOT used for activity images.

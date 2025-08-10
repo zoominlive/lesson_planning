@@ -34,7 +34,7 @@ const payload = {
   userFirstName: "John",                              // Required: User's first name
   userLastName: "Doe",                                // Required: User's last name
   username: "john.doe",                               // Required: Username
-  role: "teacher",                                    // Required: User role (teacher, admin, etc.)
+  role: "teacher",                                    // Required: User role (teacher, assistant_director, director, admin, superadmin)
   locations: ["Main Campus", "West Wing"],           // Required: Array of location names user can access
   iat: Math.floor(Date.now() / 1000),                // Issued at
   exp: Math.floor(Date.now() / 1000) + (60 * 60)     // Expires in 1 hour
@@ -149,6 +149,9 @@ Lesson plan related endpoints now support location-based filtering:
 - `POST /api/lesson-plans` - Create a new lesson plan (requires tenantId + locationId + roomId in body)
 - `PUT /api/lesson-plans/:id` - Update existing lesson plan
 - `DELETE /api/lesson-plans/:id` - Delete lesson plan
+- `POST /api/lesson-plans/:id/submit` - Submit lesson plan for review
+- `POST /api/lesson-plans/:id/approve` - Approve submitted lesson plan (requires approval permission)
+- `POST /api/lesson-plans/:id/reject` - Reject submitted lesson plan (requires approval permission)
 
 ### Scheduled Activities
 - `GET /api/lesson-plans/:lessonPlanId/scheduled-activities?locationId={locationId}&roomId={roomId}` - Retrieve scheduled activities with optional filtering
@@ -183,6 +186,16 @@ Lesson plan related endpoints now support location-based filtering:
 - `POST /api/age-groups` - Create a new age group
 - `PUT /api/age-groups/:id` - Update existing age group
 - `DELETE /api/age-groups/:id` - Delete age group
+
+### Permission Management (Admin Role Required)
+
+#### Permission Overrides
+- `GET /api/permissions/overrides` - Retrieve organization permission overrides
+- `POST /api/permissions/overrides` - Create permission override
+- `PATCH /api/permissions/overrides/:id` - Update permission override
+
+#### Permission Checking
+- `POST /api/permissions/check` - Check if user has permission for specific action
 
 ## Implementation Examples
 

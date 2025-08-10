@@ -18,9 +18,12 @@ A comprehensive web application designed for early childhood educators to stream
 - **JWT Authentication**: Secure token-based authentication for iframe integration
 - **Multi-Tenant Architecture**: Complete data isolation between different organizations
 - **Location-Based Authorization**: Users can only access data for their authorized locations
-- **Role-Based Access Control**: Admin and teacher roles with appropriate permissions
+- **Role-Based Access Control (RBAC)**: Flexible permission system with configurable approval workflows
+- **Permission Management**: Visual interface for customizing role permissions and approval requirements
 - **AI-Powered Content Generation**: Generate activities, milestones, and educational content using AI
 - **Real-Time Updates**: Live synchronization of data across all connected clients
+- **Activity Capacity Management**: Define minimum and maximum children ranges for activities
+- **Soft Delete**: Activities can be archived instead of permanently deleted
 
 ## Technology Stack
 
@@ -204,7 +207,7 @@ Embed the application in your parent system:
   userFirstName: "John",
   userLastName: "Doe",
   username: "john.doe",
-  role: "teacher" | "admin",
+  role: "teacher" | "assistant_director" | "director" | "admin" | "superadmin",
   locations: ["Main Campus", "West Wing"],
   iat: timestamp,
   exp: timestamp
@@ -241,6 +244,15 @@ All API endpoints require JWT authentication via Bearer token.
 - `POST /api/lesson-plans` - Create lesson plan
 - `PUT /api/lesson-plans/:id` - Update lesson plan
 - `DELETE /api/lesson-plans/:id` - Delete lesson plan
+- `POST /api/lesson-plans/:id/submit` - Submit for review
+- `POST /api/lesson-plans/:id/approve` - Approve lesson plan
+- `POST /api/lesson-plans/:id/reject` - Reject lesson plan
+
+#### Permissions
+- `GET /api/permissions/overrides` - List permission overrides
+- `POST /api/permissions/overrides` - Create permission override
+- `PATCH /api/permissions/overrides/:id` - Update permission override
+- `POST /api/permissions/check` - Check user permission
 
 ### Postman Collection
 Complete API documentation with examples is available in:
@@ -322,10 +334,27 @@ npm run db:push
 - **JWT Authentication**: Secure token-based authentication
 - **Multi-Tenant Isolation**: Complete data separation between organizations
 - **Location-Based Authorization**: Granular access control
+- **Role-Based Access Control (RBAC)**: Flexible permission system with configurable approval workflows
+- **Permission Management**: Organizations can customize which roles require approval for specific actions
 - **Input Validation**: Zod schemas for all API inputs
 - **SQL Injection Protection**: Parameterized queries via Drizzle ORM
 - **XSS Prevention**: React's built-in protection
 - **HTTPS Support**: Production deployment with TLS
+
+### Permission System
+
+The application implements a flexible RBAC system that allows organizations to:
+- Configure which roles require approval for specific actions
+- Set auto-approval for certain roles (e.g., directors, admins)
+- Customize permission workflows through a visual interface
+- Track approval history with submission and review metadata
+
+Default roles and their typical permissions:
+- **Teacher**: Create/edit lesson plans, submit for review
+- **Assistant Director**: Review and approve lesson plans, manage activities
+- **Director**: Full location management, approve plans
+- **Admin**: Organization-wide management, permission configuration
+- **Superadmin**: System-level access, all permissions
 
 ## Contributing
 
