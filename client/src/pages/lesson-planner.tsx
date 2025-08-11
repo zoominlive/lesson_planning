@@ -88,7 +88,7 @@ export default function LessonPlanner() {
   }, []);
 
   // Fetch lesson plans to find the current one
-  const { data: lessonPlans = [] } = useQuery<any[]>({
+  const { data: lessonPlans = [], refetch: refetchLessonPlans } = useQuery<any[]>({
     queryKey: ["/api/lesson-plans"],
     enabled: !!selectedLocation && !!selectedRoom,
   });
@@ -141,7 +141,9 @@ export default function LessonPlanner() {
       }
       return apiRequest("POST", `/api/lesson-plans/${currentLessonPlan.id}/withdraw`);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Immediately refetch lesson plans to update UI
+      await refetchLessonPlans();
       queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans"] });
       queryClient.invalidateQueries({ queryKey: ["/api/scheduled-activities"] });
       toast({
@@ -179,7 +181,9 @@ export default function LessonPlanner() {
         return apiRequest("POST", `/api/lesson-plans/${newPlan.id}/submit`);
       }
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // Immediately refetch lesson plans to update UI
+      await refetchLessonPlans();
       queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans"] });
       queryClient.invalidateQueries({ queryKey: ["/api/scheduled-activities"] });
       const requiresApproval = requiresLessonPlanApproval();
