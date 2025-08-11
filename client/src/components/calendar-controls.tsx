@@ -45,17 +45,9 @@ export function CalendarControls({
   currentLessonPlan,
   onWithdrawFromReview,
 }: CalendarControlsProps) {
-  const [currentLocation, setCurrentLocation] = useState(
-    selectedLocation || "",
-  );
+  // Remove internal state and use prop directly
+  const currentLocation = selectedLocation || "";
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  
-  // Sync internal state when prop changes
-  useEffect(() => {
-    if (selectedLocation && selectedLocation !== currentLocation) {
-      setCurrentLocation(selectedLocation);
-    }
-  }, [selectedLocation]);
 
   // Fetch authorized locations - API already filters based on JWT
   const { data: locations = [] } = useQuery({
@@ -74,7 +66,6 @@ export function CalendarControls({
   useEffect(() => {
     if (!currentLocation && Array.isArray(locations) && locations.length > 0) {
       const firstLocation = locations[0];
-      setCurrentLocation(firstLocation.id);
       onLocationChange?.(firstLocation.id);
     }
   }, [locations, currentLocation, onLocationChange]);
@@ -87,7 +78,6 @@ export function CalendarControls({
   }, [rooms, selectedRoom, onRoomChange]);
 
   const handleLocationChange = (locationId: string) => {
-    setCurrentLocation(locationId);
     onLocationChange?.(locationId);
   };
 
