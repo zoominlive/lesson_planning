@@ -17,6 +17,7 @@ import {
 import { ChevronLeft, ChevronRight, Send, MapPin, Calendar, CheckCircle } from "lucide-react";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import { requiresLessonPlanApproval } from "@/lib/permission-utils";
+import { getUserInfo } from "@/lib/auth";
 import { DayPicker } from "react-day-picker";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from "date-fns";
 import { cn } from "@/lib/utils";
