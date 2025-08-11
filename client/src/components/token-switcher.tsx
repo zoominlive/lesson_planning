@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { User, ChevronDown } from "lucide-react";
-import { setAuthToken, getUserInfo } from "@/lib/auth";
+import { setAuthToken, getUserInfo, clearAuthToken } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 // Test tokens for different user roles (signed with 'dev-secret-key')
@@ -83,9 +83,12 @@ export function TokenSwitcher() {
   const switchUser = (userType: keyof typeof TEST_TOKENS) => {
     const user = TEST_TOKENS[userType];
     
-    // Clear any old cached tokens first
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userInfo');
+    // Clear ALL cached data first
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Clear the in-memory auth token
+    clearAuthToken();
     
     // Set the new token
     setAuthToken(user.token);
@@ -112,15 +115,21 @@ export function TokenSwitcher() {
         .catch(err => console.warn('Could not fetch locations for SuperAdmin:', err));
     }
     
+    // Pre-cache location names for Teacher 2 specifically
+    if (userType === 'teacher2') {
+      console.log('Caching locations for Teacher 2: Main Campus');
+      localStorage.setItem('cachedLocations', JSON.stringify(['Main Campus']));
+    }
+    
     toast({
       title: "User Switched",
       description: `Now logged in as ${user.label} (${user.role})`,
     });
 
-    // Reload the page to apply the new token
+    // Force a hard reload to clear all caches
     setTimeout(() => {
-      window.location.reload();
-    }, 500);
+      window.location.href = window.location.href;
+    }, 100);
   };
 
   const current = TEST_TOKENS[currentUser];
