@@ -107,11 +107,21 @@ export default function LessonPlanner() {
     currentWeek.setHours(0, 0, 0, 0);
     
     // Match by week, location, room, and schedule type
-    return lpWeekStart.getTime() === currentWeek.getTime() &&
+    const matches = lpWeekStart.getTime() === currentWeek.getTime() &&
            lp.locationId === selectedLocation &&
            lp.roomId === selectedRoom &&
            lp.scheduleType === (locationSettings?.scheduleType || 'position-based');
+    
+    if (matches) {
+      console.log('Found matching lesson plan:', lp);
+    }
+    
+    return matches;
   });
+  
+  console.log('Current lesson plan status:', currentLessonPlan?.status, 'Full plan:', currentLessonPlan);
+  console.log('Selected location:', selectedLocation, 'Selected room:', selectedRoom);
+  console.log('Available lesson plans:', lessonPlans);
 
   // Fetch scheduled activities to check if lesson plan is empty
   const weekStartDate = startOfWeek(currentWeekDate, { weekStartsOn: 1 });
