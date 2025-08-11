@@ -48,6 +48,9 @@ export function CalendarControls({
   // Remove internal state and use prop directly
   const currentLocation = selectedLocation || "";
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  
+  console.log('CalendarControls - currentLessonPlan:', currentLessonPlan);
+  console.log('CalendarControls - lesson plan status:', currentLessonPlan?.status);
 
   // Fetch authorized locations - API already filters based on JWT
   const { data: locations = [] } = useQuery({
