@@ -49,6 +49,13 @@ export function CalendarControls({
     selectedLocation || "",
   );
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  
+  // Sync internal state when prop changes
+  useEffect(() => {
+    if (selectedLocation && selectedLocation !== currentLocation) {
+      setCurrentLocation(selectedLocation);
+    }
+  }, [selectedLocation]);
 
   // Fetch authorized locations - API already filters based on JWT
   const { data: locations = [] } = useQuery({
