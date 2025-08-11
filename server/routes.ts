@@ -35,6 +35,7 @@ import {
   insertTenantSettingsSchema,
   insertTenantPermissionOverrideSchema
 } from "@shared/schema";
+import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure multer for file uploads
@@ -903,21 +904,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('[POST /api/lesson-plans] Request body:', req.body);
       console.log('[POST /api/lesson-plans] Auth info:', { tenantId: req.tenantId, userId: req.userId });
       
-      // Get current user from storage to get teacherId
+      // Get current user from storage
       const currentUser = await storage.getUserByUserId(req.userId!);
       if (!currentUser) {
         return res.status(403).json({ error: "User not found" });
       }
       
-      // Add tenantId and teacherId to the request body
-      const dataWithIds = {
+      // Parse the request data without teacherId
+      const dataWithTenantId = {
         ...req.body,
-        tenantId: req.tenantId,
-        teacherId: currentUser.id
+        tenantId: req.tenantId
       };
       
-      console.log('[POST /api/lesson-plans] Data with IDs:', dataWithIds);
-      const data = insertLessonPlanSchema.parse(dataWithIds);
+      console.log('[POST /api/lesson-plans] Data with tenant ID:', dataWithTenantId);
+      const data = insertLessonPlanSchema.parse(dataWithTenantId);
       
       // Validate location access
       const accessCheck = await validateLocationAccess(req, data.locationId);
@@ -925,8 +925,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: accessCheck.message });
       }
       
-      const lessonPlan = await storage.createLessonPlan(data);
-      res.status(201).json(lessonPlan);
+      // Check if a lesson plan already exists for this combination
+      const existingPlans = await storage.getLessonPlans(
+        undefined, // no teacherId filter - lesson plans are shared
+        data.locationId,
+        data.roomId,
+        data.scheduleType
+      );
+      
+      // Filter by matching weekStart date
+      const weekStartDate = new Date(data.weekStart);
+      weekStartDate.setHours(0, 0, 0, 0);
+      
+      const existingPlan = existingPlans.find(lp => {
+        const lpWeekStart = new Date(lp.weekStart);
+        lpWeekStart.setHours(0, 0, 0, 0);
+        return lpWeekStart.getTime() === weekStartDate.getTime();
+      });
+      
+      if (existingPlan) {
+        console.log('[POST /api/lesson-plans] Found existing lesson plan:', existingPlan.id);
+        // Return the existing lesson plan instead of creating a duplicate
+        res.status(200).json(existingPlan);
+      } else {
+        console.log('[POST /api/lesson-plans] Creating new lesson plan');
+        // Create a new lesson plan without teacherId (it's shared)
+        const lessonPlan = await storage.createLessonPlan(data);
+        res.status(201).json(lessonPlan);
+      }
     } catch (error) {
       console.error('[POST /api/lesson-plans] Validation error:', error);
       if (error instanceof z.ZodError) {
@@ -1167,16 +1193,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let teacher = await storage.getUser(teacherId);
           
           if (!teacher) {
-            // Create a default teacher if none exists
-            const defaultUser = await storage.createUser({
-              tenantId: req.tenantId!,
-              username: 'default.teacher',
-              password: 'temp123',
-              name: 'Default Teacher',
-              email: 'teacher@example.com',
-              classroom: 'Main Room'
-            });
-            teacherId = defaultUser.id;
+            // Get or create a user from the JWT information
+            const currentUser = await storage.getUserByUserId(req.userId!);
+            if (currentUser) {
+              teacherId = currentUser.id;
+            } else {
+              // This shouldn't happen in normal flow, but handle it
+              console.error('[POST /api/scheduled-activities] User not found for userId:', req.userId);
+              return res.status(403).json({ error: "User not found" });
+            }
           }
           
           // Use the already fetched schedule type from above

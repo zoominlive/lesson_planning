@@ -1,6 +1,21 @@
 # Overview
 This project is a comprehensive lesson planning application for early childhood educators, streamlining the creation and management of weekly lesson plans. It supports managing activities, materials, and developmental milestones, and facilitates structured weekly schedules aligned with educational objectives. The application features a multi-tenant and multi-location architecture, ensuring data isolation and secure access for various educational organizations and their facilities. Its business vision is to provide a robust, scalable platform that simplifies lesson planning, thereby enhancing educational quality and efficiency in early childhood settings.
 
+## Recent Changes (January 2025)
+
+### Lesson Plan Sharing Logic Fix (January 14, 2025)
+- **Fixed duplicate lesson plans**: Lesson plans are now properly shared across all teachers for the same tenant->location->room->schedule-type->weekStart combination
+- **Removed per-teacher ownership**: Modified POST /api/lesson-plans to check for existing plans before creating duplicates
+- **Database cleanup**: Consolidated duplicate lesson plans by keeping the one with activities and preserving approval status
+- **Shared access model**: Multiple teachers can now work on the same lesson plan, but only one can finalize/submit it
+- **TeacherId field retained**: Database still requires teacherId for technical reasons, but application logic treats plans as shared
+
+### Dynamic Approval Button Text (January 13, 2025)
+- **Permission-based button text**: Submit button now shows "Finalize" for auto-approved roles (assistant_director, director, admin, superadmin) and "Submit for Review" for teacher role
+- **Updated backend approval logic**: Backend now uses permission configuration to determine auto-approval instead of hardcoded role checks
+- **Added requiresLessonPlanApproval function**: New utility function checks if current user requires lesson plan approval based on role permissions
+- **Consistent toast messages**: Updated success messages to show "Lesson Plan Finalized" for auto-approved submissions
+
 # User Preferences
 Preferred communication style: Simple, everyday language.
 
