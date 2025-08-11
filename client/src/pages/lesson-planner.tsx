@@ -92,6 +92,8 @@ export default function LessonPlanner() {
     queryKey: ["/api/lesson-plans"],
     enabled: !!selectedLocation && !!selectedRoom,
   });
+  
+  console.log('Lesson plans query enabled:', !!selectedLocation && !!selectedRoom, 'Location:', selectedLocation, 'Room:', selectedRoom);
 
   // Fetch location settings to get schedule type
   const { data: locationSettings } = useQuery<{ scheduleType: 'time-based' | 'position-based' }>({
@@ -122,6 +124,8 @@ export default function LessonPlanner() {
   console.log('Current lesson plan status:', currentLessonPlan?.status, 'Full plan:', currentLessonPlan);
   console.log('Selected location:', selectedLocation, 'Selected room:', selectedRoom);
   console.log('Available lesson plans:', lessonPlans);
+  console.log('Location settings:', locationSettings);
+  console.log('Current week date:', currentWeekDate);
 
   // Fetch scheduled activities to check if lesson plan is empty
   const weekStartDate = startOfWeek(currentWeekDate, { weekStartsOn: 1 });

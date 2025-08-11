@@ -75,10 +75,12 @@ export function CalendarControls({
   
   // Auto-select first room when location changes or rooms load
   useEffect(() => {
+    console.log('Room auto-select check - rooms:', rooms.length, 'selectedRoom:', selectedRoom);
     if (rooms.length > 0 && (!selectedRoom || selectedRoom === "all")) {
+      console.log('Auto-selecting room:', rooms[0].id);
       onRoomChange(rooms[0].id);
     }
-  }, [rooms, selectedRoom, onRoomChange]);
+  }, [rooms.length, currentLocation]); // Changed dependencies to trigger on location change
 
   const handleLocationChange = (locationId: string) => {
     onLocationChange?.(locationId);
