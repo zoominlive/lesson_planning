@@ -42,7 +42,7 @@ const TEST_TOKENS = {
   assistant_director: {
     label: "Assistant Director",
     token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImFzc2lzdGFudF9kaXJlY3RvcjEyMyIsInVzZXJGaXJzdE5hbWUiOiJFbWlseSIsInVzZXJMYXN0TmFtZSI6IkRhdmlzIiwidXNlcm5hbWUiOiJhc3Npc3RhbnRfZGlyZWN0b3JAZXhhbXBsZS5jb20iLCJyb2xlIjoiYXNzaXN0YW50X2RpcmVjdG9yIiwibG9jYXRpb25zIjpbIk1haW4gQ2FtcHVzIiwiVGhpcmQgTG9jYXRpb24iXSwiaWF0IjoxNzU0ODAzMDM0fQ.wXH-fetlXp4HFxwhLK8uvWpF1NFavoPhN7vWoczrFVU",
-    role: "Assistant Director",
+    role: "assistant_director",  // Fixed: use underscore to match JWT token
     username: "assistant_director@example.com"
   },
   superadmin: {

@@ -42,7 +42,8 @@ export function setPermissionOverrides(overrides: Array<{ permissionName: string
  */
 export function hasPermission(permissionName: string): boolean {
   const userInfo = getUserInfo();
-  const role = userInfo?.role?.toLowerCase();
+  // Normalize role: convert to lowercase and replace spaces with underscores
+  const role = userInfo?.role?.toLowerCase().replace(/\s+/g, '_');
   
   // Superadmin always has all permissions
   if (role === 'superadmin') {
@@ -79,7 +80,8 @@ export function hasPermission(permissionName: string): boolean {
  */
 export function requiresLessonPlanApproval(): boolean {
   const userInfo = getUserInfo();
-  const role = userInfo?.role?.toLowerCase();
+  // Normalize role: convert to lowercase and replace spaces with underscores
+  const role = userInfo?.role?.toLowerCase().replace(/\s+/g, '_');
   
   // Check permission overrides first
   const overrides = getPermissionOverrides();
