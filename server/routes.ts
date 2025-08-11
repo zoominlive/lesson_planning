@@ -1568,6 +1568,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get settings for a specific location
+  app.get("/api/locations/:id/settings", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id: locationId } = req.params;
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
+      // Get tenant settings
+      const orgSettings = await storage.getTenantSettings();
+      if (!orgSettings) {
+        return res.json({
+          scheduleType: 'time-based',
+          startTime: '06:00',
+          endTime: '18:00',
+          slotsPerDay: 8
+        });
+      }
+      
+      // Get location-specific settings or fall back to defaults
+      let locationSettings: any = {};
+      if (orgSettings.locationSettings && orgSettings.locationSettings[locationId]) {
+        locationSettings = orgSettings.locationSettings[locationId];
+      }
+      
+      // Return merged settings with fallbacks
+      const settings = {
+        scheduleType: locationSettings.scheduleType || orgSettings.defaultScheduleType || 'time-based',
+        startTime: locationSettings.startTime || orgSettings.defaultStartTime || '06:00',
+        endTime: locationSettings.endTime || orgSettings.defaultEndTime || '18:00',
+        slotsPerDay: locationSettings.slotsPerDay || orgSettings.defaultSlotsPerDay || 8
+      };
+      
+      res.json(settings);
+    } catch (error) {
+      console.error("Location settings fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch location settings" });
+    }
+  });
+
   // Settings API Routes - Rooms  
   app.get("/api/rooms", async (req: AuthenticatedRequest, res) => {
     try {
