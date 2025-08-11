@@ -910,10 +910,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "User not found" });
       }
       
-      // Parse the request data without teacherId
+      // Add teacherId from current user and tenantId
       const dataWithTenantId = {
         ...req.body,
-        tenantId: req.tenantId
+        tenantId: req.tenantId,
+        teacherId: currentUser.id  // Add the current user's ID as teacherId
       };
       
       console.log('[POST /api/lesson-plans] Data with tenant ID:', dataWithTenantId);

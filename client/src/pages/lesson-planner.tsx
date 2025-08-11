@@ -151,9 +151,25 @@ export default function LessonPlanner() {
       }
     },
     onError: (error: any) => {
+      // Provide user-friendly error messages
+      let errorMessage = "Failed to submit the lesson plan for review.";
+      
+      if (error.message) {
+        // Check for specific error types and provide better messages
+        if (error.message.includes("teacherId") || error.message.includes("Required")) {
+          errorMessage = "There was an issue creating the lesson plan. Please try again or contact support.";
+        } else if (error.message.includes("blank") || error.message.includes("empty")) {
+          errorMessage = "You cannot submit a blank lesson plan. Please add some activities first.";
+        } else if (error.message.includes("network") || error.message.includes("fetch")) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Submission Failed",
-        description: error.message || "Failed to submit the lesson plan for review.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -171,6 +187,14 @@ export default function LessonPlanner() {
         variant: "destructive",
       });
       return;
+    }
+
+    // Check if we're trying to submit a completely new empty lesson plan
+    // If there's no current lesson plan, we'll create one but warn the user if it's empty
+    if (!currentLessonPlan) {
+      // We'll allow creation but the user should be aware it's empty
+      // The submission will create a draft lesson plan first
+      console.log('Creating new lesson plan for submission');
     }
 
     submitMutation.mutate();
