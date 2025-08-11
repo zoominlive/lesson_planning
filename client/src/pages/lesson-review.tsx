@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Calendar, Clock, User, MapPin, Home, CheckCircle, XCircle, AlertCircle, FileText, ChevronRight, BookOpen } from "lucide-react";
 import { format } from "date-fns";
 import { getUserInfo } from "@/lib/auth";
+import { hasPermission } from "@/lib/permission-utils";
+import { useLocation } from "wouter";
 import type { LessonPlan, User as UserType, Location, Room } from "@shared/schema";
 
 interface LessonPlanWithDetails extends LessonPlan {
@@ -26,10 +28,34 @@ interface LessonPlanWithDetails extends LessonPlan {
 export function LessonReview() {
   const { toast } = useToast();
   const userInfo = getUserInfo();
+  const [, setLocation] = useLocation();
   const [selectedPlan, setSelectedPlan] = useState<LessonPlanWithDetails | null>(null);
   const [reviewNotes, setReviewNotes] = useState("");
   const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
   const [activeTab, setActiveTab] = useState<"submitted" | "approved" | "rejected">("submitted");
+
+  // Check if user has permission to access review page
+  const hasAccess = hasPermission('lesson_plan.approve');
+  
+  if (!hasAccess) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-red-600">Access Denied</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">
+              You don't have permission to access the Review page.
+            </p>
+            <Button onClick={() => setLocation('/')} className="w-full">
+              Return to Lesson Planner
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Fetch lesson plans for review
   const { data: lessonPlans = [], isLoading } = useQuery<LessonPlanWithDetails[]>({

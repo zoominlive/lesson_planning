@@ -36,6 +36,8 @@ export function getAuthToken(): string | null {
 
 export function clearAuthToken() {
   authToken = null;
+  superAdminLocations = null;
+  locationsFetchPromise = null;
   localStorage.removeItem('authToken');
   localStorage.removeItem('userInfo');
   console.log('Cleared auth token and user info from storage');
@@ -61,13 +63,43 @@ export interface UserInfo {
   locations: string[];
 }
 
+// Store SuperAdmin locations in memory to avoid repeated fetches
+let superAdminLocations: string[] | null = null;
+let locationsFetchPromise: Promise<void> | null = null;
+
+async function fetchAllLocationsForSuperAdmin(token: string): Promise<string[]> {
+  try {
+    const response = await fetch('/api/locations', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      console.warn('Failed to fetch locations for SuperAdmin');
+      return [];
+    }
+    
+    const locations = await response.json();
+    if (Array.isArray(locations)) {
+      const locationNames = locations.map(loc => loc.name);
+      console.log('SuperAdmin has access to all locations:', locationNames);
+      return locationNames;
+    }
+    return [];
+  } catch (error) {
+    console.warn('Error fetching locations for SuperAdmin:', error);
+    return [];
+  }
+}
+
 export function getUserInfo(): UserInfo | null {
   const token = getAuthToken();
   if (!token) return null;
   
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
-    return {
+    const userInfo = {
       tenantId: payload.tenantId,
       userId: payload.userId,
       userFirstName: payload.userFirstName,
@@ -76,6 +108,36 @@ export function getUserInfo(): UserInfo | null {
       role: payload.role,
       locations: payload.locations || []
     };
+    
+    // SuperAdmin should have access to all locations from the database
+    if (payload.role === 'SuperAdmin') {
+      // First check if we have locations in memory
+      if (superAdminLocations) {
+        userInfo.locations = superAdminLocations;
+      } else {
+        // Try to get from localStorage first
+        const cachedLocations = localStorage.getItem('allLocationNames');
+        if (cachedLocations) {
+          try {
+            userInfo.locations = JSON.parse(cachedLocations);
+            superAdminLocations = userInfo.locations;
+          } catch {
+            // If parsing fails, keep original locations
+          }
+        }
+        
+        // Trigger a background fetch to update the locations
+        if (!locationsFetchPromise && token) {
+          locationsFetchPromise = fetchAllLocationsForSuperAdmin(token).then(locations => {
+            superAdminLocations = locations;
+            localStorage.setItem('allLocationNames', JSON.stringify(locations));
+            locationsFetchPromise = null;
+          });
+        }
+      }
+    }
+    
+    return userInfo;
   } catch (e) {
     console.warn('Could not decode user info from token:', e);
     return null;
@@ -122,7 +184,8 @@ export function initializeIframeAuth() {
   }
   
   // Default admin token for development (signed with 'dev-secret-key')
-  const defaultToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImU1YjdmMGRlLWM4NjgtNGU0MC1hMGJkLWUxNTkzN2NiMzA5NyIsInVzZXJGaXJzdE5hbWUiOiJBZG1pbiIsInVzZXJMYXN0TmFtZSI6IlVzZXIiLCJ1c2VybmFtZSI6ImFkbWluQGV4YW1wbGUuY29tIiwicm9sZSI6IkFkbWluIiwibG9jYXRpb25zIjpbImJmZDFkYzE0LTZjNmItNGZhMy04OTBiLWU1YjA5NmNkMjlmNCJdLCJpYXQiOjE3NTQ3MjkxMTh9.vyjtu7YwAsZDUR-1PDjkuKGlPINMsIpAkRW6eVLmtYs';
+  // Token includes locations as ["Main Campus", "Third Location"] instead of UUIDs
+  const defaultToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImU1YjdmMGRlLWM4NjgtNGU0MC1hMGJkLWUxNTkzN2NiMzA5NyIsInVzZXJGaXJzdE5hbWUiOiJBZG1pbiIsInVzZXJMYXN0TmFtZSI6IlVzZXIiLCJ1c2VybmFtZSI6ImFkbWluQGV4YW1wbGUuY29tIiwicm9sZSI6IkFkbWluIiwibG9jYXRpb25zIjpbIk1haW4gQ2FtcHVzIiwiVGhpcmQgTG9jYXRpb24iXSwiaWF0IjoxNzU0ODAzMDM0fQ.atm0PWAUeYKXddW1eT-wodxP5H3eYdW0B7e98NtU1yk';
   
   // If no token or invalid token, set default
   if (!currentToken) {

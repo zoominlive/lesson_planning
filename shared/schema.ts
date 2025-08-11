@@ -20,6 +20,49 @@ export const tokenSecrets = pgTable("token_secrets", {
   isActive: boolean("is_active").default(true).notNull(),
 });
 
+// Permissions table
+export const permissions = pgTable("permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  name: text("name").notNull(), // e.g., "lesson_plan.submit"
+  resource: text("resource").notNull(), // e.g., "lesson_plan"
+  action: text("action").notNull(), // e.g., "submit"
+  description: text("description").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Roles table
+export const roles = pgTable("roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  name: text("name").notNull(), // "teacher", "director", etc.
+  description: text("description").notNull(),
+  isSystem: boolean("is_system").default(false).notNull(), // System roles can't be deleted
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Role-Permission junction table
+export const rolePermissions = pgTable("role_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  roleId: varchar("role_id").notNull().references(() => roles.id),
+  permissionId: varchar("permission_id").notNull().references(() => permissions.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Tenant-specific permission overrides
+export const tenantPermissionOverrides = pgTable("tenant_permission_overrides", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  permissionName: text("permission_name").notNull(), // e.g., "lesson_plan.submit"
+  rolesRequired: json("roles_required").$type<string[]>().notNull().default([]), // Roles that need approval
+  autoApproveRoles: json("auto_approve_roles").$type<string[]>().notNull().default([]), // Roles that bypass approval
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Users table - tracks users from JWT tokens
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -227,6 +270,30 @@ export const insertActivityReviewSchema = createInsertSchema(activityReviews).om
   createdAt: true,
 });
 
+// Permission schemas
+export const insertPermissionSchema = createInsertSchema(permissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertRoleSchema = createInsertSchema(roles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTenantPermissionOverrideSchema = createInsertSchema(tenantPermissionOverrides).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Settings-related tables
 export const locations = pgTable("locations", {
   id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -274,7 +341,7 @@ export const ageGroups = pgTable("age_groups", {
 });
 
 // Organization Settings table for tenant-wide configuration
-export const organizationSettings = pgTable("organization_settings", {
+export const tenantSettings = pgTable("tenant_settings", {
   id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   tenantId: varchar("tenant_id").references(() => tenants.id).notNull().unique(),
   // Location-specific schedule settings
@@ -319,15 +386,15 @@ export const insertAgeGroupSchema = createInsertSchema(ageGroups).omit({
   createdAt: true,
 });
 
-export const insertOrganizationSettingsSchema = createInsertSchema(organizationSettings).omit({
+export const insertTenantSettingsSchema = createInsertSchema(tenantSettings).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 
 // Type exports for organization settings
-export type OrganizationSettings = typeof organizationSettings.$inferSelect;
-export type InsertOrganizationSettings = z.infer<typeof insertOrganizationSettingsSchema>;
+export type TenantSettings = typeof tenantSettings.$inferSelect;
+export type InsertTenantSettings = z.infer<typeof insertTenantSettingsSchema>;
 
 // Types
 export type Tenant = typeof tenants.$inferSelect;
@@ -372,6 +439,16 @@ export type InsertCategory = z.infer<typeof insertCategorySchema>;
 
 export type AgeGroup = typeof ageGroups.$inferSelect;
 export type InsertAgeGroup = z.infer<typeof insertAgeGroupSchema>;
+
+// Permission types
+export type Permission = typeof permissions.$inferSelect;
+export type InsertPermission = z.infer<typeof insertPermissionSchema>;
+export type Role = typeof roles.$inferSelect;
+export type InsertRole = z.infer<typeof insertRoleSchema>;
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+export type TenantPermissionOverride = typeof tenantPermissionOverrides.$inferSelect;
+export type InsertTenantPermissionOverride = z.infer<typeof insertTenantPermissionOverrideSchema>;
 
 // Relations for settings tables
 export const locationsRelations = relations(locations, ({ one, many }) => ({

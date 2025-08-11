@@ -1,84 +1,62 @@
 # Overview
-
-This project is a comprehensive lesson planning application designed for early childhood educators. Its primary purpose is to streamline the creation and management of weekly lesson plans. Key capabilities include managing activities, materials, and developmental milestones, as well as creating structured weekly schedules that align with educational objectives and available resources. The application supports a multi-tenant and multi-location architecture, ensuring data isolation and secure access for various educational organizations and their facilities.
+This project is a comprehensive lesson planning application for early childhood educators, streamlining the creation and management of weekly lesson plans. It supports managing activities, materials, and developmental milestones, and facilitates structured weekly schedules aligned with educational objectives. The application features a multi-tenant and multi-location architecture, ensuring data isolation and secure access for various educational organizations and their facilities. Its business vision is to provide a robust, scalable platform that simplifies lesson planning, thereby enhancing educational quality and efficiency in early childhood settings.
 
 ## Recent Changes (January 2025)
-- **User tracking system**: Revamped Users table to track all users accessing the system via JWT tokens. Now captures first login date, last login date, login count, and user details from JWT tokens. Automatically creates/updates user records on each login.
-- **Fixed tablet activity scheduling**: Resolved issue where selecting activities from drawer and tapping schedule slots wasn't saving to database. Now properly uses API mutations with error handling.
-- **Drag-and-drop activity management**: Implemented comprehensive drag-and-drop functionality allowing users to move scheduled activities between time slots on both desktop and tablet interfaces
-- **Enhanced tablet calendar UI**: Activities are now visually draggable with cursor changes, opacity effects during drag, and drop zone highlighting for improved user experience
-- **PATCH API endpoint**: Added dedicated PATCH endpoint for partial updates of scheduled activities, specifically optimized for drag-and-drop operations
-- **Real-time visual feedback**: Drop zones highlight when dragging over them, with "Drop Here" indicators and proper conflict detection for occupied slots
-- **Fixed week start consistency**: Resolved critical bug where tablet and desktop views used different week start days (Sunday vs Monday), ensuring proper activity display
-- **Fixed schedule type preservation**: Lesson plans now maintain their original schedule type (time-based or position-based) even when organization settings change
-- **Separate lesson plans by schedule type**: The system creates and maintains separate lesson plans for time-based vs position-based scheduling, allowing users to switch between modes without losing their work
-- **Schedule type filtering**: When fetching or creating lesson plans, the system now correctly filters by the current schedule type for the location
-- **Settings manager location permissions**: Fixed security issue where settings manager was showing all organization locations instead of only user-permitted locations from userInfo storage
-- **Auto-refresh on schedule type changes**: Implemented custom event system that automatically refreshes calendar data when schedule types change, preventing users from seeing cached activities from wrong schedule types
-- **Cleaned up tablet header**: Removed menu button from tablet interface for cleaner, streamlined design
-- **Fixed automatic room selection**: Both desktop and tablet planners now consistently auto-select first room when switching locations for seamless user experience
-- **Updated position labels**: Removed "Position" prefix and converted numeric labels to written words (One, Two, Three, etc.) for cleaner calendar display
-- **Lesson Plan Review System**: Implemented comprehensive review workflow with role-based permissions. Teachers submit plans for review, directors/assistant directors/admins approve or reject with feedback
-- **Review Database Schema**: Added fields for tracking submission (submittedBy, submittedAt) and review (approvedBy, approvedAt, rejectedBy, rejectedAt, reviewNotes) in lesson plans table
-- **Review API Endpoints**: Created endpoints for /submit, /approve, /reject operations with proper location-based access control and user tracking
-- **Lesson Review Page**: Built dedicated review interface showing pending, approved, and rejected lesson plans with filtering by location and detailed review dialog
-- **Submit for Review Button**: Fixed submission logic to create lesson plan if needed and submit current week's plan, with automatic approval for admin/superadmin users
-- **Review Page Navigation**: Moved review functionality to main navigation tabs for better accessibility - appears as 5th tab for authorized roles (director, assistant_director, admin, superadmin)
-- **Fixed JWT location handling**: Updated auth middleware to accept both location names and IDs in JWT tokens for backward compatibility
-- **Fixed room filtering**: Resolved issue where rooms weren't loading due to JWT location name/ID mismatch - now properly filters rooms based on user's authorized locations
-- **Fixed Submit for Review errors**: Corrected apiRequest parameter order in lesson-planner.tsx to properly submit lesson plans for review
-- **Token Switcher Component**: Added role switching capability for testing with Admin, Teacher, and Director tokens. Located in bottom-right corner for easy access
-- **Fixed Authentication Override**: Modified auth initialization to respect manually set tokens from token switcher, preventing automatic override to admin token
-- **Activity Capacity Management**: Added min_children and max_children fields to activities table for specifying supported children ranges per activity
-- **Enhanced Activity Form**: Updated activity form to include minimum and maximum children input fields with proper validation
-- **Activity Library Display**: Modified activity cards to show children capacity ranges alongside duration for better planning visibility
-- **Soft Delete for Activities**: Implemented soft delete functionality with is_active flag and deleted_on timestamp. Activities are marked as inactive instead of being permanently deleted
-- **Removed Steps Button**: Simplified activity cards to only show Edit and Delete buttons, removing the Steps button for cleaner interface
+
+### Lesson Plan Sharing Logic Fix (January 14, 2025)
+- **Fixed duplicate lesson plans**: Lesson plans are now properly shared across all teachers for the same tenant->location->room->schedule-type->weekStart combination
+- **Removed per-teacher ownership**: Modified POST /api/lesson-plans to check for existing plans before creating duplicates
+- **Database cleanup**: Consolidated duplicate lesson plans by keeping the one with activities and preserving approval status
+- **Shared access model**: Multiple teachers can now work on the same lesson plan, but only one can finalize/submit it
+- **TeacherId field retained**: Database still requires teacherId for technical reasons, but application logic treats plans as shared
+
+### Dynamic Approval Button Text (January 13, 2025)
+- **Permission-based button text**: Submit button now shows "Finalize" for auto-approved roles (assistant_director, director, admin, superadmin) and "Submit for Review" for teacher role
+- **Updated backend approval logic**: Backend now uses permission configuration to determine auto-approval instead of hardcoded role checks
+- **Added requiresLessonPlanApproval function**: New utility function checks if current user requires lesson plan approval based on role permissions
+- **Consistent toast messages**: Updated success messages to show "Lesson Plan Finalized" for auto-approved submissions
 
 # User Preferences
-
 Preferred communication style: Simple, everyday language.
 
 # System Architecture
-
 ## Frontend Architecture
-The frontend is built with React 18 and TypeScript, employing a modern component-based architecture. It utilizes Tailwind CSS for styling with a custom childcare-themed design system, Shadcn/ui for components (built on Radix UI), TanStack Query for server state management, Wouter for routing, and React Hook Form with Zod for form handling. Vite is used for fast development and optimized builds.
+The frontend is built with React 18 and TypeScript, utilizing a component-based architecture. It uses Tailwind CSS for styling with a custom childcare-themed design system, Shadcn/ui for components (built on Radix UI), TanStack Query for server state management, Wouter for routing, and React Hook Form with Zod for form handling. Vite is used for development and optimized builds.
 
 ## Backend Architecture
-The backend follows a RESTful API pattern built with Node.js and Express.js. It uses Drizzle ORM with PostgreSQL for type-safe database operations and Zod schemas for consistent data validation across frontend and backend. An abstract storage interface allows flexible data persistence.
+The backend follows a RESTful API pattern built with Node.js and Express.js. It uses Drizzle ORM with PostgreSQL for type-safe database operations and Zod schemas for consistent data validation. An abstract storage interface allows flexible data persistence.
 
 ## Data Storage Solutions
-A PostgreSQL database, configured with Neon Database, serves as the primary data store. Drizzle ORM handles database operations and schema management, with Drizzle Kit for migrations. The database supports a multi-tenant, multi-location architecture, ensuring data isolation through UUID primary keys and tenantId/locationId foreign keys across all relevant tables. All lesson plan entities require both tenantId and locationId for proper data isolation, and API endpoints filter data based on authenticated tenant and authorized locations.
+A PostgreSQL database, configured with Neon Database, serves as the primary data store. Drizzle ORM handles database operations and schema management. The database supports a multi-tenant, multi-location architecture, ensuring data isolation through UUID primary keys and `tenantId`/`locationId` foreign keys across all relevant tables. All lesson plan entities require both `tenantId` and `locationId` for proper data isolation, and API endpoints filter data based on authenticated tenant and authorized locations.
 
 ### Core Data Models
 Key data models include Users, Milestones, Materials, Activities, Lesson Plans, Scheduled Activities, and Settings (Locations, Rooms, Categories, Age Groups). All relevant entities require `tenantId` and `locationId` for data isolation, except for `Locations` which only requires `tenantId`.
 
 ## Authentication and Authorization
-The system uses a JWT-based multi-tenant authentication system with location-based authorization. JWT tokens include `tenantId`, user details, role, and authorized locations. Server-side validation of location access is enforced on all API endpoints. Tokens are passed via query parameters or postMessage for iframe communication.
+The system uses a JWT-based multi-tenant authentication system with location-based authorization and Role-Based Access Control (RBAC). JWT tokens include `tenantId`, user details, role, and authorized locations. Server-side validation of location access is enforced on all API endpoints. The RBAC system allows organizations to configure approval workflows, set auto-approval for roles, and track approval history. Permissions are defined at the resource and action level (e.g., `lesson_plan.submit`, `activity.create`).
 
 ## File Upload and Media Management
-Activity and instruction images are stored locally in the `public/activity-images/` directory. They are served via a dedicated API endpoint (`/api/activities/images/:filename`) handled by an `ActivityStorageService`. Cloud storage solutions like Google Cloud Storage or AWS S3 are integrated with Uppy for general file uploads but are NOT used for activity images.
+Activity and instruction images are stored locally in the `public/activity-images/` directory and served via a dedicated API endpoint.
 
 ## Development and Build Process
-Development uses Vite for HMR and TypeScript checking. Production builds are optimized with Vite for the frontend and esbuild for the backend. TypeScript strict mode is enforced for code quality.
+Development uses Vite for HMR and TypeScript checking. Production builds are optimized with Vite for the frontend and esbuild for the backend. TypeScript strict mode is enforced.
 
 ## API Design Patterns
-The REST API employs standard CRUD operations, with consistent location-based access control and server-side authorization on all endpoints. It features centralized error handling, Zod schema validation for incoming data, and structured logging.
+The REST API employs standard CRUD operations with consistent location-based access control and server-side authorization. It features centralized error handling, Zod schema validation, and structured logging.
 
 ## UI/UX Design System
-A cohesive design system is implemented with a custom childcare-themed color palette, consistent typography, standardized spacing, and reusable UI components. Accessibility is prioritized through the use of Radix UI primitives.
+A cohesive design system is implemented with a custom childcare-themed color palette, consistent typography, standardized spacing, and reusable UI components. Accessibility is prioritized through Radix UI.
 
 # External Dependencies
-
 ## Database Services
-- **Neon Database**: Serverless PostgreSQL hosting with connection pooling.
-- **Drizzle ORM**: Type-safe database operations and schema management.
+- **Neon Database**: Serverless PostgreSQL hosting.
+- **Drizzle ORM**: Type-safe database operations.
 
 ## UI and Component Libraries
 - **React**: Frontend UI library.
-- **Shadcn/ui**: Pre-styled components built on Radix UI.
+- **Shadcn/ui**: Pre-styled components.
 - **Radix UI**: Accessible, unstyled UI primitives.
-- **Tailwind CSS**: Utility-first CSS framework for styling.
+- **Tailwind CSS**: Utility-first CSS framework.
 - **Lucide React**: Icon library.
 - **TanStack Query**: Server state management.
 

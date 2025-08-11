@@ -7,15 +7,44 @@ import { RoomsSettings } from "@/components/settings/rooms-settings";
 import { CategoriesSettings } from "@/components/settings/categories-settings";
 import { AgeGroupsSettings } from "@/components/settings/age-groups-settings";
 import { GeneralSettings } from "@/components/settings/general-settings-enterprise";
-import { MapPin, Building, Tag, Users, ArrowLeft, Settings as SettingsIcon } from "lucide-react";
+import PermissionSettings from "@/components/settings/permission-settings";
+import { MapPin, Building, Tag, Users, ArrowLeft, Settings as SettingsIcon, Shield } from "lucide-react";
 import { useLocation } from "wouter";
+import { getUserInfo } from "@/lib/auth";
+import { hasPermission } from "@/lib/permission-utils";
 
 export function Settings() {
   const [, setLocation] = useLocation();
+  const userInfo = getUserInfo();
+  const isSuperAdmin = userInfo?.role?.toLowerCase() === 'superadmin';
 
+  // Check if user has permission to access settings
+  const hasAccess = hasPermission('settings.access');
+  
   const handleBackToPlanner = () => {
     setLocation('/');
   };
+
+  // Redirect if no access
+  if (!hasAccess) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-red-600">Access Denied</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">
+              You don't have permission to access the Settings page.
+            </p>
+            <Button onClick={handleBackToPlanner} className="w-full">
+              Return to Lesson Planner
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -39,7 +68,7 @@ export function Settings() {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className={isSuperAdmin ? "grid w-full grid-cols-6" : "grid w-full grid-cols-5"}>
           <TabsTrigger value="general" className="flex items-center gap-2">
             <SettingsIcon className="h-4 w-4" />
             General
@@ -60,6 +89,12 @@ export function Settings() {
             <Users className="h-4 w-4" />
             Age Groups
           </TabsTrigger>
+          {isSuperAdmin && (
+            <TabsTrigger value="permissions" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Permissions
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="general" className="space-y-4">
@@ -121,6 +156,12 @@ export function Settings() {
             </CardContent>
           </Card>
         </TabsContent>
+        
+        {isSuperAdmin && (
+          <TabsContent value="permissions" className="space-y-4">
+            <PermissionSettings />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

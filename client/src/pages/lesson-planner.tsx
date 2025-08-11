@@ -12,11 +12,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
 import WeeklyCalendar from "@/components/weekly-calendar";
-import { Settings, MapPin } from "lucide-react";
+import { Settings } from "lucide-react";
 import { useLocation } from "wouter";
 import { getUserInfo } from "@/lib/auth";
+import { hasPermission, requiresLessonPlanApproval } from "@/lib/permission-utils";
 import { startOfWeek } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,9 +39,8 @@ export default function LessonPlanner() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const { data: userInfo } = useQuery<UserInfo>({
-    queryKey: ["/api/user"],
-  });
+  // Get user info directly from the token
+  const userInfo = getUserInfo();
 
   // Fetch all rooms to auto-select first room for location
   const { data: allRooms = [] } = useQuery<any[]>({
@@ -95,7 +94,7 @@ export default function LessonPlanner() {
   });
 
   // Fetch location settings to get schedule type
-  const { data: locationSettings } = useQuery({
+  const { data: locationSettings } = useQuery<{ scheduleType: 'time-based' | 'position-based' }>({
     queryKey: [`/api/locations/${selectedLocation}/settings`],
     enabled: !!selectedLocation,
   });
@@ -138,11 +137,11 @@ export default function LessonPlanner() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans"] });
       queryClient.invalidateQueries({ queryKey: ["/api/scheduled-activities"] });
-      const role = userInfo?.role?.toLowerCase();
-      if (role === 'admin' || role === 'superadmin') {
+      const requiresApproval = requiresLessonPlanApproval();
+      if (!requiresApproval) {
         toast({
-          title: "Lesson Plan Approved",
-          description: "Your lesson plan has been automatically approved for this week.",
+          title: "Lesson Plan Finalized",
+          description: "Your lesson plan has been finalized for this week.",
         });
       } else {
         toast({
@@ -217,26 +216,9 @@ export default function LessonPlanner() {
                 >
                   {userInfo?.role ? userInfo.role : "Loading..."}
                 </p>
-                {userInfo?.locations && userInfo.locations.length > 0 && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <MapPin className="h-3 w-3 text-gray-400" />
-                    <div className="flex gap-1">
-                      {userInfo.locations.map((location, idx) => (
-                        <Badge
-                          key={idx}
-                          variant="secondary"
-                          className="text-xs py-0 h-5"
-                          data-testid={`location-badge-${idx}`}
-                        >
-                          {location}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
               <div className="flex items-center gap-2">
-                {userInfo?.role?.toLowerCase() === "admin" && (
+                {hasPermission('settings.access') && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button

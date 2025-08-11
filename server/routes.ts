@@ -32,8 +32,10 @@ import {
   insertCategorySchema,
   type InsertAgeGroup,
   insertAgeGroupSchema,
-  insertOrganizationSettingsSchema
+  insertTenantSettingsSchema,
+  insertTenantPermissionOverrideSchema
 } from "@shared/schema";
+import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure multer for file uploads
@@ -902,21 +904,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('[POST /api/lesson-plans] Request body:', req.body);
       console.log('[POST /api/lesson-plans] Auth info:', { tenantId: req.tenantId, userId: req.userId });
       
-      // Get current user from storage to get teacherId
+      // Get current user from storage
       const currentUser = await storage.getUserByUserId(req.userId!);
       if (!currentUser) {
         return res.status(403).json({ error: "User not found" });
       }
       
-      // Add tenantId and teacherId to the request body
-      const dataWithIds = {
+      // Parse the request data without teacherId
+      const dataWithTenantId = {
         ...req.body,
-        tenantId: req.tenantId,
-        teacherId: currentUser.id
+        tenantId: req.tenantId
       };
       
-      console.log('[POST /api/lesson-plans] Data with IDs:', dataWithIds);
-      const data = insertLessonPlanSchema.parse(dataWithIds);
+      console.log('[POST /api/lesson-plans] Data with tenant ID:', dataWithTenantId);
+      const data = insertLessonPlanSchema.parse(dataWithTenantId);
       
       // Validate location access
       const accessCheck = await validateLocationAccess(req, data.locationId);
@@ -924,8 +925,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: accessCheck.message });
       }
       
-      const lessonPlan = await storage.createLessonPlan(data);
-      res.status(201).json(lessonPlan);
+      // Check if a lesson plan already exists for this combination
+      const existingPlans = await storage.getLessonPlans(
+        undefined, // no teacherId filter - lesson plans are shared
+        data.locationId,
+        data.roomId,
+        data.scheduleType
+      );
+      
+      // Filter by matching weekStart date
+      const weekStartDate = new Date(data.weekStart);
+      weekStartDate.setHours(0, 0, 0, 0);
+      
+      const existingPlan = existingPlans.find(lp => {
+        const lpWeekStart = new Date(lp.weekStart);
+        lpWeekStart.setHours(0, 0, 0, 0);
+        return lpWeekStart.getTime() === weekStartDate.getTime();
+      });
+      
+      if (existingPlan) {
+        console.log('[POST /api/lesson-plans] Found existing lesson plan:', existingPlan.id);
+        // Return the existing lesson plan instead of creating a duplicate
+        res.status(200).json(existingPlan);
+      } else {
+        console.log('[POST /api/lesson-plans] Creating new lesson plan');
+        // Create a new lesson plan without teacherId (it's shared)
+        const lessonPlan = await storage.createLessonPlan(data);
+        res.status(201).json(lessonPlan);
+      }
     } catch (error) {
       console.error('[POST /api/lesson-plans] Validation error:', error);
       if (error instanceof z.ZodError) {
@@ -984,8 +1011,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter lesson plans by week, location, and room if weekStart is provided
       let lessonPlanIds: string[] = [];
       if (weekStart && locationId) {
-        // Get organization settings to determine current schedule type for this location
-        const orgSettings = await storage.getOrganizationSettings();
+        // Get tenant settings to determine current schedule type for this location
+        const orgSettings = await storage.getTenantSettings();
         let currentScheduleType: 'time-based' | 'position-based' = 'time-based'; // default
         
         if (orgSettings && orgSettings.locationSettings) {
@@ -1031,14 +1058,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return matchesWeek && matchesLocation && matchesRoom && matchesScheduleType;
         });
         
-        // IMPORTANT: Only use the most recent lesson plan to avoid duplicates
-        // Sort by ID (which are UUIDs) to get consistent results, or we could add a created_at field
+        // IMPORTANT: When multiple lesson plans exist, select the one with activities
         if (weekLessonPlans.length > 0) {
-          // For now, just take the first one (or we could sort by some criteria)
-          // In production, we should prevent duplicate lesson plans from being created
-          const mostRecentPlan = weekLessonPlans[weekLessonPlans.length - 1]; // Take the last one added
-          lessonPlanIds = [mostRecentPlan.id];
-          console.log(`[GET /api/scheduled-activities] Found ${weekLessonPlans.length} lesson plans, using most recent:`, mostRecentPlan.id);
+          // If there are multiple lesson plans, check which ones have activities
+          const plansWithActivityCount = await Promise.all(
+            weekLessonPlans.map(async (lp) => {
+              const activities = allScheduledActivities.filter(sa => 
+                sa.lessonPlanId === lp.id && sa.tenantId === req.tenantId
+              );
+              return { plan: lp, activityCount: activities.length };
+            })
+          );
+          
+          // Sort by activity count (descending) and then by created_at for consistency
+          plansWithActivityCount.sort((a, b) => {
+            if (b.activityCount !== a.activityCount) {
+              return b.activityCount - a.activityCount; // More activities first
+            }
+            // If same activity count, use the more recent one
+            return b.plan.createdAt > a.plan.createdAt ? 1 : -1;
+          });
+          
+          const selectedPlan = plansWithActivityCount[0].plan;
+          lessonPlanIds = [selectedPlan.id];
+          console.log(`[GET /api/scheduled-activities] Found ${weekLessonPlans.length} lesson plans, selected plan with ${plansWithActivityCount[0].activityCount} activities:`, selectedPlan.id);
         } else {
           console.log('[GET /api/scheduled-activities] No matching lesson plans found');
         }
@@ -1110,8 +1153,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log('[POST /api/scheduled-activities] Target week start:', targetWeekStart.toISOString());
         
-        // Get organization settings to determine schedule type for this location
-        const orgSettings = await storage.getOrganizationSettings();
+        // Get tenant settings to determine schedule type for this location
+        const orgSettings = await storage.getTenantSettings();
         let currentScheduleType: 'time-based' | 'position-based' = 'time-based'; // default
         
         if (orgSettings && orgSettings.locationSettings) {
@@ -1150,16 +1193,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let teacher = await storage.getUser(teacherId);
           
           if (!teacher) {
-            // Create a default teacher if none exists
-            const defaultUser = await storage.createUser({
-              tenantId: req.tenantId!,
-              username: 'default.teacher',
-              password: 'temp123',
-              name: 'Default Teacher',
-              email: 'teacher@example.com',
-              classroom: 'Main Room'
-            });
-            teacherId = defaultUser.id;
+            // Get or create a user from the JWT information
+            const currentUser = await storage.getUserByUserId(req.userId!);
+            if (currentUser) {
+              teacherId = currentUser.id;
+            } else {
+              // This shouldn't happen in normal flow, but handle it
+              console.error('[POST /api/scheduled-activities] User not found for userId:', req.userId);
+              return res.status(403).json({ error: "User not found" });
+            }
           }
           
           // Use the already fetched schedule type from above
@@ -1307,13 +1349,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "User not found" });
       }
       
-      // Check if user is admin/superadmin - if so, auto-approve
+      // Check if user's role has auto-approval permissions
       const role = req.role?.toLowerCase();
-      if (role === 'admin' || role === 'superadmin') {
-        const approved = await storage.approveLessonPlan(id, currentUser.id, "Auto-approved by admin");
+      const autoApproveRoles = ['assistant_director', 'director', 'admin', 'superadmin'];
+      
+      if (role && autoApproveRoles.includes(role)) {
+        // Auto-approve for roles with auto-approval permission
+        const approved = await storage.approveLessonPlan(id, currentUser.id, "Auto-approved");
         res.json(approved);
       } else {
-        // Submit for review
+        // Submit for review for roles requiring approval
         const submitted = await storage.submitLessonPlanForReview(id, currentUser.id);
         res.json(submitted);
       }
@@ -1431,6 +1476,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/locations", async (req: AuthenticatedRequest, res) => {
     try {
       const locations = await storage.getLocations();
+      
+      // SuperAdmin gets access to all locations
+      if (req.role === 'SuperAdmin') {
+        res.json(locations);
+        return;
+      }
       
       // Filter locations to only those the user has access to
       // Check both location ID and name for backward compatibility
@@ -1753,7 +1804,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Organization Settings API Routes
   app.get("/api/organization-settings", async (req: AuthenticatedRequest, res) => {
     try {
-      const settings = await storage.getOrganizationSettings();
+      const settings = await storage.getTenantSettings();
       
       // Get all locations for this tenant to include in response
       const locations = await storage.getLocations();
@@ -1786,7 +1837,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/organization-settings", async (req: AuthenticatedRequest, res) => {
     try {
       const updates = req.body;
-      const settings = await storage.updateOrganizationSettings(updates);
+      const settings = await storage.updateTenantSettings(updates);
       
       // Get all locations for response
       const locations = await storage.getLocations();
@@ -1798,6 +1849,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Organization settings update error:", error);
       res.status(400).json({ error: "Invalid settings data" });
+    }
+  });
+  
+  // Permission Management Routes
+  
+  // Get all permission overrides for the organization
+  app.get("/api/permissions/overrides", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Tenant context required" });
+      }
+      
+      // Get all overrides for this tenant directly from database
+      const overrides = await storage.getTenantPermissionOverrides(tenantId);
+      
+      res.json(overrides);
+    } catch (error) {
+      console.error("Permission overrides fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch permission overrides" });
+    }
+  });
+  
+  // Create a new permission override
+  app.post("/api/permissions/overrides", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      console.log("POST /api/permissions/overrides - Request body:", req.body);
+      console.log("User role:", req.role);
+      
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Tenant context required" });
+      }
+      
+      // Only admin and superadmin can manage permissions
+      const userRole = req.role?.toLowerCase();
+      if (userRole !== 'admin' && userRole !== 'superadmin') {
+        console.log("Permission denied - User role:", req.role);
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const validation = insertTenantPermissionOverrideSchema.safeParse(req.body);
+      if (!validation.success) {
+        console.log("Validation failed:", validation.error);
+        return res.status(400).json({ error: "Invalid permission override data", details: validation.error });
+      }
+      
+      console.log("Creating permission override:", validation.data);
+      const override = await storage.createTenantPermissionOverride({
+        ...validation.data,
+        tenantId: tenantId
+      });
+      
+      console.log("Permission override created:", override);
+      res.json(override);
+    } catch (error) {
+      console.error("Permission override creation error:", error);
+      res.status(500).json({ error: "Failed to create permission override" });
+    }
+  });
+  
+  // Update a permission override
+  app.patch("/api/permissions/overrides/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      console.log("PATCH /api/permissions/overrides/:id - ID:", req.params.id);
+      console.log("Request body:", req.body);
+      console.log("User role:", req.role);
+      
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Tenant context required" });
+      }
+      
+      // Only admin and superadmin can manage permissions
+      const userRole = req.role?.toLowerCase();
+      if (userRole !== 'admin' && userRole !== 'superadmin') {
+        console.log("Permission denied - User role:", req.role);
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const { id } = req.params;
+      // Remove timestamp fields and id from updates
+      const { createdAt, updatedAt, id: bodyId, ...updates } = req.body;
+      
+      console.log("Updating permission override:", id, updates);
+      const override = await storage.updateTenantPermissionOverride(id, updates);
+      
+      if (!override) {
+        console.log("Permission override not found:", id);
+        return res.status(404).json({ error: "Permission override not found" });
+      }
+      
+      console.log("Permission override updated:", override);
+      res.json(override);
+    } catch (error) {
+      console.error("Permission override update error:", error);
+      res.status(500).json({ error: "Failed to update permission override" });
+    }
+  });
+  
+  // Check user permission for a specific action
+  app.post("/api/permissions/check", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Tenant context required" });
+      }
+      
+      const { resource, action } = req.body;
+      if (!resource || !action) {
+        return res.status(400).json({ error: "Resource and action are required" });
+      }
+      
+      const permission = await storage.checkUserPermission(
+        req.userId || '',
+        req.role || '',
+        resource,
+        action,
+        tenantId
+      );
+      
+      res.json(permission);
+    } catch (error) {
+      console.error("Permission check error:", error);
+      res.status(500).json({ error: "Failed to check permission" });
     }
   });
 
