@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { startOfWeek } from "date-fns";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +18,6 @@ import { Settings } from "lucide-react";
 import { useLocation } from "wouter";
 import { getUserInfo } from "@/lib/auth";
 import { hasPermission, requiresLessonPlanApproval } from "@/lib/permission-utils";
-import { startOfWeek } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 type UserInfo = {
@@ -113,6 +113,26 @@ export default function LessonPlanner() {
            lp.scheduleType === (locationSettings?.scheduleType || 'position-based');
   });
 
+  // Fetch scheduled activities to check if lesson plan is empty
+  const weekStartDate = startOfWeek(currentWeekDate, { weekStartsOn: 1 });
+  const { data: scheduledActivities = [] } = useQuery<any[]>({
+    queryKey: ["/api/scheduled-activities", selectedRoom, weekStartDate.toISOString(), selectedLocation],
+    queryFn: async () => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `/api/scheduled-activities/${selectedRoom}?weekStart=${encodeURIComponent(weekStartDate.toISOString())}&locationId=${encodeURIComponent(selectedLocation)}`,
+        {
+          headers: {
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+          },
+        }
+      );
+      if (!response.ok) throw new Error('Failed to fetch scheduled activities');
+      return response.json();
+    },
+    enabled: !!selectedRoom && selectedRoom !== "all" && !!selectedLocation,
+  });
+
   // Create or submit lesson plan mutation
   const submitMutation = useMutation({
     mutationFn: async () => {
@@ -189,12 +209,17 @@ export default function LessonPlanner() {
       return;
     }
 
-    // Check if we're trying to submit a completely new empty lesson plan
-    // If there's no current lesson plan, we'll create one but warn the user if it's empty
-    if (!currentLessonPlan) {
-      // We'll allow creation but the user should be aware it's empty
-      // The submission will create a draft lesson plan first
-      console.log('Creating new lesson plan for submission');
+    // Check if there are any activities scheduled
+    const hasActivities = scheduledActivities && scheduledActivities.length > 0;
+    
+    // If there's no current lesson plan and no activities, prevent submission
+    if (!currentLessonPlan && !hasActivities) {
+      toast({
+        title: "Empty Lesson Plan",
+        description: "You cannot submit a blank lesson plan. Please add some activities first.",
+        variant: "destructive",
+      });
+      return;
     }
 
     submitMutation.mutate();
