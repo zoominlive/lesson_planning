@@ -87,64 +87,36 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   const [selectedCategory, setSelectedCategory] = useState<string>("all-categories");
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("all-age-groups");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [scheduleSettings, setScheduleSettings] = useState<any>({
-    type: 'time-based',
-    startTime: '06:00',
-    endTime: '18:00',
-    slotsPerDay: 8
+  // Fetch location settings from API
+  const { data: locationSettings } = useQuery<{ 
+    scheduleType: 'time-based' | 'position-based',
+    startTime?: string,
+    endTime?: string,
+    slotsPerDay?: number 
+  }>({
+    queryKey: [`/api/locations/${selectedLocation}/settings`],
+    enabled: !!selectedLocation,
   });
 
-  // Load schedule settings from localStorage for the specific location
+  // Use API settings or defaults
+  const scheduleSettings = {
+    type: locationSettings?.scheduleType || 'time-based',
+    startTime: locationSettings?.startTime || '06:00',
+    endTime: locationSettings?.endTime || '18:00',
+    slotsPerDay: locationSettings?.slotsPerDay || 8
+  };
+
+  // Listen for global schedule type changes
   useEffect(() => {
-    const loadSettings = () => {
-      // Try to load location-specific settings first
-      const locationSettings = localStorage.getItem(`scheduleSettings_${selectedLocation}`);
-      if (locationSettings) {
-        try {
-          const parsed = JSON.parse(locationSettings);
-          setScheduleSettings(parsed);
-        } catch (error) {
-          console.error('Error loading location schedule settings:', error);
-        }
-      } else {
-        // Fall back to general settings if no location-specific settings exist
-        const savedSettings = localStorage.getItem('scheduleSettings');
-        if (savedSettings) {
-          try {
-            const parsed = JSON.parse(savedSettings);
-            setScheduleSettings(parsed);
-          } catch (error) {
-            console.error('Error loading schedule settings:', error);
-          }
-        }
-      }
-    };
-
-    loadSettings();
-
-    // Listen for settings changes
-    const handleSettingsChange = (event: CustomEvent) => {
-      // Only update if the change is for the current location or a general update
-      if (!event.detail.locationId || event.detail.locationId === selectedLocation) {
-        const { locationId, ...settings } = event.detail;
-        setScheduleSettings(settings);
-      }
-    };
-
-    window.addEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
-    
-    // Listen for global schedule type changes
     const handleScheduleTypeChange = () => {
-      // Reload settings from localStorage
-      loadSettings();
       // Invalidate queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/locations/${selectedLocation}/settings`] });
     };
     
     window.addEventListener('scheduleTypeChanged', handleScheduleTypeChange);
     
     return () => {
-      window.removeEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
       window.removeEventListener('scheduleTypeChanged', handleScheduleTypeChange);
     };
   }, [selectedLocation]);
