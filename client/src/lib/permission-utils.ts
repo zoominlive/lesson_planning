@@ -91,8 +91,8 @@ export function requiresLessonPlanApproval(): boolean {
     return role ? !overrides['lesson_plan.auto_approve'].includes(role) : true;
   }
   
-  // Default auto-approve roles
-  const autoApproveRoles = ['assistant_director', 'director', 'admin', 'superadmin'];
+  // Default auto-approve roles (assistant_director requires approval)
+  const autoApproveRoles = ['director', 'admin', 'superadmin'];
   
   // If user's role is in auto-approve list, they don't require approval
   return role ? !autoApproveRoles.includes(role) : true;

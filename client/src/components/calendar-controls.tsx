@@ -17,7 +17,6 @@ import {
 import { ChevronLeft, ChevronRight, Send, MapPin, Calendar, CheckCircle } from "lucide-react";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import { requiresLessonPlanApproval } from "@/lib/permission-utils";
-import { getUserInfo } from "@/lib/auth";
 import { DayPicker } from "react-day-picker";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -235,25 +234,17 @@ export function CalendarControls({
               className="bg-gradient-to-r from-mint-green to-sky-blue text-white hover:shadow-lg transition-all duration-300"
               data-testid="button-submit-supervisor"
             >
-              {/* Debug: Log the result of requiresLessonPlanApproval */}
-              {(() => {
-                const requiresApproval = requiresLessonPlanApproval();
-                const userInfo = getUserInfo();
-                console.log('Current role:', userInfo?.role);
-                console.log('Requires approval:', requiresApproval);
-                console.log('Normalized role:', userInfo?.role?.toLowerCase().replace(/\s+/g, '_'));
-                return requiresApproval ? (
-                  <>
-                    <Send className="mr-2 h-4 w-4" />
-                    Submit for Review
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Finalize
-                  </>
-                );
-              })()}
+              {requiresLessonPlanApproval() ? (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Submit for Review
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Finalize
+                </>
+              )}
             </Button>
           </div>
         </div>

@@ -63,8 +63,8 @@ export const DEFAULT_ROLE_PERMISSIONS = {
 // Default approval requirements by role
 export const DEFAULT_APPROVAL_REQUIREMENTS = {
   lesson_plan_submit: {
-    requiresApproval: ['teacher'], // Roles that need approval
-    autoApprove: ['assistant_director', 'director', 'admin', 'superadmin'], // Roles that auto-approve
+    requiresApproval: ['teacher', 'assistant_director'], // Roles that need approval
+    autoApprove: ['director', 'admin', 'superadmin'], // Roles that auto-approve
   },
 };
 

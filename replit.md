@@ -3,6 +3,11 @@ This project is a comprehensive lesson planning application for early childhood 
 
 ## Recent Changes (January 2025)
 
+### Assistant Director Approval Requirement (January 14, 2025)
+- **Updated permission configuration**: assistant_director role now requires approval for lesson plans (sees "Submit for Review" instead of "Finalize")
+- **Modified auto-approve roles**: Only director, admin, and superadmin roles now auto-approve lesson plans
+- **Frontend and backend sync**: Updated both client/src/lib/permission-utils.ts and shared/permissions/permissions.config.ts to ensure consistency
+
 ### Lesson Plan Sharing Logic Fix (January 14, 2025)
 - **Fixed duplicate lesson plans**: Lesson plans are now properly shared across all teachers for the same tenant->location->room->schedule-type->weekStart combination
 - **Removed per-teacher ownership**: Modified POST /api/lesson-plans to check for existing plans before creating duplicates
@@ -11,7 +16,7 @@ This project is a comprehensive lesson planning application for early childhood 
 - **TeacherId field retained**: Database still requires teacherId for technical reasons, but application logic treats plans as shared
 
 ### Dynamic Approval Button Text (January 13, 2025)
-- **Permission-based button text**: Submit button now shows "Finalize" for auto-approved roles (assistant_director, director, admin, superadmin) and "Submit for Review" for teacher role
+- **Permission-based button text**: Submit button now shows "Finalize" for auto-approved roles (director, admin, superadmin) and "Submit for Review" for roles requiring approval (teacher, assistant_director)
 - **Updated backend approval logic**: Backend now uses permission configuration to determine auto-approval instead of hardcoded role checks
 - **Added requiresLessonPlanApproval function**: New utility function checks if current user requires lesson plan approval based on role permissions
 - **Consistent toast messages**: Updated success messages to show "Lesson Plan Finalized" for auto-approved submissions
