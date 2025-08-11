@@ -1369,6 +1369,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Withdraw lesson plan from review
+  app.post("/api/lesson-plans/:id/withdraw", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get lesson plan to check access
+      const lessonPlan = await storage.getLessonPlan(id);
+      if (!lessonPlan) {
+        return res.status(404).json({ error: "Lesson plan not found" });
+      }
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, lessonPlan.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+
+      // Check if lesson plan is in submitted status
+      if (lessonPlan.status !== 'submitted') {
+        return res.status(400).json({ error: "Only submitted lesson plans can be withdrawn from review" });
+      }
+
+      // Withdraw from review (set status back to draft)
+      const withdrawn = await storage.withdrawLessonPlanFromReview(id);
+      res.json(withdrawn);
+    } catch (error) {
+      console.error('Error withdrawing lesson plan:', error);
+      res.status(500).json({ error: "Failed to withdraw lesson plan from review" });
+    }
+  });
+
   app.post("/api/lesson-plans/:id/approve", async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;

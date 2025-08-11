@@ -14,7 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ChevronLeft, ChevronRight, Send, MapPin, Calendar, CheckCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Send, MapPin, Calendar, CheckCircle, RotateCcw } from "lucide-react";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import { requiresLessonPlanApproval } from "@/lib/permission-utils";
 import { DayPicker } from "react-day-picker";
@@ -30,6 +30,8 @@ interface CalendarControlsProps {
   onSubmitToSupervisor: () => void;
   onLocationChange?: (locationId: string) => void;
   selectedLocation?: string;
+  currentLessonPlan?: any;
+  onWithdrawFromReview?: () => void;
 }
 
 export function CalendarControls({
@@ -40,6 +42,8 @@ export function CalendarControls({
   onSubmitToSupervisor,
   onLocationChange,
   selectedLocation,
+  currentLessonPlan,
+  onWithdrawFromReview,
 }: CalendarControlsProps) {
   const [currentLocation, setCurrentLocation] = useState(
     selectedLocation || "",
@@ -229,23 +233,40 @@ export function CalendarControls({
               </SelectContent>
             </Select>
 
-            <Button
-              onClick={onSubmitToSupervisor}
-              className="bg-gradient-to-r from-mint-green to-sky-blue text-white hover:shadow-lg transition-all duration-300"
-              data-testid="button-submit-supervisor"
-            >
-              {requiresLessonPlanApproval() ? (
-                <>
-                  <Send className="mr-2 h-4 w-4" />
-                  Submit for Review
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Finalize
-                </>
-              )}
-            </Button>
+            {/* Submit/Withdraw Button */}
+            {currentLessonPlan?.status === 'submitted' ? (
+              <Button
+                onClick={onWithdrawFromReview}
+                className="bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg transition-all duration-300 flex flex-col items-center px-4 py-3 h-auto"
+                data-testid="button-withdraw-review"
+              >
+                <div className="flex items-center">
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  In Review
+                </div>
+                <div className="text-xs opacity-80 mt-1">
+                  Click to Withdraw from Review
+                </div>
+              </Button>
+            ) : (
+              <Button
+                onClick={onSubmitToSupervisor}
+                className="bg-gradient-to-r from-mint-green to-sky-blue text-white hover:shadow-lg transition-all duration-300"
+                data-testid="button-submit-supervisor"
+              >
+                {requiresLessonPlanApproval() ? (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    Submit for Review
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Finalize
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

@@ -103,6 +103,7 @@ export interface IStorage {
   deleteLessonPlan(id: string): Promise<boolean>;
   getLessonPlansForReview(locationId?: string): Promise<LessonPlan[]>;
   submitLessonPlanForReview(id: string, userId: string): Promise<LessonPlan | undefined>;
+  withdrawLessonPlanFromReview(id: string): Promise<LessonPlan | undefined>;
   approveLessonPlan(id: string, userId: string, notes?: string): Promise<LessonPlan | undefined>;
   rejectLessonPlan(id: string, userId: string, notes: string): Promise<LessonPlan | undefined>;
 
@@ -613,6 +614,23 @@ export class DatabaseStorage implements IStorage {
         status: 'submitted',
         submittedAt: new Date(),
         submittedBy: userId,
+        updatedAt: new Date()
+      })
+      .where(and(...conditions))
+      .returning();
+    return lessonPlan || undefined;
+  }
+
+  async withdrawLessonPlanFromReview(id: string): Promise<LessonPlan | undefined> {
+    const conditions = [eq(lessonPlans.id, id)];
+    if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
+    
+    const [lessonPlan] = await this.db
+      .update(lessonPlans)
+      .set({ 
+        status: 'draft',
+        submittedAt: null,
+        submittedBy: null,
         updatedAt: new Date()
       })
       .where(and(...conditions))

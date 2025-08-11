@@ -133,6 +133,31 @@ export default function LessonPlanner() {
     enabled: !!selectedRoom && selectedRoom !== "all" && !!selectedLocation,
   });
 
+  // Withdraw from review mutation
+  const withdrawMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentLessonPlan) {
+        throw new Error("No lesson plan to withdraw");
+      }
+      return apiRequest("POST", `/api/lesson-plans/${currentLessonPlan.id}/withdraw`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/scheduled-activities"] });
+      toast({
+        title: "Withdrawn from Review",
+        description: "Your lesson plan has been withdrawn from review and is now in draft status.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Withdrawal Failed",
+        description: error.message || "Failed to withdraw the lesson plan from review.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Create or submit lesson plan mutation
   const submitMutation = useMutation({
     mutationFn: async () => {
@@ -225,6 +250,10 @@ export default function LessonPlanner() {
     submitMutation.mutate();
   };
 
+  const handleWithdrawFromReview = () => {
+    withdrawMutation.mutate();
+  };
+
   const handleQuickAddActivity = () => {
     // TODO: Implement quick add activity modal
     console.log("Quick add activity");
@@ -308,6 +337,8 @@ export default function LessonPlanner() {
           onRoomChange={setSelectedRoom}
           onLocationChange={setSelectedLocation}
           onSubmitToSupervisor={handleSubmitToSupervisor}
+          currentLessonPlan={currentLessonPlan}
+          onWithdrawFromReview={handleWithdrawFromReview}
         />
         <WeeklyCalendar
           selectedLocation={selectedLocation}
