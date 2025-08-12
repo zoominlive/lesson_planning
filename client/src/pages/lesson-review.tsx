@@ -15,6 +15,7 @@ import { hasPermission } from "@/lib/permission-utils";
 import { useLocation } from "wouter";
 import type { LessonPlan, User as UserType, Location, Room } from "@shared/schema";
 import WeeklyCalendar from "@/components/weekly-calendar";
+import { NavigationTabs } from "@/components/navigation-tabs";
 
 interface LessonPlanWithDetails extends LessonPlan {
   teacher?: UserType;

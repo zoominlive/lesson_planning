@@ -36,9 +36,13 @@ export default function LessonPlanner() {
   );
   const [selectedRoom, setSelectedRoom] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
-
+  
+  // Check for tab query parameter
+  const searchParams = new URLSearchParams(location.split('?')[1] || '');
+  const defaultTab = searchParams.get('tab') || 'calendar';
+  
   // Get user info directly from the token
   const userInfo = getUserInfo();
 
@@ -342,7 +346,7 @@ export default function LessonPlanner() {
       </Card>
 
       {/* Navigation Tabs */}
-      <NavigationTabs>
+      <NavigationTabs defaultTab={defaultTab}>
         <CalendarControls
           currentWeekDate={currentWeekDate}
           selectedRoom={selectedRoom}
