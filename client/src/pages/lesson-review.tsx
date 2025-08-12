@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, Clock, User, MapPin, Home, CheckCircle, XCircle, AlertCircle, FileText, ChevronRight, BookOpen, Filter } from "lucide-react";
-import { format, startOfWeek, addWeeks, subWeeks } from "date-fns";
+import { format, startOfWeek, addWeeks, subWeeks, addDays } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getUserInfo } from "@/lib/auth";
 import { hasPermission } from "@/lib/permission-utils";
@@ -224,8 +224,8 @@ export function LessonReview() {
   // Helper function to format week range
   const formatWeekRange = (weekStart: string) => {
     const start = new Date(weekStart);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 4); // Monday to Friday
+    // Use addDays from date-fns to properly handle month boundaries
+    const end = addDays(start, 4); // Monday to Friday
     return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`;
   };
 
