@@ -103,13 +103,23 @@ export default function LessonPlanner() {
 
   // Find current lesson plan
   const currentLessonPlan = lessonPlans.find((lp: any) => {
-    const lpWeekStart = new Date(lp.weekStart);
-    lpWeekStart.setHours(0, 0, 0, 0);
-    const currentWeek = new Date(currentWeekDate);
-    currentWeek.setHours(0, 0, 0, 0);
+    // Use startOfWeek to normalize both dates to the start of their week
+    const lpWeekStart = startOfWeek(new Date(lp.weekStart), { weekStartsOn: 1 });
+    const currentWeekStart = startOfWeek(new Date(currentWeekDate), { weekStartsOn: 1 });
+    
+    console.log('Comparing dates:', {
+      lpWeekStart: lpWeekStart.toISOString(),
+      currentWeekStart: currentWeekStart.toISOString(),
+      lpLocation: lp.locationId,
+      selectedLocation,
+      lpRoom: lp.roomId,
+      selectedRoom,
+      lpScheduleType: lp.scheduleType,
+      locationScheduleType: locationSettings?.scheduleType
+    });
     
     // Match by week, location, room, and schedule type
-    const matches = lpWeekStart.getTime() === currentWeek.getTime() &&
+    const matches = lpWeekStart.getTime() === currentWeekStart.getTime() &&
            lp.locationId === selectedLocation &&
            lp.roomId === selectedRoom &&
            lp.scheduleType === (locationSettings?.scheduleType || 'position-based');
