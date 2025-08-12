@@ -12,6 +12,7 @@ This project is a comprehensive lesson planning application for early childhood 
 - **Integration with review workflow**: Notifications include review notes and direct navigation to the relevant week for revision
 - **Mark as read functionality**: Notifications are automatically marked as read when viewed
 - **Collapsible feedback design**: Feedback is hidden by default with a "View Feedback" button to expand/collapse the reviewer's notes
+- **Review status indicator in Weekly Calendar**: Added status badges next to Weekly Schedule title showing "Approved" (green) or "Returned for Revision" (amber) with expandable review notes
 
 ### Fixed Date Display in Lesson Review Area (January 12, 2025)
 - **Fixed date calculation bug**: Changed from using `setDate()` to `addDays()` from date-fns library

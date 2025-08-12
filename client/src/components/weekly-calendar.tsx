@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Play, Package, Filter, X, Trash2, Clock, Scissors, Lock } from "lucide-react";
+import { Search, Plus, Play, Package, Filter, X, Trash2, Clock, Scissors, Lock, CheckCircle, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import DraggableActivity from "./draggable-activity";
 import { toast } from "@/hooks/use-toast";
 import type { Activity, Category, AgeGroup } from "@shared/schema";
@@ -89,6 +89,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   const [selectedCategory, setSelectedCategory] = useState<string>("all-categories");
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("all-age-groups");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showReviewNotes, setShowReviewNotes] = useState(false);
   
   // Check if lesson plan is locked (in review)
   const isLessonPlanLocked = currentLessonPlan?.status === 'submitted';
@@ -493,6 +494,48 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
           <h2 className="text-2xl font-bold text-charcoal">Weekly Schedule</h2>
+          
+          {/* Review Status Indicator */}
+          {currentLessonPlan && (currentLessonPlan.status === 'approved' || currentLessonPlan.status === 'rejected') && (
+            <div className="flex flex-col">
+              <button
+                onClick={() => setShowReviewNotes(!showReviewNotes)}
+                className={`flex items-center gap-2 px-3 py-1 rounded-lg border transition-colors ${
+                  currentLessonPlan.status === 'approved' 
+                    ? 'bg-green-50 text-green-800 border-green-200 hover:bg-green-100' 
+                    : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                }`}
+                data-testid="review-status-button"
+              >
+                {currentLessonPlan.status === 'approved' ? (
+                  <CheckCircle className="h-4 w-4" />
+                ) : (
+                  <AlertCircle className="h-4 w-4" />
+                )}
+                <span className="text-sm font-medium">
+                  {currentLessonPlan.status === 'approved' ? 'Approved' : 'Returned for Revision'}
+                </span>
+                {currentLessonPlan.reviewNotes && (
+                  showReviewNotes ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+                )}
+              </button>
+              
+              {/* Expandable Review Notes */}
+              {showReviewNotes && currentLessonPlan.reviewNotes && (
+                <div className={`mt-2 p-3 rounded-lg ${
+                  currentLessonPlan.status === 'approved' 
+                    ? 'bg-green-100 border border-green-200' 
+                    : 'bg-amber-100 border border-amber-200'
+                }`}>
+                  <p className="text-sm font-medium mb-1">
+                    {currentLessonPlan.status === 'approved' ? 'Approval Notes:' : 'Feedback from Reviewer:'}
+                  </p>
+                  <p className="text-sm">{currentLessonPlan.reviewNotes}</p>
+                </div>
+              )}
+            </div>
+          )}
+          
           {isLessonPlanLocked && (
             <div className="flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-800 rounded-lg border border-amber-200">
               <Lock className="h-4 w-4" />
