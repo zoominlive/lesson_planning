@@ -686,11 +686,38 @@ export class DatabaseStorage implements IStorage {
         status: 'approved',
         approvedAt: new Date(),
         approvedBy: userId,
-        reviewNotes: notes,
+        reviewNotes: notes || '',
         updatedAt: new Date()
       })
       .where(and(...conditions))
       .returning();
+    
+    // Create notification for the teacher who submitted the plan
+    if (lessonPlan && lessonPlan.submittedBy) {
+      try {
+        // Get the room and location info for the notification
+        const room = lessonPlan.roomId ? await this.getRoom(lessonPlan.roomId) : undefined;
+        const location = lessonPlan.locationId ? await this.getLocation(lessonPlan.locationId) : undefined;
+        
+        await this.createNotification({
+          tenantId: lessonPlan.tenantId,
+          userId: lessonPlan.submittedBy,  // Use submittedBy instead of teacherId
+          type: 'lesson_plan_approved',
+          lessonPlanId: lessonPlan.id,
+          title: 'Lesson Plan Approved',
+          message: `Your lesson plan for ${room?.name || 'Unknown Room'} at ${location?.name || 'Unknown Location'} has been approved.`,
+          reviewNotes: notes || '',
+          weekStart: new Date(lessonPlan.weekStart),
+          locationId: lessonPlan.locationId,
+          roomId: lessonPlan.roomId,
+          isRead: false,
+          isDismissed: false
+        });
+      } catch (error) {
+        console.error('Failed to create notification for approved lesson plan:', error);
+      }
+    }
+    
     return lessonPlan || undefined;
   }
 
@@ -710,8 +737,8 @@ export class DatabaseStorage implements IStorage {
       .where(and(...conditions))
       .returning();
     
-    // Create notification for the teacher
-    if (lessonPlan && lessonPlan.teacherId) {
+    // Create notification for the teacher who submitted the plan
+    if (lessonPlan && lessonPlan.submittedBy) {
       try {
         // Get the room and location info for the notification
         const room = lessonPlan.roomId ? await this.getRoom(lessonPlan.roomId) : undefined;
@@ -719,13 +746,13 @@ export class DatabaseStorage implements IStorage {
         
         await this.createNotification({
           tenantId: lessonPlan.tenantId,
-          userId: lessonPlan.teacherId,
+          userId: lessonPlan.submittedBy,  // Use submittedBy instead of teacherId
           type: 'lesson_plan_returned',
           lessonPlanId: lessonPlan.id,
           title: 'Lesson Plan Returned for Revision',
           message: `Your lesson plan for ${room?.name || 'Unknown Room'} at ${location?.name || 'Unknown Location'} has been returned for revision.`,
           reviewNotes: notes,
-          weekStart: lessonPlan.weekStart,
+          weekStart: new Date(lessonPlan.weekStart),
           locationId: lessonPlan.locationId,
           roomId: lessonPlan.roomId,
           isRead: false,
