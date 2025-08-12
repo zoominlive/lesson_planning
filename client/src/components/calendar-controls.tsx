@@ -239,16 +239,11 @@ export function CalendarControls({
             {currentLessonPlan?.status === 'submitted' ? (
               <Button
                 onClick={onWithdrawFromReview}
-                className="bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg transition-all duration-300 flex flex-col items-center px-4 py-3 h-auto"
+                className="bg-amber-600 hover:bg-amber-700 text-white hover:shadow-lg transition-all duration-300"
                 data-testid="button-withdraw-review"
               >
-                <div className="flex items-center">
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  In Review
-                </div>
-                <div className="text-xs opacity-80 mt-1">
-                  Click to Withdraw from Review
-                </div>
+                <RotateCcw className="mr-2 h-4 w-4" />
+                In Review
               </Button>
             ) : (
               <Button
