@@ -38,7 +38,7 @@ function ReviewAccordionContent({ plan }: ReviewAccordionContentProps) {
   
   const approveMutation = useMutation({
     mutationFn: async ({ planId, notes }: { planId: string; notes?: string }) => {
-      return apiRequest("POST", `/api/lesson-plans/${planId}/approve`, { reviewNotes: notes });
+      return apiRequest("POST", `/api/lesson-plans/${planId}/approve`, { notes: notes });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans/review"] });
@@ -59,7 +59,7 @@ function ReviewAccordionContent({ plan }: ReviewAccordionContentProps) {
 
   const rejectMutation = useMutation({
     mutationFn: async ({ planId, notes }: { planId: string; notes: string }) => {
-      return apiRequest("POST", `/api/lesson-plans/${planId}/reject`, { reviewNotes: notes });
+      return apiRequest("POST", `/api/lesson-plans/${planId}/reject`, { notes: notes });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans/review"] });
