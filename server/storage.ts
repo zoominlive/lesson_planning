@@ -677,6 +677,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async approveLessonPlan(id: string, userId: string, notes?: string): Promise<LessonPlan | undefined> {
+    console.log('[approveLessonPlan] Called with:', { id, userId, notes, tenantId: this.tenantId });
+    
     const conditions = [eq(lessonPlans.id, id)];
     if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
     
@@ -692,14 +694,18 @@ export class DatabaseStorage implements IStorage {
       .where(and(...conditions))
       .returning();
     
+    console.log('[approveLessonPlan] Updated lesson plan:', lessonPlan);
+    console.log('[approveLessonPlan] submittedBy:', lessonPlan?.submittedBy);
+    
     // Create notification for the teacher who submitted the plan
     if (lessonPlan && lessonPlan.submittedBy) {
+      console.log('[approveLessonPlan] Creating notification for user:', lessonPlan.submittedBy);
       try {
         // Get the room and location info for the notification
         const room = lessonPlan.roomId ? await this.getRoom(lessonPlan.roomId) : undefined;
         const location = lessonPlan.locationId ? await this.getLocation(lessonPlan.locationId) : undefined;
         
-        await this.createNotification({
+        const notificationData = {
           tenantId: lessonPlan.tenantId,
           userId: lessonPlan.submittedBy,  // Use submittedBy instead of teacherId
           type: 'lesson_plan_approved',
@@ -712,16 +718,24 @@ export class DatabaseStorage implements IStorage {
           roomId: lessonPlan.roomId,
           isRead: false,
           isDismissed: false
-        });
+        };
+        
+        console.log('[approveLessonPlan] Notification data:', notificationData);
+        const notification = await this.createNotification(notificationData);
+        console.log('[approveLessonPlan] Created notification:', notification);
       } catch (error) {
-        console.error('Failed to create notification for approved lesson plan:', error);
+        console.error('[approveLessonPlan] Failed to create notification:', error);
       }
+    } else {
+      console.log('[approveLessonPlan] Not creating notification - no submittedBy:', lessonPlan);
     }
     
     return lessonPlan || undefined;
   }
 
   async rejectLessonPlan(id: string, userId: string, notes: string): Promise<LessonPlan | undefined> {
+    console.log('[rejectLessonPlan] Called with:', { id, userId, notes, tenantId: this.tenantId });
+    
     const conditions = [eq(lessonPlans.id, id)];
     if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
     
@@ -737,14 +751,18 @@ export class DatabaseStorage implements IStorage {
       .where(and(...conditions))
       .returning();
     
+    console.log('[rejectLessonPlan] Updated lesson plan:', lessonPlan);
+    console.log('[rejectLessonPlan] submittedBy:', lessonPlan?.submittedBy);
+    
     // Create notification for the teacher who submitted the plan
     if (lessonPlan && lessonPlan.submittedBy) {
+      console.log('[rejectLessonPlan] Creating notification for user:', lessonPlan.submittedBy);
       try {
         // Get the room and location info for the notification
         const room = lessonPlan.roomId ? await this.getRoom(lessonPlan.roomId) : undefined;
         const location = lessonPlan.locationId ? await this.getLocation(lessonPlan.locationId) : undefined;
         
-        await this.createNotification({
+        const notificationData = {
           tenantId: lessonPlan.tenantId,
           userId: lessonPlan.submittedBy,  // Use submittedBy instead of teacherId
           type: 'lesson_plan_returned',
@@ -757,10 +775,16 @@ export class DatabaseStorage implements IStorage {
           roomId: lessonPlan.roomId,
           isRead: false,
           isDismissed: false
-        });
+        };
+        
+        console.log('[rejectLessonPlan] Notification data:', notificationData);
+        const notification = await this.createNotification(notificationData);
+        console.log('[rejectLessonPlan] Created notification:', notification);
       } catch (error) {
-        console.error('Failed to create notification for rejected lesson plan:', error);
+        console.error('[rejectLessonPlan] Failed to create notification:', error);
       }
+    } else {
+      console.log('[rejectLessonPlan] Not creating notification - no submittedBy:', lessonPlan);
     }
     
     return lessonPlan || undefined;
@@ -1332,17 +1356,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createNotification(notification: InsertNotification): Promise<Notification> {
+    console.log('[createNotification] Called with:', notification);
+    console.log('[createNotification] Current tenantId:', this.tenantId);
+    
     if (!this.tenantId && !notification.tenantId) {
       throw new Error('Tenant ID is required to create a notification');
     }
     
+    const notificationToInsert = {
+      ...notification,
+      tenantId: notification.tenantId || this.tenantId!,
+    };
+    
+    console.log('[createNotification] Inserting:', notificationToInsert);
+    
     const [newNotification] = await this.db
       .insert(notifications)
-      .values({
-        ...notification,
-        tenantId: notification.tenantId || this.tenantId!,
-      })
+      .values(notificationToInsert)
       .returning();
+    
+    console.log('[createNotification] Created notification:', newNotification);
     
     return newNotification;
   }
