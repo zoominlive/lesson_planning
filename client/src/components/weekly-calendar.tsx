@@ -12,6 +12,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Search, Plus, Play, Package, Filter, X, Trash2, Clock, Scissors, Lock, CheckCircle, AlertCircle, MessageSquare } from "lucide-react";
 import DraggableActivity from "./draggable-activity";
 import { toast } from "@/hooks/use-toast";
@@ -97,9 +107,15 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("all-age-groups");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showReviewNotes, setShowReviewNotes] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{
+    type: 'schedule' | 'move' | 'delete';
+    data: any;
+  } | null>(null);
+  const [showApprovedWarning, setShowApprovedWarning] = useState(false);
   
   // Check if lesson plan is locked (in review)
   const isLessonPlanLocked = currentLessonPlan?.status === 'submitted';
+  const isLessonPlanApproved = currentLessonPlan?.status === 'approved';
   // Fetch location settings from API
   const { data: locationSettings } = useQuery<{ 
     scheduleType: 'time-based' | 'position-based',
@@ -263,6 +279,38 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   };
 
 
+  // Mutation to reset lesson plan to draft status
+  const resetLessonPlanToDraft = useMutation({
+    mutationFn: async (lessonPlanId: string) => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`/api/lesson-plans/${lessonPlanId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ status: 'draft' }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to reset lesson plan status');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/lesson-plans'] });
+    },
+    onError: () => {
+      toast({
+        title: "Failed to reset status",
+        description: "Unable to reset lesson plan status. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteScheduledMutation = useMutation({
     mutationFn: async (scheduledActivityId: string) => {
       const token = localStorage.getItem('authToken');
@@ -285,12 +333,17 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // If lesson plan was approved and is now modified, reset it to draft
+      if (isLessonPlanApproved && currentLessonPlan?.id && pendingAction) {
+        await resetLessonPlanToDraft.mutateAsync(currentLessonPlan.id);
+      }
       queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom, weekStartDate.toISOString(), selectedLocation] });
       toast({
         title: "Activity Removed",
-        description: "The activity has been removed from the schedule.",
+        description: isLessonPlanApproved ? "The activity has been removed and the lesson plan has been reset to draft for re-review." : "The activity has been removed from the schedule.",
       });
+      setPendingAction(null);
     },
     onError: () => {
       toast({
@@ -298,6 +351,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
         description: "Unable to remove the activity. Please try again.",
         variant: "destructive",
       });
+      setPendingAction(null);
     },
   });
 
@@ -324,14 +378,19 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // If lesson plan was approved and is now modified, reset it to draft
+      if (isLessonPlanApproved && currentLessonPlan?.id && pendingAction) {
+        await resetLessonPlanToDraft.mutateAsync(currentLessonPlan.id);
+      }
       queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom, weekStartDate.toISOString(), selectedLocation] });
       toast({
         title: "Activity Moved",
-        description: "The activity has been moved to the new time slot.",
+        description: isLessonPlanApproved ? "The activity has been moved and the lesson plan has been reset to draft for re-review." : "The activity has been moved to the new time slot.",
       });
       setDraggedScheduledActivity(null);
       setDragOverSlot(null);
+      setPendingAction(null);
     },
     onError: () => {
       toast({
@@ -339,6 +398,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
         description: "Unable to move the activity. Please try again.",
         variant: "destructive",
       });
+      setPendingAction(null);
     },
   });
 
@@ -384,12 +444,17 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // If lesson plan was approved and is now modified, reset it to draft
+      if (isLessonPlanApproved && currentLessonPlan?.id && pendingAction) {
+        await resetLessonPlanToDraft.mutateAsync(currentLessonPlan.id);
+      }
       queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom, weekStartDate.toISOString(), selectedLocation] });
       toast({
         title: "Activity Scheduled",
-        description: "The activity has been added to the calendar.",
+        description: isLessonPlanApproved ? "The activity has been added and the lesson plan has been reset to draft for re-review." : "The activity has been added to the calendar.",
       });
+      setPendingAction(null);
     },
     onError: () => {
       toast({
@@ -397,6 +462,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
         description: "Unable to schedule the activity. Please try again.",
         variant: "destructive",
       });
+      setPendingAction(null);
     },
   });
 
@@ -443,11 +509,24 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
         return;
       }
       
-      moveActivityMutation.mutate({
-        scheduledActivityId: draggedScheduledActivity.id,
-        newDay: dayOfWeek,
-        newSlot: timeSlot,
-      });
+      // Check if lesson plan is approved and show warning
+      if (isLessonPlanApproved) {
+        setPendingAction({
+          type: 'move',
+          data: {
+            scheduledActivityId: draggedScheduledActivity.id,
+            newDay: dayOfWeek,
+            newSlot: timeSlot,
+          }
+        });
+        setShowApprovedWarning(true);
+      } else {
+        moveActivityMutation.mutate({
+          scheduledActivityId: draggedScheduledActivity.id,
+          newDay: dayOfWeek,
+          newSlot: timeSlot,
+        });
+      }
     } else if (draggedActivity) {
       // Adding a new activity
       console.log(`[handleDrop] Scheduling: ${draggedActivity.title} on ${weekDays[dayOfWeek].name} at ${timeSlots[timeSlot].label}`);
@@ -473,13 +552,27 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
         return;
       }
       
-      console.log('[handleDrop] Calling scheduleMutation.mutate');
-      scheduleMutation.mutate({
-        activityId: draggedActivity.id,
-        dayOfWeek,
-        timeSlot,
-        weekStart: weekStartDate.toISOString(),
-      });
+      // Check if lesson plan is approved and show warning
+      if (isLessonPlanApproved) {
+        setPendingAction({
+          type: 'schedule',
+          data: {
+            activityId: draggedActivity.id,
+            dayOfWeek,
+            timeSlot,
+            weekStart: weekStartDate.toISOString(),
+          }
+        });
+        setShowApprovedWarning(true);
+      } else {
+        console.log('[handleDrop] Calling scheduleMutation.mutate');
+        scheduleMutation.mutate({
+          activityId: draggedActivity.id,
+          dayOfWeek,
+          timeSlot,
+          weekStart: weekStartDate.toISOString(),
+        });
+      }
       setDraggedActivity(null);
     } else {
       console.log('[handleDrop] No dragged activity to schedule');
@@ -642,7 +735,16 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                                 });
                                 return;
                               }
-                              deleteScheduledMutation.mutate(scheduledActivity.id);
+                              // Check if lesson plan is approved and show warning
+                              if (isLessonPlanApproved) {
+                                setPendingAction({
+                                  type: 'delete',
+                                  data: scheduledActivity.id
+                                });
+                                setShowApprovedWarning(true);
+                              } else {
+                                deleteScheduledMutation.mutate(scheduledActivity.id);
+                              }
                             }}
                             className="absolute top-1 right-1 p-1 rounded bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100"
                             title="Remove from schedule"
@@ -792,6 +894,43 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
           </Card>
         </div>
       </div>
+      
+      {/* Alert Dialog for modifying approved lesson plans */}
+      <AlertDialog open={showApprovedWarning} onOpenChange={setShowApprovedWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Modify Approved Lesson Plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This lesson plan has been approved. Making changes will reset it to draft status and require re-approval.
+              
+              Do you want to continue with this modification?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setPendingAction(null);
+              setDraggedActivity(null);
+              setDraggedScheduledActivity(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (pendingAction) {
+                if (pendingAction.type === 'schedule') {
+                  scheduleMutation.mutate(pendingAction.data);
+                } else if (pendingAction.type === 'move') {
+                  moveActivityMutation.mutate(pendingAction.data);
+                } else if (pendingAction.type === 'delete') {
+                  deleteScheduledMutation.mutate(pendingAction.data);
+                }
+              }
+              setShowApprovedWarning(false);
+            }}>
+              Continue and Reset to Draft
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
