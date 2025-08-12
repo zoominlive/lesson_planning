@@ -5,7 +5,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Play, Package, Filter, X, Trash2, Clock, Scissors, Lock, CheckCircle, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Search, Plus, Play, Package, Filter, X, Trash2, Clock, Scissors, Lock, CheckCircle, AlertCircle, MessageSquare } from "lucide-react";
 import DraggableActivity from "./draggable-activity";
 import { toast } from "@/hooks/use-toast";
 import type { Activity, Category, AgeGroup } from "@shared/schema";
@@ -497,9 +504,9 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
           
           {/* Review Status Indicator */}
           {currentLessonPlan && (currentLessonPlan.status === 'approved' || currentLessonPlan.status === 'rejected') && (
-            <div className="flex flex-col">
+            <>
               <button
-                onClick={() => setShowReviewNotes(!showReviewNotes)}
+                onClick={() => setShowReviewNotes(true)}
                 className={`flex items-center gap-2 px-3 py-1 rounded-lg border transition-colors ${
                   currentLessonPlan.status === 'approved' 
                     ? 'bg-green-50 text-green-800 border-green-200 hover:bg-green-100' 
@@ -516,24 +523,40 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                   {currentLessonPlan.status === 'approved' ? 'Approved' : 'Returned for Revision'}
                 </span>
                 {currentLessonPlan.reviewNotes && (
-                  showReviewNotes ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+                  <MessageSquare className="h-3 w-3 ml-1" />
                 )}
               </button>
-              
-              {/* Expandable Review Notes */}
-              {showReviewNotes && currentLessonPlan.reviewNotes && (
-                <div className={`mt-2 p-3 rounded-lg ${
-                  currentLessonPlan.status === 'approved' 
-                    ? 'bg-green-100 border border-green-200' 
-                    : 'bg-amber-100 border border-amber-200'
-                }`}>
-                  <p className="text-sm font-medium mb-1">
-                    {currentLessonPlan.status === 'approved' ? 'Approval Notes:' : 'Feedback from Reviewer:'}
-                  </p>
-                  <p className="text-sm">{currentLessonPlan.reviewNotes}</p>
-                </div>
-              )}
-            </div>
+
+              {/* Review Notes Dialog */}
+              <Dialog open={showReviewNotes} onOpenChange={setShowReviewNotes}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className={`flex items-center gap-2 ${
+                      currentLessonPlan.status === 'approved' ? 'text-green-800' : 'text-amber-800'
+                    }`}>
+                      {currentLessonPlan.status === 'approved' ? (
+                        <CheckCircle className="h-5 w-5" />
+                      ) : (
+                        <AlertCircle className="h-5 w-5" />
+                      )}
+                      {currentLessonPlan.status === 'approved' ? 'Lesson Plan Approved' : 'Lesson Plan Returned'}
+                    </DialogTitle>
+                    <DialogDescription className="text-left mt-4">
+                      {currentLessonPlan.reviewNotes ? (
+                        <>
+                          <p className="font-medium mb-2">
+                            {currentLessonPlan.status === 'approved' ? 'Approval Notes:' : 'Feedback from Reviewer:'}
+                          </p>
+                          <p className="text-sm text-gray-700">{currentLessonPlan.reviewNotes}</p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-gray-500">No review notes provided.</p>
+                      )}
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+            </>
           )}
           
           {isLessonPlanLocked && (
