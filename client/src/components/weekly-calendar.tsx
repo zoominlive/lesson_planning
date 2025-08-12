@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Play, Package, Filter, X, Trash2, Clock, Scissors } from "lucide-react";
+import { Search, Plus, Play, Package, Filter, X, Trash2, Clock, Scissors, Lock } from "lucide-react";
 import DraggableActivity from "./draggable-activity";
 import { toast } from "@/hooks/use-toast";
 import type { Activity, Category, AgeGroup } from "@shared/schema";
@@ -15,6 +15,7 @@ interface WeeklyCalendarProps {
   selectedLocation: string;
   selectedRoom: string;
   currentWeekDate?: Date;
+  currentLessonPlan?: any;
 }
 
 // Convert numbers to written words
@@ -76,7 +77,7 @@ const generateWeekDays = (weekStartDate: Date) => {
   return days;
 };
 
-export default function WeeklyCalendar({ selectedLocation, selectedRoom, currentWeekDate }: WeeklyCalendarProps) {
+export default function WeeklyCalendar({ selectedLocation, selectedRoom, currentWeekDate, currentLessonPlan }: WeeklyCalendarProps) {
   const weekStartDate = currentWeekDate || startOfWeek(new Date(), { weekStartsOn: 1 });
   const weekDays = generateWeekDays(weekStartDate);
   
@@ -87,6 +88,9 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   const [selectedCategory, setSelectedCategory] = useState<string>("all-categories");
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("all-age-groups");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  
+  // Check if lesson plan is locked (in review)
+  const isLessonPlanLocked = currentLessonPlan?.status === 'submitted';
   // Fetch location settings from API
   const { data: locationSettings } = useQuery<{ 
     scheduleType: 'time-based' | 'position-based',
@@ -196,11 +200,28 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   };
 
   const handleDragStart = (activity: Activity) => {
+    if (isLessonPlanLocked) {
+      toast({
+        title: "Lesson Plan Locked",
+        description: "Withdraw the lesson plan from review to make changes.",
+        variant: "destructive",
+      });
+      return;
+    }
     console.log('[handleDragStart] Setting dragged activity:', activity.title);
     setDraggedActivity(activity);
   };
 
   const handleScheduledActivityDragStart = (e: React.DragEvent, scheduledActivity: any) => {
+    if (isLessonPlanLocked) {
+      e.preventDefault();
+      toast({
+        title: "Lesson Plan Locked",
+        description: "Withdraw the lesson plan from review to make changes.",
+        variant: "destructive",
+      });
+      return;
+    }
     console.log('[handleScheduledActivityDragStart] Setting dragged scheduled activity:', scheduledActivity.activity?.title);
     setDraggedScheduledActivity(scheduledActivity);
     setDraggedActivity(null); // Clear any dragged new activity
@@ -374,6 +395,16 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
     console.log('[handleDrop] Drop event triggered');
     e.preventDefault();
     e.stopPropagation();
+    
+    if (isLessonPlanLocked) {
+      toast({
+        title: "Lesson Plan Locked",
+        description: "Withdraw the lesson plan from review to make changes.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const dropZone = e.currentTarget as HTMLElement;
     dropZone.classList.remove("drag-over");
     setDragOverSlot(null);
@@ -461,6 +492,12 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
           <h2 className="text-2xl font-bold text-charcoal">Weekly Schedule</h2>
+          {isLessonPlanLocked && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-800 rounded-lg border border-amber-200">
+              <Lock className="h-4 w-4" />
+              <span className="text-sm font-medium">Plan Locked (In Review)</span>
+            </div>
+          )}
         </div>
         
         <Button
@@ -527,6 +564,14 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                           onClick={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
+                            if (isLessonPlanLocked) {
+                              toast({
+                                title: "Lesson Plan Locked",
+                                description: "Withdraw the lesson plan from review to make changes.",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
                             deleteScheduledMutation.mutate(scheduledActivity.id);
                           }}
                           className="absolute top-1 right-1 p-1 rounded bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100"

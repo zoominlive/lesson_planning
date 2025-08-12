@@ -358,6 +358,7 @@ export default function LessonPlanner() {
           selectedLocation={selectedLocation}
           selectedRoom={selectedRoom}
           currentWeekDate={currentWeekDate}
+          currentLessonPlan={currentLessonPlan}
         />
       </NavigationTabs>
 
