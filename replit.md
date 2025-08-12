@@ -3,6 +3,15 @@ This project is a comprehensive lesson planning application for early childhood 
 
 ## Recent Changes (January 2025)
 
+### Persistent Notification System Implementation (January 14, 2025)
+- **Added PostgreSQL notifications table**: Created database table to store persistent notifications for users
+- **Implemented NotificationCarousel component**: Built a carousel UI for displaying multiple returned lesson plan notifications
+- **Added dismissible notifications**: Users can dismiss notifications with an X button to clear them from their view
+- **Automatic notification creation**: Notifications are automatically created when lesson plans are rejected
+- **Carousel navigation**: When multiple notifications exist, users can navigate between them using arrow buttons
+- **Integration with review workflow**: Notifications include review notes and direct navigation to the relevant week for revision
+- **Mark as read functionality**: Notifications are automatically marked as read when viewed
+
 ### Fixed Date Display in Lesson Review Area (January 12, 2025)
 - **Fixed date calculation bug**: Changed from using `setDate()` to `addDays()` from date-fns library
 - **Resolved month boundary issue**: Dates now correctly display when week spans across months (e.g., "Aug 29 - Sep 2" instead of invalid "Aug 29 - Sep 32")

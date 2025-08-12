@@ -46,10 +46,13 @@ import {
   type InsertRolePermission,
   type TenantPermissionOverride,
   type InsertTenantPermissionOverride,
+  type Notification,
+  type InsertNotification,
   permissions,
   roles,
   rolePermissions,
-  tenantPermissionOverrides
+  tenantPermissionOverrides,
+  notifications
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, isNull } from "drizzle-orm";
@@ -178,6 +181,12 @@ export interface IStorage {
   
   // Permission Checking
   checkUserPermission(userId: string, role: string, resource: string, action: string, tenantId: string): Promise<{ hasPermission: boolean; requiresApproval: boolean; reason?: string }>;
+  
+  // Notifications
+  getActiveNotifications(userId: string): Promise<Notification[]>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  dismissNotification(notificationId: string, userId: string): Promise<boolean>;
+  markNotificationAsRead(notificationId: string, userId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -700,6 +709,33 @@ export class DatabaseStorage implements IStorage {
       })
       .where(and(...conditions))
       .returning();
+    
+    // Create notification for the teacher
+    if (lessonPlan && lessonPlan.teacherId) {
+      try {
+        // Get the room and location info for the notification
+        const room = lessonPlan.roomId ? await this.getRoom(lessonPlan.roomId) : undefined;
+        const location = lessonPlan.locationId ? await this.getLocation(lessonPlan.locationId) : undefined;
+        
+        await this.createNotification({
+          tenantId: lessonPlan.tenantId,
+          userId: lessonPlan.teacherId,
+          type: 'lesson_plan_returned',
+          lessonPlanId: lessonPlan.id,
+          title: 'Lesson Plan Returned for Revision',
+          message: `Your lesson plan for ${room?.name || 'Unknown Room'} at ${location?.name || 'Unknown Location'} has been returned for revision.`,
+          reviewNotes: notes,
+          weekStart: lessonPlan.weekStart,
+          locationId: lessonPlan.locationId,
+          roomId: lessonPlan.roomId,
+          isRead: false,
+          isDismissed: false
+        });
+      } catch (error) {
+        console.error('Failed to create notification for rejected lesson plan:', error);
+      }
+    }
+    
     return lessonPlan || undefined;
   }
 
@@ -1249,6 +1285,74 @@ export class DatabaseStorage implements IStorage {
       requiresApproval,
       reason: hasPermission ? undefined : `Role ${role} does not have permission for ${permissionName}`
     };
+  }
+
+  // Notifications
+  async getActiveNotifications(userId: string): Promise<Notification[]> {
+    const conditions = [
+      eq(notifications.userId, userId),
+      eq(notifications.isDismissed, false)
+    ];
+    if (this.tenantId) conditions.push(eq(notifications.tenantId, this.tenantId));
+    
+    const activeNotifications = await this.db
+      .select()
+      .from(notifications)
+      .where(and(...conditions))
+      .orderBy(sql`${notifications.createdAt} DESC`);
+    
+    return activeNotifications;
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    if (!this.tenantId && !notification.tenantId) {
+      throw new Error('Tenant ID is required to create a notification');
+    }
+    
+    const [newNotification] = await this.db
+      .insert(notifications)
+      .values({
+        ...notification,
+        tenantId: notification.tenantId || this.tenantId!,
+      })
+      .returning();
+    
+    return newNotification;
+  }
+
+  async dismissNotification(notificationId: string, userId: string): Promise<boolean> {
+    const conditions = [
+      eq(notifications.id, notificationId),
+      eq(notifications.userId, userId)
+    ];
+    if (this.tenantId) conditions.push(eq(notifications.tenantId, this.tenantId));
+    
+    const result = await this.db
+      .update(notifications)
+      .set({ 
+        isDismissed: true,
+        dismissedAt: new Date()
+      })
+      .where(and(...conditions))
+      .returning();
+    
+    return result.length > 0;
+  }
+
+  async markNotificationAsRead(notificationId: string, userId: string): Promise<boolean> {
+    const conditions = [
+      eq(notifications.id, notificationId),
+      eq(notifications.userId, userId)
+    ];
+    if (this.tenantId) conditions.push(eq(notifications.tenantId, this.tenantId));
+    
+    const result = await this.db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(and(...conditions))
+      .returning();
+    
+    return result.length > 0;
   }
 }
 

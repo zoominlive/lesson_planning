@@ -1504,6 +1504,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Notifications API Routes
+  app.get("/api/notifications", async (req: AuthenticatedRequest, res) => {
+    try {
+      // Get current user from storage
+      const currentUser = await storage.getUserByUserId(req.userId!);
+      if (!currentUser) {
+        return res.status(403).json({ error: "User not found" });
+      }
+
+      // Get active (non-dismissed) notifications for the user
+      const notifications = await storage.getActiveNotifications(currentUser.id);
+      res.json(notifications);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  app.post("/api/notifications/:id/dismiss", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get current user from storage
+      const currentUser = await storage.getUserByUserId(req.userId!);
+      if (!currentUser) {
+        return res.status(403).json({ error: "User not found" });
+      }
+
+      // Dismiss the notification
+      const dismissed = await storage.dismissNotification(id, currentUser.id);
+      if (!dismissed) {
+        return res.status(404).json({ error: "Notification not found or already dismissed" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error dismissing notification:', error);
+      res.status(500).json({ error: "Failed to dismiss notification" });
+    }
+  });
+
+  app.post("/api/notifications/:id/mark-read", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get current user from storage
+      const currentUser = await storage.getUserByUserId(req.userId!);
+      if (!currentUser) {
+        return res.status(403).json({ error: "User not found" });
+      }
+
+      // Mark notification as read
+      const marked = await storage.markNotificationAsRead(id, currentUser.id);
+      if (!marked) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+
   // Settings API Routes - Locations
   app.get("/api/locations", async (req: AuthenticatedRequest, res) => {
     try {

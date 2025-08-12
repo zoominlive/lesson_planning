@@ -212,6 +212,25 @@ export const scheduledActivities = pgTable("scheduled_activities", {
   notes: text("notes"),
 });
 
+// Notifications table for tracking lesson plan notifications
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(), // 'lesson_plan_returned', 'lesson_plan_approved', etc.
+  lessonPlanId: varchar("lesson_plan_id").references(() => lessonPlans.id),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  reviewNotes: text("review_notes"), // Feedback from reviewer
+  weekStart: timestamp("week_start"), // The week of the lesson plan
+  locationId: varchar("location_id").references(() => locations.id),
+  roomId: varchar("room_id").references(() => rooms.id),
+  isRead: boolean("is_read").default(false).notNull(),
+  isDismissed: boolean("is_dismissed").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  dismissedAt: timestamp("dismissed_at"),
+});
+
 // Zod schemas for validation
 export const insertTenantSchema = createInsertSchema(tenants).pick({
   name: true,
@@ -268,6 +287,12 @@ export const insertActivityUsageSchema = createInsertSchema(activityUsage).omit(
 export const insertActivityReviewSchema = createInsertSchema(activityReviews).omit({
   id: true,
   createdAt: true,
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+  dismissedAt: true,
 });
 
 // Permission schemas
@@ -426,6 +451,9 @@ export type InsertActivityUsage = z.infer<typeof insertActivityUsageSchema>;
 
 export type ActivityReview = typeof activityReviews.$inferSelect;
 export type InsertActivityReview = z.infer<typeof insertActivityReviewSchema>;
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 // Settings types
 export type Location = typeof locations.$inferSelect;
