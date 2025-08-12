@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, Clock, User, MapPin, Home, CheckCircle, XCircle, AlertCircle, FileText, ChevronRight, BookOpen } from "lucide-react";
 import { format } from "date-fns";
@@ -14,6 +14,7 @@ import { getUserInfo } from "@/lib/auth";
 import { hasPermission } from "@/lib/permission-utils";
 import { useLocation } from "wouter";
 import type { LessonPlan, User as UserType, Location, Room } from "@shared/schema";
+import WeeklyCalendar from "@/components/weekly-calendar";
 
 interface LessonPlanWithDetails extends LessonPlan {
   teacher?: UserType;
@@ -25,13 +26,139 @@ interface LessonPlanWithDetails extends LessonPlan {
   activitiesCount?: number;
 }
 
+interface ReviewAccordionContentProps {
+  plan: LessonPlanWithDetails;
+}
+
+function ReviewAccordionContent({ plan }: ReviewAccordionContentProps) {
+  const { toast } = useToast();
+  const [reviewNotes, setReviewNotes] = useState("");
+  
+  const approveMutation = useMutation({
+    mutationFn: async ({ planId, notes }: { planId: string; notes?: string }) => {
+      return apiRequest("POST", `/api/lesson-plans/${planId}/approve`, { reviewNotes: notes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans/review"] });
+      toast({
+        title: "Lesson Plan Approved",
+        description: "The lesson plan has been approved successfully.",
+      });
+      setReviewNotes("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Approval Failed",
+        description: error.message || "Failed to approve the lesson plan.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async ({ planId, notes }: { planId: string; notes: string }) => {
+      return apiRequest("POST", `/api/lesson-plans/${planId}/reject`, { reviewNotes: notes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans/review"] });
+      toast({
+        title: "Lesson Plan Returned",
+        description: "The lesson plan has been returned with feedback.",
+      });
+      setReviewNotes("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Return Failed",
+        description: error.message || "Failed to return the lesson plan.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleApprove = () => {
+    approveMutation.mutate({ planId: plan.id, notes: reviewNotes });
+  };
+
+  const handleReject = () => {
+    if (!reviewNotes.trim()) {
+      toast({
+        title: "Feedback Required",
+        description: "Please provide feedback when returning a lesson plan.",
+        variant: "destructive",
+      });
+      return;
+    }
+    rejectMutation.mutate({ planId: plan.id, notes: reviewNotes });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Review Controls */}
+      {plan.status === "submitted" && (
+        <div className="bg-gray-50 p-4 rounded-lg border">
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Review Notes (Optional for approval, required for return)
+              </label>
+              <Textarea
+                value={reviewNotes}
+                onChange={(e) => setReviewNotes(e.target.value)}
+                placeholder="Enter feedback or notes about this lesson plan..."
+                rows={3}
+                className="w-full"
+              />
+            </div>
+            
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="border-red-200 text-red-600 hover:bg-red-50"
+                onClick={handleReject}
+                disabled={rejectMutation.isPending}
+              >
+                {rejectMutation.isPending ? "Returning..." : "Return with Feedback"}
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white"
+                onClick={handleApprove}
+                disabled={approveMutation.isPending}
+              >
+                {approveMutation.isPending ? "Approving..." : "Approve"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Show existing review notes for non-submitted plans */}
+      {plan.reviewNotes && plan.status !== "submitted" && (
+        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <p className="text-sm font-medium text-blue-800 mb-2">Review Notes:</p>
+          <p className="text-sm text-blue-700">{plan.reviewNotes}</p>
+        </div>
+      )}
+
+      {/* Lesson Plan Calendar */}
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-semibold mb-4">Lesson Plan Details</h3>
+        <WeeklyCalendar
+          selectedLocation={plan.locationId}
+          selectedRoom={plan.roomId}
+          currentWeekDate={new Date(plan.weekStart)}
+          currentLessonPlan={plan}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function LessonReview() {
   const { toast } = useToast();
   const userInfo = getUserInfo();
   const [, setLocation] = useLocation();
-  const [selectedPlan, setSelectedPlan] = useState<LessonPlanWithDetails | null>(null);
-  const [reviewNotes, setReviewNotes] = useState("");
-  const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
+  const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<"submitted" | "approved" | "rejected">("submitted");
   
   // Clear cache on mount to ensure fresh data
@@ -86,53 +213,7 @@ export function LessonReview() {
     queryKey: ["/api/rooms"],
   });
 
-  // Approve mutation
-  const approveMutation = useMutation({
-    mutationFn: async ({ id, notes }: { id: string; notes?: string }) => {
-      return apiRequest(`/api/lesson-plans/${id}/approve`, "POST", { notes });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans/review"] });
-      toast({
-        title: "Lesson Plan Approved",
-        description: "The lesson plan has been approved successfully.",
-      });
-      setSelectedPlan(null);
-      setReviewNotes("");
-      setActionType(null);
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to approve the lesson plan.",
-        variant: "destructive",
-      });
-    },
-  });
 
-  // Reject mutation
-  const rejectMutation = useMutation({
-    mutationFn: async ({ id, notes }: { id: string; notes: string }) => {
-      return apiRequest(`/api/lesson-plans/${id}/reject`, "POST", { notes });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans/review"] });
-      toast({
-        title: "Lesson Plan Returned",
-        description: "The lesson plan has been returned with feedback.",
-      });
-      setSelectedPlan(null);
-      setReviewNotes("");
-      setActionType(null);
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to return the lesson plan.",
-        variant: "destructive",
-      });
-    },
-  });
 
   // Enrich lesson plans with related data (preserve existing data if present)
   const enrichedPlans = lessonPlans.map((plan: LessonPlanWithDetails) => ({
@@ -153,22 +234,7 @@ export function LessonReview() {
     return false;
   });
 
-  const handleApprove = () => {
-    if (!selectedPlan) return;
-    approveMutation.mutate({ id: selectedPlan.id, notes: reviewNotes });
-  };
 
-  const handleReject = () => {
-    if (!selectedPlan || !reviewNotes.trim()) {
-      toast({
-        title: "Review Notes Required",
-        description: "Please provide feedback when returning a lesson plan.",
-        variant: "destructive",
-      });
-      return;
-    }
-    rejectMutation.mutate({ id: selectedPlan.id, notes: reviewNotes });
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -248,21 +314,20 @@ export function LessonReview() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
+            <Accordion type="single" collapsible className="space-y-4">
               {filteredPlans.map((plan: LessonPlanWithDetails) => (
-                <Card key={plan.id} className="hover:shadow-lg transition-shadow cursor-pointer" 
-                      onClick={() => setSelectedPlan(plan)}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
+                <AccordionItem key={plan.id} value={plan.id} className="border rounded-lg shadow-sm">
+                  <AccordionTrigger className="hover:no-underline p-6 hover:bg-gray-50">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex-1 text-left">
                         <div className="flex items-center gap-4 mb-3">
                           {getStatusBadge(plan.status)}
-                          <span className="text-sm text-gray-500">
+                          <span className="text-lg font-semibold text-gray-900">
                             {formatWeekRange(plan.weekStart)}
                           </span>
                         </div>
                         
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-gray-400" />
                             <span>{plan.location?.name || "Unknown Location"}</span>
@@ -275,10 +340,6 @@ export function LessonReview() {
                             <User className="h-4 w-4 text-gray-400" />
                             <span>{plan.teacher ? `${plan.teacher.firstName} ${plan.teacher.lastName}` : (plan.submitter ? `${plan.submitter.firstName} ${plan.submitter.lastName}` : "Unknown Teacher")}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-gray-400" />
-                            <span>{plan.scheduleType === "position-based" ? "Position-based" : "Time-based"}</span>
-                          </div>
                         </div>
 
                         {plan.submittedAt && (
@@ -287,113 +348,20 @@ export function LessonReview() {
                             {plan.submitter && ` by ${plan.submitter.firstName} ${plan.submitter.lastName}`}
                           </div>
                         )}
-
-                        {plan.reviewNotes && (
-                          <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                            <p className="text-sm font-medium text-gray-700 mb-1">Review Notes:</p>
-                            <p className="text-sm text-gray-600">{plan.reviewNotes}</p>
-                          </div>
-                        )}
                       </div>
-                      
-                      <ChevronRight className="h-5 w-5 text-gray-400 ml-4" />
                     </div>
-                  </CardContent>
-                </Card>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-6">
+                    <ReviewAccordionContent plan={plan} />
+                  </AccordionContent>
+                </AccordionItem>
               ))}
-            </div>
+            </Accordion>
           )}
         </TabsContent>
       </Tabs>
 
-      {/* Review Dialog */}
-      <Dialog open={!!selectedPlan} onOpenChange={(open) => !open && setSelectedPlan(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Review Lesson Plan</DialogTitle>
-            <DialogDescription>
-              Review the lesson plan for {selectedPlan?.location?.name} - {selectedPlan?.room?.name}
-            </DialogDescription>
-          </DialogHeader>
 
-          {selectedPlan && (
-            <div className="space-y-4 my-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">Week:</span> {formatWeekRange(selectedPlan.weekStart)}
-                </div>
-                <div>
-                  <span className="font-medium">Teacher:</span> {selectedPlan.teacher ? `${selectedPlan.teacher.firstName} ${selectedPlan.teacher.lastName}` : (selectedPlan.submitter ? `${selectedPlan.submitter.firstName} ${selectedPlan.submitter.lastName}` : "Unknown")}
-                </div>
-                <div>
-                  <span className="font-medium">Location:</span> {selectedPlan.location?.name}
-                </div>
-                <div>
-                  <span className="font-medium">Room:</span> {selectedPlan.room?.name}
-                </div>
-                <div>
-                  <span className="font-medium">Schedule Type:</span> {selectedPlan.scheduleType === "position-based" ? "Position-based" : "Time-based"}
-                </div>
-                <div>
-                  <span className="font-medium">Status:</span> {getStatusBadge(selectedPlan.status)}
-                </div>
-              </div>
-
-              {selectedPlan.submittedAt && (
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium">Submitted:</span> {format(new Date(selectedPlan.submittedAt), "MMM d, yyyy 'at' h:mm a")}
-                  {selectedPlan.submitter && ` by ${selectedPlan.submitter.firstName} ${selectedPlan.submitter.lastName}`}
-                </div>
-              )}
-
-              {selectedPlan.status === "submitted" && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Review Notes (Optional for approval, required for return)</label>
-                  <Textarea
-                    value={reviewNotes}
-                    onChange={(e) => setReviewNotes(e.target.value)}
-                    placeholder="Enter feedback or notes about this lesson plan..."
-                    rows={4}
-                  />
-                </div>
-              )}
-
-              {selectedPlan.reviewNotes && selectedPlan.status !== "submitted" && (
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium text-gray-700 mb-1">Previous Review Notes:</p>
-                  <p className="text-sm text-gray-600">{selectedPlan.reviewNotes}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {selectedPlan?.status === "submitted" && (
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setSelectedPlan(null)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="outline"
-                className="border-red-200 text-red-600 hover:bg-red-50"
-                onClick={handleReject}
-                disabled={rejectMutation.isPending}
-              >
-                {rejectMutation.isPending ? "Returning..." : "Return with Feedback"}
-              </Button>
-              <Button
-                className="bg-green-600 hover:bg-green-700"
-                onClick={handleApprove}
-                disabled={approveMutation.isPending}
-              >
-                {approveMutation.isPending ? "Approving..." : "Approve"}
-              </Button>
-            </DialogFooter>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
