@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Clock, User, MapPin, Home, CheckCircle, XCircle, AlertCircle, FileText, ChevronRight, BookOpen } from "lucide-react";
-import { format } from "date-fns";
+import { Calendar, Clock, User, MapPin, Home, CheckCircle, XCircle, AlertCircle, FileText, ChevronRight, BookOpen, Filter } from "lucide-react";
+import { format, startOfWeek, addWeeks, subWeeks } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getUserInfo } from "@/lib/auth";
 import { hasPermission } from "@/lib/permission-utils";
 import { useLocation } from "wouter";
@@ -94,35 +95,35 @@ function ReviewAccordionContent({ plan }: ReviewAccordionContentProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Review Controls */}
       {plan.status === "submitted" && (
-        <div className="bg-gray-50 p-4 rounded-lg border">
-          <div className="space-y-4">
+        <div className="bg-gray-50 p-3 rounded-lg border">
+          <div className="space-y-2">
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
+              <label className="text-xs font-medium text-gray-700 mb-1 block">
                 Review Notes (Optional for approval, required for return)
               </label>
               <Textarea
                 value={reviewNotes}
                 onChange={(e) => setReviewNotes(e.target.value)}
                 placeholder="Enter feedback or notes about this lesson plan..."
-                rows={3}
-                className="w-full"
+                rows={2}
+                className="w-full text-sm"
               />
             </div>
             
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <Button
                 variant="outline"
-                className="border-red-200 text-red-600 hover:bg-red-50"
+                className="border-red-200 text-red-600 hover:bg-red-50 h-8 text-sm"
                 onClick={handleReject}
                 disabled={rejectMutation.isPending}
               >
                 {rejectMutation.isPending ? "Returning..." : "Return with Feedback"}
               </Button>
               <Button
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-green-600 hover:bg-green-700 text-white h-8 text-sm"
                 onClick={handleApprove}
                 disabled={approveMutation.isPending}
               >
@@ -135,15 +136,15 @@ function ReviewAccordionContent({ plan }: ReviewAccordionContentProps) {
 
       {/* Show existing review notes for non-submitted plans */}
       {plan.reviewNotes && plan.status !== "submitted" && (
-        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="text-sm font-medium text-blue-800 mb-2">Review Notes:</p>
-          <p className="text-sm text-blue-700">{plan.reviewNotes}</p>
+        <div className="p-2 bg-blue-50 rounded-lg border border-blue-200">
+          <p className="text-xs font-medium text-blue-800 mb-1">Review Notes:</p>
+          <p className="text-xs text-blue-700">{plan.reviewNotes}</p>
         </div>
       )}
 
       {/* Lesson Plan Calendar */}
-      <div className="border-t pt-6">
-        <h3 className="text-lg font-semibold mb-4">Lesson Plan Details</h3>
+      <div className="border-t pt-3">
+        <h3 className="text-base font-semibold mb-2">Lesson Plan Details</h3>
         <WeeklyCalendar
           selectedLocation={plan.locationId}
           selectedRoom={plan.roomId}
@@ -161,6 +162,9 @@ export function LessonReview() {
   const [, setLocation] = useLocation();
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<"submitted" | "approved" | "rejected">("submitted");
+  const [filterWeek, setFilterWeek] = useState<string>("all");
+  const [filterLocation, setFilterLocation] = useState<string>("all");
+  const [filterRoom, setFilterRoom] = useState<string>("all");
   
   // Clear cache on mount to ensure fresh data
   useEffect(() => {
@@ -216,6 +220,14 @@ export function LessonReview() {
 
 
 
+  // Helper function to format week range
+  const formatWeekRange = (weekStart: string) => {
+    const start = new Date(weekStart);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 4); // Monday to Friday
+    return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`;
+  };
+
   // Enrich lesson plans with related data (preserve existing data if present)
   const enrichedPlans = lessonPlans.map((plan: LessonPlanWithDetails) => ({
     ...plan,
@@ -227,12 +239,32 @@ export function LessonReview() {
     room: plan.room || rooms.find((r: Room) => r.id === plan.roomId),
   }));
 
-  // Filter plans by status
+  // Get unique weeks for filter dropdown
+  const uniqueWeeks = Array.from(new Set(enrichedPlans.map(p => p.weekStart)))
+    .sort()
+    .map(weekStart => ({
+      value: weekStart,
+      label: formatWeekRange(weekStart)
+    }));
+
+  // Filter plans by status and other filters
   const filteredPlans = enrichedPlans.filter((plan: LessonPlanWithDetails) => {
-    if (activeTab === "submitted") return plan.status === "submitted";
-    if (activeTab === "approved") return plan.status === "approved";
-    if (activeTab === "rejected") return plan.status === "rejected";
-    return false;
+    // Status filter
+    let matchesStatus = false;
+    if (activeTab === "submitted") matchesStatus = plan.status === "submitted";
+    if (activeTab === "approved") matchesStatus = plan.status === "approved";
+    if (activeTab === "rejected") matchesStatus = plan.status === "rejected";
+    
+    // Week filter
+    const matchesWeek = filterWeek === "all" || plan.weekStart === filterWeek;
+    
+    // Location filter
+    const matchesLocation = filterLocation === "all" || plan.locationId === filterLocation;
+    
+    // Room filter
+    const matchesRoom = filterRoom === "all" || plan.roomId === filterRoom;
+    
+    return matchesStatus && matchesWeek && matchesLocation && matchesRoom;
   });
 
 
@@ -250,13 +282,6 @@ export function LessonReview() {
     }
   };
 
-  const formatWeekRange = (weekStart: string) => {
-    const start = new Date(weekStart);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 4); // Monday to Friday
-    return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`;
-  };
-
   if (!userInfo?.role || !['director', 'assistant_director', 'admin', 'superadmin'].includes(userInfo.role.toLowerCase())) {
     return (
       <div className="container mx-auto p-6">
@@ -272,14 +297,14 @@ export function LessonReview() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Lesson Plan Review</h1>
-        <p className="text-gray-600">Review and approve submitted lesson plans</p>
+    <div className="container mx-auto p-3 max-w-7xl">
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold text-gray-900">Lesson Plan Review</h1>
+        <p className="text-sm text-gray-600">Review and approve submitted lesson plans</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-        <TabsList className="mb-6">
+        <TabsList className="mb-3">
           <TabsTrigger value="submitted" className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4" />
             Pending ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "submitted").length})
@@ -293,6 +318,73 @@ export function LessonReview() {
             Returned ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "rejected").length})
           </TabsTrigger>
         </TabsList>
+
+        {/* Filter Controls */}
+        <div className="flex gap-3 mb-4 p-3 bg-gray-50 rounded-lg border">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">Filters:</span>
+          </div>
+          
+          <Select value={filterWeek} onValueChange={setFilterWeek}>
+            <SelectTrigger className="w-[200px] h-9">
+              <SelectValue placeholder="Select week" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Weeks</SelectItem>
+              {uniqueWeeks.map(week => (
+                <SelectItem key={week.value} value={week.value}>
+                  {week.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterLocation} onValueChange={setFilterLocation}>
+            <SelectTrigger className="w-[200px] h-9">
+              <SelectValue placeholder="Select location" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Locations</SelectItem>
+              {locations.map((location: Location) => (
+                <SelectItem key={location.id} value={location.id}>
+                  {location.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterRoom} onValueChange={setFilterRoom}>
+            <SelectTrigger className="w-[200px] h-9">
+              <SelectValue placeholder="Select room" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Rooms</SelectItem>
+              {rooms
+                .filter((room: Room) => filterLocation === "all" || room.locationId === filterLocation)
+                .map((room: Room) => (
+                  <SelectItem key={room.id} value={room.id}>
+                    {room.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+
+          {(filterWeek !== "all" || filterLocation !== "all" || filterRoom !== "all") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setFilterWeek("all");
+                setFilterLocation("all");
+                setFilterRoom("all");
+              }}
+              className="ml-auto"
+            >
+              Clear Filters
+            </Button>
+          )}
+        </div>
 
         <TabsContent value={activeTab}>
           {isLoading ? (
@@ -315,36 +407,36 @@ export function LessonReview() {
               </CardContent>
             </Card>
           ) : (
-            <Accordion type="single" collapsible className="space-y-4">
+            <Accordion type="single" collapsible className="space-y-2">
               {filteredPlans.map((plan: LessonPlanWithDetails) => (
                 <AccordionItem key={plan.id} value={plan.id} className="border rounded-lg shadow-sm">
-                  <AccordionTrigger className="hover:no-underline p-6 hover:bg-gray-50">
+                  <AccordionTrigger className="hover:no-underline p-3 hover:bg-gray-50">
                     <div className="flex items-center justify-between w-full">
                       <div className="flex-1 text-left">
-                        <div className="flex items-center gap-4 mb-3">
+                        <div className="flex items-center gap-3 mb-2">
                           {getStatusBadge(plan.status)}
-                          <span className="text-lg font-semibold text-gray-900">
+                          <span className="text-base font-semibold text-gray-900">
                             {formatWeekRange(plan.weekStart)}
                           </span>
                         </div>
                         
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-gray-400" />
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-gray-400" />
                             <span>{plan.location?.name || "Unknown Location"}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Home className="h-4 w-4 text-gray-400" />
+                          <div className="flex items-center gap-1">
+                            <Home className="h-3 w-3 text-gray-400" />
                             <span>{plan.room?.name || "Unknown Room"}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-gray-400" />
+                          <div className="flex items-center gap-1">
+                            <User className="h-3 w-3 text-gray-400" />
                             <span>{plan.teacher ? `${plan.teacher.firstName} ${plan.teacher.lastName}` : (plan.submitter ? `${plan.submitter.firstName} ${plan.submitter.lastName}` : "Unknown Teacher")}</span>
                           </div>
                         </div>
 
                         {plan.submittedAt && (
-                          <div className="mt-3 text-sm text-gray-600">
+                          <div className="mt-2 text-xs text-gray-600">
                             Submitted on {format(new Date(plan.submittedAt), "MMM d, yyyy 'at' h:mm a")}
                             {plan.submitter && ` by ${plan.submitter.firstName} ${plan.submitter.lastName}`}
                           </div>
@@ -352,7 +444,7 @@ export function LessonReview() {
                       </div>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="px-6 pb-6">
+                  <AccordionContent className="px-4 pb-4">
                     <ReviewAccordionContent plan={plan} />
                   </AccordionContent>
                 </AccordionItem>
