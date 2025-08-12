@@ -101,23 +101,23 @@ export function NotificationCarousel({ currentWeekDate, onWeekChange }: Notifica
   };
 
   return (
-    <Alert className="bg-amber-50 border-amber-300">
-      <div className="flex items-start gap-3">
-        <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+    <Alert className="bg-amber-50 border-amber-300 py-3 px-4">
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
         <div className="flex-1">
-          <AlertTitle className="text-amber-900 font-semibold flex items-center justify-between">
-            <span>{currentNotification.title}</span>
-            <div className="flex items-center gap-2">
+          <AlertTitle className="text-amber-900 font-semibold flex items-center justify-between mb-1">
+            <span className="text-sm">{currentNotification.title}</span>
+            <div className="flex items-center gap-1">
               {returnedNotifications.length > 1 && (
                 <div className="flex items-center gap-1">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handlePrevious}
-                    className="h-6 w-6 p-0"
+                    className="h-5 w-5 p-0"
                     data-testid="notification-prev"
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronLeft className="h-3 w-3" />
                   </Button>
                   <span className="text-xs text-amber-700">
                     {currentIndex + 1} of {returnedNotifications.length}
@@ -126,10 +126,10 @@ export function NotificationCarousel({ currentWeekDate, onWeekChange }: Notifica
                     variant="ghost"
                     size="sm"
                     onClick={handleNext}
-                    className="h-6 w-6 p-0"
+                    className="h-5 w-5 p-0"
                     data-testid="notification-next"
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-3 w-3" />
                   </Button>
                 </div>
               )}
@@ -137,16 +137,16 @@ export function NotificationCarousel({ currentWeekDate, onWeekChange }: Notifica
                 variant="ghost"
                 size="sm"
                 onClick={handleDismiss}
-                className="h-6 w-6 p-0 hover:bg-amber-200"
+                className="h-5 w-5 p-0 hover:bg-amber-200"
                 data-testid="notification-dismiss"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3 w-3" />
               </Button>
             </div>
           </AlertTitle>
-          <AlertDescription className="text-amber-800 mt-2">
-            <div className="space-y-3">
-              <p>{currentNotification.message}</p>
+          <AlertDescription className="text-amber-800 mt-1">
+            <div className="space-y-2">
+              <p className="text-sm">{currentNotification.message}</p>
               
               {currentNotification.weekStart && (
                 <p className="text-sm">
@@ -155,13 +155,13 @@ export function NotificationCarousel({ currentWeekDate, onWeekChange }: Notifica
               )}
               
               {showReviewNotes[currentNotification.id] && currentNotification.reviewNotes && (
-                <div className="bg-amber-100 p-3 rounded-md">
-                  <p className="font-medium text-amber-900 mb-1">Feedback from Reviewer:</p>
+                <div className="bg-amber-100 p-2 rounded-md mt-2">
+                  <p className="font-medium text-amber-900 text-sm mb-1">Feedback from Reviewer:</p>
                   <p className="text-sm text-amber-800">{currentNotification.reviewNotes}</p>
                 </div>
               )}
               
-              <div className="flex gap-2">
+              <div className="flex gap-2 mt-2">
                 {currentNotification.reviewNotes && (
                   <Button
                     size="sm"
