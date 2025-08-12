@@ -70,6 +70,16 @@ export function LessonReview() {
     refetchOnMount: 'always',
   });
 
+  // Debug log to see what data we're getting
+  useEffect(() => {
+    console.log('LessonReview - Raw lessonPlans data:', lessonPlans);
+    if (lessonPlans.length > 0) {
+      console.log('First lesson plan:', lessonPlans[0]);
+      console.log('First lesson plan teacher:', lessonPlans[0].teacher);
+      console.log('First lesson plan submitter:', lessonPlans[0].submitter);
+    }
+  }, [lessonPlans]);
+
   // Fetch additional data for enriching lesson plans  
   const { data: users = [] } = useQuery<UserType[]>({
     queryKey: ["/api/users"],
@@ -271,7 +281,14 @@ export function LessonReview() {
                           </div>
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-gray-400" />
-                            <span>{plan.teacher ? `${plan.teacher.firstName} ${plan.teacher.lastName}` : (plan.submitter ? `${plan.submitter.firstName} ${plan.submitter.lastName}` : "Unknown Teacher")}</span>
+                            <span>
+                              {(() => {
+                                console.log('Plan object:', JSON.stringify(plan, null, 2));
+                                console.log('plan.teacher:', plan.teacher);
+                                console.log('plan.submitter:', plan.submitter);
+                                return plan.teacher ? `${plan.teacher.firstName} ${plan.teacher.lastName}` : (plan.submitter ? `${plan.submitter.firstName} ${plan.submitter.lastName}` : "Unknown Teacher");
+                              })()}
+                            </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-gray-400" />
