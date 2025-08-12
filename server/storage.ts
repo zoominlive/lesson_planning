@@ -101,7 +101,7 @@ export interface IStorage {
   createLessonPlan(lessonPlan: InsertLessonPlan): Promise<LessonPlan>;
   updateLessonPlan(id: string, lessonPlan: Partial<InsertLessonPlan>): Promise<LessonPlan | undefined>;
   deleteLessonPlan(id: string): Promise<boolean>;
-  getLessonPlansForReview(locationId?: string): Promise<LessonPlan[]>;
+  getLessonPlansForReview(locationId?: string): Promise<any[]>;
   submitLessonPlanForReview(id: string, userId: string): Promise<LessonPlan | undefined>;
   withdrawLessonPlanFromReview(id: string): Promise<LessonPlan | undefined>;
   approveLessonPlan(id: string, userId: string, notes?: string): Promise<LessonPlan | undefined>;
@@ -594,14 +594,43 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  async getLessonPlansForReview(locationId?: string): Promise<LessonPlan[]> {
+  async getLessonPlansForReview(locationId?: string): Promise<any[]> {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
     if (locationId) conditions.push(eq(lessonPlans.locationId, locationId));
     // Only get submitted or approved plans
     conditions.push(sql`${lessonPlans.status} IN ('submitted', 'approved', 'rejected')`);
     
-    return await this.db.select().from(lessonPlans).where(conditions.length ? and(...conditions) : undefined);
+    const plans = await this.db.select().from(lessonPlans).where(conditions.length ? and(...conditions) : undefined);
+    
+    // Fetch related data for each lesson plan
+    const enrichedPlans = await Promise.all(plans.map(async (plan) => {
+      // Store current tenant context
+      const originalTenantId = this.tenantId;
+      
+      // Ensure tenant context is set for the plan's tenant
+      this.tenantId = plan.tenantId;
+      
+      const [teacher, location, room, submitter] = await Promise.all([
+        plan.teacherId ? this.getUser(plan.teacherId) : null,
+        plan.locationId ? this.getLocation(plan.locationId) : null,
+        plan.roomId ? this.getRoom(plan.roomId) : null,
+        plan.submittedBy ? this.getUser(plan.submittedBy) : null
+      ]);
+      
+      // Restore original tenant context
+      this.tenantId = originalTenantId;
+      
+      return {
+        ...plan,
+        teacher,
+        location,
+        room,
+        submitter
+      };
+    }));
+    
+    return enrichedPlans;
   }
 
   async submitLessonPlanForReview(id: string, userId: string): Promise<LessonPlan | undefined> {

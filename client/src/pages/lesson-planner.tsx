@@ -93,7 +93,7 @@ export default function LessonPlanner() {
     enabled: !!selectedLocation && !!selectedRoom,
   });
   
-  console.log('Lesson plans query enabled:', !!selectedLocation && !!selectedRoom, 'Location:', selectedLocation, 'Room:', selectedRoom);
+
 
   // Fetch location settings to get schedule type
   const { data: locationSettings } = useQuery<{ scheduleType: 'time-based' | 'position-based' }>({
@@ -112,37 +112,16 @@ export default function LessonPlanner() {
     lpDate.setUTCHours(0, 0, 0, 0);
     currentDate.setUTCHours(0, 0, 0, 0);
     
-    console.log('Comparing dates:', {
-      lpWeekStart: lp.weekStart,
-      currentWeekDate: currentWeekDate,
-      lpDateNormalized: lpDate.toISOString(),
-      currentDateNormalized: currentDate.toISOString(),
-      lpLocation: lp.locationId,
-      selectedLocation,
-      lpRoom: lp.roomId,
-      selectedRoom,
-      lpScheduleType: lp.scheduleType,
-      locationScheduleType: locationSettings?.scheduleType
-    });
-    
     // Match by week, location, room, and schedule type
     const matches = lpDate.getTime() === currentDate.getTime() &&
            lp.locationId === selectedLocation &&
            lp.roomId === selectedRoom &&
            lp.scheduleType === (locationSettings?.scheduleType || 'position-based');
     
-    if (matches) {
-      console.log('Found matching lesson plan:', lp);
-    }
-    
     return matches;
   });
   
-  console.log('Current lesson plan status:', currentLessonPlan?.status, 'Full plan:', currentLessonPlan);
-  console.log('Selected location:', selectedLocation, 'Selected room:', selectedRoom);
-  console.log('Available lesson plans:', lessonPlans);
-  console.log('Location settings:', locationSettings);
-  console.log('Current week date:', currentWeekDate);
+
 
   // Fetch scheduled activities to check if lesson plan is empty
   const weekStartDate = startOfWeek(currentWeekDate, { weekStartsOn: 1 });

@@ -3,6 +3,14 @@ This project is a comprehensive lesson planning application for early childhood 
 
 ## Recent Changes (January 2025)
 
+### Fixed Lesson Plan Review Data Display (January 12, 2025)
+- **Enhanced getLessonPlansForReview function**: Modified to include teacher, location, room, and submitter data via proper database joins
+- **Fixed tenant context issue**: Ensured proper tenant context is maintained when fetching related user data
+- **Resolved "Unknown Teacher" display**: Review page now correctly shows teacher names instead of "Unknown Teacher"
+- **Improved data enrichment**: Each lesson plan in review now includes complete related entity data for better display
+
+## Recent Changes (January 2025)
+
 ### Assistant Director Approval Requirement (January 14, 2025)
 - **Updated permission configuration**: assistant_director role now requires approval for lesson plans (sees "Submit for Review" instead of "Finalize")
 - **Modified auto-approve roles**: Only director, admin, and superadmin roles now auto-approve lesson plans
