@@ -7,6 +7,7 @@ This project is a comprehensive lesson planning application for early childhood 
 - **Fixed date calculation bug**: Changed from using `setDate()` to `addDays()` from date-fns library
 - **Resolved month boundary issue**: Dates now correctly display when week spans across months (e.g., "Aug 29 - Sep 2" instead of invalid "Aug 29 - Sep 32")
 - **Improved date range formatting**: Week ranges in review area now properly handle all edge cases
+- **UI cleanup**: Removed redundant instructional text from lesson planner for cleaner interface
 
 ### Fixed Lesson Plan Review Data Display (January 12, 2025)
 - **Enhanced getLessonPlansForReview function**: Modified to include teacher, location, room, and submitter data via proper database joins

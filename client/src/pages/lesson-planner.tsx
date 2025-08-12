@@ -424,9 +424,7 @@ export default function LessonPlanner() {
                 </>
               )}
               
-              <p className="text-xs text-orange-600 italic">
-                Make the necessary changes based on the feedback and click "Submit for Review" when ready.
-              </p>
+
             </div>
           </AlertDescription>
         </Alert>
