@@ -488,7 +488,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="weekly-calendar">
       {/* Calendar Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">

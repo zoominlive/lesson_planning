@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { startOfWeek } from "date-fns";
+import { startOfWeek, format } from "date-fns";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { NavigationTabs } from "@/components/navigation-tabs";
 import { CalendarControls } from "@/components/calendar-controls";
 import { FloatingActionButton } from "@/components/floating-action-button";
@@ -13,8 +13,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 import WeeklyCalendar from "@/components/weekly-calendar";
-import { Settings } from "lucide-react";
+import { Settings, AlertTriangle, Eye, Edit } from "lucide-react";
 import { useLocation } from "wouter";
 import { getUserInfo } from "@/lib/auth";
 import { hasPermission, requiresLessonPlanApproval } from "@/lib/permission-utils";
@@ -277,10 +282,70 @@ export default function LessonPlanner() {
     console.log("Quick add activity");
   };
 
-
+  // Check if current lesson plan has been rejected/returned
+  const hasReturnedLessonPlan = currentLessonPlan?.status === 'rejected' && currentLessonPlan?.reviewNotes;
+  
+  // State for showing review notes
+  const [showReviewNotes, setShowReviewNotes] = useState(false);
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4" data-testid="lesson-planner">
+      {/* Notification for returned lesson plan */}
+      {hasReturnedLessonPlan && (
+        <Alert className="mb-6 border-orange-200 bg-orange-50">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertTitle className="text-orange-800">Lesson Plan Returned for Revision</AlertTitle>
+          <AlertDescription className="mt-2">
+            <div className="space-y-3">
+              <p className="text-orange-700">
+                Your lesson plan for the week of {format(new Date(currentLessonPlan.weekStart), "MMM d, yyyy")} has been returned with feedback.
+              </p>
+              
+              {showReviewNotes ? (
+                <div className="bg-white p-3 rounded-lg border border-orange-200">
+                  <p className="text-sm font-medium text-gray-700 mb-1">Reviewer Feedback:</p>
+                  <p className="text-sm text-gray-600">{currentLessonPlan.reviewNotes}</p>
+                </div>
+              ) : null}
+              
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowReviewNotes(!showReviewNotes)}
+                  className="border-orange-300 text-orange-700 hover:bg-orange-100"
+                >
+                  <Eye className="h-4 w-4 mr-1" />
+                  {showReviewNotes ? "Hide" : "View"} Feedback
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                  onClick={() => {
+                    // Scroll to calendar or open activity drawer
+                    const calendarElement = document.querySelector('[data-testid="weekly-calendar"]');
+                    if (calendarElement) {
+                      calendarElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    toast({
+                      title: "Ready to Edit",
+                      description: "You can now modify your lesson plan and resubmit when ready.",
+                    });
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Revise Lesson Plan
+                </Button>
+              </div>
+              
+              <p className="text-xs text-orange-600 italic">
+                Make the necessary changes based on the feedback and click "Submit for Review" when ready.
+              </p>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Header Section */}
       <Card className="material-shadow mb-6">
         <CardContent className="p-6">
