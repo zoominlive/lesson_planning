@@ -33,6 +33,11 @@ export function LessonReview() {
   const [reviewNotes, setReviewNotes] = useState("");
   const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
   const [activeTab, setActiveTab] = useState<"submitted" | "approved" | "rejected">("submitted");
+  
+  // Clear cache on mount to ensure fresh data
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans/review"] });
+  }, []);
 
   // Check if user has permission to access review page
   const hasAccess = hasPermission('lesson_plan.approve');
@@ -61,6 +66,8 @@ export function LessonReview() {
   const { data: lessonPlans = [], isLoading } = useQuery<LessonPlanWithDetails[]>({
     queryKey: ["/api/lesson-plans/review"],
     enabled: !!userInfo?.role && ['director', 'assistant_director', 'admin', 'superadmin'].includes(userInfo.role.toLowerCase()),
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Fetch additional data for enriching lesson plans  
@@ -264,7 +271,7 @@ export function LessonReview() {
                           </div>
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-gray-400" />
-                            <span>{plan.teacher ? `${plan.teacher.firstName} ${plan.teacher.lastName}` : "Unknown Teacher"}</span>
+                            <span>{plan.teacher ? `${plan.teacher.firstName} ${plan.teacher.lastName}` : (plan.submitter ? `${plan.submitter.firstName} ${plan.submitter.lastName}` : "Unknown Teacher")}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-gray-400" />
@@ -314,7 +321,7 @@ export function LessonReview() {
                   <span className="font-medium">Week:</span> {formatWeekRange(selectedPlan.weekStart)}
                 </div>
                 <div>
-                  <span className="font-medium">Teacher:</span> {selectedPlan.teacher ? `${selectedPlan.teacher.firstName} ${selectedPlan.teacher.lastName}` : "Unknown"}
+                  <span className="font-medium">Teacher:</span> {selectedPlan.teacher ? `${selectedPlan.teacher.firstName} ${selectedPlan.teacher.lastName}` : (selectedPlan.submitter ? `${selectedPlan.submitter.firstName} ${selectedPlan.submitter.lastName}` : "Unknown")}
                 </div>
                 <div>
                   <span className="font-medium">Location:</span> {selectedPlan.location?.name}
