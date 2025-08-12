@@ -14,6 +14,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { ChevronLeft, ChevronRight, Send, MapPin, Calendar, CheckCircle, RotateCcw } from "lucide-react";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import { requiresLessonPlanApproval } from "@/lib/permission-utils";
@@ -237,14 +248,35 @@ export function CalendarControls({
 
             {/* Submit/Withdraw Button */}
             {currentLessonPlan?.status === 'submitted' ? (
-              <Button
-                onClick={onWithdrawFromReview}
-                className="bg-amber-600 hover:bg-amber-700 text-white hover:shadow-lg transition-all duration-300"
-                data-testid="button-withdraw-review"
-              >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                In Review
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    className="bg-amber-600 hover:bg-amber-700 text-white hover:shadow-lg transition-all duration-300"
+                    data-testid="button-withdraw-review"
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    In Review
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Withdraw from Review</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to withdraw this lesson plan from review? 
+                      This will remove it from the review queue and allow you to make changes again.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={onWithdrawFromReview}
+                      className="bg-amber-600 hover:bg-amber-700"
+                    >
+                      Withdraw
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             ) : (
               <Button
                 onClick={onSubmitToSupervisor}
