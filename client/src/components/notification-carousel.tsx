@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertTriangle, X, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { useLocation } from "wouter";
 import type { Notification, LessonPlan } from "@shared/schema";
@@ -16,6 +16,7 @@ interface NotificationCarouselProps {
 export function NotificationCarousel({ currentWeekDate, onWeekChange }: NotificationCarouselProps) {
   const [, setLocation] = useLocation();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showReviewNotes, setShowReviewNotes] = useState<Record<string, boolean>>({});
 
   // Fetch active notifications
   const { data: notifications = [], isLoading } = useQuery<Notification[]>({
@@ -153,22 +154,39 @@ export function NotificationCarousel({ currentWeekDate, onWeekChange }: Notifica
                 </p>
               )}
               
-              {currentNotification.reviewNotes && (
+              {showReviewNotes[currentNotification.id] && currentNotification.reviewNotes && (
                 <div className="bg-amber-100 p-3 rounded-md">
                   <p className="font-medium text-amber-900 mb-1">Feedback from Reviewer:</p>
                   <p className="text-sm text-amber-800">{currentNotification.reviewNotes}</p>
                 </div>
               )}
               
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleNavigateToWeek}
-                className="bg-amber-600 hover:bg-amber-700 text-white"
-                data-testid="notification-revise"
-              >
-                Revise Lesson Plan
-              </Button>
+              <div className="flex gap-2">
+                {currentNotification.reviewNotes && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowReviewNotes({
+                      ...showReviewNotes,
+                      [currentNotification.id]: !showReviewNotes[currentNotification.id]
+                    })}
+                    className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                    data-testid="notification-toggle-feedback"
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    {showReviewNotes[currentNotification.id] ? "Hide" : "View"} Feedback
+                  </Button>
+                )}
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleNavigateToWeek}
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                  data-testid="notification-revise"
+                >
+                  Revise Lesson Plan
+                </Button>
+              </div>
             </div>
           </AlertDescription>
         </div>

@@ -11,6 +11,7 @@ This project is a comprehensive lesson planning application for early childhood 
 - **Carousel navigation**: When multiple notifications exist, users can navigate between them using arrow buttons
 - **Integration with review workflow**: Notifications include review notes and direct navigation to the relevant week for revision
 - **Mark as read functionality**: Notifications are automatically marked as read when viewed
+- **Collapsible feedback design**: Feedback is hidden by default with a "View Feedback" button to expand/collapse the reviewer's notes
 
 ### Fixed Date Display in Lesson Review Area (January 12, 2025)
 - **Fixed date calculation bug**: Changed from using `setDate()` to `addDays()` from date-fns library
