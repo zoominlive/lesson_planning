@@ -96,7 +96,7 @@ export default function LessonPlanner() {
     };
   }, []);
 
-  // Fetch lesson plans to find the current one
+  // Fetch lesson plans to find the current one and check for any returned plans
   const { data: lessonPlans = [], refetch: refetchLessonPlans } = useQuery<any[]>({
     queryKey: ["/api/lesson-plans"],
     enabled: !!selectedLocation && !!selectedRoom,
@@ -282,61 +282,147 @@ export default function LessonPlanner() {
     console.log("Quick add activity");
   };
 
-  // Check if current lesson plan has been rejected/returned
-  const hasReturnedLessonPlan = currentLessonPlan?.status === 'rejected' && currentLessonPlan?.reviewNotes;
+  // Check for ANY rejected lesson plans (not just current week)
+  const returnedLessonPlans = lessonPlans.filter((lp: any) => 
+    lp.status === 'rejected' && 
+    lp.reviewNotes &&
+    lp.locationId === selectedLocation &&
+    lp.roomId === selectedRoom
+  );
   
   // State for showing review notes
-  const [showReviewNotes, setShowReviewNotes] = useState(false);
+  const [showReviewNotes, setShowReviewNotes] = useState<Record<string, boolean>>({});
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4" data-testid="lesson-planner">
-      {/* Notification for returned lesson plan */}
-      {hasReturnedLessonPlan && (
+      {/* Notification for returned lesson plans */}
+      {returnedLessonPlans.length > 0 && (
         <Alert className="mb-6 border-orange-200 bg-orange-50">
           <AlertTriangle className="h-4 w-4 text-orange-600" />
-          <AlertTitle className="text-orange-800">Lesson Plan Returned for Revision</AlertTitle>
+          <AlertTitle className="text-orange-800">
+            {returnedLessonPlans.length === 1 
+              ? "Lesson Plan Returned for Revision" 
+              : `${returnedLessonPlans.length} Lesson Plans Returned for Revision`}
+          </AlertTitle>
           <AlertDescription className="mt-2">
             <div className="space-y-3">
-              <p className="text-orange-700">
-                Your lesson plan for the week of {format(new Date(currentLessonPlan.weekStart), "MMM d, yyyy")} has been returned with feedback.
-              </p>
-              
-              {showReviewNotes ? (
-                <div className="bg-white p-3 rounded-lg border border-orange-200">
-                  <p className="text-sm font-medium text-gray-700 mb-1">Reviewer Feedback:</p>
-                  <p className="text-sm text-gray-600">{currentLessonPlan.reviewNotes}</p>
-                </div>
-              ) : null}
-              
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowReviewNotes(!showReviewNotes)}
-                  className="border-orange-300 text-orange-700 hover:bg-orange-100"
-                >
-                  <Eye className="h-4 w-4 mr-1" />
-                  {showReviewNotes ? "Hide" : "View"} Feedback
-                </Button>
-                <Button
-                  size="sm"
-                  className="bg-orange-600 hover:bg-orange-700 text-white"
-                  onClick={() => {
-                    // Scroll to calendar or open activity drawer
-                    const calendarElement = document.querySelector('[data-testid="weekly-calendar"]');
-                    if (calendarElement) {
-                      calendarElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                    toast({
-                      title: "Ready to Edit",
-                      description: "You can now modify your lesson plan and resubmit when ready.",
-                    });
-                  }}
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Revise Lesson Plan
-                </Button>
-              </div>
+              {returnedLessonPlans.length === 1 ? (
+                <>
+                  <p className="text-orange-700">
+                    Your lesson plan for the week of {format(new Date(returnedLessonPlans[0].weekStart), "MMM d, yyyy")} has been returned with feedback.
+                  </p>
+                  
+                  {showReviewNotes[returnedLessonPlans[0].id] ? (
+                    <div className="bg-white p-3 rounded-lg border border-orange-200">
+                      <p className="text-sm font-medium text-gray-700 mb-1">Reviewer Feedback:</p>
+                      <p className="text-sm text-gray-600">{returnedLessonPlans[0].reviewNotes}</p>
+                    </div>
+                  ) : null}
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowReviewNotes({
+                        ...showReviewNotes,
+                        [returnedLessonPlans[0].id]: !showReviewNotes[returnedLessonPlans[0].id]
+                      })}
+                      className="border-orange-300 text-orange-700 hover:bg-orange-100"
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      {showReviewNotes[returnedLessonPlans[0].id] ? "Hide" : "View"} Feedback
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                      onClick={() => {
+                        // Navigate to the correct week
+                        const planWeek = new Date(returnedLessonPlans[0].weekStart);
+                        setCurrentWeekDate(planWeek);
+                        
+                        // Scroll to calendar
+                        setTimeout(() => {
+                          const calendarElement = document.querySelector('[data-testid="weekly-calendar"]');
+                          if (calendarElement) {
+                            calendarElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }
+                        }, 100);
+                        
+                        toast({
+                          title: "Ready to Edit",
+                          description: "You can now modify your lesson plan and resubmit when ready.",
+                        });
+                      }}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Revise Lesson Plan
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-orange-700">
+                    You have multiple lesson plans that have been returned with feedback:
+                  </p>
+                  <div className="space-y-2">
+                    {returnedLessonPlans.map((plan: any) => (
+                      <div key={plan.id} className="bg-white p-3 rounded-lg border border-orange-200">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-800">
+                              Week of {format(new Date(plan.weekStart), "MMM d, yyyy")}
+                            </p>
+                            {showReviewNotes[plan.id] && (
+                              <div className="mt-2 p-2 bg-orange-50 rounded border border-orange-100">
+                                <p className="text-xs font-medium text-gray-700 mb-1">Feedback:</p>
+                                <p className="text-xs text-gray-600">{plan.reviewNotes}</p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-1 ml-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setShowReviewNotes({
+                                ...showReviewNotes,
+                                [plan.id]: !showReviewNotes[plan.id]
+                              })}
+                              className="h-7 px-2 text-orange-600 hover:bg-orange-100"
+                            >
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                // Navigate to the correct week
+                                const planWeek = new Date(plan.weekStart);
+                                setCurrentWeekDate(planWeek);
+                                
+                                // Scroll to calendar
+                                setTimeout(() => {
+                                  const calendarElement = document.querySelector('[data-testid="weekly-calendar"]');
+                                  if (calendarElement) {
+                                    calendarElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                  }
+                                }, 100);
+                                
+                                toast({
+                                  title: "Ready to Edit",
+                                  description: `Navigated to week of ${format(planWeek, "MMM d, yyyy")}. You can now modify and resubmit.`,
+                                });
+                              }}
+                              className="h-7 px-2 text-orange-600 hover:bg-orange-100"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
               
               <p className="text-xs text-orange-600 italic">
                 Make the necessary changes based on the feedback and click "Submit for Review" when ready.
