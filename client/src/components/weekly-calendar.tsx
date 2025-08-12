@@ -16,6 +16,7 @@ interface WeeklyCalendarProps {
   selectedRoom: string;
   currentWeekDate?: Date;
   currentLessonPlan?: any;
+  isReviewMode?: boolean;
 }
 
 // Convert numbers to written words
@@ -77,7 +78,7 @@ const generateWeekDays = (weekStartDate: Date) => {
   return days;
 };
 
-export default function WeeklyCalendar({ selectedLocation, selectedRoom, currentWeekDate, currentLessonPlan }: WeeklyCalendarProps) {
+export default function WeeklyCalendar({ selectedLocation, selectedRoom, currentWeekDate, currentLessonPlan, isReviewMode = false }: WeeklyCalendarProps) {
   const weekStartDate = currentWeekDate || startOfWeek(new Date(), { weekStartsOn: 1 });
   const weekDays = generateWeekDays(weekStartDate);
   
@@ -500,19 +501,21 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
           )}
         </div>
         
-        <Button
-          onClick={() => setDrawerOpen(!drawerOpen)}
-          className="bg-gradient-to-r from-coral-red to-turquoise text-white shadow-lg hover:shadow-xl"
-          size="default"
-        >
-          <Package className="mr-2 h-5 w-5" />
-          Activities
-        </Button>
+        {!isReviewMode && (
+          <Button
+            onClick={() => setDrawerOpen(!drawerOpen)}
+            className="bg-gradient-to-r from-coral-red to-turquoise text-white shadow-lg hover:shadow-xl"
+            size="default"
+          >
+            <Package className="mr-2 h-5 w-5" />
+            Activities
+          </Button>
+        )}
       </div>
       {/* Main Content Area with Calendar and Drawer */}
       <div className="flex">
         {/* Calendar Grid */}
-        <div className={`transition-all duration-300 ${drawerOpen ? 'w-[calc(100%-416px)] mr-4' : 'w-full'}`}>
+        <div className={`transition-all duration-300 ${drawerOpen && !isReviewMode ? 'w-[calc(100%-416px)] mr-4' : 'w-full'}`}>
           <Card className="material-shadow overflow-hidden bg-gradient-to-br from-white to-sky-blue/5 border-2 border-sky-blue/10">
             <div className="grid gap-0" style={{gridTemplateColumns: "100px repeat(5, 1fr)"}}>
           {/* Position Column */}
@@ -553,32 +556,34 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                   >
                     {scheduledActivity ? (
                       <div 
-                        draggable={true}
-                        onDragStart={(e) => handleScheduledActivityDragStart(e, scheduledActivity)}
+                        draggable={!isReviewMode}
+                        onDragStart={(e) => !isReviewMode && handleScheduledActivityDragStart(e, scheduledActivity)}
                         onDragEnd={handleDragEnd}
-                        className={`bg-gradient-to-br ${getCategoryGradient(scheduledActivity.activity?.category || 'Other')} border border-gray-200 rounded-lg p-2 h-full flex flex-col justify-between cursor-move shadow-sm hover:shadow-md transition-all relative group ${
+                        className={`bg-gradient-to-br ${getCategoryGradient(scheduledActivity.activity?.category || 'Other')} border border-gray-200 rounded-lg p-2 h-full flex flex-col justify-between ${isReviewMode ? 'cursor-default' : 'cursor-move'} shadow-sm hover:shadow-md transition-all relative group ${
                           draggedScheduledActivity?.id === scheduledActivity.id ? 'opacity-50 scale-95' : ''
                         }`}
                       >
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            if (isLessonPlanLocked) {
-                              toast({
-                                title: "Lesson Plan Locked",
-                                description: "Withdraw the lesson plan from review to make changes.",
-                                variant: "destructive",
-                              });
-                              return;
-                            }
-                            deleteScheduledMutation.mutate(scheduledActivity.id);
-                          }}
-                          className="absolute top-1 right-1 p-1 rounded bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100"
-                          title="Remove from schedule"
-                        >
-                          <Trash2 className="h-3 w-3 text-red-500" />
-                        </button>
+                        {!isReviewMode && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              if (isLessonPlanLocked) {
+                                toast({
+                                  title: "Lesson Plan Locked",
+                                  description: "Withdraw the lesson plan from review to make changes.",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              deleteScheduledMutation.mutate(scheduledActivity.id);
+                            }}
+                            className="absolute top-1 right-1 p-1 rounded bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100"
+                            title="Remove from schedule"
+                          >
+                            <Trash2 className="h-3 w-3 text-red-500" />
+                          </button>
+                        )}
                         <div>
                           <h4 className="font-semibold text-xs text-charcoal line-clamp-2 pr-6" data-testid={`activity-title-${scheduledActivity.activity?.id}`}>
                             {scheduledActivity.activity?.title || 'Untitled Activity'}
@@ -599,20 +604,21 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                       </div>
                     ) : (
                       <button 
-                        className={`h-full w-full flex items-center justify-center text-gray-400 border-2 border-dashed border-turquoise/20 rounded-lg hover:border-turquoise/40 hover:bg-turquoise/5 transition-all group cursor-pointer ${
+                        className={`h-full w-full flex items-center justify-center text-gray-400 border-2 border-dashed border-turquoise/20 rounded-lg hover:border-turquoise/40 hover:bg-turquoise/5 transition-all group ${isReviewMode ? '' : 'cursor-pointer'} ${
                           dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? 'border-turquoise bg-turquoise/10' : ''
                         }`}
-                        onClick={() => setDrawerOpen(true)}
+                        onClick={() => !isReviewMode && setDrawerOpen(true)}
                         data-testid={`empty-slot-${day.id}-${slot.id}`}
+                        disabled={isReviewMode}
                       >
                         {dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? (
                           <span className="text-xs text-turquoise font-semibold">Drop Here</span>
-                        ) : (
+                        ) : !isReviewMode ? (
                           <>
                             <Plus className="h-3 w-3 mr-1 opacity-50 group-hover:opacity-70 text-turquoise" />
                             <span className="text-xs opacity-50 group-hover:opacity-70 text-turquoise">Drop Activity</span>
                           </>
-                        )}
+                        ) : null}
                       </button>
                     )}
                   </div>
@@ -625,9 +631,9 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
         </div>
 
         {/* Activity Library Side Panel */}
-        <div className={`transition-all duration-300 ${drawerOpen ? 'w-[400px]' : 'w-0'} overflow-hidden`}>
-          <Card className={`h-full material-shadow ${drawerOpen ? 'p-6' : 'p-0'}`}>
-            {drawerOpen && (
+        <div className={`transition-all duration-300 ${drawerOpen && !isReviewMode ? 'w-[400px]' : 'w-0'} overflow-hidden`}>
+          <Card className={`h-full material-shadow ${drawerOpen && !isReviewMode ? 'p-6' : 'p-0'}`}>
+            {drawerOpen && !isReviewMode && (
               <>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-bold text-charcoal flex items-center">

@@ -150,6 +150,7 @@ function ReviewAccordionContent({ plan }: ReviewAccordionContentProps) {
           selectedRoom={plan.roomId}
           currentWeekDate={new Date(plan.weekStart)}
           currentLessonPlan={plan}
+          isReviewMode={true}
         />
       </div>
     </div>
