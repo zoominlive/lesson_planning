@@ -235,32 +235,32 @@ export default function TabletPlanner() {
         />
         
         {/* Tab Navigation integrated below header */}
-        <div className="px-4 pb-3">
-          <div className="flex gap-2 bg-gray-100 rounded-2xl p-1">
+        <div className="px-4 pb-2">
+          <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
             <button
               onClick={() => setActiveTab('calendar')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-semibold transition-all ${
                 activeTab === 'calendar' 
                   ? 'bg-coral-red text-white shadow-md' 
                   : 'text-gray-700 hover:bg-white/50'
               }`}
               data-testid="tablet-tab-calendar"
             >
-              <Calendar className="h-5 w-5" />
-              <span className="text-base">Calendar</span>
+              <Calendar className="h-4 w-4" />
+              <span className="text-sm">Calendar</span>
             </button>
             {canReview && (
               <button
                 onClick={() => setActiveTab('review')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold transition-all ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-semibold transition-all ${
                   activeTab === 'review' 
                     ? 'bg-purple-500 text-white shadow-md' 
                     : 'text-gray-700 hover:bg-white/50'
                 }`}
                 data-testid="tablet-tab-review"
               >
-                <ClipboardCheck className="h-5 w-5" />
-                <span className="text-base">Review</span>
+                <ClipboardCheck className="h-4 w-4" />
+                <span className="text-sm">Review</span>
               </button>
             )}
           </div>
@@ -269,7 +269,7 @@ export default function TabletPlanner() {
       
       {/* Notification Carousel - Positioned under tabs */}
       {activeTab === 'calendar' && (
-        <div className="px-4 py-2 bg-white/50">
+        <div className="px-4 py-1 bg-white/50">
           <NotificationCarousel 
             currentWeekDate={currentWeekDate}
             onWeekChange={setCurrentWeekDate}
