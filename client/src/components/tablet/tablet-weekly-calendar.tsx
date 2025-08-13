@@ -109,20 +109,18 @@ export function TabletWeeklyCalendar({
   const [draggedActivity, setDraggedActivity] = useState<any>(null);
   const [dragOverSlot, setDragOverSlot] = useState<{day: number, slot: number} | null>(null);
   
-  // Fetch lesson plans to check status
+  // Fetch lesson plans to check status - use query parameters
   const { data: lessonPlans = [] } = useQuery<any[]>({
-    queryKey: ['/api/lesson-plans', selectedLocation, selectedRoom, currentWeekDate.toISOString()],
+    queryKey: [`/api/lesson-plans?locationId=${selectedLocation}&roomId=${selectedRoom}`],
     enabled: !!selectedLocation && !!selectedRoom,
   });
   
   // Find the current lesson plan for this week
   const currentLessonPlan = lessonPlans.find((plan: any) => {
-    const planWeekStart = new Date(plan.weekStart);
-    return (
-      plan.locationId === selectedLocation &&
-      plan.roomId === selectedRoom &&
-      planWeekStart.getTime() === currentWeekDate.getTime()
-    );
+    // Parse the ISO string and compare just the date parts without timezone effects
+    const planDate = plan.weekStart.split('T')[0];
+    const currentDate = format(currentWeekDate, 'yyyy-MM-dd');
+    return planDate === currentDate;
   });
   
   const requiresApproval = requiresLessonPlanApproval();

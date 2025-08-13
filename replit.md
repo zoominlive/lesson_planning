@@ -12,6 +12,8 @@ This project is a comprehensive lesson planning application for early childhood 
 - **Webview-friendly design**: Designed to work alongside existing app's left side drawer navigation
 - **Touch-optimized controls**: Larger buttons and touch targets for better tablet interaction
 - **Status tabs**: Organized lesson plans into Pending, Approved, and Returned tabs with counts
+- **Added submit/finalize button to tablet planning**: Integrated lesson plan submission functionality directly in tablet weekly calendar with permission-based button text
+- **Fixed timezone date comparison**: Resolved issue where lesson plans weren't found due to timezone conversion by comparing date strings directly (yyyy-MM-dd format)
 
 ### Consistent Week Display Format (January 13, 2025)
 - **Updated week range display**: Changed week display format from Monday-Sunday to Monday-Friday throughout the application
