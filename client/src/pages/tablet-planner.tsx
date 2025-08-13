@@ -9,7 +9,7 @@ import { TabletLessonReview } from "@/components/tablet/tablet-lesson-review";
 import { NotificationCarousel } from "../components/notification-carousel";
 import { startOfWeek, format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
-import { ChevronUp, Box, Calendar, ClipboardCheck } from "lucide-react";
+import { ChevronUp, Box, Calendar, ClipboardCheck, Video } from "lucide-react";
 import { useLocation } from "wouter";
 import { hasPermission } from "@/lib/permission-utils";
 import type { Activity } from "@shared/schema";
@@ -31,7 +31,7 @@ export default function TabletPlanner() {
   // Check for tab query parameter
   const searchParams = new URLSearchParams(location.split('?')[1] || '');
   const defaultTab = searchParams.get('tab') || 'calendar';
-  const [activeTab, setActiveTab] = useState<'calendar' | 'review'>(defaultTab as 'calendar' | 'review');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'review' | 'recording'>(defaultTab as 'calendar' | 'review' | 'recording');
   
   // Check if user has permission to review
   const canReview = hasPermission('lesson_plan.approve');
@@ -230,8 +230,8 @@ export default function TabletPlanner() {
           onRoomChange={setSelectedRoom}
           onActivityButtonClick={() => setDrawerOpen(true)}
           viewMode={viewMode}
-          onViewModeChange={setViewMode}
           lessonPlanStatus={currentLessonPlan?.status}
+          activeTab={activeTab}
         />
         
         {/* Tab Navigation integrated below header */}
@@ -248,6 +248,18 @@ export default function TabletPlanner() {
             >
               <Calendar className="h-4 w-4" />
               <span className="text-sm">Calendar</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('recording')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-semibold transition-all ${
+                activeTab === 'recording' 
+                  ? 'bg-blue-500 text-white shadow-md' 
+                  : 'text-gray-700 hover:bg-white/50'
+              }`}
+              data-testid="tablet-tab-recording"
+            >
+              <Video className="h-4 w-4" />
+              <span className="text-sm">Recording</span>
             </button>
             {canReview && (
               <button
@@ -288,30 +300,28 @@ export default function TabletPlanner() {
         {/* Content with proper z-index */}
         <div className={`relative z-10 h-full ${activeTab === 'review' ? 'overflow-y-auto' : ''}`}>
           {activeTab === 'calendar' ? (
-            viewMode === 'planning' ? (
-              <TabletWeeklyCalendar
-                currentWeekDate={currentWeekDate}
-                selectedLocation={selectedLocation}
-                selectedRoom={selectedRoom}
-                selectedActivity={selectedActivity}
-                onSlotTap={handleSlotTap}
-              />
-            ) : (
-              <TabletRecordingView
-                currentDate={new Date()}
-                selectedLocation={selectedLocation}
-                selectedRoom={selectedRoom}
-                locations={locations as any[]}
-                rooms={rooms}
-              />
-            )
+            <TabletWeeklyCalendar
+              currentWeekDate={currentWeekDate}
+              selectedLocation={selectedLocation}
+              selectedRoom={selectedRoom}
+              selectedActivity={selectedActivity}
+              onSlotTap={handleSlotTap}
+            />
+          ) : activeTab === 'recording' ? (
+            <TabletRecordingView
+              currentDate={new Date()}
+              selectedLocation={selectedLocation}
+              selectedRoom={selectedRoom}
+              locations={locations as any[]}
+              rooms={rooms}
+            />
           ) : (
             <TabletLessonReview />
           )}
         </div>
 
-        {/* Bottom Tab for Activity Drawer - Only show in calendar tab and planning mode */}
-        {activeTab === 'calendar' && viewMode === 'planning' && (
+        {/* Bottom Tab for Activity Drawer - Only show in calendar tab */}
+        {activeTab === 'calendar' && (
           <div
             ref={bottomTabRef}
             className={`fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 ${
@@ -339,12 +349,15 @@ export default function TabletPlanner() {
           </div>
         )}
 
-        <TabletActivityDrawer
-          isOpen={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          onActivitySelect={handleActivitySelect}
-          selectedSlot={selectedSlot}
-        />
+        {/* Activity Drawer - Only show in calendar tab */}
+        {activeTab === 'calendar' && (
+          <TabletActivityDrawer
+            isOpen={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            onActivitySelect={handleActivitySelect}
+            selectedSlot={selectedSlot}
+          />
+        )}
       </div>
     </div>
   );

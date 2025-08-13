@@ -20,6 +20,7 @@ interface TabletHeaderProps {
   viewMode?: 'planning' | 'recording';
   onViewModeChange?: (mode: 'planning' | 'recording') => void;
   lessonPlanStatus?: 'draft' | 'submitted' | 'approved' | 'rejected';
+  activeTab?: 'calendar' | 'review' | 'recording';
 }
 
 export function TabletHeader({
@@ -36,6 +37,7 @@ export function TabletHeader({
   viewMode = 'planning',
   onViewModeChange,
   lessonPlanStatus,
+  activeTab = 'calendar',
 }: TabletHeaderProps) {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
@@ -143,8 +145,9 @@ export function TabletHeader({
             </Button>
           </div>
 
-          {/* Mode Toggle */}
-          <div className="bg-white rounded-xl p-1 shadow-md border border-gray-200 flex gap-1">
+          {/* Mode Toggle - Only show in calendar tab */}
+          {activeTab === 'calendar' && (
+            <div className="bg-white rounded-xl p-1 shadow-md border border-gray-200 flex gap-1">
             <Button
               size="sm"
               variant={viewMode === 'planning' ? 'default' : 'ghost'}
@@ -174,8 +177,7 @@ export function TabletHeader({
               Recording
             </Button>
           </div>
-
-
+          )}
         </div>
       </div>
 
