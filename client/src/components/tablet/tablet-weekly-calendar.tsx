@@ -500,61 +500,66 @@ export function TabletWeeklyCalendar({
       )}
       <div className="min-h-full">
         
-        {/* Submit/Withdraw Buttons - At the top */}
-        {currentLessonPlan && (canSubmit || canWithdraw) && (
-          <div className="mb-4">
-            {/* Submit Button for draft/rejected status */}
-            {canSubmit && (
-              <Button
-                onClick={() => submitMutation.mutate()}
-                disabled={submitMutation.isPending}
-                className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-coral-red to-purple-500 hover:from-coral-red/90 hover:to-purple-500/90 text-white shadow-lg active:scale-95 transition-transform"
-                style={{ WebkitTapHighlightColor: 'transparent' }}
-                data-testid="tablet-submit-lesson-plan"
-              >
-                {submitMutation.isPending ? (
-                  "Processing..."
-                ) : (
-                  <>
-                    {requiresApproval ? (
-                      <>
-                        <Send className="mr-2 h-6 w-6" />
-                        Submit for Review
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="mr-2 h-6 w-6" />
-                        Finalize
-                      </>
-                    )}
-                  </>
-                )}
-              </Button>
-            )}
-            
-            {/* Withdraw Button for submitted status */}
-            {canWithdraw && (
-              <Button
-                onClick={() => withdrawMutation.mutate()}
-                disabled={withdrawMutation.isPending}
-                variant="outline"
-                className="w-full h-14 text-lg font-semibold border-2 border-gray-400 hover:bg-gray-100 shadow-md active:scale-95 transition-transform"
-                style={{ WebkitTapHighlightColor: 'transparent' }}
-                data-testid="tablet-withdraw-lesson-plan"
-              >
-                {withdrawMutation.isPending ? "Processing..." : "Withdraw Submission"}
-              </Button>
-            )}
-            
-            {/* Review Notes if rejected */}
-            {currentLessonPlan.status === 'rejected' && currentLessonPlan.reviewNotes && (
-              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800 font-medium">Review Feedback:</p>
-                <p className="text-sm text-red-700 mt-1">{currentLessonPlan.reviewNotes}</p>
-              </div>
-            )}
+        {/* Review Notes if rejected - Show at top */}
+        {currentLessonPlan?.status === 'rejected' && currentLessonPlan.reviewNotes && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-800 font-medium">Review Feedback:</p>
+            <p className="text-sm text-red-700 mt-1">{currentLessonPlan.reviewNotes}</p>
           </div>
         )}
+        
+        {/* Calendar Header with Submit/Withdraw Button */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-800">Weekly Schedule</h3>
+          
+          {/* Submit/Withdraw Buttons - Compact top-right position */}
+          {currentLessonPlan && (canSubmit || canWithdraw) && (
+            <>
+              {/* Submit Button for draft/rejected status */}
+              {canSubmit && (
+                <Button
+                  onClick={() => submitMutation.mutate()}
+                  disabled={submitMutation.isPending}
+                  className="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-coral-red to-purple-500 hover:from-coral-red/90 hover:to-purple-500/90 text-white shadow-lg active:scale-95 transition-transform rounded-lg"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                  data-testid="tablet-submit-lesson-plan"
+                >
+                  {submitMutation.isPending ? (
+                    "Processing..."
+                  ) : (
+                    <>
+                      {requiresApproval ? (
+                        <>
+                          <Send className="mr-1 h-4 w-4" />
+                          Submit for Review
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="mr-1 h-4 w-4" />
+                          Finalize
+                        </>
+                      )}
+                    </>
+                  )}
+                </Button>
+              )}
+              
+              {/* Withdraw Button for submitted status */}
+              {canWithdraw && (
+                <Button
+                  onClick={() => withdrawMutation.mutate()}
+                  disabled={withdrawMutation.isPending}
+                  variant="outline"
+                  className="px-4 py-2 text-sm font-semibold border-2 border-gray-400 hover:bg-gray-100 shadow-md active:scale-95 transition-transform rounded-lg"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                  data-testid="tablet-withdraw-lesson-plan"
+                >
+                  {withdrawMutation.isPending ? "Processing..." : "Withdraw"}
+                </Button>
+              )}
+            </>
+          )}
+        </div>
         
         {/* Calendar Grid - Optimized for touch */}
         <div className="grid gap-2 bg-gradient-to-br from-white via-white to-gray-50 rounded-2xl shadow-2xl p-3 border border-gray-100" style={{gridTemplateColumns: "80px repeat(5, 1fr)"}}>
