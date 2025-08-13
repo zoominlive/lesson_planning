@@ -52,7 +52,11 @@ import {
   roles,
   rolePermissions,
   tenantPermissionOverrides,
-  notifications
+  notifications,
+  activityMilestones,
+  activityMaterials,
+  activityAgeGroups,
+  activitySteps
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, isNull } from "drizzle-orm";
@@ -480,7 +484,65 @@ export class DatabaseStorage implements IStorage {
     conditions.push(isNull(activities.deletedOn));
     
     const [activity] = await this.db.select().from(activities).where(and(...conditions));
-    return activity || undefined;
+    
+    if (!activity) return undefined;
+    
+    // Fetch all related data for the activity
+    const [
+      activityMilestones,
+      activityMaterials,
+      activityAgeGroups,
+      activitySteps
+    ] = await Promise.all([
+      // Get milestones
+      this.db
+        .select({
+          milestone: milestones
+        })
+        .from(activityMilestones)
+        .innerJoin(milestones, eq(activityMilestones.milestoneId, milestones.id))
+        .where(eq(activityMilestones.activityId, id)),
+      
+      // Get materials with quantity
+      this.db
+        .select({
+          material: materials,
+          quantity: activityMaterials.quantity
+        })
+        .from(activityMaterials)
+        .innerJoin(materials, eq(activityMaterials.materialId, materials.id))
+        .where(eq(activityMaterials.activityId, id)),
+      
+      // Get age groups
+      this.db
+        .select({
+          ageGroup: ageGroups
+        })
+        .from(activityAgeGroups)
+        .innerJoin(ageGroups, eq(activityAgeGroups.ageGroupId, ageGroups.id))
+        .where(eq(activityAgeGroups.activityId, id)),
+      
+      // Get activity steps
+      this.db
+        .select()
+        .from(activitySteps)
+        .where(eq(activitySteps.activityId, id))
+        .orderBy(activitySteps.stepNumber)
+    ]);
+    
+    // Enrich activity with related data
+    const enrichedActivity: any = {
+      ...activity,
+      milestones: activityMilestones.map(am => am.milestone),
+      materials: activityMaterials.map(am => ({
+        ...am.material,
+        quantity: am.quantity
+      })),
+      ageGroups: activityAgeGroups.map(aag => aag.ageGroup),
+      steps: activitySteps
+    };
+    
+    return enrichedActivity;
   }
 
   async createActivity(insertActivity: InsertActivity): Promise<Activity> {
