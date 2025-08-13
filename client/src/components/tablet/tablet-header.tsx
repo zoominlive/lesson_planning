@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { ChevronLeft, ChevronRight, Menu, MapPin, Home, Calendar, CheckSquare, SlidersHorizontal, ChevronDown, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Menu, MapPin, Home, Calendar, CheckSquare, SlidersHorizontal, ChevronDown, Box } from "lucide-react";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays } from "date-fns";
 
 interface TabletHeaderProps {
@@ -198,7 +198,7 @@ export function TabletHeader({
             className="h-8 w-8 bg-gradient-to-r from-coral-red to-soft-yellow text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all rounded-full"
             data-testid="button-open-activity-drawer"
           >
-            <Sparkles className="h-4 w-4" />
+            <Box className="h-4 w-4" />
           </Button>
         </div>
         
