@@ -7,7 +7,7 @@ import { TabletActivityDrawer } from "../components/tablet/tablet-activity-drawe
 import { TabletRecordingView } from "../components/tablet/tablet-recording-view";
 import { TabletLessonReview } from "@/components/tablet/tablet-lesson-review";
 import { NotificationCarousel } from "../components/notification-carousel";
-import { startOfWeek } from "date-fns";
+import { startOfWeek, format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import { ChevronUp, Sparkles, Calendar, ClipboardCheck } from "lucide-react";
 import { useLocation } from "wouter";
@@ -75,6 +75,19 @@ export default function TabletPlanner() {
       setSelectedRoom(rooms[0].id);
     }
   }, [rooms, selectedRoom, selectedLocation]);
+
+  // Fetch lesson plans to get current status for header
+  const { data: lessonPlans = [] } = useQuery<any[]>({
+    queryKey: [`/api/lesson-plans?locationId=${selectedLocation}&roomId=${selectedRoom}`],
+    enabled: !!selectedLocation && !!selectedRoom,
+  });
+  
+  // Find the current lesson plan for this week to show status in header
+  const currentLessonPlan = lessonPlans.find((plan: any) => {
+    const planDate = plan.weekStart.split('T')[0];
+    const currentDate = format(currentWeekDate, 'yyyy-MM-dd');
+    return planDate === currentDate;
+  });
 
   const handleWeekChange = (newDate: Date) => {
     setCurrentWeekDate(newDate);
@@ -218,6 +231,7 @@ export default function TabletPlanner() {
           onActivityButtonClick={() => setDrawerOpen(true)}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
+          lessonPlanStatus={currentLessonPlan?.status}
         />
         
         {/* Tab Navigation integrated below header */}

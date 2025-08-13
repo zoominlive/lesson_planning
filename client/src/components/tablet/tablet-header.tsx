@@ -19,6 +19,7 @@ interface TabletHeaderProps {
   onActivityButtonClick: () => void;
   viewMode?: 'planning' | 'recording';
   onViewModeChange?: (mode: 'planning' | 'recording') => void;
+  lessonPlanStatus?: 'draft' | 'submitted' | 'approved' | 'rejected';
 }
 
 export function TabletHeader({
@@ -34,6 +35,7 @@ export function TabletHeader({
   onActivityButtonClick,
   viewMode = 'planning',
   onViewModeChange,
+  lessonPlanStatus,
 }: TabletHeaderProps) {
   const [calendarOpen, setCalendarOpen] = useState(false);
 
@@ -86,9 +88,25 @@ export function TabletHeader({
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-turquoise" />
                     <div>
-                      <h2 className="text-lg font-bold text-charcoal">
-                        {formatWeekRange(currentWeekDate)}
-                      </h2>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-bold text-charcoal">
+                          {formatWeekRange(currentWeekDate)}
+                        </h2>
+                        {lessonPlanStatus && (
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            lessonPlanStatus === 'draft' ? 'bg-gray-100 text-gray-700' :
+                            lessonPlanStatus === 'submitted' ? 'bg-amber-100 text-amber-800' :
+                            lessonPlanStatus === 'approved' ? 'bg-green-100 text-green-800' :
+                            lessonPlanStatus === 'rejected' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {lessonPlanStatus === 'submitted' ? 'Pending' :
+                             lessonPlanStatus === 'approved' ? 'Approved' :
+                             lessonPlanStatus === 'rejected' ? 'Returned' :
+                             'Draft'}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500">Tap to change</p>
                     </div>
                   </div>

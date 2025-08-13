@@ -493,23 +493,6 @@ export function TabletWeeklyCalendar({
         </div>
       )}
       <div className="min-h-full">
-        {/* Status Header - Shows current week's lesson plan status */}
-        {currentLessonPlan && (
-          <div className="mb-3 flex justify-center">
-            <span className={`inline-flex items-center px-6 py-3 rounded-full text-base font-semibold shadow-md ${
-              currentLessonPlan.status === 'draft' ? 'bg-gray-100 text-gray-700' :
-              currentLessonPlan.status === 'submitted' ? 'bg-amber-100 text-amber-800' :
-              currentLessonPlan.status === 'approved' ? 'bg-green-100 text-green-800' :
-              currentLessonPlan.status === 'rejected' ? 'bg-red-100 text-red-800' :
-              'bg-gray-100 text-gray-700'
-            }`}>
-              Week Status: {currentLessonPlan.status === 'submitted' ? 'Pending Review' :
-                      currentLessonPlan.status === 'approved' ? 'Approved ✓' :
-                      currentLessonPlan.status === 'rejected' ? 'Returned for Revision' :
-                      'Draft'}
-            </span>
-          </div>
-        )}
         
         {/* Submit/Withdraw Buttons - At the top */}
         {currentLessonPlan && (canSubmit || canWithdraw) && (
