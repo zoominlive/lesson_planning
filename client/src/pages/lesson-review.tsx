@@ -223,9 +223,10 @@ export function LessonReview() {
 
   // Helper function to format week range
   const formatWeekRange = (weekStart: string) => {
-    const start = new Date(weekStart);
-    // Use addDays from date-fns to properly handle month boundaries
-    const end = addDays(start, 4); // Monday to Friday
+    const date = new Date(weekStart);
+    // Ensure we start from Monday even if weekStart is on a different day
+    const start = startOfWeek(date, { weekStartsOn: 1 }); // Monday
+    const end = addDays(start, 4); // Friday
     return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`;
   };
 
