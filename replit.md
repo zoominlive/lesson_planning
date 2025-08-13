@@ -3,6 +3,13 @@ This project is a comprehensive lesson planning application for early childhood 
 
 ## Recent Changes (January 2025)
 
+### Enhanced Visual Content for Materials and Milestones (January 13, 2025)
+- **Added placeholder images for materials**: Created professional placeholder images for Picture Book Collection, Wooden Building Blocks, and Washable Crayons materials
+- **Added images for developmental milestones**: Generated and integrated images for "Express feelings verbally", "Sorts objects by attribute", and "Uses scissors to cut shapes" milestones
+- **Updated server routing**: Modified server to serve static images from public directories first before falling back to object storage
+- **Created dedicated image directories**: Added public/materials-images and public/milestone-images directories for static image assets
+- **Improved visual presentation**: Materials library and developmental milestones now display proper visual content instead of broken image links
+
 ### Persistent Notification System Implementation (January 14, 2025)
 - **Added PostgreSQL notifications table**: Created database table to store persistent notifications for users
 - **Implemented NotificationCarousel component**: Built a carousel UI for displaying multiple returned lesson plan notifications

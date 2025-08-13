@@ -47,7 +47,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/milestones/images/*', async (req, res) => {
     try {
       const filePath = (req.params as any)['0'] || ''; // Gets everything after /api/milestones/images/
-      await milestoneStorage.downloadMilestoneImage(filePath, res);
+      // Extract just the filename from the path (e.g., "express_feelings.png" from "tenantId/milestones/express_feelings.png")
+      const filename = filePath.split('/').pop() || '';
+      const imagePath = path.join(process.cwd(), 'public', 'milestone-images', filename);
+      
+      // Check if file exists in public directory first
+      if (fs.existsSync(imagePath)) {
+        res.sendFile(imagePath);
+      } else {
+        // Fallback to object storage if not in public directory
+        await milestoneStorage.downloadMilestoneImage(filePath, res);
+      }
     } catch (error) {
       console.error('Error serving milestone image:', error);
       res.status(500).json({ error: 'Failed to retrieve image' });
