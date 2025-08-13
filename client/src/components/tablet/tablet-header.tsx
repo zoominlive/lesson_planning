@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { ChevronLeft, ChevronRight, Menu, MapPin, Home, Calendar, CheckSquare, Settings, ChevronDown, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Menu, MapPin, Home, Calendar, CheckSquare, SlidersHorizontal, ChevronDown, Sparkles } from "lucide-react";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays } from "date-fns";
 
 interface TabletHeaderProps {
@@ -187,7 +187,7 @@ export function TabletHeader({
             className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
             data-testid="toggle-filters-button"
           >
-            <Settings className="h-4 w-4" />
+            <SlidersHorizontal className="h-4 w-4" />
             <span>Filters</span>
             <ChevronDown className={`h-4 w-4 transition-transform ${filtersExpanded ? 'rotate-180' : ''}`} />
           </button>
