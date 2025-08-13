@@ -377,6 +377,65 @@ export function TabletRecordingView({
                                 </div>
                               )}
                               
+                              {/* Age Groups */}
+                              {scheduled.activity?.ageGroups && scheduled.activity.ageGroups.length > 0 && (
+                                <div>
+                                  <h4 className="text-xs font-semibold text-gray-700 mb-1">Age Groups</h4>
+                                  <div className="flex flex-wrap gap-1">
+                                    {scheduled.activity.ageGroups.map((ageGroup: any) => (
+                                      <Badge key={ageGroup.id} variant="outline" className="text-xs">
+                                        {ageGroup.name} ({ageGroup.description})
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Recommended Children Count */}
+                              <div>
+                                <h4 className="text-xs font-semibold text-gray-700 mb-1">Recommended Group Size</h4>
+                                <div className="flex gap-4 text-xs text-gray-600">
+                                  {scheduled.activity?.minChildren && (
+                                    <span>Min: {scheduled.activity.minChildren} children</span>
+                                  )}
+                                  {scheduled.activity?.maxChildren && (
+                                    <span>Max: {scheduled.activity.maxChildren} children</span>
+                                  )}
+                                  {!scheduled.activity?.minChildren && !scheduled.activity?.maxChildren && (
+                                    <span>No specific group size requirements</span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Developmental Milestones */}
+                              {scheduled.activity?.milestones && scheduled.activity.milestones.length > 0 && (
+                                <div>
+                                  <h4 className="text-xs font-semibold text-gray-700 mb-2">Developmental Milestones</h4>
+                                  <div className="space-y-2">
+                                    {scheduled.activity.milestones.map((milestone: any) => (
+                                      <div key={milestone.id} className="flex gap-2 bg-gray-50 p-2 rounded">
+                                        {milestone.imageUrl && (
+                                          <img 
+                                            src={milestone.imageUrl} 
+                                            alt={milestone.title}
+                                            className="w-12 h-12 object-cover rounded"
+                                          />
+                                        )}
+                                        <div className="flex-1">
+                                          <p className="text-xs font-medium text-gray-700">{milestone.title}</p>
+                                          {milestone.description && (
+                                            <p className="text-xs text-gray-500 mt-0.5">{milestone.description}</p>
+                                          )}
+                                          <Badge variant="secondary" className="text-xs mt-1">
+                                            {milestone.category}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
                               {/* Activity Steps */}
                               {scheduled.activity?.steps && scheduled.activity.steps.length > 0 && (
                                 <div>
@@ -422,12 +481,27 @@ export function TabletRecordingView({
                               {/* Materials */}
                               {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
                                 <div>
-                                  <h4 className="text-xs font-semibold text-gray-700 mb-1">Required Materials</h4>
-                                  <div className="flex flex-wrap gap-1">
+                                  <h4 className="text-xs font-semibold text-gray-700 mb-2">Required Materials</h4>
+                                  <div className="space-y-2">
                                     {scheduled.activity.materials.map((material: any) => (
-                                      <Badge key={material.id} variant="secondary" className="text-xs">
-                                        {material.name}
-                                      </Badge>
+                                      <div key={material.id} className="flex gap-2 bg-gray-50 p-2 rounded">
+                                        {material.imageUrl && (
+                                          <img 
+                                            src={material.imageUrl} 
+                                            alt={material.name}
+                                            className="w-12 h-12 object-cover rounded"
+                                          />
+                                        )}
+                                        <div className="flex-1">
+                                          <p className="text-xs font-medium text-gray-700">{material.name}</p>
+                                          {material.description && (
+                                            <p className="text-xs text-gray-500 mt-0.5">{material.description}</p>
+                                          )}
+                                          {material.quantity && (
+                                            <p className="text-xs text-gray-600 mt-0.5">Quantity: {material.quantity}</p>
+                                          )}
+                                        </div>
+                                      </div>
                                     ))}
                                   </div>
                                 </div>
@@ -593,6 +667,65 @@ export function TabletRecordingView({
                         </div>
                       )}
                       
+                      {/* Age Groups */}
+                      {scheduled.activity?.ageGroups && scheduled.activity.ageGroups.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-700 mb-1">Age Groups</h4>
+                          <div className="flex flex-wrap gap-1">
+                            {scheduled.activity.ageGroups.map((ageGroup: any) => (
+                              <Badge key={ageGroup.id} variant="outline" className="text-xs">
+                                {ageGroup.name} ({ageGroup.description})
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Recommended Children Count */}
+                      <div>
+                        <h4 className="text-xs font-semibold text-gray-700 mb-1">Recommended Group Size</h4>
+                        <div className="flex gap-4 text-xs text-gray-600">
+                          {scheduled.activity?.minChildren && (
+                            <span>Min: {scheduled.activity.minChildren} children</span>
+                          )}
+                          {scheduled.activity?.maxChildren && (
+                            <span>Max: {scheduled.activity.maxChildren} children</span>
+                          )}
+                          {!scheduled.activity?.minChildren && !scheduled.activity?.maxChildren && (
+                            <span>No specific group size requirements</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Developmental Milestones */}
+                      {scheduled.activity?.milestones && scheduled.activity.milestones.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-700 mb-2">Developmental Milestones</h4>
+                          <div className="space-y-2">
+                            {scheduled.activity.milestones.map((milestone: any) => (
+                              <div key={milestone.id} className="flex gap-2 bg-gray-50 p-2 rounded">
+                                {milestone.imageUrl && (
+                                  <img 
+                                    src={milestone.imageUrl} 
+                                    alt={milestone.title}
+                                    className="w-12 h-12 object-cover rounded"
+                                  />
+                                )}
+                                <div className="flex-1">
+                                  <p className="text-xs font-medium text-gray-700">{milestone.title}</p>
+                                  {milestone.description && (
+                                    <p className="text-xs text-gray-500 mt-0.5">{milestone.description}</p>
+                                  )}
+                                  <Badge variant="secondary" className="text-xs mt-1">
+                                    {milestone.category}
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Activity Steps */}
                       {scheduled.activity?.steps && scheduled.activity.steps.length > 0 && (
                         <div>
@@ -638,12 +771,27 @@ export function TabletRecordingView({
                       {/* Materials */}
                       {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
                         <div>
-                          <h4 className="text-xs font-semibold text-gray-700 mb-1">Required Materials</h4>
-                          <div className="flex flex-wrap gap-1">
+                          <h4 className="text-xs font-semibold text-gray-700 mb-2">Required Materials</h4>
+                          <div className="space-y-2">
                             {scheduled.activity.materials.map((material: any) => (
-                              <Badge key={material.id} variant="secondary" className="text-xs">
-                                {material.name}
-                              </Badge>
+                              <div key={material.id} className="flex gap-2 bg-gray-50 p-2 rounded">
+                                {material.imageUrl && (
+                                  <img 
+                                    src={material.imageUrl} 
+                                    alt={material.name}
+                                    className="w-12 h-12 object-cover rounded"
+                                  />
+                                )}
+                                <div className="flex-1">
+                                  <p className="text-xs font-medium text-gray-700">{material.name}</p>
+                                  {material.description && (
+                                    <p className="text-xs text-gray-500 mt-0.5">{material.description}</p>
+                                  )}
+                                  {material.quantity && (
+                                    <p className="text-xs text-gray-600 mt-0.5">Quantity: {material.quantity}</p>
+                                  )}
+                                </div>
+                              </div>
                             ))}
                           </div>
                         </div>
