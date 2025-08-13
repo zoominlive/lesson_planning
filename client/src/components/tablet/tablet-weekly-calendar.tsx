@@ -523,6 +523,24 @@ export function TabletWeeklyCalendar({
         </div>
       )}
       <div className="min-h-full">
+        {/* Status Header - Shows current week's lesson plan status */}
+        {currentLessonPlan && (
+          <div className="mb-3 flex justify-center">
+            <span className={`inline-flex items-center px-6 py-3 rounded-full text-base font-semibold shadow-md ${
+              currentLessonPlan.status === 'draft' ? 'bg-gray-100 text-gray-700' :
+              currentLessonPlan.status === 'submitted' ? 'bg-amber-100 text-amber-800' :
+              currentLessonPlan.status === 'approved' ? 'bg-green-100 text-green-800' :
+              currentLessonPlan.status === 'rejected' ? 'bg-red-100 text-red-800' :
+              'bg-gray-100 text-gray-700'
+            }`}>
+              Week Status: {currentLessonPlan.status === 'submitted' ? 'Pending Review' :
+                      currentLessonPlan.status === 'approved' ? 'Approved ✓' :
+                      currentLessonPlan.status === 'rejected' ? 'Returned for Revision' :
+                      'Draft'}
+            </span>
+          </div>
+        )}
+        
         {/* Calendar Grid - Optimized for touch */}
         <div className="grid gap-2 bg-gradient-to-br from-white via-white to-gray-50 rounded-2xl shadow-2xl p-3 border border-gray-100" style={{gridTemplateColumns: "80px repeat(5, 1fr)"}}>
           {/* Position Column */}
@@ -628,9 +646,26 @@ export function TabletWeeklyCalendar({
           ))}
         </div>
         
-        {/* Submit/Withdraw Button - Tablet optimized */}
-        {(canSubmit || canWithdraw) && (
+        {/* Submit/Status Section - Always visible when there's a lesson plan */}
+        {currentLessonPlan && (
           <div className="mt-4 pb-20">
+            {/* Status Badge - Always show first */}
+            <div className="mb-3 text-center">
+              <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
+                currentLessonPlan.status === 'draft' ? 'bg-gray-100 text-gray-700' :
+                currentLessonPlan.status === 'submitted' ? 'bg-amber-100 text-amber-800' :
+                currentLessonPlan.status === 'approved' ? 'bg-green-100 text-green-800' :
+                currentLessonPlan.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                Status: {currentLessonPlan.status === 'submitted' ? 'Pending Review' :
+                        currentLessonPlan.status === 'approved' ? 'Approved' :
+                        currentLessonPlan.status === 'rejected' ? 'Returned for Revision' :
+                        'Draft'}
+              </span>
+            </div>
+            
+            {/* Submit Button for draft/rejected status */}
             {canSubmit && (
               <Button
                 onClick={() => submitMutation.mutate()}
@@ -659,12 +694,13 @@ export function TabletWeeklyCalendar({
               </Button>
             )}
             
+            {/* Withdraw Button for submitted status */}
             {canWithdraw && (
               <Button
                 onClick={() => withdrawMutation.mutate()}
                 disabled={withdrawMutation.isPending}
                 variant="outline"
-                className="w-full h-14 text-lg font-semibold border-2 border-gray-400 hover:bg-gray-100 shadow-md active:scale-95 transition-transform"
+                className="w-full h-14 text-lg font-semibold border-2 border-gray-400 hover:bg-gray-100 shadow-md active:scale-95 transition-transform mt-2"
                 style={{ WebkitTapHighlightColor: 'transparent' }}
                 data-testid="tablet-withdraw-lesson-plan"
               >
@@ -672,21 +708,11 @@ export function TabletWeeklyCalendar({
               </Button>
             )}
             
-            {/* Status Badge */}
-            {currentLessonPlan && (
-              <div className="mt-3 text-center">
-                <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
-                  currentLessonPlan.status === 'draft' ? 'bg-gray-100 text-gray-700' :
-                  currentLessonPlan.status === 'submitted' ? 'bg-amber-100 text-amber-800' :
-                  currentLessonPlan.status === 'approved' ? 'bg-green-100 text-green-800' :
-                  currentLessonPlan.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                  'bg-gray-100 text-gray-700'
-                }`}>
-                  Status: {currentLessonPlan.status === 'submitted' ? 'Pending Review' :
-                          currentLessonPlan.status === 'approved' ? 'Approved' :
-                          currentLessonPlan.status === 'rejected' ? 'Returned for Revision' :
-                          'Draft'}
-                </span>
+            {/* Review Notes if rejected */}
+            {currentLessonPlan.status === 'rejected' && currentLessonPlan.reviewNotes && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800 font-medium">Review Feedback:</p>
+                <p className="text-sm text-red-700 mt-1">{currentLessonPlan.reviewNotes}</p>
               </div>
             )}
           </div>
