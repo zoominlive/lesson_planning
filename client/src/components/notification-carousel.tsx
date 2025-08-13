@@ -4,7 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, X, ChevronLeft, ChevronRight, Eye } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfWeek, addDays } from "date-fns";
 import { useLocation } from "wouter";
 import type { Notification, LessonPlan } from "@shared/schema";
 
@@ -97,7 +97,9 @@ export function NotificationCarousel({ currentWeekDate, onWeekChange }: Notifica
   const formatWeekDate = (date: Date | string | null) => {
     if (!date) return "Unknown Week";
     const d = typeof date === 'string' ? new Date(date) : date;
-    return format(d, "MMM d, yyyy");
+    const weekStart = startOfWeek(d, { weekStartsOn: 1 }); // Monday
+    const weekEnd = addDays(weekStart, 4); // Friday
+    return `${format(weekStart, "MMM d")}-${format(weekEnd, "d")}`;
   };
 
   return (
