@@ -31,7 +31,7 @@ export default function TabletPlanner() {
   // Check for tab query parameter
   const searchParams = new URLSearchParams(location.split('?')[1] || '');
   const defaultTab = searchParams.get('tab') || 'calendar';
-  const [activeTab, setActiveTab] = useState<'calendar' | 'review' | 'recording'>(defaultTab as 'calendar' | 'review' | 'recording');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'recording' | 'review'>(defaultTab as 'calendar' | 'recording' | 'review');
   
   // Check if user has permission to review
   const canReview = hasPermission('lesson_plan.approve');
@@ -230,8 +230,8 @@ export default function TabletPlanner() {
           onRoomChange={setSelectedRoom}
           onActivityButtonClick={() => setDrawerOpen(true)}
           viewMode={viewMode}
+          onViewModeChange={setViewMode}
           lessonPlanStatus={currentLessonPlan?.status}
-          activeTab={activeTab}
         />
         
         {/* Tab Navigation integrated below header */}
@@ -300,13 +300,23 @@ export default function TabletPlanner() {
         {/* Content with proper z-index */}
         <div className={`relative z-10 h-full ${activeTab === 'review' ? 'overflow-y-auto' : ''}`}>
           {activeTab === 'calendar' ? (
-            <TabletWeeklyCalendar
-              currentWeekDate={currentWeekDate}
-              selectedLocation={selectedLocation}
-              selectedRoom={selectedRoom}
-              selectedActivity={selectedActivity}
-              onSlotTap={handleSlotTap}
-            />
+            viewMode === 'planning' ? (
+              <TabletWeeklyCalendar
+                currentWeekDate={currentWeekDate}
+                selectedLocation={selectedLocation}
+                selectedRoom={selectedRoom}
+                selectedActivity={selectedActivity}
+                onSlotTap={handleSlotTap}
+              />
+            ) : (
+              <TabletRecordingView
+                currentDate={new Date()}
+                selectedLocation={selectedLocation}
+                selectedRoom={selectedRoom}
+                locations={locations as any[]}
+                rooms={rooms}
+              />
+            )
           ) : activeTab === 'recording' ? (
             <TabletRecordingView
               currentDate={new Date()}
@@ -349,15 +359,12 @@ export default function TabletPlanner() {
           </div>
         )}
 
-        {/* Activity Drawer - Only show in calendar tab */}
-        {activeTab === 'calendar' && (
-          <TabletActivityDrawer
-            isOpen={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
-            onActivitySelect={handleActivitySelect}
-            selectedSlot={selectedSlot}
-          />
-        )}
+        <TabletActivityDrawer
+          isOpen={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          onActivitySelect={handleActivitySelect}
+          selectedSlot={selectedSlot}
+        />
       </div>
     </div>
   );
