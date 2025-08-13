@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
-import { Clock, Undo2, Package, Scissors } from "lucide-react";
+import { Clock, Undo2, Package, Scissors, Send, CheckCircle } from "lucide-react";
+import { requiresLessonPlanApproval } from "@/lib/permission-utils";
 import type { Activity } from "@shared/schema";
 import {
   AlertDialog,
@@ -107,6 +108,24 @@ export function TabletWeeklyCalendar({
   });
   const [draggedActivity, setDraggedActivity] = useState<any>(null);
   const [dragOverSlot, setDragOverSlot] = useState<{day: number, slot: number} | null>(null);
+  
+  // Fetch lesson plans to check status
+  const { data: lessonPlans = [] } = useQuery<any[]>({
+    queryKey: ['/api/lesson-plans', selectedLocation, selectedRoom, currentWeekDate.toISOString()],
+    enabled: !!selectedLocation && !!selectedRoom,
+  });
+  
+  // Find the current lesson plan for this week
+  const currentLessonPlan = lessonPlans.find((plan: any) => {
+    const planWeekStart = new Date(plan.weekStart);
+    return (
+      plan.locationId === selectedLocation &&
+      plan.roomId === selectedRoom &&
+      planWeekStart.getTime() === currentWeekDate.getTime()
+    );
+  });
+  
+  const requiresApproval = requiresLessonPlanApproval();
 
   // Load schedule settings from localStorage for the specific location
   useEffect(() => {
@@ -421,6 +440,56 @@ export function TabletWeeklyCalendar({
     });
   };
 
+  // Submit lesson plan mutation
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentLessonPlan) {
+        throw new Error('No lesson plan found for this week');
+      }
+      return apiRequest("POST", `/api/lesson-plans/${currentLessonPlan.id}/submit`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/lesson-plans'] });
+      toast({
+        title: requiresApproval ? "Lesson Plan Submitted" : "Lesson Plan Finalized",
+        description: requiresApproval 
+          ? "The lesson plan has been submitted for review." 
+          : "The lesson plan has been finalized successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Submission Failed",
+        description: error.message || "Failed to submit the lesson plan.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Withdraw lesson plan mutation
+  const withdrawMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentLessonPlan) {
+        throw new Error('No lesson plan found for this week');
+      }
+      return apiRequest("POST", `/api/lesson-plans/${currentLessonPlan.id}/withdraw`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/lesson-plans'] });
+      toast({
+        title: "Submission Withdrawn",
+        description: "The lesson plan has been withdrawn and is now editable.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Withdrawal Failed",
+        description: error.message || "Failed to withdraw the lesson plan.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Clear undo state when adding a new activity
   useEffect(() => {
     if (selectedActivity) {
@@ -436,8 +505,11 @@ export function TabletWeeklyCalendar({
     };
   }, []);
 
+  const canSubmit = currentLessonPlan?.status === 'draft' || currentLessonPlan?.status === 'rejected';
+  const canWithdraw = currentLessonPlan?.status === 'submitted';
+
   return (
-    <div className="h-full overflow-auto p-4 relative">
+    <div className="h-full overflow-auto p-4 relative flex flex-col">
       {/* Undo Button */}
       {recentlyDeleted && (
         <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
@@ -557,6 +629,70 @@ export function TabletWeeklyCalendar({
             </div>
           ))}
         </div>
+        
+        {/* Submit/Withdraw Button - Tablet optimized */}
+        {(canSubmit || canWithdraw) && (
+          <div className="mt-4 pb-20">
+            {canSubmit && (
+              <Button
+                onClick={() => submitMutation.mutate()}
+                disabled={submitMutation.isPending}
+                className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-coral-red to-purple-500 hover:from-coral-red/90 hover:to-purple-500/90 text-white shadow-lg active:scale-95 transition-transform"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+                data-testid="tablet-submit-lesson-plan"
+              >
+                {submitMutation.isPending ? (
+                  "Processing..."
+                ) : (
+                  <>
+                    {requiresApproval ? (
+                      <>
+                        <Send className="mr-2 h-6 w-6" />
+                        Submit for Review
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="mr-2 h-6 w-6" />
+                        Finalize
+                      </>
+                    )}
+                  </>
+                )}
+              </Button>
+            )}
+            
+            {canWithdraw && (
+              <Button
+                onClick={() => withdrawMutation.mutate()}
+                disabled={withdrawMutation.isPending}
+                variant="outline"
+                className="w-full h-14 text-lg font-semibold border-2 border-gray-400 hover:bg-gray-100 shadow-md active:scale-95 transition-transform"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+                data-testid="tablet-withdraw-lesson-plan"
+              >
+                {withdrawMutation.isPending ? "Processing..." : "Withdraw Submission"}
+              </Button>
+            )}
+            
+            {/* Status Badge */}
+            {currentLessonPlan && (
+              <div className="mt-3 text-center">
+                <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
+                  currentLessonPlan.status === 'draft' ? 'bg-gray-100 text-gray-700' :
+                  currentLessonPlan.status === 'submitted' ? 'bg-amber-100 text-amber-800' :
+                  currentLessonPlan.status === 'approved' ? 'bg-green-100 text-green-800' :
+                  currentLessonPlan.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                  'bg-gray-100 text-gray-700'
+                }`}>
+                  Status: {currentLessonPlan.status === 'submitted' ? 'Pending Review' :
+                          currentLessonPlan.status === 'approved' ? 'Approved' :
+                          currentLessonPlan.status === 'rejected' ? 'Returned for Revision' :
+                          'Draft'}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
