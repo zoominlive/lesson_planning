@@ -18,6 +18,7 @@ import { perplexityService } from "./perplexityService";
 import { milestoneStorage } from "./milestoneStorage";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 import { 
   insertMilestoneSchema, 
   insertMaterialSchema, 
@@ -56,7 +57,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve material images from object storage (public access for display in UI)
   app.get('/api/materials/images/:filename', async (req, res) => {
     try {
-      await materialStorage.downloadMaterialImage(req.params.filename, res);
+      const filename = req.params.filename;
+      const imagePath = path.join(process.cwd(), 'public', 'materials-images', filename);
+      
+      // Check if file exists in public directory first
+      if (fs.existsSync(imagePath)) {
+        res.sendFile(imagePath);
+      } else {
+        // Fallback to object storage if not in public directory
+        await materialStorage.downloadMaterialImage(filename, res);
+      }
     } catch (error) {
       console.error('Error serving material image:', error);
       res.status(500).json({ error: 'Failed to retrieve image' });
