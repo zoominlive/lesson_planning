@@ -55,7 +55,7 @@ import {
   notifications
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, isNull } from "drizzle-orm";
+import { eq, and, sql, isNull, inArray } from "drizzle-orm";
 
 // Re-importing schema to use it within the class
 import * as schema from "@shared/schema";
@@ -484,33 +484,31 @@ export class DatabaseStorage implements IStorage {
     if (!activity) return undefined;
     
     // Fetch all related data for the activity using the ID arrays stored in the activity
-    const relatedData = await Promise.all([
-      // Get milestones by IDs
-      activity.milestoneIds && activity.milestoneIds.length > 0
-        ? this.db
-            .select()
-            .from(milestones)
-            .where(sql`${milestones.id} = ANY(${activity.milestoneIds})`)
-        : Promise.resolve([]),
-      
-      // Get materials by IDs
-      activity.materialIds && activity.materialIds.length > 0
-        ? this.db
-            .select()
-            .from(materials)
-            .where(sql`${materials.id} = ANY(${activity.materialIds})`)
-        : Promise.resolve([]),
-      
-      // Get age groups by IDs
-      activity.ageGroupIds && activity.ageGroupIds.length > 0
-        ? this.db
-            .select()
-            .from(ageGroups)
-            .where(sql`${ageGroups.id} = ANY(${activity.ageGroupIds})`)
-        : Promise.resolve([])
+    // Simple approach: fetch all records for the tenant and filter in JavaScript
+    const [allMilestones, allMaterials, allAgeGroups] = await Promise.all([
+      this.db.select().from(milestones).where(
+        this.tenantId ? eq(milestones.tenantId, this.tenantId) : undefined
+      ),
+      this.db.select().from(materials).where(
+        this.tenantId ? eq(materials.tenantId, this.tenantId) : undefined
+      ),
+      this.db.select().from(ageGroups).where(
+        this.tenantId ? eq(ageGroups.tenantId, this.tenantId) : undefined
+      )
     ]);
     
-    const [activityMilestones, activityMaterials, activityAgeGroups] = relatedData;
+    // Filter to only the ones referenced by the activity
+    const activityMilestones = activity.milestoneIds && activity.milestoneIds.length > 0
+      ? allMilestones.filter(m => activity.milestoneIds.includes(m.id))
+      : [];
+    
+    const activityMaterials = activity.materialIds && activity.materialIds.length > 0
+      ? allMaterials.filter(m => activity.materialIds.includes(m.id))
+      : [];
+    
+    const activityAgeGroups = activity.ageGroupIds && activity.ageGroupIds.length > 0
+      ? allAgeGroups.filter(ag => activity.ageGroupIds.includes(ag.id))
+      : [];
     
     // Enrich activity with related data
     const enrichedActivity: any = {
