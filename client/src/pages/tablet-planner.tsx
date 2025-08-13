@@ -9,7 +9,7 @@ import { TabletLessonReview } from "@/components/tablet/tablet-lesson-review";
 import { NotificationCarousel } from "../components/notification-carousel";
 import { startOfWeek, format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
-import { ChevronUp, Box, Calendar, ClipboardCheck, Video } from "lucide-react";
+import { ChevronUp, Box, Calendar, ClipboardCheck } from "lucide-react";
 import { useLocation } from "wouter";
 import { hasPermission } from "@/lib/permission-utils";
 import type { Activity } from "@shared/schema";
@@ -31,10 +31,17 @@ export default function TabletPlanner() {
   // Check for tab query parameter
   const searchParams = new URLSearchParams(location.split('?')[1] || '');
   const defaultTab = searchParams.get('tab') || 'calendar';
-  const [activeTab, setActiveTab] = useState<'calendar' | 'recording' | 'review'>(defaultTab as 'calendar' | 'recording' | 'review');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'review'>(defaultTab as 'calendar' | 'review');
   
   // Check if user has permission to review
   const canReview = hasPermission('lesson_plan.approve');
+  
+  // When switching back from recording mode, ensure we're on calendar tab
+  useEffect(() => {
+    if (viewMode === 'planning' && activeTab !== 'calendar' && activeTab !== 'review') {
+      setActiveTab('calendar');
+    }
+  }, [viewMode]);
 
   // Fetch user info
   const { data: userInfo } = useQuery({
@@ -234,53 +241,43 @@ export default function TabletPlanner() {
           lessonPlanStatus={currentLessonPlan?.status}
         />
         
-        {/* Tab Navigation integrated below header */}
-        <div className="px-4 pb-2">
-          <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
-            <button
-              onClick={() => setActiveTab('calendar')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-semibold transition-all ${
-                activeTab === 'calendar' 
-                  ? 'bg-coral-red text-white shadow-md' 
-                  : 'text-gray-700 hover:bg-white/50'
-              }`}
-              data-testid="tablet-tab-calendar"
-            >
-              <Calendar className="h-4 w-4" />
-              <span className="text-sm">Calendar</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('recording')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-semibold transition-all ${
-                activeTab === 'recording' 
-                  ? 'bg-blue-500 text-white shadow-md' 
-                  : 'text-gray-700 hover:bg-white/50'
-              }`}
-              data-testid="tablet-tab-recording"
-            >
-              <Video className="h-4 w-4" />
-              <span className="text-sm">Recording</span>
-            </button>
-            {canReview && (
+        {/* Tab Navigation integrated below header - Hide when in recording mode */}
+        {viewMode !== 'recording' && (
+          <div className="px-4 pb-2">
+            <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
               <button
-                onClick={() => setActiveTab('review')}
+                onClick={() => setActiveTab('calendar')}
                 className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-semibold transition-all ${
-                  activeTab === 'review' 
-                    ? 'bg-purple-500 text-white shadow-md' 
+                  activeTab === 'calendar' 
+                    ? 'bg-coral-red text-white shadow-md' 
                     : 'text-gray-700 hover:bg-white/50'
                 }`}
-                data-testid="tablet-tab-review"
+                data-testid="tablet-tab-calendar"
               >
-                <ClipboardCheck className="h-4 w-4" />
-                <span className="text-sm">Review</span>
+                <Calendar className="h-4 w-4" />
+                <span className="text-sm">Calendar</span>
               </button>
-            )}
+              {canReview && (
+                <button
+                  onClick={() => setActiveTab('review')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-semibold transition-all ${
+                    activeTab === 'review' 
+                      ? 'bg-purple-500 text-white shadow-md' 
+                      : 'text-gray-700 hover:bg-white/50'
+                  }`}
+                  data-testid="tablet-tab-review"
+                >
+                  <ClipboardCheck className="h-4 w-4" />
+                  <span className="text-sm">Review</span>
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       
-      {/* Notification Carousel - Positioned under tabs */}
-      {activeTab === 'calendar' && (
+      {/* Notification Carousel - Positioned under tabs - Hide in recording mode */}
+      {activeTab === 'calendar' && viewMode !== 'recording' && (
         <div className="px-4 py-1 bg-white/50">
           <NotificationCarousel 
             currentWeekDate={currentWeekDate}
@@ -298,26 +295,9 @@ export default function TabletPlanner() {
         </div>
         
         {/* Content with proper z-index */}
-        <div className={`relative z-10 h-full ${activeTab === 'review' ? 'overflow-y-auto' : ''}`}>
-          {activeTab === 'calendar' ? (
-            viewMode === 'planning' ? (
-              <TabletWeeklyCalendar
-                currentWeekDate={currentWeekDate}
-                selectedLocation={selectedLocation}
-                selectedRoom={selectedRoom}
-                selectedActivity={selectedActivity}
-                onSlotTap={handleSlotTap}
-              />
-            ) : (
-              <TabletRecordingView
-                currentDate={new Date()}
-                selectedLocation={selectedLocation}
-                selectedRoom={selectedRoom}
-                locations={locations as any[]}
-                rooms={rooms}
-              />
-            )
-          ) : activeTab === 'recording' ? (
+        <div className={`relative z-10 h-full ${activeTab === 'review' && viewMode !== 'recording' ? 'overflow-y-auto' : ''}`}>
+          {viewMode === 'recording' ? (
+            // Show recording view when recording mode is selected
             <TabletRecordingView
               currentDate={new Date()}
               selectedLocation={selectedLocation}
@@ -325,13 +305,23 @@ export default function TabletPlanner() {
               locations={locations as any[]}
               rooms={rooms}
             />
+          ) : activeTab === 'calendar' ? (
+            // Show planning calendar when in planning mode and calendar tab
+            <TabletWeeklyCalendar
+              currentWeekDate={currentWeekDate}
+              selectedLocation={selectedLocation}
+              selectedRoom={selectedRoom}
+              selectedActivity={selectedActivity}
+              onSlotTap={handleSlotTap}
+            />
           ) : (
+            // Show review when review tab is selected
             <TabletLessonReview />
           )}
         </div>
 
-        {/* Bottom Tab for Activity Drawer - Only show in calendar tab */}
-        {activeTab === 'calendar' && (
+        {/* Bottom Tab for Activity Drawer - Only show in calendar tab and planning mode */}
+        {activeTab === 'calendar' && viewMode === 'planning' && (
           <div
             ref={bottomTabRef}
             className={`fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 ${
