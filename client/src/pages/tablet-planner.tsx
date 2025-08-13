@@ -299,7 +299,7 @@ export default function TabletPlanner() {
           {viewMode === 'recording' ? (
             // Show recording view when recording mode is selected
             <TabletRecordingView
-              currentDate={new Date()}
+              currentDate={currentWeekDate}
               selectedLocation={selectedLocation}
               selectedRoom={selectedRoom}
               locations={locations as any[]}

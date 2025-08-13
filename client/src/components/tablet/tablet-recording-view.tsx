@@ -39,9 +39,33 @@ export function TabletRecordingView({
   const todayDate = new Date();
   const dayOfWeek = todayDate.getDay() === 0 ? 6 : todayDate.getDay() - 1; // Convert to 0-4 (Mon-Fri)
 
-  // Fetch today's scheduled activities
+  // Fetch the lesson plan to check if it's approved
+  const { data: lessonPlans = [] } = useQuery<any[]>({
+    queryKey: ["/api/lesson-plans", selectedLocation, currentDate.toISOString()],
+    queryFn: async () => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `/api/lesson-plans?locationId=${encodeURIComponent(selectedLocation)}&weekStart=${encodeURIComponent(currentDate.toISOString())}`,
+        {
+          headers: {
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+          },
+        }
+      );
+      if (!response.ok) throw new Error('Failed to fetch lesson plans');
+      return response.json();
+    },
+    enabled: !!selectedLocation,
+  });
+
+  // Find the approved lesson plan for this room
+  const approvedLessonPlan = lessonPlans.find(
+    (plan: any) => plan.roomId === selectedRoom && plan.status === 'approved'
+  );
+
+  // Fetch scheduled activities for the week
   const { data: scheduledActivities = [], isLoading } = useQuery<any[]>({
-    queryKey: ["/api/scheduled-activities", selectedRoom, currentDate.toISOString(), selectedLocation, "today"],
+    queryKey: ["/api/scheduled-activities", selectedRoom, currentDate.toISOString(), selectedLocation],
     queryFn: async () => {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
@@ -55,8 +79,13 @@ export function TabletRecordingView({
       if (!response.ok) throw new Error('Failed to fetch scheduled activities');
       const allActivities = await response.json();
       
-      // Filter for today's activities
-      return allActivities.filter((activity: any) => activity.dayOfWeek === dayOfWeek);
+      // Show all activities for the week if there's an approved lesson plan
+      // Otherwise only show today's activities
+      if (approvedLessonPlan) {
+        return allActivities;
+      } else {
+        return allActivities.filter((activity: any) => activity.dayOfWeek === dayOfWeek);
+      }
     },
     enabled: !!selectedRoom && !!selectedLocation,
   });
@@ -169,13 +198,24 @@ export function TabletRecordingView({
   const completedCount = Object.values(activityRecords).filter(r => r.completed).length;
   const totalCount = sortedActivities.length;
 
+  // Group activities by day if showing approved lesson plan
+  const activitiesByDay = approvedLessonPlan ? (
+    Array.from({ length: 5 }, (_, dayIndex) => ({
+      day: dayIndex,
+      dayName: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'][dayIndex],
+      activities: sortedActivities.filter(a => a.dayOfWeek === dayIndex)
+    }))
+  ) : [];
+
+  const showingFullWeek = approvedLessonPlan && sortedActivities.length > 0;
+
   return (
     <div className="h-full overflow-auto p-4">
       {/* Summary Header */}
       <div className="bg-gradient-to-r from-white to-gray-50 rounded-2xl shadow-lg p-4 mb-4 border border-gray-100">
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-lg font-bold bg-gradient-to-r from-coral-red to-soft-yellow bg-clip-text text-transparent">
-            Today's Activities
+            {showingFullWeek ? 'Week Activities (Approved Plan)' : "Today's Activities"}
           </h2>
           <Button
             onClick={handleSaveAll}
@@ -186,7 +226,12 @@ export function TabletRecordingView({
             Save All
           </Button>
         </div>
-        <p className="text-sm text-gray-600">{format(todayDate, 'EEEE, MMMM d, yyyy')}</p>
+        <p className="text-sm text-gray-600">
+          {showingFullWeek 
+            ? `Week of ${format(currentDate, 'MMMM d, yyyy')}`
+            : format(todayDate, 'EEEE, MMMM d, yyyy')
+          }
+        </p>
         <div className="flex gap-4 mt-3">
           <Badge className="bg-green-100 text-green-700">
             <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -195,6 +240,11 @@ export function TabletRecordingView({
           <Badge className="bg-blue-100 text-blue-700">
             {rooms.find(r => r.id === selectedRoom)?.name || 'Select Room'}
           </Badge>
+          {showingFullWeek && (
+            <Badge className="bg-purple-100 text-purple-700">
+              Approved Plan
+            </Badge>
+          )}
         </div>
       </div>
 
@@ -212,10 +262,140 @@ export function TabletRecordingView({
         ) : sortedActivities.length === 0 ? (
           <Card className="p-8 text-center bg-white/80">
             <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-600">No activities scheduled for today</p>
+            <p className="text-gray-600">
+              {showingFullWeek 
+                ? "No activities found in the approved lesson plan" 
+                : "No activities scheduled for today"
+              }
+            </p>
             <p className="text-sm text-gray-500 mt-2">Switch to Planning mode to schedule activities</p>
           </Card>
+        ) : showingFullWeek ? (
+          // Show activities grouped by day for approved plans
+          activitiesByDay.map(({ day, dayName, activities }) => (
+            <div key={day} className="space-y-2">
+              {activities.length > 0 && (
+                <>
+                  <h3 className="font-semibold text-sm text-gray-700 bg-gradient-to-r from-gray-50 to-white px-3 py-1 rounded-lg">
+                    {dayName}
+                  </h3>
+                  {activities.map((scheduled) => {
+                    const isExpanded = expandedActivity === scheduled.id;
+                    const record = activityRecords[scheduled.id];
+                    const isCompleted = record?.completed || false;
+
+                    return (
+                      <Card
+                        key={scheduled.id}
+                        className={`transition-all ${
+                          isCompleted 
+                            ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-300' 
+                            : 'bg-white/80 border-gray-200'
+                        } ${isExpanded ? 'shadow-xl' : 'shadow-lg'}`}
+                      >
+                        <div className="p-4">
+                          {/* Activity Header */}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <Badge className="bg-white/80 text-charcoal border border-gray-300">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  {getTimeLabel(scheduled.timeSlot)}
+                                </Badge>
+                                <Badge className={`border ${getCategoryColor(scheduled.activity?.category || '')}`}>
+                                  {scheduled.activity?.category}
+                                </Badge>
+                              </div>
+                              <h3 className={`font-semibold text-charcoal ${isCompleted ? 'line-through' : ''}`}>
+                                {scheduled.activity?.title}
+                              </h3>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {scheduled.activity?.description}
+                              </p>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                checked={isCompleted}
+                                onCheckedChange={() => handleToggleComplete(scheduled.id)}
+                                className="h-6 w-6"
+                                data-testid={`complete-activity-${scheduled.id}`}
+                              />
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => setExpandedActivity(isExpanded ? null : scheduled.id)}
+                                className="rounded-full"
+                              >
+                                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Expanded Content */}
+                          {isExpanded && (
+                            <div className="mt-4 space-y-4 border-t border-gray-200 pt-4">
+                              {/* Activity Notes */}
+                              <div>
+                                <Label htmlFor={`notes-${scheduled.id}`} className="text-sm font-semibold text-gray-700">
+                                  Activity Notes & Observations
+                                </Label>
+                                <Textarea
+                                  id={`notes-${scheduled.id}`}
+                                  placeholder="How did the activity go? Any observations about student engagement?"
+                                  value={record?.notes || ''}
+                                  onChange={(e) => handleNotesChange(scheduled.id, e.target.value)}
+                                  className="mt-2 min-h-[80px] bg-white/80"
+                                />
+                              </div>
+
+                              {/* Materials Section */}
+                              <div>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Checkbox
+                                    id={`materials-${scheduled.id}`}
+                                    checked={record?.materialsUsed || false}
+                                    onCheckedChange={() => handleMaterialsToggle(scheduled.id)}
+                                  />
+                                  <Label htmlFor={`materials-${scheduled.id}`} className="text-sm font-semibold text-gray-700">
+                                    Materials Used
+                                  </Label>
+                                </div>
+                                {record?.materialsUsed && (
+                                  <Textarea
+                                    placeholder="Notes about materials (e.g., supplies running low, need replacements)"
+                                    value={record?.materialNotes || ''}
+                                    onChange={(e) => handleMaterialNotesChange(scheduled.id, e.target.value)}
+                                    className="mt-2 min-h-[60px] bg-white/80"
+                                  />
+                                )}
+                              </div>
+
+                              {/* Activity Details */}
+                              <div className="flex gap-4 text-xs text-gray-500">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {scheduled.activity?.duration} minutes
+                                </span>
+                                {scheduled.activity?.groupSize && (
+                                  <span className="flex items-center gap-1">
+                                    <Users className="h-3 w-3" />
+                                    {scheduled.activity?.groupSize}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+          ))
         ) : (
+          // Show regular single day activities
           sortedActivities.map((scheduled) => {
             const isExpanded = expandedActivity === scheduled.id;
             const record = activityRecords[scheduled.id];
