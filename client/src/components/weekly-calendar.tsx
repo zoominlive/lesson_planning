@@ -82,6 +82,7 @@ const generateWeekDays = (weekStartDate: Date) => {
   const days = [];
   const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
   
+  // weekStartDate should already be a Monday, so use it directly
   for (let i = 0; i < 5; i++) {
     const date = addDays(weekStartDate, i);
     days.push({
@@ -96,7 +97,8 @@ const generateWeekDays = (weekStartDate: Date) => {
 };
 
 export default function WeeklyCalendar({ selectedLocation, selectedRoom, currentWeekDate, currentLessonPlan, isReviewMode = false }: WeeklyCalendarProps) {
-  const weekStartDate = currentWeekDate || startOfWeek(new Date(), { weekStartsOn: 1 });
+  // Ensure we're working with the correct date in local timezone
+  const weekStartDate = currentWeekDate ? new Date(currentWeekDate.getFullYear(), currentWeekDate.getMonth(), currentWeekDate.getDate()) : startOfWeek(new Date(), { weekStartsOn: 1 });
   const weekDays = generateWeekDays(weekStartDate);
   
   const [searchTerm, setSearchTerm] = useState("");

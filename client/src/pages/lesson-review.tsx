@@ -148,7 +148,12 @@ function ReviewAccordionContent({ plan }: ReviewAccordionContentProps) {
         <WeeklyCalendar
           selectedLocation={plan.locationId}
           selectedRoom={plan.roomId}
-          currentWeekDate={new Date(plan.weekStart)}
+          currentWeekDate={(() => {
+            // Parse the ISO string and create a date in local timezone
+            const dateStr = plan.weekStart.split('T')[0];
+            const [year, month, day] = dateStr.split('-').map(Number);
+            return new Date(year, month - 1, day);
+          })()}
           currentLessonPlan={plan}
           isReviewMode={true}
         />
