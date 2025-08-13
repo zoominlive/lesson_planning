@@ -1122,17 +1122,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const populatedActivities = await Promise.all(
         roomScheduledActivities.map(async (sa) => {
           const activity = await storage.getActivity(sa.activityId);
+          const enrichedActivity = activity as any;
           console.log('[GET /api/scheduled-activities] Activity data for', sa.activityId, ':', {
             hasActivity: !!activity,
-            hasMilestones: !!(activity?.milestones),
-            milestonesCount: activity?.milestones?.length || 0,
-            hasMaterials: !!(activity?.materials),
-            materialsCount: activity?.materials?.length || 0,
-            hasAgeGroups: !!(activity?.ageGroups),
-            ageGroupsCount: activity?.ageGroups?.length || 0,
-            hasSteps: !!(activity?.steps),
-            stepsCount: activity?.steps?.length || 0,
-            activityTitle: activity?.title
+            hasMilestones: !!(enrichedActivity?.milestones),
+            milestonesCount: enrichedActivity?.milestones?.length || 0,
+            hasMaterials: !!(enrichedActivity?.materials),
+            materialsCount: enrichedActivity?.materials?.length || 0,
+            hasAgeGroups: !!(enrichedActivity?.ageGroups),
+            ageGroupsCount: enrichedActivity?.ageGroups?.length || 0,
+            hasSteps: !!(enrichedActivity?.steps),
+            stepsCount: enrichedActivity?.steps?.length || 0,
+            activityTitle: activity?.title,
+            milestoneIds: activity?.milestoneIds,
+            materialIds: activity?.materialIds
           });
           return {
             ...sa,
