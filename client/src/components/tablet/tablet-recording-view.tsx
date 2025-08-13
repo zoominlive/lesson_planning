@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Clock, Users, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Save } from "lucide-react";
+import { Clock, Users, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Save, Play, Image } from "lucide-react";
 import { format } from "date-fns";
 
 interface TabletRecordingViewProps {
@@ -294,7 +294,21 @@ export function TabletRecordingView({
                       >
                         <div className="p-3">
                           {/* Activity Header */}
-                          <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-3">
+                            {/* Activity Image Thumbnail */}
+                            {scheduled.activity?.activityImage && (
+                              <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                                <img 
+                                  src={scheduled.activity.activityImage} 
+                                  alt={scheduled.activity.title}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            )}
+                            
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1.5">
                                 <span className="text-xs text-gray-500 flex items-center gap-1">
@@ -341,49 +355,90 @@ export function TabletRecordingView({
 
                           {/* Expanded Content */}
                           {isExpanded && (
-                            <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+                            <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
+                              {/* Full Activity Image */}
+                              {scheduled.activity?.activityImage && (
+                                <div className="rounded-lg overflow-hidden bg-gray-100">
+                                  <img 
+                                    src={scheduled.activity.activityImage} 
+                                    alt={scheduled.activity.title}
+                                    className="w-full max-h-48 object-cover"
+                                  />
+                                </div>
+                              )}
+                              
+                              {/* Description */}
                               {scheduled.activity?.description && (
-                                <p className="text-xs text-gray-600">
-                                  {scheduled.activity.description}
-                                </p>
+                                <div>
+                                  <h4 className="text-xs font-semibold text-gray-700 mb-1">Description</h4>
+                                  <p className="text-xs text-gray-600">
+                                    {scheduled.activity.description}
+                                  </p>
+                                </div>
                               )}
                               
-                              <div>
-                                <Textarea
-                                  placeholder="Add notes..."
-                                  value={record?.notes || ''}
-                                  onChange={(e) => handleNotesChange(scheduled.id, e.target.value)}
-                                  className="min-h-[60px] text-sm"
-                                  data-testid={`notes-${scheduled.id}`}
-                                />
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <Checkbox
-                                  id={`materials-${scheduled.id}`}
-                                  checked={record?.materialsUsed || false}
-                                  onCheckedChange={() => handleMaterialsToggle(scheduled.id)}
-                                  className="h-4 w-4"
-                                />
-                                <Label htmlFor={`materials-${scheduled.id}`} className="text-xs text-gray-600">
-                                  Materials Used
-                                </Label>
-                              </div>
-                              
-                              {record?.materialsUsed && (
-                                <Textarea
-                                  placeholder="Material notes..."
-                                  value={record?.materialNotes || ''}
-                                  onChange={(e) => handleMaterialNotesChange(scheduled.id, e.target.value)}
-                                  className="min-h-[40px] text-sm"
-                                />
+                              {/* Activity Steps */}
+                              {scheduled.activity?.steps && scheduled.activity.steps.length > 0 && (
+                                <div>
+                                  <h4 className="text-xs font-semibold text-gray-700 mb-2">Activity Steps</h4>
+                                  <ol className="space-y-2">
+                                    {scheduled.activity.steps.map((step: any, index: number) => (
+                                      <li key={index} className="flex gap-2">
+                                        <span className="text-xs font-medium text-gray-500 flex-shrink-0">
+                                          {index + 1}.
+                                        </span>
+                                        <div className="flex-1">
+                                          <p className="text-xs text-gray-600">{step.instruction}</p>
+                                          {step.imageUrl && (
+                                            <img 
+                                              src={step.imageUrl} 
+                                              alt={`Step ${index + 1}`}
+                                              className="mt-1 rounded w-full max-h-32 object-cover"
+                                            />
+                                          )}
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ol>
+                                </div>
                               )}
-
+                              
+                              {/* Video Link */}
+                              {scheduled.activity?.videoUrl && (
+                                <div>
+                                  <h4 className="text-xs font-semibold text-gray-700 mb-1">Video Tutorial</h4>
+                                  <a 
+                                    href={scheduled.activity.videoUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 text-xs text-blue-600 hover:text-blue-700"
+                                  >
+                                    <Play className="h-3 w-3" />
+                                    Watch video demonstration
+                                  </a>
+                                </div>
+                              )}
+                              
+                              {/* Materials */}
+                              {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
+                                <div>
+                                  <h4 className="text-xs font-semibold text-gray-700 mb-1">Required Materials</h4>
+                                  <div className="flex flex-wrap gap-1">
+                                    {scheduled.activity.materials.map((material: any) => (
+                                      <Badge key={material.id} variant="secondary" className="text-xs">
+                                        {material.name}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Activity Details */}
                               <div className="flex gap-3 text-xs text-gray-500">
                                 {scheduled.activity?.duration && (
                                   <span className="flex items-center gap-1">
                                     <Clock className="h-3 w-3" />
-                                    {scheduled.activity.duration}min
+                                    {scheduled.activity.duration} minutes
                                   </span>
                                 )}
                                 {scheduled.activity?.groupSize && (
@@ -391,6 +446,40 @@ export function TabletRecordingView({
                                     <Users className="h-3 w-3" />
                                     {scheduled.activity.groupSize}
                                   </span>
+                                )}
+                              </div>
+                              
+                              {/* Recording Section */}
+                              <div className="border-t pt-3 space-y-2">
+                                <h4 className="text-xs font-semibold text-gray-700">Activity Recording</h4>
+                                
+                                <Textarea
+                                  placeholder="Add notes about how the activity went..."
+                                  value={record?.notes || ''}
+                                  onChange={(e) => handleNotesChange(scheduled.id, e.target.value)}
+                                  className="min-h-[60px] text-sm"
+                                  data-testid={`notes-${scheduled.id}`}
+                                />
+
+                                <div className="flex items-center gap-2">
+                                  <Checkbox
+                                    id={`materials-${scheduled.id}`}
+                                    checked={record?.materialsUsed || false}
+                                    onCheckedChange={() => handleMaterialsToggle(scheduled.id)}
+                                    className="h-4 w-4"
+                                  />
+                                  <Label htmlFor={`materials-${scheduled.id}`} className="text-xs text-gray-600">
+                                    Materials Used
+                                  </Label>
+                                </div>
+                                
+                                {record?.materialsUsed && (
+                                  <Textarea
+                                    placeholder="Notes about materials..."
+                                    value={record?.materialNotes || ''}
+                                    onChange={(e) => handleMaterialNotesChange(scheduled.id, e.target.value)}
+                                    className="min-h-[40px] text-sm"
+                                  />
                                 )}
                               </div>
                             </div>
@@ -421,7 +510,21 @@ export function TabletRecordingView({
               >
                 <div className="p-3">
                   {/* Activity Header */}
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-3">
+                    {/* Activity Image Thumbnail */}
+                    {scheduled.activity?.activityImage && (
+                      <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                        <img 
+                          src={scheduled.activity.activityImage} 
+                          alt={scheduled.activity.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                    
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">
                         <span className="text-xs text-gray-500 flex items-center gap-1">
@@ -468,49 +571,90 @@ export function TabletRecordingView({
 
                   {/* Expanded Content */}
                   {isExpanded && (
-                    <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+                    <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
+                      {/* Full Activity Image */}
+                      {scheduled.activity?.activityImage && (
+                        <div className="rounded-lg overflow-hidden bg-gray-100">
+                          <img 
+                            src={scheduled.activity.activityImage} 
+                            alt={scheduled.activity.title}
+                            className="w-full max-h-48 object-cover"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Description */}
                       {scheduled.activity?.description && (
-                        <p className="text-xs text-gray-600">
-                          {scheduled.activity.description}
-                        </p>
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-700 mb-1">Description</h4>
+                          <p className="text-xs text-gray-600">
+                            {scheduled.activity.description}
+                          </p>
+                        </div>
                       )}
                       
-                      <div>
-                        <Textarea
-                          placeholder="Add notes..."
-                          value={record?.notes || ''}
-                          onChange={(e) => handleNotesChange(scheduled.id, e.target.value)}
-                          className="min-h-[60px] text-sm"
-                          data-testid={`notes-${scheduled.id}`}
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id={`materials-${scheduled.id}`}
-                          checked={record?.materialsUsed || false}
-                          onCheckedChange={() => handleMaterialsToggle(scheduled.id)}
-                          className="h-4 w-4"
-                        />
-                        <Label htmlFor={`materials-${scheduled.id}`} className="text-xs text-gray-600">
-                          Materials Used
-                        </Label>
-                      </div>
-                      
-                      {record?.materialsUsed && (
-                        <Textarea
-                          placeholder="Material notes..."
-                          value={record?.materialNotes || ''}
-                          onChange={(e) => handleMaterialNotesChange(scheduled.id, e.target.value)}
-                          className="min-h-[40px] text-sm"
-                        />
+                      {/* Activity Steps */}
+                      {scheduled.activity?.steps && scheduled.activity.steps.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-700 mb-2">Activity Steps</h4>
+                          <ol className="space-y-2">
+                            {scheduled.activity.steps.map((step: any, index: number) => (
+                              <li key={index} className="flex gap-2">
+                                <span className="text-xs font-medium text-gray-500 flex-shrink-0">
+                                  {index + 1}.
+                                </span>
+                                <div className="flex-1">
+                                  <p className="text-xs text-gray-600">{step.instruction}</p>
+                                  {step.imageUrl && (
+                                    <img 
+                                      src={step.imageUrl} 
+                                      alt={`Step ${index + 1}`}
+                                      className="mt-1 rounded w-full max-h-32 object-cover"
+                                    />
+                                  )}
+                                </div>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
                       )}
-
+                      
+                      {/* Video Link */}
+                      {scheduled.activity?.videoUrl && (
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-700 mb-1">Video Tutorial</h4>
+                          <a 
+                            href={scheduled.activity.videoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 text-xs text-blue-600 hover:text-blue-700"
+                          >
+                            <Play className="h-3 w-3" />
+                            Watch video demonstration
+                          </a>
+                        </div>
+                      )}
+                      
+                      {/* Materials */}
+                      {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-700 mb-1">Required Materials</h4>
+                          <div className="flex flex-wrap gap-1">
+                            {scheduled.activity.materials.map((material: any) => (
+                              <Badge key={material.id} variant="secondary" className="text-xs">
+                                {material.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Activity Details */}
                       <div className="flex gap-3 text-xs text-gray-500">
                         {scheduled.activity?.duration && (
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            {scheduled.activity.duration}min
+                            {scheduled.activity.duration} minutes
                           </span>
                         )}
                         {scheduled.activity?.groupSize && (
@@ -518,6 +662,40 @@ export function TabletRecordingView({
                             <Users className="h-3 w-3" />
                             {scheduled.activity.groupSize}
                           </span>
+                        )}
+                      </div>
+                      
+                      {/* Recording Section */}
+                      <div className="border-t pt-3 space-y-2">
+                        <h4 className="text-xs font-semibold text-gray-700">Activity Recording</h4>
+                        
+                        <Textarea
+                          placeholder="Add notes about how the activity went..."
+                          value={record?.notes || ''}
+                          onChange={(e) => handleNotesChange(scheduled.id, e.target.value)}
+                          className="min-h-[60px] text-sm"
+                          data-testid={`notes-${scheduled.id}`}
+                        />
+
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id={`materials-${scheduled.id}`}
+                            checked={record?.materialsUsed || false}
+                            onCheckedChange={() => handleMaterialsToggle(scheduled.id)}
+                            className="h-4 w-4"
+                          />
+                          <Label htmlFor={`materials-${scheduled.id}`} className="text-xs text-gray-600">
+                            Materials Used
+                          </Label>
+                        </div>
+                        
+                        {record?.materialsUsed && (
+                          <Textarea
+                            placeholder="Notes about materials..."
+                            value={record?.materialNotes || ''}
+                            onChange={(e) => handleMaterialNotesChange(scheduled.id, e.target.value)}
+                            className="min-h-[40px] text-sm"
+                          />
                         )}
                       </div>
                     </div>
