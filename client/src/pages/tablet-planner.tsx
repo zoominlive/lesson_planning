@@ -9,7 +9,7 @@ import { TabletLessonReview } from "@/components/tablet/tablet-lesson-review";
 import { NotificationCarousel } from "../components/notification-carousel";
 import { startOfWeek, format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
-import { ChevronUp, Sparkles, Calendar, ClipboardCheck } from "lucide-react";
+import { ChevronUp, Box, Calendar, ClipboardCheck } from "lucide-react";
 import { useLocation } from "wouter";
 import { hasPermission } from "@/lib/permission-utils";
 import type { Activity } from "@shared/schema";
@@ -322,14 +322,14 @@ export default function TabletPlanner() {
             onTouchEnd={handleTouchEnd}
           >
             <div 
-              className="bg-gradient-to-t from-teal-500 via-cyan-500 to-emerald-400 backdrop-blur-sm shadow-[0_-4px_20px_rgba(0,0,0,0.15)] rounded-t-3xl px-6 py-3 cursor-pointer border-t-2 border-white/20"
+              className="bg-gradient-to-t from-blue-600 via-sky-500 to-blue-400 backdrop-blur-sm shadow-[0_-4px_20px_rgba(0,0,0,0.15)] rounded-t-3xl px-6 py-3 cursor-pointer border-t-2 border-white/20"
               onClick={() => setDrawerOpen(true)}
             >
               {/* Swipe indicator */}
               <div className="w-12 h-1 bg-white/80 rounded-full mx-auto mb-2 shadow-sm" />
               
               <div className="flex items-center justify-center gap-2">
-                <Sparkles className="h-5 w-5 text-white drop-shadow animate-pulse" />
+                <Box className="h-5 w-5 text-white drop-shadow animate-pulse" />
                 <span className="text-sm font-semibold text-white drop-shadow">
                   Swipe up for Activities
                 </span>
