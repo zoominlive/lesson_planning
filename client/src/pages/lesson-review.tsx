@@ -223,7 +223,13 @@ export function LessonReview() {
 
   // Helper function to format week range
   const formatWeekRange = (weekStart: string) => {
-    const date = new Date(weekStart);
+    // Parse the ISO string and extract just the date part
+    const dateStr = weekStart.split('T')[0]; // Get YYYY-MM-DD part
+    const [year, month, day] = dateStr.split('-').map(Number);
+    
+    // Create date in local timezone (avoiding timezone offset issues)
+    const date = new Date(year, month - 1, day); // month is 0-indexed
+    
     // Ensure we start from Monday even if weekStart is on a different day
     const start = startOfWeek(date, { weekStartsOn: 1 }); // Monday
     const end = addDays(start, 4); // Friday  

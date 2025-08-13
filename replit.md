@@ -32,6 +32,11 @@ This project is a comprehensive lesson planning application for early childhood 
 - **Improved date range formatting**: Week ranges in review area now properly handle all edge cases
 - **UI cleanup**: Removed redundant instructional text from lesson planner for cleaner interface
 
+### Fixed Timezone Issues in Week Display (January 14, 2025)
+- **Fixed timezone conversion bug**: Modified formatWeekRange function to parse ISO dates correctly in local timezone
+- **Resolved incorrect week calculations**: September 1st now correctly shows as Sep 1-5 instead of Aug 25-29
+- **Updated notification carousel**: Week ranges in notifications now display Monday-Friday format correctly
+
 ### Fixed Lesson Plan Review Data Display (January 12, 2025)
 - **Enhanced getLessonPlansForReview function**: Modified to include teacher, location, room, and submitter data via proper database joins
 - **Fixed tenant context issue**: Ensured proper tenant context is maintained when fetching related user data
