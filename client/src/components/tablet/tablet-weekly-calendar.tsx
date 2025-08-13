@@ -105,7 +105,7 @@ export function TabletWeeklyCalendar({
   
   // Fetch location settings to get correct schedule type
   const { data: locationSettings } = useQuery<{
-    type: 'time-based' | 'position-based';
+    scheduleType: 'time-based' | 'position-based';
     startTime: string;
     endTime: string;
     slotsPerDay: number;
@@ -115,7 +115,13 @@ export function TabletWeeklyCalendar({
   });
 
   // Use settings from API, fallback to defaults
-  const scheduleSettings = locationSettings || {
+  // Map scheduleType to type for compatibility with generateTimeSlots
+  const scheduleSettings = locationSettings ? {
+    type: locationSettings.scheduleType,
+    startTime: locationSettings.startTime,
+    endTime: locationSettings.endTime,
+    slotsPerDay: locationSettings.slotsPerDay
+  } : {
     type: 'time-based' as const,
     startTime: '06:00',
     endTime: '18:00',
