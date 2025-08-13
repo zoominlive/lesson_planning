@@ -29,7 +29,7 @@ import { ChevronLeft, ChevronRight, Send, MapPin, Calendar, CheckCircle, RotateC
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import { requiresLessonPlanApproval } from "@/lib/permission-utils";
 import { DayPicker } from "react-day-picker";
-import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from "date-fns";
+import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import "react-day-picker/dist/style.css";
 
@@ -116,8 +116,8 @@ export function CalendarControls({
   };
 
   const formatWeekRange = (date: Date) => {
-    const start = startOfWeek(date, { weekStartsOn: 1 });
-    const end = endOfWeek(date, { weekStartsOn: 1 });
+    const start = startOfWeek(date, { weekStartsOn: 1 }); // Monday
+    const end = addDays(start, 4); // Friday (Monday + 4 days)
     return `Week of ${format(start, 'MMM d')}-${format(end, 'd, yyyy')}`;
   };
 

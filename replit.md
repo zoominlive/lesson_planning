@@ -3,6 +3,11 @@ This project is a comprehensive lesson planning application for early childhood 
 
 ## Recent Changes (January 2025)
 
+### Consistent Week Display Format (January 13, 2025)
+- **Updated week range display**: Changed week display format from Monday-Sunday to Monday-Friday throughout the application
+- **Modified components**: Updated formatWeekRange functions in calendar-controls.tsx and tablet-header.tsx
+- **Consistent weekday focus**: All week displays now show only weekdays (Mon-Fri) to better align with childcare center operating days
+
 ### Enhanced Visual Content for Materials and Milestones (January 13, 2025)
 - **Added placeholder images for materials**: Created professional placeholder images for Picture Book Collection, Wooden Building Blocks, and Washable Crayons materials
 - **Added images for developmental milestones**: Generated and integrated images for "Express feelings verbally", "Sorts objects by attribute", and "Uses scissors to cut shapes" milestones

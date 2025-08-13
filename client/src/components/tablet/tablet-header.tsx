@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { ChevronLeft, ChevronRight, Menu, MapPin, Home, Calendar, CheckSquare } from "lucide-react";
-import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from "date-fns";
+import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays } from "date-fns";
 
 interface TabletHeaderProps {
   userInfo: any;
@@ -54,8 +54,8 @@ export function TabletHeader({
   };
 
   const formatWeekRange = (date: Date) => {
-    const start = startOfWeek(date, { weekStartsOn: 1 });
-    const end = endOfWeek(date, { weekStartsOn: 1 });
+    const start = startOfWeek(date, { weekStartsOn: 1 }); // Monday
+    const end = addDays(start, 4); // Friday (Monday + 4 days)
     return `${format(start, 'MMM d')} - ${format(end, 'd, yyyy')}`;
   };
 
