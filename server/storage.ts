@@ -52,11 +52,7 @@ import {
   roles,
   rolePermissions,
   tenantPermissionOverrides,
-  notifications,
-  activityMilestones,
-  activityMaterials,
-  activityAgeGroups,
-  activitySteps
+  notifications
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, isNull } from "drizzle-orm";
@@ -487,59 +483,43 @@ export class DatabaseStorage implements IStorage {
     
     if (!activity) return undefined;
     
-    // Fetch all related data for the activity
-    const [
-      activityMilestones,
-      activityMaterials,
-      activityAgeGroups,
-      activitySteps
-    ] = await Promise.all([
-      // Get milestones
-      this.db
-        .select({
-          milestone: milestones
-        })
-        .from(activityMilestones)
-        .innerJoin(milestones, eq(activityMilestones.milestoneId, milestones.id))
-        .where(eq(activityMilestones.activityId, id)),
+    // Fetch all related data for the activity using the ID arrays stored in the activity
+    const relatedData = await Promise.all([
+      // Get milestones by IDs
+      activity.milestoneIds && activity.milestoneIds.length > 0
+        ? this.db
+            .select()
+            .from(milestones)
+            .where(sql`${milestones.id} = ANY(${activity.milestoneIds})`)
+        : Promise.resolve([]),
       
-      // Get materials with quantity
-      this.db
-        .select({
-          material: materials,
-          quantity: activityMaterials.quantity
-        })
-        .from(activityMaterials)
-        .innerJoin(materials, eq(activityMaterials.materialId, materials.id))
-        .where(eq(activityMaterials.activityId, id)),
+      // Get materials by IDs
+      activity.materialIds && activity.materialIds.length > 0
+        ? this.db
+            .select()
+            .from(materials)
+            .where(sql`${materials.id} = ANY(${activity.materialIds})`)
+        : Promise.resolve([]),
       
-      // Get age groups
-      this.db
-        .select({
-          ageGroup: ageGroups
-        })
-        .from(activityAgeGroups)
-        .innerJoin(ageGroups, eq(activityAgeGroups.ageGroupId, ageGroups.id))
-        .where(eq(activityAgeGroups.activityId, id)),
-      
-      // Get activity steps
-      this.db
-        .select()
-        .from(activitySteps)
-        .where(eq(activitySteps.activityId, id))
-        .orderBy(activitySteps.stepNumber)
+      // Get age groups by IDs
+      activity.ageGroupIds && activity.ageGroupIds.length > 0
+        ? this.db
+            .select()
+            .from(ageGroups)
+            .where(sql`${ageGroups.id} = ANY(${activity.ageGroupIds})`)
+        : Promise.resolve([])
     ]);
+    
+    const [activityMilestones, activityMaterials, activityAgeGroups] = relatedData;
     
     // Enrich activity with related data
     const enrichedActivity: any = {
       ...activity,
-      milestones: activityMilestones.map(am => am.milestone),
-      materials: activityMaterials.map(am => ({
-        ...am.material,
-        quantity: am.quantity
-      })),
-      ageGroups: activityAgeGroups.map(aag => aag.ageGroup),
-      steps: activitySteps
+      milestones: activityMilestones,
+      materials: activityMaterials,
+      ageGroups: activityAgeGroups,
+      // Instructions are already stored as JSON in the activity, just rename to steps
+      steps: activity.instructions || []
     };
     
     return enrichedActivity;
