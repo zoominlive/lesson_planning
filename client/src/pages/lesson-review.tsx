@@ -6,14 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Clock, User, MapPin, Home, CheckCircle, XCircle, AlertCircle, FileText, ChevronRight, BookOpen } from "lucide-react";
-import { format } from "date-fns";
+import { Calendar, Clock, User, MapPin, Home, CheckCircle, XCircle, AlertCircle, FileText, ChevronRight, BookOpen, Filter } from "lucide-react";
+import { format, startOfWeek, addWeeks, subWeeks, addDays } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getUserInfo } from "@/lib/auth";
 import { hasPermission } from "@/lib/permission-utils";
 import { useLocation } from "wouter";
 import type { LessonPlan, User as UserType, Location, Room } from "@shared/schema";
+import WeeklyCalendar from "@/components/weekly-calendar";
+import { NavigationTabs } from "@/components/navigation-tabs";
 
 interface LessonPlanWithDetails extends LessonPlan {
   teacher?: UserType;
@@ -25,14 +28,154 @@ interface LessonPlanWithDetails extends LessonPlan {
   activitiesCount?: number;
 }
 
+interface ReviewAccordionContentProps {
+  plan: LessonPlanWithDetails;
+}
+
+function ReviewAccordionContent({ plan }: ReviewAccordionContentProps) {
+  const { toast } = useToast();
+  const [reviewNotes, setReviewNotes] = useState("");
+  
+  const approveMutation = useMutation({
+    mutationFn: async ({ planId, notes }: { planId: string; notes?: string }) => {
+      return apiRequest("POST", `/api/lesson-plans/${planId}/approve`, { notes: notes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans/review"] });
+      toast({
+        title: "Lesson Plan Approved",
+        description: "The lesson plan has been approved successfully.",
+      });
+      setReviewNotes("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Approval Failed",
+        description: error.message || "Failed to approve the lesson plan.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async ({ planId, notes }: { planId: string; notes: string }) => {
+      return apiRequest("POST", `/api/lesson-plans/${planId}/reject`, { notes: notes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans/review"] });
+      toast({
+        title: "Lesson Plan Returned",
+        description: "The lesson plan has been returned with feedback.",
+      });
+      setReviewNotes("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Return Failed",
+        description: error.message || "Failed to return the lesson plan.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleApprove = () => {
+    approveMutation.mutate({ planId: plan.id, notes: reviewNotes });
+  };
+
+  const handleReject = () => {
+    if (!reviewNotes.trim()) {
+      toast({
+        title: "Feedback Required",
+        description: "Please provide feedback when returning a lesson plan.",
+        variant: "destructive",
+      });
+      return;
+    }
+    rejectMutation.mutate({ planId: plan.id, notes: reviewNotes });
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Review Controls */}
+      {plan.status === "submitted" && (
+        <div className="bg-gray-50 p-3 rounded-lg border">
+          <div className="space-y-2">
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1 block">
+                Review Notes (Optional for approval, required for return)
+              </label>
+              <Textarea
+                value={reviewNotes}
+                onChange={(e) => setReviewNotes(e.target.value)}
+                placeholder="Enter feedback or notes about this lesson plan..."
+                rows={2}
+                className="w-full text-sm"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="border-red-200 text-red-600 hover:bg-red-50 h-8 text-sm"
+                onClick={handleReject}
+                disabled={rejectMutation.isPending}
+              >
+                {rejectMutation.isPending ? "Returning..." : "Return with Feedback"}
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white h-8 text-sm"
+                onClick={handleApprove}
+                disabled={approveMutation.isPending}
+              >
+                {approveMutation.isPending ? "Approving..." : "Approve"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Show existing review notes for non-submitted plans */}
+      {plan.reviewNotes && plan.status !== "submitted" && (
+        <div className="p-2 bg-blue-50 rounded-lg border border-blue-200">
+          <p className="text-xs font-medium text-blue-800 mb-1">Review Notes:</p>
+          <p className="text-xs text-blue-700">{plan.reviewNotes}</p>
+        </div>
+      )}
+
+      {/* Lesson Plan Calendar */}
+      <div className="border-t pt-3">
+        <h3 className="text-base font-semibold mb-2">Lesson Plan Details</h3>
+        <WeeklyCalendar
+          selectedLocation={plan.locationId}
+          selectedRoom={plan.roomId}
+          currentWeekDate={(() => {
+            // Parse the ISO string and create a date in local timezone
+            const dateStr = plan.weekStart.split('T')[0];
+            const [year, month, day] = dateStr.split('-').map(Number);
+            return new Date(year, month - 1, day);
+          })()}
+          currentLessonPlan={plan}
+          isReviewMode={true}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function LessonReview() {
   const { toast } = useToast();
   const userInfo = getUserInfo();
   const [, setLocation] = useLocation();
-  const [selectedPlan, setSelectedPlan] = useState<LessonPlanWithDetails | null>(null);
-  const [reviewNotes, setReviewNotes] = useState("");
-  const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
+  const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<"submitted" | "approved" | "rejected">("submitted");
+  const [filterWeek, setFilterWeek] = useState<string>("all");
+  const [filterLocation, setFilterLocation] = useState<string>("all");
+  const [filterRoom, setFilterRoom] = useState<string>("all");
+  
+  // Clear cache on mount to ensure fresh data
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans/review"] });
+  }, []);
 
   // Check if user has permission to access review page
   const hasAccess = hasPermission('lesson_plan.approve');
@@ -61,7 +204,11 @@ export function LessonReview() {
   const { data: lessonPlans = [], isLoading } = useQuery<LessonPlanWithDetails[]>({
     queryKey: ["/api/lesson-plans/review"],
     enabled: !!userInfo?.role && ['director', 'assistant_director', 'admin', 'superadmin'].includes(userInfo.role.toLowerCase()),
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
+
+
 
   // Fetch additional data for enriching lesson plans  
   const { data: users = [] } = useQuery<UserType[]>({
@@ -77,89 +224,69 @@ export function LessonReview() {
     queryKey: ["/api/rooms"],
   });
 
-  // Approve mutation
-  const approveMutation = useMutation({
-    mutationFn: async ({ id, notes }: { id: string; notes?: string }) => {
-      return apiRequest(`/api/lesson-plans/${id}/approve`, "POST", { notes });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans/review"] });
-      toast({
-        title: "Lesson Plan Approved",
-        description: "The lesson plan has been approved successfully.",
-      });
-      setSelectedPlan(null);
-      setReviewNotes("");
-      setActionType(null);
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to approve the lesson plan.",
-        variant: "destructive",
-      });
-    },
-  });
 
-  // Reject mutation
-  const rejectMutation = useMutation({
-    mutationFn: async ({ id, notes }: { id: string; notes: string }) => {
-      return apiRequest(`/api/lesson-plans/${id}/reject`, "POST", { notes });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans/review"] });
-      toast({
-        title: "Lesson Plan Returned",
-        description: "The lesson plan has been returned with feedback.",
-      });
-      setSelectedPlan(null);
-      setReviewNotes("");
-      setActionType(null);
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to return the lesson plan.",
-        variant: "destructive",
-      });
-    },
-  });
 
-  // Enrich lesson plans with related data
+  // Helper function to format week range
+  const formatWeekRange = (weekStart: string) => {
+    // Parse the ISO string and extract just the date part
+    const dateStr = weekStart.split('T')[0]; // Get YYYY-MM-DD part
+    const [year, month, day] = dateStr.split('-').map(Number);
+    
+    // Create date in local timezone (avoiding timezone offset issues)
+    const date = new Date(year, month - 1, day); // month is 0-indexed
+    
+    // Ensure we start from Monday even if weekStart is on a different day
+    const start = startOfWeek(date, { weekStartsOn: 1 }); // Monday
+    const end = addDays(start, 4); // Friday  
+    
+    // Handle month boundaries properly
+    if (start.getMonth() !== end.getMonth()) {
+      return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`;
+    } else {
+      return `${format(start, "MMM d")}-${format(end, "d, yyyy")}`;
+    }
+  };
+
+  // Enrich lesson plans with related data (preserve existing data if present)
   const enrichedPlans = lessonPlans.map((plan: LessonPlanWithDetails) => ({
     ...plan,
-    teacher: users.find((u: UserType) => u.id === plan.teacherId),
-    submitter: plan.submittedBy ? users.find((u: UserType) => u.id === plan.submittedBy) : undefined,
-    approver: plan.approvedBy ? users.find((u: UserType) => u.id === plan.approvedBy) : undefined,
-    rejector: plan.rejectedBy ? users.find((u: UserType) => u.id === plan.rejectedBy) : undefined,
-    location: locations.find((l: Location) => l.id === plan.locationId),
-    room: rooms.find((r: Room) => r.id === plan.roomId),
+    teacher: plan.teacher || users.find((u: UserType) => u.id === plan.teacherId),
+    submitter: plan.submitter || (plan.submittedBy ? users.find((u: UserType) => u.id === plan.submittedBy) : undefined),
+    approver: plan.approver || (plan.approvedBy ? users.find((u: UserType) => u.id === plan.approvedBy) : undefined),
+    rejector: plan.rejector || (plan.rejectedBy ? users.find((u: UserType) => u.id === plan.rejectedBy) : undefined),
+    location: plan.location || locations.find((l: Location) => l.id === plan.locationId),
+    room: plan.room || rooms.find((r: Room) => r.id === plan.roomId),
   }));
 
-  // Filter plans by status
+  // Get unique weeks for filter dropdown
+  const uniqueWeeks = Array.from(new Set(enrichedPlans.map(p => p.weekStart)))
+    .sort()
+    .map(weekStart => ({
+      value: weekStart,
+      label: formatWeekRange(weekStart)
+    }));
+
+  // Filter plans by status and other filters
   const filteredPlans = enrichedPlans.filter((plan: LessonPlanWithDetails) => {
-    if (activeTab === "submitted") return plan.status === "submitted";
-    if (activeTab === "approved") return plan.status === "approved";
-    if (activeTab === "rejected") return plan.status === "rejected";
-    return false;
+    // Status filter
+    let matchesStatus = false;
+    if (activeTab === "submitted") matchesStatus = plan.status === "submitted";
+    if (activeTab === "approved") matchesStatus = plan.status === "approved";
+    if (activeTab === "rejected") matchesStatus = plan.status === "rejected";
+    
+    // Week filter
+    const matchesWeek = filterWeek === "all" || plan.weekStart === filterWeek;
+    
+    // Location filter
+    const matchesLocation = filterLocation === "all" || plan.locationId === filterLocation;
+    
+    // Room filter
+    const matchesRoom = filterRoom === "all" || plan.roomId === filterRoom;
+    
+    return matchesStatus && matchesWeek && matchesLocation && matchesRoom;
   });
 
-  const handleApprove = () => {
-    if (!selectedPlan) return;
-    approveMutation.mutate({ id: selectedPlan.id, notes: reviewNotes });
-  };
 
-  const handleReject = () => {
-    if (!selectedPlan || !reviewNotes.trim()) {
-      toast({
-        title: "Review Notes Required",
-        description: "Please provide feedback when returning a lesson plan.",
-        variant: "destructive",
-      });
-      return;
-    }
-    rejectMutation.mutate({ id: selectedPlan.id, notes: reviewNotes });
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -172,13 +299,6 @@ export function LessonReview() {
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
-  };
-
-  const formatWeekRange = (weekStart: string) => {
-    const start = new Date(weekStart);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 4); // Monday to Friday
-    return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`;
   };
 
   if (!userInfo?.role || !['director', 'assistant_director', 'admin', 'superadmin'].includes(userInfo.role.toLowerCase())) {
@@ -196,14 +316,14 @@ export function LessonReview() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Lesson Plan Review</h1>
-        <p className="text-gray-600">Review and approve submitted lesson plans</p>
+    <div className="container mx-auto p-3 max-w-7xl">
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold text-gray-900">Lesson Plan Review</h1>
+        <p className="text-sm text-gray-600">Review and approve submitted lesson plans</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-        <TabsList className="mb-6">
+        <TabsList className="mb-3">
           <TabsTrigger value="submitted" className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4" />
             Pending ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "submitted").length})
@@ -217,6 +337,73 @@ export function LessonReview() {
             Returned ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "rejected").length})
           </TabsTrigger>
         </TabsList>
+
+        {/* Filter Controls */}
+        <div className="flex gap-3 mb-4 p-3 bg-gray-50 rounded-lg border">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">Filters:</span>
+          </div>
+          
+          <Select value={filterWeek} onValueChange={setFilterWeek}>
+            <SelectTrigger className="w-[200px] h-9">
+              <SelectValue placeholder="Select week" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Weeks</SelectItem>
+              {uniqueWeeks.map(week => (
+                <SelectItem key={week.value} value={week.value}>
+                  {week.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterLocation} onValueChange={setFilterLocation}>
+            <SelectTrigger className="w-[200px] h-9">
+              <SelectValue placeholder="Select location" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Locations</SelectItem>
+              {locations.map((location: Location) => (
+                <SelectItem key={location.id} value={location.id}>
+                  {location.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterRoom} onValueChange={setFilterRoom}>
+            <SelectTrigger className="w-[200px] h-9">
+              <SelectValue placeholder="Select room" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Rooms</SelectItem>
+              {rooms
+                .filter((room: Room) => filterLocation === "all" || room.locationId === filterLocation)
+                .map((room: Room) => (
+                  <SelectItem key={room.id} value={room.id}>
+                    {room.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+
+          {(filterWeek !== "all" || filterLocation !== "all" || filterRoom !== "all") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setFilterWeek("all");
+                setFilterLocation("all");
+                setFilterRoom("all");
+              }}
+              className="ml-auto"
+            >
+              Clear Filters
+            </Button>
+          )}
+        </div>
 
         <TabsContent value={activeTab}>
           {isLoading ? (
@@ -239,152 +426,54 @@ export function LessonReview() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
+            <Accordion type="single" collapsible className="space-y-2">
               {filteredPlans.map((plan: LessonPlanWithDetails) => (
-                <Card key={plan.id} className="hover:shadow-lg transition-shadow cursor-pointer" 
-                      onClick={() => setSelectedPlan(plan)}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-4 mb-3">
+                <AccordionItem key={plan.id} value={plan.id} className="border rounded-lg shadow-sm">
+                  <AccordionTrigger className="hover:no-underline p-3 hover:bg-gray-50">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex-1 text-left">
+                        <div className="flex items-center gap-3 mb-2">
                           {getStatusBadge(plan.status)}
-                          <span className="text-sm text-gray-500">
+                          <span className="text-base font-semibold text-gray-900">
                             {formatWeekRange(plan.weekStart)}
                           </span>
                         </div>
                         
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-gray-400" />
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-gray-400" />
                             <span>{plan.location?.name || "Unknown Location"}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Home className="h-4 w-4 text-gray-400" />
+                          <div className="flex items-center gap-1">
+                            <Home className="h-3 w-3 text-gray-400" />
                             <span>{plan.room?.name || "Unknown Room"}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-gray-400" />
-                            <span>{plan.teacher ? `${plan.teacher.firstName} ${plan.teacher.lastName}` : "Unknown Teacher"}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-gray-400" />
-                            <span>{plan.scheduleType === "position-based" ? "Position-based" : "Time-based"}</span>
+                          <div className="flex items-center gap-1">
+                            <User className="h-3 w-3 text-gray-400" />
+                            <span>{plan.teacher ? `${plan.teacher.firstName} ${plan.teacher.lastName}` : (plan.submitter ? `${plan.submitter.firstName} ${plan.submitter.lastName}` : "Unknown Teacher")}</span>
                           </div>
                         </div>
 
                         {plan.submittedAt && (
-                          <div className="mt-3 text-sm text-gray-600">
+                          <div className="mt-2 text-xs text-gray-600">
                             Submitted on {format(new Date(plan.submittedAt), "MMM d, yyyy 'at' h:mm a")}
                             {plan.submitter && ` by ${plan.submitter.firstName} ${plan.submitter.lastName}`}
                           </div>
                         )}
-
-                        {plan.reviewNotes && (
-                          <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                            <p className="text-sm font-medium text-gray-700 mb-1">Review Notes:</p>
-                            <p className="text-sm text-gray-600">{plan.reviewNotes}</p>
-                          </div>
-                        )}
                       </div>
-                      
-                      <ChevronRight className="h-5 w-5 text-gray-400 ml-4" />
                     </div>
-                  </CardContent>
-                </Card>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <ReviewAccordionContent plan={plan} />
+                  </AccordionContent>
+                </AccordionItem>
               ))}
-            </div>
+            </Accordion>
           )}
         </TabsContent>
       </Tabs>
 
-      {/* Review Dialog */}
-      <Dialog open={!!selectedPlan} onOpenChange={(open) => !open && setSelectedPlan(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Review Lesson Plan</DialogTitle>
-            <DialogDescription>
-              Review the lesson plan for {selectedPlan?.location?.name} - {selectedPlan?.room?.name}
-            </DialogDescription>
-          </DialogHeader>
 
-          {selectedPlan && (
-            <div className="space-y-4 my-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">Week:</span> {formatWeekRange(selectedPlan.weekStart)}
-                </div>
-                <div>
-                  <span className="font-medium">Teacher:</span> {selectedPlan.teacher ? `${selectedPlan.teacher.firstName} ${selectedPlan.teacher.lastName}` : "Unknown"}
-                </div>
-                <div>
-                  <span className="font-medium">Location:</span> {selectedPlan.location?.name}
-                </div>
-                <div>
-                  <span className="font-medium">Room:</span> {selectedPlan.room?.name}
-                </div>
-                <div>
-                  <span className="font-medium">Schedule Type:</span> {selectedPlan.scheduleType === "position-based" ? "Position-based" : "Time-based"}
-                </div>
-                <div>
-                  <span className="font-medium">Status:</span> {getStatusBadge(selectedPlan.status)}
-                </div>
-              </div>
-
-              {selectedPlan.submittedAt && (
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium">Submitted:</span> {format(new Date(selectedPlan.submittedAt), "MMM d, yyyy 'at' h:mm a")}
-                  {selectedPlan.submitter && ` by ${selectedPlan.submitter.firstName} ${selectedPlan.submitter.lastName}`}
-                </div>
-              )}
-
-              {selectedPlan.status === "submitted" && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Review Notes (Optional for approval, required for return)</label>
-                  <Textarea
-                    value={reviewNotes}
-                    onChange={(e) => setReviewNotes(e.target.value)}
-                    placeholder="Enter feedback or notes about this lesson plan..."
-                    rows={4}
-                  />
-                </div>
-              )}
-
-              {selectedPlan.reviewNotes && selectedPlan.status !== "submitted" && (
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium text-gray-700 mb-1">Previous Review Notes:</p>
-                  <p className="text-sm text-gray-600">{selectedPlan.reviewNotes}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {selectedPlan?.status === "submitted" && (
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setSelectedPlan(null)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="outline"
-                className="border-red-200 text-red-600 hover:bg-red-50"
-                onClick={handleReject}
-                disabled={rejectMutation.isPending}
-              >
-                {rejectMutation.isPending ? "Returning..." : "Return with Feedback"}
-              </Button>
-              <Button
-                className="bg-green-600 hover:bg-green-700"
-                onClick={handleApprove}
-                disabled={approveMutation.isPending}
-              >
-                {approveMutation.isPending ? "Approving..." : "Approve"}
-              </Button>
-            </DialogFooter>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

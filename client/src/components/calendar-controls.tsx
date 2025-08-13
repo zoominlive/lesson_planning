@@ -14,11 +14,22 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ChevronLeft, ChevronRight, Send, MapPin, Calendar, CheckCircle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { ChevronLeft, ChevronRight, Send, MapPin, Calendar, CheckCircle, RotateCcw } from "lucide-react";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import { requiresLessonPlanApproval } from "@/lib/permission-utils";
 import { DayPicker } from "react-day-picker";
-import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from "date-fns";
+import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import "react-day-picker/dist/style.css";
 
@@ -30,6 +41,8 @@ interface CalendarControlsProps {
   onSubmitToSupervisor: () => void;
   onLocationChange?: (locationId: string) => void;
   selectedLocation?: string;
+  currentLessonPlan?: any;
+  onWithdrawFromReview?: () => void;
 }
 
 export function CalendarControls({
@@ -40,11 +53,15 @@ export function CalendarControls({
   onSubmitToSupervisor,
   onLocationChange,
   selectedLocation,
+  currentLessonPlan,
+  onWithdrawFromReview,
 }: CalendarControlsProps) {
-  const [currentLocation, setCurrentLocation] = useState(
-    selectedLocation || "",
-  );
+  // Remove internal state and use prop directly
+  const currentLocation = selectedLocation || "";
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  
+  console.log('CalendarControls - currentLessonPlan:', currentLessonPlan);
+  console.log('CalendarControls - lesson plan status:', currentLessonPlan?.status);
 
   // Fetch authorized locations - API already filters based on JWT
   const { data: locations = [] } = useQuery({
@@ -63,20 +80,20 @@ export function CalendarControls({
   useEffect(() => {
     if (!currentLocation && Array.isArray(locations) && locations.length > 0) {
       const firstLocation = locations[0];
-      setCurrentLocation(firstLocation.id);
       onLocationChange?.(firstLocation.id);
     }
   }, [locations, currentLocation, onLocationChange]);
   
   // Auto-select first room when location changes or rooms load
   useEffect(() => {
+    console.log('Room auto-select check - rooms:', rooms.length, 'selectedRoom:', selectedRoom);
     if (rooms.length > 0 && (!selectedRoom || selectedRoom === "all")) {
+      console.log('Auto-selecting room:', rooms[0].id);
       onRoomChange(rooms[0].id);
     }
-  }, [rooms, selectedRoom, onRoomChange]);
+  }, [rooms.length, currentLocation]); // Changed dependencies to trigger on location change
 
   const handleLocationChange = (locationId: string) => {
-    setCurrentLocation(locationId);
     onLocationChange?.(locationId);
   };
 
@@ -99,8 +116,8 @@ export function CalendarControls({
   };
 
   const formatWeekRange = (date: Date) => {
-    const start = startOfWeek(date, { weekStartsOn: 1 });
-    const end = endOfWeek(date, { weekStartsOn: 1 });
+    const start = startOfWeek(date, { weekStartsOn: 1 }); // Monday
+    const end = addDays(start, 4); // Friday (Monday + 4 days)
     return `Week of ${format(start, 'MMM d')}-${format(end, 'd, yyyy')}`;
   };
 
@@ -229,23 +246,56 @@ export function CalendarControls({
               </SelectContent>
             </Select>
 
-            <Button
-              onClick={onSubmitToSupervisor}
-              className="bg-gradient-to-r from-mint-green to-sky-blue text-white hover:shadow-lg transition-all duration-300"
-              data-testid="button-submit-supervisor"
-            >
-              {requiresLessonPlanApproval() ? (
-                <>
-                  <Send className="mr-2 h-4 w-4" />
-                  Submit for Review
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Finalize
-                </>
-              )}
-            </Button>
+            {/* Submit/Withdraw Button */}
+            {currentLessonPlan?.status === 'submitted' ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    className="bg-amber-600 hover:bg-amber-700 text-white hover:shadow-lg transition-all duration-300"
+                    data-testid="button-withdraw-review"
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    In Review
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Withdraw from Review</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to withdraw this lesson plan from review? 
+                      This will remove it from the review queue and allow you to make changes again.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={onWithdrawFromReview}
+                      className="bg-amber-600 hover:bg-amber-700"
+                    >
+                      Withdraw
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : (
+              <Button
+                onClick={onSubmitToSupervisor}
+                className="bg-gradient-to-r from-mint-green to-sky-blue text-white hover:shadow-lg transition-all duration-300"
+                data-testid="button-submit-supervisor"
+              >
+                {requiresLessonPlanApproval() ? (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    Submit for Review
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Finalize
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

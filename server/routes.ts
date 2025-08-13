@@ -18,6 +18,7 @@ import { perplexityService } from "./perplexityService";
 import { milestoneStorage } from "./milestoneStorage";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 import { 
   insertMilestoneSchema, 
   insertMaterialSchema, 
@@ -46,7 +47,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/milestones/images/*', async (req, res) => {
     try {
       const filePath = (req.params as any)['0'] || ''; // Gets everything after /api/milestones/images/
-      await milestoneStorage.downloadMilestoneImage(filePath, res);
+      // Extract just the filename from the path (e.g., "express_feelings.png" from "tenantId/milestones/express_feelings.png")
+      const filename = filePath.split('/').pop() || '';
+      const imagePath = path.join(process.cwd(), 'public', 'milestone-images', filename);
+      
+      // Check if file exists in public directory first
+      if (fs.existsSync(imagePath)) {
+        res.sendFile(imagePath);
+      } else {
+        // Fallback to object storage if not in public directory
+        await milestoneStorage.downloadMilestoneImage(filePath, res);
+      }
     } catch (error) {
       console.error('Error serving milestone image:', error);
       res.status(500).json({ error: 'Failed to retrieve image' });
@@ -56,7 +67,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve material images from object storage (public access for display in UI)
   app.get('/api/materials/images/:filename', async (req, res) => {
     try {
-      await materialStorage.downloadMaterialImage(req.params.filename, res);
+      const filename = req.params.filename;
+      const imagePath = path.join(process.cwd(), 'public', 'materials-images', filename);
+      
+      // Check if file exists in public directory first
+      if (fs.existsSync(imagePath)) {
+        res.sendFile(imagePath);
+      } else {
+        // Fallback to object storage if not in public directory
+        await materialStorage.downloadMaterialImage(filename, res);
+      }
     } catch (error) {
       console.error('Error serving material image:', error);
       res.status(500).json({ error: 'Failed to retrieve image' });
@@ -910,10 +930,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "User not found" });
       }
       
-      // Parse the request data without teacherId
+      // Add teacherId from current user and tenantId
       const dataWithTenantId = {
         ...req.body,
-        tenantId: req.tenantId
+        tenantId: req.tenantId,
+        teacherId: currentUser.id  // Add the current user's ID as teacherId
       };
       
       console.log('[POST /api/lesson-plans] Data with tenant ID:', dataWithTenantId);
@@ -1368,6 +1389,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Withdraw lesson plan from review
+  app.post("/api/lesson-plans/:id/withdraw", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get lesson plan to check access
+      const lessonPlan = await storage.getLessonPlan(id);
+      if (!lessonPlan) {
+        return res.status(404).json({ error: "Lesson plan not found" });
+      }
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, lessonPlan.locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+
+      // Check if lesson plan is in submitted status
+      if (lessonPlan.status !== 'submitted') {
+        return res.status(400).json({ error: "Only submitted lesson plans can be withdrawn from review" });
+      }
+
+      // Withdraw from review (set status back to draft)
+      const withdrawn = await storage.withdrawLessonPlanFromReview(id);
+      res.json(withdrawn);
+    } catch (error) {
+      console.error('Error withdrawing lesson plan:', error);
+      res.status(500).json({ error: "Failed to withdraw lesson plan from review" });
+    }
+  });
+
   app.post("/api/lesson-plans/:id/approve", async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
@@ -1472,6 +1524,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Notifications API Routes
+  app.get("/api/notifications", async (req: AuthenticatedRequest, res) => {
+    try {
+      // Get current user from storage
+      const currentUser = await storage.getUserByUserId(req.userId!);
+      if (!currentUser) {
+        return res.status(403).json({ error: "User not found" });
+      }
+
+      // Get active (non-dismissed) notifications for the user
+      const notifications = await storage.getActiveNotifications(currentUser.id);
+      res.json(notifications);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  app.post("/api/notifications/:id/dismiss", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get current user from storage
+      const currentUser = await storage.getUserByUserId(req.userId!);
+      if (!currentUser) {
+        return res.status(403).json({ error: "User not found" });
+      }
+
+      // Dismiss the notification
+      const dismissed = await storage.dismissNotification(id, currentUser.id);
+      if (!dismissed) {
+        return res.status(404).json({ error: "Notification not found or already dismissed" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error dismissing notification:', error);
+      res.status(500).json({ error: "Failed to dismiss notification" });
+    }
+  });
+
+  app.post("/api/notifications/:id/mark-read", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get current user from storage
+      const currentUser = await storage.getUserByUserId(req.userId!);
+      if (!currentUser) {
+        return res.status(403).json({ error: "User not found" });
+      }
+
+      // Mark notification as read
+      const marked = await storage.markNotificationAsRead(id, currentUser.id);
+      if (!marked) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+
   // Settings API Routes - Locations
   app.get("/api/locations", async (req: AuthenticatedRequest, res) => {
     try {
@@ -1533,6 +1649,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       res.status(500).json({ error: "Failed to delete location" });
+    }
+  });
+
+  // Get settings for a specific location
+  app.get("/api/locations/:id/settings", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id: locationId } = req.params;
+      
+      // Validate location access
+      const accessCheck = await validateLocationAccess(req, locationId);
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ error: accessCheck.message });
+      }
+      
+      // Get tenant settings
+      const orgSettings = await storage.getTenantSettings();
+      if (!orgSettings) {
+        return res.json({
+          scheduleType: 'time-based',
+          startTime: '06:00',
+          endTime: '18:00',
+          slotsPerDay: 8
+        });
+      }
+      
+      // Get location-specific settings or fall back to defaults
+      let locationSettings: any = {};
+      if (orgSettings.locationSettings && orgSettings.locationSettings[locationId]) {
+        locationSettings = orgSettings.locationSettings[locationId];
+      }
+      
+      // Return merged settings with fallbacks
+      const settings = {
+        scheduleType: locationSettings.scheduleType || orgSettings.defaultScheduleType || 'time-based',
+        startTime: locationSettings.startTime || orgSettings.defaultStartTime || '06:00',
+        endTime: locationSettings.endTime || orgSettings.defaultEndTime || '18:00',
+        slotsPerDay: locationSettings.slotsPerDay || orgSettings.defaultSlotsPerDay || 8
+      };
+      
+      res.json(settings);
+    } catch (error) {
+      console.error("Location settings fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch location settings" });
     }
   });
 

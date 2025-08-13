@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { User, ChevronDown } from "lucide-react";
-import { setAuthToken, getUserInfo } from "@/lib/auth";
+import { setAuthToken, getUserInfo, clearAuthToken } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 // Test tokens for different user roles (signed with 'dev-secret-key')
@@ -29,7 +29,7 @@ const TEST_TOKENS = {
   },
   teacher2: {
     label: "Teacher 2",
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InRlYWNoZXIyXzEyMyIsInVzZXJGaXJzdE5hbWUiOiJKZW5uaWZlciIsInVzZXJMYXN0TmFtZSI6IldpbHNvbiIsInVzZXJuYW1lIjoidGVhY2hlcjJAZXhhbXBsZS5jb20iLCJyb2xlIjoiVGVhY2hlciIsImxvY2F0aW9ucyI6WyJUZXN0IEZyb250ZW5kIExvY2F0aW9uIl0sImlhdCI6MTc1NDgwMzAzNH0.y93D9cP2Ct0J42CyC3DPuXcOIVClh7HGE6C6YRWdNMU",
+    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InRlYWNoZXIyXzEyMyIsInVzZXJGaXJzdE5hbWUiOiJKZW5uaWZlciIsInVzZXJMYXN0TmFtZSI6IldpbHNvbiIsInVzZXJuYW1lIjoidGVhY2hlcjJAZXhhbXBsZS5jb20iLCJyb2xlIjoiVGVhY2hlciIsImxvY2F0aW9ucyI6WyJNYWluIENhbXB1cyJdLCJpYXQiOjE3NTQ4MDMwMzR9.hjee-gbNbMhSHSTg7e42qawo5m9HaHIUBzCVkT1ZjS4",
     role: "Teacher",
     username: "teacher2@example.com"
   },
@@ -42,7 +42,7 @@ const TEST_TOKENS = {
   assistant_director: {
     label: "Assistant Director",
     token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImFzc2lzdGFudF9kaXJlY3RvcjEyMyIsInVzZXJGaXJzdE5hbWUiOiJFbWlseSIsInVzZXJMYXN0TmFtZSI6IkRhdmlzIiwidXNlcm5hbWUiOiJhc3Npc3RhbnRfZGlyZWN0b3JAZXhhbXBsZS5jb20iLCJyb2xlIjoiYXNzaXN0YW50X2RpcmVjdG9yIiwibG9jYXRpb25zIjpbIk1haW4gQ2FtcHVzIiwiVGhpcmQgTG9jYXRpb24iXSwiaWF0IjoxNzU0ODAzMDM0fQ.wXH-fetlXp4HFxwhLK8uvWpF1NFavoPhN7vWoczrFVU",
-    role: "Assistant Director",
+    role: "assistant_director",  // Fixed: use underscore to match JWT token
     username: "assistant_director@example.com"
   },
   superadmin: {
@@ -83,9 +83,12 @@ export function TokenSwitcher() {
   const switchUser = (userType: keyof typeof TEST_TOKENS) => {
     const user = TEST_TOKENS[userType];
     
-    // Clear any old cached tokens first
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userInfo');
+    // Clear ALL cached data first
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Clear the in-memory auth token
+    clearAuthToken();
     
     // Set the new token
     setAuthToken(user.token);
@@ -112,15 +115,21 @@ export function TokenSwitcher() {
         .catch(err => console.warn('Could not fetch locations for SuperAdmin:', err));
     }
     
+    // Pre-cache location names for Teacher 2 specifically
+    if (userType === 'teacher2') {
+      console.log('Caching locations for Teacher 2: Main Campus');
+      localStorage.setItem('cachedLocations', JSON.stringify(['Main Campus']));
+    }
+    
     toast({
       title: "User Switched",
       description: `Now logged in as ${user.label} (${user.role})`,
     });
 
-    // Reload the page to apply the new token
+    // Force a hard reload to clear all caches
     setTimeout(() => {
-      window.location.reload();
-    }, 500);
+      window.location.href = window.location.href;
+    }, 100);
   };
 
   const current = TEST_TOKENS[currentUser];

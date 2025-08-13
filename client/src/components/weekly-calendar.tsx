@@ -5,7 +5,24 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Play, Package, Filter, X, Trash2, Clock, Scissors } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, Plus, Play, Package, Filter, X, Trash2, Clock, Scissors, Lock, CheckCircle, AlertCircle, MessageSquare } from "lucide-react";
 import DraggableActivity from "./draggable-activity";
 import { toast } from "@/hooks/use-toast";
 import type { Activity, Category, AgeGroup } from "@shared/schema";
@@ -15,6 +32,8 @@ interface WeeklyCalendarProps {
   selectedLocation: string;
   selectedRoom: string;
   currentWeekDate?: Date;
+  currentLessonPlan?: any;
+  isReviewMode?: boolean;
 }
 
 // Convert numbers to written words
@@ -63,6 +82,7 @@ const generateWeekDays = (weekStartDate: Date) => {
   const days = [];
   const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
   
+  // weekStartDate should already be a Monday, so use it directly
   for (let i = 0; i < 5; i++) {
     const date = addDays(weekStartDate, i);
     days.push({
@@ -76,8 +96,9 @@ const generateWeekDays = (weekStartDate: Date) => {
   return days;
 };
 
-export default function WeeklyCalendar({ selectedLocation, selectedRoom, currentWeekDate }: WeeklyCalendarProps) {
-  const weekStartDate = currentWeekDate || startOfWeek(new Date(), { weekStartsOn: 1 });
+export default function WeeklyCalendar({ selectedLocation, selectedRoom, currentWeekDate, currentLessonPlan, isReviewMode = false }: WeeklyCalendarProps) {
+  // Ensure we're working with the correct date in local timezone
+  const weekStartDate = currentWeekDate ? new Date(currentWeekDate.getFullYear(), currentWeekDate.getMonth(), currentWeekDate.getDate()) : startOfWeek(new Date(), { weekStartsOn: 1 });
   const weekDays = generateWeekDays(weekStartDate);
   
   const [searchTerm, setSearchTerm] = useState("");
@@ -87,64 +108,46 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   const [selectedCategory, setSelectedCategory] = useState<string>("all-categories");
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("all-age-groups");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [scheduleSettings, setScheduleSettings] = useState<any>({
-    type: 'time-based',
-    startTime: '06:00',
-    endTime: '18:00',
-    slotsPerDay: 8
+  const [showReviewNotes, setShowReviewNotes] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{
+    type: 'schedule' | 'move' | 'delete';
+    data: any;
+  } | null>(null);
+  const [showApprovedWarning, setShowApprovedWarning] = useState(false);
+  
+  // Check if lesson plan is locked (in review)
+  const isLessonPlanLocked = currentLessonPlan?.status === 'submitted';
+  const isLessonPlanApproved = currentLessonPlan?.status === 'approved';
+  // Fetch location settings from API
+  const { data: locationSettings } = useQuery<{ 
+    scheduleType: 'time-based' | 'position-based',
+    startTime?: string,
+    endTime?: string,
+    slotsPerDay?: number 
+  }>({
+    queryKey: [`/api/locations/${selectedLocation}/settings`],
+    enabled: !!selectedLocation,
   });
 
-  // Load schedule settings from localStorage for the specific location
+  // Use API settings or defaults
+  const scheduleSettings = {
+    type: locationSettings?.scheduleType || 'time-based',
+    startTime: locationSettings?.startTime || '06:00',
+    endTime: locationSettings?.endTime || '18:00',
+    slotsPerDay: locationSettings?.slotsPerDay || 8
+  };
+
+  // Listen for global schedule type changes
   useEffect(() => {
-    const loadSettings = () => {
-      // Try to load location-specific settings first
-      const locationSettings = localStorage.getItem(`scheduleSettings_${selectedLocation}`);
-      if (locationSettings) {
-        try {
-          const parsed = JSON.parse(locationSettings);
-          setScheduleSettings(parsed);
-        } catch (error) {
-          console.error('Error loading location schedule settings:', error);
-        }
-      } else {
-        // Fall back to general settings if no location-specific settings exist
-        const savedSettings = localStorage.getItem('scheduleSettings');
-        if (savedSettings) {
-          try {
-            const parsed = JSON.parse(savedSettings);
-            setScheduleSettings(parsed);
-          } catch (error) {
-            console.error('Error loading schedule settings:', error);
-          }
-        }
-      }
-    };
-
-    loadSettings();
-
-    // Listen for settings changes
-    const handleSettingsChange = (event: CustomEvent) => {
-      // Only update if the change is for the current location or a general update
-      if (!event.detail.locationId || event.detail.locationId === selectedLocation) {
-        const { locationId, ...settings } = event.detail;
-        setScheduleSettings(settings);
-      }
-    };
-
-    window.addEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
-    
-    // Listen for global schedule type changes
     const handleScheduleTypeChange = () => {
-      // Reload settings from localStorage
-      loadSettings();
       // Invalidate queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/locations/${selectedLocation}/settings`] });
     };
     
     window.addEventListener('scheduleTypeChanged', handleScheduleTypeChange);
     
     return () => {
-      window.removeEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
       window.removeEventListener('scheduleTypeChanged', handleScheduleTypeChange);
     };
   }, [selectedLocation]);
@@ -224,11 +227,28 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   };
 
   const handleDragStart = (activity: Activity) => {
+    if (isLessonPlanLocked) {
+      toast({
+        title: "Lesson Plan Locked",
+        description: "Withdraw the lesson plan from review to make changes.",
+        variant: "destructive",
+      });
+      return;
+    }
     console.log('[handleDragStart] Setting dragged activity:', activity.title);
     setDraggedActivity(activity);
   };
 
   const handleScheduledActivityDragStart = (e: React.DragEvent, scheduledActivity: any) => {
+    if (isLessonPlanLocked) {
+      e.preventDefault();
+      toast({
+        title: "Lesson Plan Locked",
+        description: "Withdraw the lesson plan from review to make changes.",
+        variant: "destructive",
+      });
+      return;
+    }
     console.log('[handleScheduledActivityDragStart] Setting dragged scheduled activity:', scheduledActivity.activity?.title);
     setDraggedScheduledActivity(scheduledActivity);
     setDraggedActivity(null); // Clear any dragged new activity
@@ -261,6 +281,38 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   };
 
 
+  // Mutation to reset lesson plan to draft status
+  const resetLessonPlanToDraft = useMutation({
+    mutationFn: async (lessonPlanId: string) => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`/api/lesson-plans/${lessonPlanId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ status: 'draft' }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to reset lesson plan status');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/lesson-plans'] });
+    },
+    onError: () => {
+      toast({
+        title: "Failed to reset status",
+        description: "Unable to reset lesson plan status. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteScheduledMutation = useMutation({
     mutationFn: async (scheduledActivityId: string) => {
       const token = localStorage.getItem('authToken');
@@ -283,12 +335,17 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // If lesson plan was approved and is now modified, reset it to draft
+      if (isLessonPlanApproved && currentLessonPlan?.id && pendingAction) {
+        await resetLessonPlanToDraft.mutateAsync(currentLessonPlan.id);
+      }
       queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom, weekStartDate.toISOString(), selectedLocation] });
       toast({
         title: "Activity Removed",
-        description: "The activity has been removed from the schedule.",
+        description: isLessonPlanApproved ? "The activity has been removed and the lesson plan has been reset to draft for re-review." : "The activity has been removed from the schedule.",
       });
+      setPendingAction(null);
     },
     onError: () => {
       toast({
@@ -296,6 +353,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
         description: "Unable to remove the activity. Please try again.",
         variant: "destructive",
       });
+      setPendingAction(null);
     },
   });
 
@@ -322,14 +380,19 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // If lesson plan was approved and is now modified, reset it to draft
+      if (isLessonPlanApproved && currentLessonPlan?.id && pendingAction) {
+        await resetLessonPlanToDraft.mutateAsync(currentLessonPlan.id);
+      }
       queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom, weekStartDate.toISOString(), selectedLocation] });
       toast({
         title: "Activity Moved",
-        description: "The activity has been moved to the new time slot.",
+        description: isLessonPlanApproved ? "The activity has been moved and the lesson plan has been reset to draft for re-review." : "The activity has been moved to the new time slot.",
       });
       setDraggedScheduledActivity(null);
       setDragOverSlot(null);
+      setPendingAction(null);
     },
     onError: () => {
       toast({
@@ -337,6 +400,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
         description: "Unable to move the activity. Please try again.",
         variant: "destructive",
       });
+      setPendingAction(null);
     },
   });
 
@@ -382,12 +446,17 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // If lesson plan was approved and is now modified, reset it to draft
+      if (isLessonPlanApproved && currentLessonPlan?.id && pendingAction) {
+        await resetLessonPlanToDraft.mutateAsync(currentLessonPlan.id);
+      }
       queryClient.invalidateQueries({ queryKey: ['/api/scheduled-activities', selectedRoom, weekStartDate.toISOString(), selectedLocation] });
       toast({
         title: "Activity Scheduled",
-        description: "The activity has been added to the calendar.",
+        description: isLessonPlanApproved ? "The activity has been added and the lesson plan has been reset to draft for re-review." : "The activity has been added to the calendar.",
       });
+      setPendingAction(null);
     },
     onError: () => {
       toast({
@@ -395,6 +464,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
         description: "Unable to schedule the activity. Please try again.",
         variant: "destructive",
       });
+      setPendingAction(null);
     },
   });
 
@@ -402,6 +472,16 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
     console.log('[handleDrop] Drop event triggered');
     e.preventDefault();
     e.stopPropagation();
+    
+    if (isLessonPlanLocked) {
+      toast({
+        title: "Lesson Plan Locked",
+        description: "Withdraw the lesson plan from review to make changes.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const dropZone = e.currentTarget as HTMLElement;
     dropZone.classList.remove("drag-over");
     setDragOverSlot(null);
@@ -431,11 +511,24 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
         return;
       }
       
-      moveActivityMutation.mutate({
-        scheduledActivityId: draggedScheduledActivity.id,
-        newDay: dayOfWeek,
-        newSlot: timeSlot,
-      });
+      // Check if lesson plan is approved and show warning
+      if (isLessonPlanApproved) {
+        setPendingAction({
+          type: 'move',
+          data: {
+            scheduledActivityId: draggedScheduledActivity.id,
+            newDay: dayOfWeek,
+            newSlot: timeSlot,
+          }
+        });
+        setShowApprovedWarning(true);
+      } else {
+        moveActivityMutation.mutate({
+          scheduledActivityId: draggedScheduledActivity.id,
+          newDay: dayOfWeek,
+          newSlot: timeSlot,
+        });
+      }
     } else if (draggedActivity) {
       // Adding a new activity
       console.log(`[handleDrop] Scheduling: ${draggedActivity.title} on ${weekDays[dayOfWeek].name} at ${timeSlots[timeSlot].label}`);
@@ -461,13 +554,27 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
         return;
       }
       
-      console.log('[handleDrop] Calling scheduleMutation.mutate');
-      scheduleMutation.mutate({
-        activityId: draggedActivity.id,
-        dayOfWeek,
-        timeSlot,
-        weekStart: weekStartDate.toISOString(),
-      });
+      // Check if lesson plan is approved and show warning
+      if (isLessonPlanApproved) {
+        setPendingAction({
+          type: 'schedule',
+          data: {
+            activityId: draggedActivity.id,
+            dayOfWeek,
+            timeSlot,
+            weekStart: weekStartDate.toISOString(),
+          }
+        });
+        setShowApprovedWarning(true);
+      } else {
+        console.log('[handleDrop] Calling scheduleMutation.mutate');
+        scheduleMutation.mutate({
+          activityId: draggedActivity.id,
+          dayOfWeek,
+          timeSlot,
+          weekStart: weekStartDate.toISOString(),
+        });
+      }
       setDraggedActivity(null);
     } else {
       console.log('[handleDrop] No dragged activity to schedule');
@@ -484,26 +591,92 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="weekly-calendar">
       {/* Calendar Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
           <h2 className="text-2xl font-bold text-charcoal">Weekly Schedule</h2>
+          
+          {/* Review Status Indicator */}
+          {currentLessonPlan && (currentLessonPlan.status === 'approved' || currentLessonPlan.status === 'rejected') && (
+            <>
+              <button
+                onClick={() => setShowReviewNotes(true)}
+                className={`flex items-center gap-2 px-3 py-1 rounded-lg border transition-colors ${
+                  currentLessonPlan.status === 'approved' 
+                    ? 'bg-green-50 text-green-800 border-green-200 hover:bg-green-100' 
+                    : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                }`}
+                data-testid="review-status-button"
+              >
+                {currentLessonPlan.status === 'approved' ? (
+                  <CheckCircle className="h-4 w-4" />
+                ) : (
+                  <AlertCircle className="h-4 w-4" />
+                )}
+                <span className="text-sm font-medium">
+                  {currentLessonPlan.status === 'approved' ? 'Approved' : 'Returned for Revision'}
+                </span>
+                {currentLessonPlan.reviewNotes && (
+                  <MessageSquare className="h-3 w-3 ml-1" />
+                )}
+              </button>
+
+              {/* Review Notes Dialog */}
+              <Dialog open={showReviewNotes} onOpenChange={setShowReviewNotes}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className={`flex items-center gap-2 ${
+                      currentLessonPlan.status === 'approved' ? 'text-green-800' : 'text-amber-800'
+                    }`}>
+                      {currentLessonPlan.status === 'approved' ? (
+                        <CheckCircle className="h-5 w-5" />
+                      ) : (
+                        <AlertCircle className="h-5 w-5" />
+                      )}
+                      {currentLessonPlan.status === 'approved' ? 'Lesson Plan Approved' : 'Lesson Plan Returned'}
+                    </DialogTitle>
+                    <DialogDescription className="text-left mt-4">
+                      {currentLessonPlan.reviewNotes ? (
+                        <>
+                          <p className="font-medium mb-2">
+                            {currentLessonPlan.status === 'approved' ? 'Approval Notes:' : 'Feedback from Reviewer:'}
+                          </p>
+                          <p className="text-sm text-gray-700">{currentLessonPlan.reviewNotes}</p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-gray-500">No review notes provided.</p>
+                      )}
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
+          
+          {isLessonPlanLocked && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-800 rounded-lg border border-amber-200">
+              <Lock className="h-4 w-4" />
+              <span className="text-sm font-medium">Plan Locked (In Review)</span>
+            </div>
+          )}
         </div>
         
-        <Button
-          onClick={() => setDrawerOpen(!drawerOpen)}
-          className="bg-gradient-to-r from-coral-red to-turquoise text-white shadow-lg hover:shadow-xl"
-          size="default"
-        >
-          <Package className="mr-2 h-5 w-5" />
-          Activities
-        </Button>
+        {!isReviewMode && (
+          <Button
+            onClick={() => setDrawerOpen(!drawerOpen)}
+            className="bg-gradient-to-r from-coral-red to-turquoise text-white shadow-lg hover:shadow-xl"
+            size="default"
+          >
+            <Package className="mr-2 h-5 w-5" />
+            Activities
+          </Button>
+        )}
       </div>
       {/* Main Content Area with Calendar and Drawer */}
       <div className="flex">
         {/* Calendar Grid */}
-        <div className={`transition-all duration-300 ${drawerOpen ? 'w-[calc(100%-416px)] mr-4' : 'w-full'}`}>
+        <div className={`transition-all duration-300 ${drawerOpen && !isReviewMode ? 'w-[calc(100%-416px)] mr-4' : 'w-full'}`}>
           <Card className="material-shadow overflow-hidden bg-gradient-to-br from-white to-sky-blue/5 border-2 border-sky-blue/10">
             <div className="grid gap-0" style={{gridTemplateColumns: "100px repeat(5, 1fr)"}}>
           {/* Position Column */}
@@ -544,24 +717,43 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                   >
                     {scheduledActivity ? (
                       <div 
-                        draggable={true}
-                        onDragStart={(e) => handleScheduledActivityDragStart(e, scheduledActivity)}
+                        draggable={!isReviewMode}
+                        onDragStart={(e) => !isReviewMode && handleScheduledActivityDragStart(e, scheduledActivity)}
                         onDragEnd={handleDragEnd}
-                        className={`bg-gradient-to-br ${getCategoryGradient(scheduledActivity.activity?.category || 'Other')} border border-gray-200 rounded-lg p-2 h-full flex flex-col justify-between cursor-move shadow-sm hover:shadow-md transition-all relative group ${
+                        className={`bg-gradient-to-br ${getCategoryGradient(scheduledActivity.activity?.category || 'Other')} border border-gray-200 rounded-lg p-2 h-full flex flex-col justify-between ${isReviewMode ? 'cursor-default' : 'cursor-move'} shadow-sm hover:shadow-md transition-all relative group ${
                           draggedScheduledActivity?.id === scheduledActivity.id ? 'opacity-50 scale-95' : ''
                         }`}
                       >
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            deleteScheduledMutation.mutate(scheduledActivity.id);
-                          }}
-                          className="absolute top-1 right-1 p-1 rounded bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100"
-                          title="Remove from schedule"
-                        >
-                          <Trash2 className="h-3 w-3 text-red-500" />
-                        </button>
+                        {!isReviewMode && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              if (isLessonPlanLocked) {
+                                toast({
+                                  title: "Lesson Plan Locked",
+                                  description: "Withdraw the lesson plan from review to make changes.",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              // Check if lesson plan is approved and show warning
+                              if (isLessonPlanApproved) {
+                                setPendingAction({
+                                  type: 'delete',
+                                  data: scheduledActivity.id
+                                });
+                                setShowApprovedWarning(true);
+                              } else {
+                                deleteScheduledMutation.mutate(scheduledActivity.id);
+                              }
+                            }}
+                            className="absolute top-1 right-1 p-1 rounded bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100"
+                            title="Remove from schedule"
+                          >
+                            <Trash2 className="h-3 w-3 text-red-500" />
+                          </button>
+                        )}
                         <div>
                           <h4 className="font-semibold text-xs text-charcoal line-clamp-2 pr-6" data-testid={`activity-title-${scheduledActivity.activity?.id}`}>
                             {scheduledActivity.activity?.title || 'Untitled Activity'}
@@ -582,20 +774,21 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                       </div>
                     ) : (
                       <button 
-                        className={`h-full w-full flex items-center justify-center text-gray-400 border-2 border-dashed border-turquoise/20 rounded-lg hover:border-turquoise/40 hover:bg-turquoise/5 transition-all group cursor-pointer ${
+                        className={`h-full w-full flex items-center justify-center text-gray-400 border-2 border-dashed border-turquoise/20 rounded-lg hover:border-turquoise/40 hover:bg-turquoise/5 transition-all group ${isReviewMode ? '' : 'cursor-pointer'} ${
                           dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? 'border-turquoise bg-turquoise/10' : ''
                         }`}
-                        onClick={() => setDrawerOpen(true)}
+                        onClick={() => !isReviewMode && setDrawerOpen(true)}
                         data-testid={`empty-slot-${day.id}-${slot.id}`}
+                        disabled={isReviewMode}
                       >
                         {dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? (
                           <span className="text-xs text-turquoise font-semibold">Drop Here</span>
-                        ) : (
+                        ) : !isReviewMode ? (
                           <>
                             <Plus className="h-3 w-3 mr-1 opacity-50 group-hover:opacity-70 text-turquoise" />
                             <span className="text-xs opacity-50 group-hover:opacity-70 text-turquoise">Drop Activity</span>
                           </>
-                        )}
+                        ) : null}
                       </button>
                     )}
                   </div>
@@ -608,9 +801,9 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
         </div>
 
         {/* Activity Library Side Panel */}
-        <div className={`transition-all duration-300 ${drawerOpen ? 'w-[400px]' : 'w-0'} overflow-hidden`}>
-          <Card className={`h-full material-shadow ${drawerOpen ? 'p-6' : 'p-0'}`}>
-            {drawerOpen && (
+        <div className={`transition-all duration-300 ${drawerOpen && !isReviewMode ? 'w-[400px]' : 'w-0'} overflow-hidden`}>
+          <Card className={`h-full material-shadow ${drawerOpen && !isReviewMode ? 'p-6' : 'p-0'}`}>
+            {drawerOpen && !isReviewMode && (
               <>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-bold text-charcoal flex items-center">
@@ -703,6 +896,43 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
           </Card>
         </div>
       </div>
+      
+      {/* Alert Dialog for modifying approved lesson plans */}
+      <AlertDialog open={showApprovedWarning} onOpenChange={setShowApprovedWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Modify Approved Lesson Plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This lesson plan has been approved. Making changes will reset it to draft status and require re-approval.
+              
+              Do you want to continue with this modification?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setPendingAction(null);
+              setDraggedActivity(null);
+              setDraggedScheduledActivity(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (pendingAction) {
+                if (pendingAction.type === 'schedule') {
+                  scheduleMutation.mutate(pendingAction.data);
+                } else if (pendingAction.type === 'move') {
+                  moveActivityMutation.mutate(pendingAction.data);
+                } else if (pendingAction.type === 'delete') {
+                  deleteScheduledMutation.mutate(pendingAction.data);
+                }
+              }
+              setShowApprovedWarning(false);
+            }}>
+              Continue and Reset to Draft
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

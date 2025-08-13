@@ -11,15 +11,16 @@ import { hasPermission } from "@/lib/permission-utils";
 
 interface NavigationTabsProps {
   children: React.ReactNode; // Calendar content
+  defaultTab?: string; // Allow overriding the default tab
 }
 
-export function NavigationTabs({ children }: NavigationTabsProps) {
+export function NavigationTabs({ children, defaultTab = "calendar" }: NavigationTabsProps) {
   const userInfo = getUserInfo();
   const canReview = hasPermission('lesson_plan.approve');
   const gridCols = canReview ? 'grid-cols-5' : 'grid-cols-4';
   
   return (
-    <Tabs defaultValue="calendar" className="space-y-6">
+    <Tabs defaultValue={defaultTab} className="space-y-6">
       <Card className="material-shadow">
         <CardContent className="p-2">
 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { startOfWeek, format } from "date-fns";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { NavigationTabs } from "@/components/navigation-tabs";
 import { CalendarControls } from "@/components/calendar-controls";
 import { FloatingActionButton } from "@/components/floating-action-button";
@@ -12,12 +13,17 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 import WeeklyCalendar from "@/components/weekly-calendar";
-import { Settings } from "lucide-react";
+import { NotificationCarousel } from "@/components/notification-carousel";
+import { Settings, AlertTriangle, Eye, Edit } from "lucide-react";
 import { useLocation } from "wouter";
 import { getUserInfo } from "@/lib/auth";
 import { hasPermission, requiresLessonPlanApproval } from "@/lib/permission-utils";
-import { startOfWeek } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 type UserInfo = {
@@ -36,9 +42,13 @@ export default function LessonPlanner() {
   );
   const [selectedRoom, setSelectedRoom] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
-
+  
+  // Check for tab query parameter
+  const searchParams = new URLSearchParams(location.split('?')[1] || '');
+  const defaultTab = searchParams.get('tab') || 'calendar';
+  
   // Get user info directly from the token
   const userInfo = getUserInfo();
 
@@ -87,11 +97,13 @@ export default function LessonPlanner() {
     };
   }, []);
 
-  // Fetch lesson plans to find the current one
-  const { data: lessonPlans = [] } = useQuery<any[]>({
+  // Fetch lesson plans to find the current one and check for any returned plans
+  const { data: lessonPlans = [], refetch: refetchLessonPlans } = useQuery<any[]>({
     queryKey: ["/api/lesson-plans"],
     enabled: !!selectedLocation && !!selectedRoom,
   });
+  
+
 
   // Fetch location settings to get schedule type
   const { data: locationSettings } = useQuery<{ scheduleType: 'time-based' | 'position-based' }>({
@@ -101,16 +113,71 @@ export default function LessonPlanner() {
 
   // Find current lesson plan
   const currentLessonPlan = lessonPlans.find((lp: any) => {
-    const lpWeekStart = new Date(lp.weekStart);
-    lpWeekStart.setHours(0, 0, 0, 0);
-    const currentWeek = new Date(currentWeekDate);
-    currentWeek.setHours(0, 0, 0, 0);
+    // The lesson plan weekStart is already at the start of the week (Monday at midnight UTC)
+    // The currentWeekDate is also already at the start of the week
+    const lpDate = new Date(lp.weekStart);
+    const currentDate = new Date(currentWeekDate);
+    
+    // Set both to UTC midnight to avoid timezone issues
+    lpDate.setUTCHours(0, 0, 0, 0);
+    currentDate.setUTCHours(0, 0, 0, 0);
     
     // Match by week, location, room, and schedule type
-    return lpWeekStart.getTime() === currentWeek.getTime() &&
+    const matches = lpDate.getTime() === currentDate.getTime() &&
            lp.locationId === selectedLocation &&
            lp.roomId === selectedRoom &&
            lp.scheduleType === (locationSettings?.scheduleType || 'position-based');
+    
+    return matches;
+  });
+  
+
+
+  // Fetch scheduled activities to check if lesson plan is empty
+  const weekStartDate = startOfWeek(currentWeekDate, { weekStartsOn: 1 });
+  const { data: scheduledActivities = [] } = useQuery<any[]>({
+    queryKey: ["/api/scheduled-activities", selectedRoom, weekStartDate.toISOString(), selectedLocation],
+    queryFn: async () => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `/api/scheduled-activities/${selectedRoom}?weekStart=${encodeURIComponent(weekStartDate.toISOString())}&locationId=${encodeURIComponent(selectedLocation)}`,
+        {
+          headers: {
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+          },
+        }
+      );
+      if (!response.ok) throw new Error('Failed to fetch scheduled activities');
+      return response.json();
+    },
+    enabled: !!selectedRoom && selectedRoom !== "all" && !!selectedLocation,
+  });
+
+  // Withdraw from review mutation
+  const withdrawMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentLessonPlan) {
+        throw new Error("No lesson plan to withdraw");
+      }
+      return apiRequest("POST", `/api/lesson-plans/${currentLessonPlan.id}/withdraw`);
+    },
+    onSuccess: async () => {
+      // Immediately refetch lesson plans to update UI
+      await refetchLessonPlans();
+      queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/scheduled-activities"] });
+      toast({
+        title: "Withdrawn from Review",
+        description: "Your lesson plan has been withdrawn from review and is now in draft status.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Withdrawal Failed",
+        description: error.message || "Failed to withdraw the lesson plan from review.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Create or submit lesson plan mutation
@@ -134,7 +201,9 @@ export default function LessonPlanner() {
         return apiRequest("POST", `/api/lesson-plans/${newPlan.id}/submit`);
       }
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // Immediately refetch lesson plans to update UI
+      await refetchLessonPlans();
       queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans"] });
       queryClient.invalidateQueries({ queryKey: ["/api/scheduled-activities"] });
       const requiresApproval = requiresLessonPlanApproval();
@@ -151,9 +220,25 @@ export default function LessonPlanner() {
       }
     },
     onError: (error: any) => {
+      // Provide user-friendly error messages
+      let errorMessage = "Failed to submit the lesson plan for review.";
+      
+      if (error.message) {
+        // Check for specific error types and provide better messages
+        if (error.message.includes("teacherId") || error.message.includes("Required")) {
+          errorMessage = "There was an issue creating the lesson plan. Please try again or contact support.";
+        } else if (error.message.includes("blank") || error.message.includes("empty")) {
+          errorMessage = "You cannot submit a blank lesson plan. Please add some activities first.";
+        } else if (error.message.includes("network") || error.message.includes("fetch")) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Submission Failed",
-        description: error.message || "Failed to submit the lesson plan for review.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -173,7 +258,24 @@ export default function LessonPlanner() {
       return;
     }
 
+    // Check if there are any activities scheduled
+    const hasActivities = scheduledActivities && scheduledActivities.length > 0;
+    
+    // If there's no current lesson plan and no activities, prevent submission
+    if (!currentLessonPlan && !hasActivities) {
+      toast({
+        title: "Empty Lesson Plan",
+        description: "You cannot submit a blank lesson plan. Please add some activities first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     submitMutation.mutate();
+  };
+
+  const handleWithdrawFromReview = () => {
+    withdrawMutation.mutate();
   };
 
   const handleQuickAddActivity = () => {
@@ -181,10 +283,27 @@ export default function LessonPlanner() {
     console.log("Quick add activity");
   };
 
-
+  // Check for ANY rejected lesson plans (not just current week)
+  const returnedLessonPlans = lessonPlans.filter((lp: any) => 
+    lp.status === 'rejected' && 
+    lp.reviewNotes &&
+    lp.locationId === selectedLocation &&
+    lp.roomId === selectedRoom
+  );
+  
+  // State for showing review notes
+  const [showReviewNotes, setShowReviewNotes] = useState<Record<string, boolean>>({});
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4" data-testid="lesson-planner">
+      {/* Notification carousel for returned lesson plans */}
+      <div className="mb-6">
+        <NotificationCarousel 
+          currentWeekDate={currentWeekDate}
+          onWeekChange={setCurrentWeekDate}
+        />
+      </div>
+
       {/* Header Section */}
       <Card className="material-shadow mb-6">
         <CardContent className="p-6">
@@ -250,7 +369,7 @@ export default function LessonPlanner() {
       </Card>
 
       {/* Navigation Tabs */}
-      <NavigationTabs>
+      <NavigationTabs defaultTab={defaultTab}>
         <CalendarControls
           currentWeekDate={currentWeekDate}
           selectedRoom={selectedRoom}
@@ -259,11 +378,14 @@ export default function LessonPlanner() {
           onRoomChange={setSelectedRoom}
           onLocationChange={setSelectedLocation}
           onSubmitToSupervisor={handleSubmitToSupervisor}
+          currentLessonPlan={currentLessonPlan}
+          onWithdrawFromReview={handleWithdrawFromReview}
         />
         <WeeklyCalendar
           selectedLocation={selectedLocation}
           selectedRoom={selectedRoom}
           currentWeekDate={currentWeekDate}
+          currentLessonPlan={currentLessonPlan}
         />
       </NavigationTabs>
 

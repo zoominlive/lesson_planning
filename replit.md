@@ -3,6 +3,55 @@ This project is a comprehensive lesson planning application for early childhood 
 
 ## Recent Changes (January 2025)
 
+### Consistent Week Display Format (January 13, 2025)
+- **Updated week range display**: Changed week display format from Monday-Sunday to Monday-Friday throughout the application
+- **Modified components**: Updated formatWeekRange functions in calendar-controls.tsx and tablet-header.tsx
+- **Consistent weekday focus**: All week displays now show only weekdays (Mon-Fri) to better align with childcare center operating days
+
+### Enhanced Visual Content for Materials and Milestones (January 13, 2025)
+- **Added placeholder images for materials**: Created professional placeholder images for Picture Book Collection, Wooden Building Blocks, and Washable Crayons materials
+- **Added images for developmental milestones**: Generated and integrated images for "Express feelings verbally", "Sorts objects by attribute", and "Uses scissors to cut shapes" milestones
+- **Updated server routing**: Modified server to serve static images from public directories first before falling back to object storage
+- **Created dedicated image directories**: Added public/materials-images and public/milestone-images directories for static image assets
+- **Improved visual presentation**: Materials library and developmental milestones now display proper visual content instead of broken image links
+
+### Persistent Notification System Implementation (January 14, 2025)
+- **Added PostgreSQL notifications table**: Created database table to store persistent notifications for users
+- **Implemented NotificationCarousel component**: Built a carousel UI for displaying multiple returned lesson plan notifications
+- **Added dismissible notifications**: Users can dismiss notifications with an X button to clear them from their view
+- **Automatic notification creation**: Notifications are automatically created when lesson plans are rejected
+- **Carousel navigation**: When multiple notifications exist, users can navigate between them using arrow buttons
+- **Integration with review workflow**: Notifications include review notes and direct navigation to the relevant week for revision
+- **Mark as read functionality**: Notifications are automatically marked as read when viewed
+- **Collapsible feedback design**: Feedback is hidden by default with a "View Feedback" button to expand/collapse the reviewer's notes
+- **Review status indicator in Weekly Calendar**: Added status badges next to Weekly Schedule title showing "Approved" (green) or "Returned for Revision" (amber) with expandable review notes
+
+### Fixed Date Display in Lesson Review Area (January 12, 2025)
+- **Fixed date calculation bug**: Changed from using `setDate()` to `addDays()` from date-fns library
+- **Resolved month boundary issue**: Dates now correctly display when week spans across months (e.g., "Aug 29 - Sep 2" instead of invalid "Aug 29 - Sep 32")
+- **Improved date range formatting**: Week ranges in review area now properly handle all edge cases
+- **UI cleanup**: Removed redundant instructional text from lesson planner for cleaner interface
+
+### Fixed Timezone Issues in Week Display (January 14, 2025)
+- **Fixed timezone conversion bug**: Modified formatWeekRange function to parse ISO dates correctly in local timezone
+- **Resolved incorrect week calculations**: September 1st now correctly shows as Sep 1-5 instead of Aug 25-29
+- **Updated notification carousel**: Week ranges in notifications now display Monday-Friday format correctly
+- **Fixed weekly calendar date display**: Calendar in review page now correctly shows Sept 1-5 for September week
+- **Corrected date parsing**: WeeklyCalendar component now properly handles ISO date strings without timezone offset issues
+
+### Fixed Lesson Plan Review Data Display (January 12, 2025)
+- **Enhanced getLessonPlansForReview function**: Modified to include teacher, location, room, and submitter data via proper database joins
+- **Fixed tenant context issue**: Ensured proper tenant context is maintained when fetching related user data
+- **Resolved "Unknown Teacher" display**: Review page now correctly shows teacher names instead of "Unknown Teacher"
+- **Improved data enrichment**: Each lesson plan in review now includes complete related entity data for better display
+
+## Recent Changes (January 2025)
+
+### Assistant Director Approval Requirement (January 14, 2025)
+- **Updated permission configuration**: assistant_director role now requires approval for lesson plans (sees "Submit for Review" instead of "Finalize")
+- **Modified auto-approve roles**: Only director, admin, and superadmin roles now auto-approve lesson plans
+- **Frontend and backend sync**: Updated both client/src/lib/permission-utils.ts and shared/permissions/permissions.config.ts to ensure consistency
+
 ### Lesson Plan Sharing Logic Fix (January 14, 2025)
 - **Fixed duplicate lesson plans**: Lesson plans are now properly shared across all teachers for the same tenant->location->room->schedule-type->weekStart combination
 - **Removed per-teacher ownership**: Modified POST /api/lesson-plans to check for existing plans before creating duplicates
@@ -11,7 +60,7 @@ This project is a comprehensive lesson planning application for early childhood 
 - **TeacherId field retained**: Database still requires teacherId for technical reasons, but application logic treats plans as shared
 
 ### Dynamic Approval Button Text (January 13, 2025)
-- **Permission-based button text**: Submit button now shows "Finalize" for auto-approved roles (assistant_director, director, admin, superadmin) and "Submit for Review" for teacher role
+- **Permission-based button text**: Submit button now shows "Finalize" for auto-approved roles (director, admin, superadmin) and "Submit for Review" for roles requiring approval (teacher, assistant_director)
 - **Updated backend approval logic**: Backend now uses permission configuration to determine auto-approval instead of hardcoded role checks
 - **Added requiresLessonPlanApproval function**: New utility function checks if current user requires lesson plan approval based on role permissions
 - **Consistent toast messages**: Updated success messages to show "Lesson Plan Finalized" for auto-approved submissions
