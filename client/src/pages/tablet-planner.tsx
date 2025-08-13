@@ -264,34 +264,37 @@ export default function TabletPlanner() {
       )}
 
       <div className="flex-1 overflow-hidden relative">
-        {/* Beautiful background pattern */}
-        <div className="absolute inset-0 opacity-5">
+        {/* Beautiful background pattern - pointer-events-none ensures it doesn't block clicks */}
+        <div className="absolute inset-0 opacity-5 pointer-events-none">
           <div className="absolute top-0 left-0 w-96 h-96 bg-turquoise rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-coral-red rounded-full blur-3xl" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-soft-yellow rounded-full blur-3xl" />
         </div>
         
-        {activeTab === 'calendar' ? (
-          viewMode === 'planning' ? (
-            <TabletWeeklyCalendar
-              currentWeekDate={currentWeekDate}
-              selectedLocation={selectedLocation}
-              selectedRoom={selectedRoom}
-              selectedActivity={selectedActivity}
-              onSlotTap={handleSlotTap}
-            />
+        {/* Content with proper z-index */}
+        <div className={`relative z-10 h-full ${activeTab === 'review' ? 'overflow-y-auto' : ''}`}>
+          {activeTab === 'calendar' ? (
+            viewMode === 'planning' ? (
+              <TabletWeeklyCalendar
+                currentWeekDate={currentWeekDate}
+                selectedLocation={selectedLocation}
+                selectedRoom={selectedRoom}
+                selectedActivity={selectedActivity}
+                onSlotTap={handleSlotTap}
+              />
+            ) : (
+              <TabletRecordingView
+                currentDate={new Date()}
+                selectedLocation={selectedLocation}
+                selectedRoom={selectedRoom}
+                locations={locations as any[]}
+                rooms={rooms}
+              />
+            )
           ) : (
-            <TabletRecordingView
-              currentDate={new Date()}
-              selectedLocation={selectedLocation}
-              selectedRoom={selectedRoom}
-              locations={locations as any[]}
-              rooms={rooms}
-            />
-          )
-        ) : (
-          <TabletLessonReview />
-        )}
+            <TabletLessonReview />
+          )}
+        </div>
 
         {/* Bottom Tab for Activity Drawer - Only show in calendar tab and planning mode */}
         {activeTab === 'calendar' && viewMode === 'planning' && (

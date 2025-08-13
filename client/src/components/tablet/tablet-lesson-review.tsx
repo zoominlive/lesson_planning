@@ -175,7 +175,7 @@ export function TabletLessonReview() {
   }
 
   return (
-    <div className="h-full flex flex-col px-4 py-2 overflow-hidden">
+    <div className="h-full flex flex-col px-4 py-2">
       {/* Header */}
       <div className="mb-4">
         <h2 className="text-2xl font-bold text-charcoal">Lesson Plan Review</h2>
@@ -183,20 +183,32 @@ export function TabletLessonReview() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-3 mb-4 h-14">
-          <TabsTrigger value="submitted" className="text-lg font-semibold data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="flex-1 flex flex-col min-h-0">
+        <TabsList className="grid w-full grid-cols-3 mb-4 h-14 relative z-20">
+          <TabsTrigger 
+            value="submitted" 
+            className="text-lg font-semibold data-[state=active]:bg-amber-500 data-[state=active]:text-white cursor-pointer"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
             Pending ({lessonPlans.filter(p => p.status === 'submitted').length})
           </TabsTrigger>
-          <TabsTrigger value="approved" className="text-lg font-semibold data-[state=active]:bg-green-500 data-[state=active]:text-white">
+          <TabsTrigger 
+            value="approved" 
+            className="text-lg font-semibold data-[state=active]:bg-green-500 data-[state=active]:text-white cursor-pointer"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
             Approved ({lessonPlans.filter(p => p.status === 'approved').length})
           </TabsTrigger>
-          <TabsTrigger value="rejected" className="text-lg font-semibold data-[state=active]:bg-red-500 data-[state=active]:text-white">
+          <TabsTrigger 
+            value="rejected" 
+            className="text-lg font-semibold data-[state=active]:bg-red-500 data-[state=active]:text-white cursor-pointer"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
             Returned ({lessonPlans.filter(p => p.status === 'rejected').length})
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value={activeTab} className="flex-1 overflow-y-auto space-y-4 pb-4">
+        <TabsContent value={activeTab} className="flex-1 overflow-y-auto space-y-4 pb-4 -webkit-overflow-scrolling-touch relative z-10">
           {filteredPlans.length === 0 ? (
             <Card className="p-8">
               <p className="text-center text-gray-500 text-lg">
@@ -241,8 +253,9 @@ export function TabletLessonReview() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full mt-2 flex items-center justify-center gap-2"
+                    className="w-full mt-2 flex items-center justify-center gap-2 relative z-30 cursor-pointer active:scale-95 transition-transform"
                     onClick={() => toggleCardExpansion(plan.id)}
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
                   >
                     {expandedCard === plan.id ? (
                       <>
@@ -271,17 +284,19 @@ export function TabletLessonReview() {
                           />
                           <div className="flex gap-2">
                             <Button
-                              className="flex-1 bg-red-600 hover:bg-red-700 text-white h-12 text-base"
+                              className="flex-1 bg-red-600 hover:bg-red-700 text-white h-12 text-base cursor-pointer active:scale-95 transition-transform relative z-30"
                               onClick={() => handleReject(plan.id)}
                               disabled={rejectMutation.isPending}
+                              style={{ WebkitTapHighlightColor: 'transparent' }}
                             >
                               <XCircle className="mr-2 h-5 w-5" />
                               {rejectMutation.isPending ? "Processing..." : "Return for Revision"}
                             </Button>
                             <Button
-                              className="flex-1 bg-green-600 hover:bg-green-700 text-white h-12 text-base"
+                              className="flex-1 bg-green-600 hover:bg-green-700 text-white h-12 text-base cursor-pointer active:scale-95 transition-transform relative z-30"
                               onClick={() => handleApprove(plan.id)}
                               disabled={approveMutation.isPending}
+                              style={{ WebkitTapHighlightColor: 'transparent' }}
                             >
                               <CheckCircle className="mr-2 h-5 w-5" />
                               {approveMutation.isPending ? "Processing..." : "Approve"}
