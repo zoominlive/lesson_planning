@@ -100,14 +100,27 @@ export function TabletWeeklyCalendar({
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
   const undoTimer = useRef<NodeJS.Timeout | null>(null);
-  const [scheduleSettings, setScheduleSettings] = useState<any>({
-    type: 'time-based',
+  const [draggedActivity, setDraggedActivity] = useState<any>(null);
+  const [dragOverSlot, setDragOverSlot] = useState<{day: number, slot: number} | null>(null);
+  
+  // Fetch location settings to get correct schedule type
+  const { data: locationSettings } = useQuery<{
+    type: 'time-based' | 'position-based';
+    startTime: string;
+    endTime: string;
+    slotsPerDay: number;
+  }>({
+    queryKey: [`/api/locations/${selectedLocation}/settings`],
+    enabled: !!selectedLocation,
+  });
+
+  // Use settings from API, fallback to defaults
+  const scheduleSettings = locationSettings || {
+    type: 'time-based' as const,
     startTime: '06:00',
     endTime: '18:00',
     slotsPerDay: 8
-  });
-  const [draggedActivity, setDraggedActivity] = useState<any>(null);
-  const [dragOverSlot, setDragOverSlot] = useState<{day: number, slot: number} | null>(null);
+  };
   
   // Fetch lesson plans to check status - use query parameters
   const { data: lessonPlans = [] } = useQuery<any[]>({
@@ -124,49 +137,6 @@ export function TabletWeeklyCalendar({
   });
   
   const requiresApproval = requiresLessonPlanApproval();
-
-  // Load schedule settings from localStorage for the specific location
-  useEffect(() => {
-    const loadSettings = () => {
-      // Try to load location-specific settings first
-      const locationSettings = localStorage.getItem(`scheduleSettings_${selectedLocation}`);
-      if (locationSettings) {
-        try {
-          const parsed = JSON.parse(locationSettings);
-          setScheduleSettings(parsed);
-        } catch (error) {
-          console.error('Error loading location schedule settings:', error);
-        }
-      } else {
-        // Fall back to general settings if no location-specific settings exist
-        const savedSettings = localStorage.getItem('scheduleSettings');
-        if (savedSettings) {
-          try {
-            const parsed = JSON.parse(savedSettings);
-            setScheduleSettings(parsed);
-          } catch (error) {
-            console.error('Error loading schedule settings:', error);
-          }
-        }
-      }
-    };
-
-    loadSettings();
-
-    // Listen for settings changes
-    const handleSettingsChange = (event: CustomEvent) => {
-      // Only update if the change is for the current location or a general update
-      if (!event.detail.locationId || event.detail.locationId === selectedLocation) {
-        const { locationId, ...settings } = event.detail;
-        setScheduleSettings(settings);
-      }
-    };
-
-    window.addEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
-    return () => {
-      window.removeEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
-    };
-  }, [selectedLocation]);
 
   // Generate time slots based on current settings
   const timeSlots = generateTimeSlots(scheduleSettings);
