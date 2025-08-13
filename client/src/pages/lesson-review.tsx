@@ -226,8 +226,14 @@ export function LessonReview() {
     const date = new Date(weekStart);
     // Ensure we start from Monday even if weekStart is on a different day
     const start = startOfWeek(date, { weekStartsOn: 1 }); // Monday
-    const end = addDays(start, 4); // Friday
-    return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`;
+    const end = addDays(start, 4); // Friday  
+    
+    // Handle month boundaries properly
+    if (start.getMonth() !== end.getMonth()) {
+      return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`;
+    } else {
+      return `${format(start, "MMM d")}-${format(end, "d, yyyy")}`;
+    }
   };
 
   // Enrich lesson plans with related data (preserve existing data if present)
