@@ -192,14 +192,16 @@ export function TabletHeader({
             <ChevronDown className={`h-4 w-4 transition-transform ${filtersExpanded ? 'rotate-180' : ''}`} />
           </button>
           
-          <Button
-            size="icon"
-            onClick={onActivityButtonClick}
-            className="h-8 w-8 bg-gradient-to-r from-coral-red to-soft-yellow text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all rounded-full"
-            data-testid="button-open-activity-drawer"
-          >
-            <Box className="h-4 w-4" />
-          </Button>
+          {viewMode === 'planning' && (
+            <Button
+              size="icon"
+              onClick={onActivityButtonClick}
+              className="h-8 w-8 bg-gradient-to-r from-coral-red to-soft-yellow text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all rounded-full"
+              data-testid="button-open-activity-drawer"
+            >
+              <Box className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         
         {filtersExpanded && (
