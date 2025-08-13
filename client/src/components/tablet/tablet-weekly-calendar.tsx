@@ -509,8 +509,24 @@ export function TabletWeeklyCalendar({
         )}
         
         {/* Calendar Header with Submit/Withdraw Button */}
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Weekly Schedule</h3>
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800">Weekly Schedule</h3>
+            {currentLessonPlan?.status && (
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                currentLessonPlan.status === 'draft' ? 'bg-gray-100 text-gray-700' :
+                currentLessonPlan.status === 'submitted' ? 'bg-amber-100 text-amber-800' :
+                currentLessonPlan.status === 'approved' ? 'bg-green-100 text-green-800' :
+                currentLessonPlan.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                {currentLessonPlan.status === 'submitted' ? 'Pending' :
+                 currentLessonPlan.status === 'approved' ? 'Approved' :
+                 currentLessonPlan.status === 'rejected' ? 'Returned' :
+                 'Draft'}
+              </span>
+            )}
+          </div>
           
           {/* Submit/Withdraw Buttons - Compact top-right position */}
           {currentLessonPlan && (canSubmit || canWithdraw) && (
@@ -520,7 +536,7 @@ export function TabletWeeklyCalendar({
                 <Button
                   onClick={() => submitMutation.mutate()}
                   disabled={submitMutation.isPending}
-                  className="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-coral-red to-purple-500 hover:from-coral-red/90 hover:to-purple-500/90 text-white shadow-lg active:scale-95 transition-transform rounded-lg"
+                  className="px-3 py-1.5 text-sm font-semibold bg-gradient-to-r from-coral-red to-purple-500 hover:from-coral-red/90 hover:to-purple-500/90 text-white shadow-lg active:scale-95 transition-transform rounded-lg"
                   style={{ WebkitTapHighlightColor: 'transparent' }}
                   data-testid="tablet-submit-lesson-plan"
                 >
@@ -550,7 +566,7 @@ export function TabletWeeklyCalendar({
                   onClick={() => withdrawMutation.mutate()}
                   disabled={withdrawMutation.isPending}
                   variant="outline"
-                  className="px-4 py-2 text-sm font-semibold border-2 border-gray-400 hover:bg-gray-100 shadow-md active:scale-95 transition-transform rounded-lg"
+                  className="px-3 py-1.5 text-sm font-semibold border-2 border-gray-400 hover:bg-gray-100 shadow-md active:scale-95 transition-transform rounded-lg"
                   style={{ WebkitTapHighlightColor: 'transparent' }}
                   data-testid="tablet-withdraw-lesson-plan"
                 >

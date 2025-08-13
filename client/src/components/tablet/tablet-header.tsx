@@ -93,20 +93,6 @@ export function TabletHeader({
                         <h2 className="text-base font-bold text-charcoal">
                           {formatWeekRange(currentWeekDate)}
                         </h2>
-                        {lessonPlanStatus && (
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            lessonPlanStatus === 'draft' ? 'bg-gray-100 text-gray-700' :
-                            lessonPlanStatus === 'submitted' ? 'bg-amber-100 text-amber-800' :
-                            lessonPlanStatus === 'approved' ? 'bg-green-100 text-green-800' :
-                            lessonPlanStatus === 'rejected' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {lessonPlanStatus === 'submitted' ? 'Pending' :
-                             lessonPlanStatus === 'approved' ? 'Approved' :
-                             lessonPlanStatus === 'rejected' ? 'Returned' :
-                             'Draft'}
-                          </span>
-                        )}
                       </div>
                       <p className="text-xs text-gray-500">Tap to change</p>
                     </div>
