@@ -379,8 +379,8 @@ export function TabletRecordingView({
                                   />
                                 </div>
 
-                                {/* Time, Duration and Category Row */}
-                                <div className="flex flex-wrap items-center gap-2 mb-3">
+                                {/* All Tags in Single Row */}
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
                                   <div className="flex items-center gap-1.5 bg-gradient-to-r from-blue-50 to-sky-50 border border-blue-200 rounded-lg px-3 py-1.5">
                                     <Clock className="h-4 w-4 text-blue-600" />
                                     <span className="text-sm font-semibold text-blue-700">
@@ -401,10 +401,6 @@ export function TabletRecordingView({
                                   }`}>
                                     {scheduled.activity?.category}
                                   </span>
-                                </div>
-
-                                {/* Group Details Row with Colorful Badges */}
-                                <div className="flex flex-wrap items-center gap-2">
                                   {scheduled.activity?.ageGroups && scheduled.activity.ageGroups.length > 0 && (
                                     <>
                                       {scheduled.activity.ageGroups.map((ag: any, index: number) => (
@@ -828,8 +824,8 @@ export function TabletRecordingView({
                       />
                     </div>
 
-                    {/* Time, Duration and Category Row */}
-                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                    {/* All Tags in Single Row */}
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                       <div className="flex items-center gap-1.5 bg-gradient-to-r from-blue-50 to-sky-50 border border-blue-200 rounded-lg px-3 py-1.5">
                         <Clock className="h-4 w-4 text-blue-600" />
                         <span className="text-sm font-semibold text-blue-700">
@@ -850,10 +846,6 @@ export function TabletRecordingView({
                       }`}>
                         {scheduled.activity?.category}
                       </span>
-                    </div>
-
-                    {/* Group Details with Colorful Badges */}
-                    <div className="flex flex-wrap items-center gap-2 mb-3">
                       {scheduled.activity?.ageGroups && scheduled.activity.ageGroups.length > 0 && (
                         <>
                           {scheduled.activity.ageGroups.map((ag: any) => (
