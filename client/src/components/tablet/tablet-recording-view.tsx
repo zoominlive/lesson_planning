@@ -99,14 +99,20 @@ export function TabletRecordingView({
     enabled: !!selectedLocation,
   });
 
-  // Find the approved lesson plan for this room
+  // Find the approved lesson plan for this room and current week
+  const currentWeekDate = currentDate.toISOString().split('T')[0];
   const approvedLessonPlan = lessonPlans.find(
-    (plan: any) => plan.roomId === selectedRoom && plan.status === 'approved'
+    (plan: any) => {
+      const planWeekDate = new Date(plan.weekStart).toISOString().split('T')[0];
+      return plan.roomId === selectedRoom && 
+             plan.status === 'approved' && 
+             planWeekDate === currentWeekDate;
+    }
   );
 
   // Fetch scheduled activities for the week
   const { data: scheduledActivities = [], isLoading } = useQuery<any[]>({
-    queryKey: ["/api/scheduled-activities", selectedRoom, currentDate.toISOString(), selectedLocation],
+    queryKey: ["/api/scheduled-activities", selectedRoom, currentDate.toISOString(), selectedLocation, !!approvedLessonPlan],
     queryFn: async () => {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
@@ -128,7 +134,7 @@ export function TabletRecordingView({
         return [];
       }
     },
-    enabled: !!selectedRoom && !!selectedLocation,
+    enabled: !!selectedRoom && !!selectedLocation && lessonPlans.length > 0,
   });
 
   // Sort activities by time slot
