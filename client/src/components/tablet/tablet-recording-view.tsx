@@ -39,6 +39,30 @@ export function TabletRecordingView({
   const todayDate = new Date();
   const dayOfWeek = todayDate.getDay() === 0 ? 6 : todayDate.getDay() - 1; // Convert to 0-4 (Mon-Fri)
 
+  // Fetch settings to determine if it's position-based or time-based
+  const { data: settings = [] } = useQuery<any[]>({
+    queryKey: ["/api/settings", selectedLocation],
+    queryFn: async () => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`/api/settings?locationId=${encodeURIComponent(selectedLocation)}`, {
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch settings');
+      return response.json();
+    },
+    enabled: !!selectedLocation,
+  });
+
+  // Find location settings
+  const locationSettings = settings.find((s: any) => 
+    s.locationId === selectedLocation && s.key === 'schedule_type'
+  );
+
+  const scheduleType = locationSettings?.value?.scheduleType || 'time-based';
+  const isPositionBased = scheduleType === 'position-based';
+
   // Fetch the lesson plan to check if it's approved
   const { data: lessonPlans = [] } = useQuery<any[]>({
     queryKey: ["/api/lesson-plans", selectedLocation, currentDate.toISOString()],
@@ -94,12 +118,18 @@ export function TabletRecordingView({
   const sortedActivities = [...scheduledActivities].sort((a, b) => a.timeSlot - b.timeSlot);
 
   const getTimeLabel = (timeSlot: number) => {
-    const times = [
-      "6:00 AM", "7:00 AM", "8:00 AM", "9:00 AM", "10:00 AM", 
-      "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", 
-      "4:00 PM", "5:00 PM", "6:00 PM"
-    ];
-    return times[timeSlot] || `Slot ${timeSlot}`;
+    if (isPositionBased) {
+      // For position-based schedules, show position numbers
+      return `Position ${timeSlot + 1}`;
+    } else {
+      // For time-based schedules, show actual times
+      const times = [
+        "6:00 AM", "7:00 AM", "8:00 AM", "9:00 AM", "10:00 AM", 
+        "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", 
+        "4:00 PM", "5:00 PM", "6:00 PM"
+      ];
+      return times[timeSlot] || `Slot ${timeSlot}`;
+    }
   };
 
   const getCategoryColor = (category: string) => {
