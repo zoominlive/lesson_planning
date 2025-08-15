@@ -621,50 +621,25 @@ export function TabletRecordingView({
                                                 <p className="text-xs text-gray-600 mb-2">{material.description}</p>
                                               )}
                                               
-                                              {/* Material Details Grid */}
-                                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                                {material.quantity && (
-                                                  <div className="flex items-center gap-1">
-                                                    <span className="font-semibold text-gray-700">Quantity:</span>
-                                                    <span className="text-gray-600">{material.quantity}</span>
-                                                  </div>
-                                                )}
-                                                {material.category && (
-                                                  <div className="flex items-center gap-1">
-                                                    <span className="font-semibold text-gray-700">Category:</span>
-                                                    <span className="text-gray-600">{material.category}</span>
-                                                  </div>
-                                                )}
-                                                {material.preparationTime && (
-                                                  <div className="flex items-center gap-1">
-                                                    <span className="font-semibold text-gray-700">Prep Time:</span>
-                                                    <span className="text-gray-600">{material.preparationTime} min</span>
-                                                  </div>
-                                                )}
-                                                {material.costEstimate && (
-                                                  <div className="flex items-center gap-1">
-                                                    <span className="font-semibold text-gray-700">Est. Cost:</span>
-                                                    <span className="text-gray-600">${material.costEstimate}</span>
-                                                  </div>
-                                                )}
-                                              </div>
-                                              
-                                              {/* Safety Considerations */}
-                                              {material.safetyConsiderations && (
-                                                <div className="mt-2 p-2 bg-amber-50 rounded border border-amber-200">
-                                                  <p className="text-xs font-semibold text-amber-800 mb-1">⚠️ Safety Notes:</p>
-                                                  <p className="text-xs text-amber-700">{material.safetyConsiderations}</p>
+                                              {/* Storage Location */}
+                                              {material.location && (
+                                                <div className="flex items-center gap-1 text-xs mb-2">
+                                                  <span className="font-semibold text-gray-700">Storage Location:</span>
+                                                  <span className="text-gray-600">{material.location}</span>
                                                 </div>
                                               )}
                                               
-                                              {/* Age Groups */}
+                                              {/* Age Groups - for safety/appropriate use */}
                                               {material.ageGroups && material.ageGroups.length > 0 && (
-                                                <div className="mt-2 flex flex-wrap gap-1">
-                                                  {material.ageGroups.map((ag: any) => (
-                                                    <Badge key={ag.id} className="bg-teal-100 text-teal-700 border-teal-200 text-xs">
-                                                      {ag.name}
-                                                    </Badge>
-                                                  ))}
+                                                <div className="mt-2">
+                                                  <p className="text-xs font-semibold text-gray-700 mb-1">Suitable for:</p>
+                                                  <div className="flex flex-wrap gap-1">
+                                                    {material.ageGroups.map((ag: any) => (
+                                                      <Badge key={ag.id} className="bg-teal-100 text-teal-700 border-teal-200 text-xs">
+                                                        {ag.name}
+                                                      </Badge>
+                                                    ))}
+                                                  </div>
                                                 </div>
                                               )}
                                             </div>
@@ -1051,45 +1026,24 @@ export function TabletRecordingView({
                                       <p className="text-xs text-gray-600 mt-0.5">{material.description}</p>
                                     )}
                                     
-                                    {/* Material Details */}
-                                    <div className="grid grid-cols-2 gap-1 mt-1 text-xs">
-                                      {material.quantity && (
-                                        <div>
-                                          <span className="font-semibold text-gray-700">Qty:</span> {material.quantity}
-                                        </div>
-                                      )}
-                                      {material.category && (
-                                        <div>
-                                          <span className="font-semibold text-gray-700">Category:</span> {material.category}
-                                        </div>
-                                      )}
-                                      {material.preparationTime && (
-                                        <div>
-                                          <span className="font-semibold text-gray-700">Prep:</span> {material.preparationTime}min
-                                        </div>
-                                      )}
-                                      {material.costEstimate && (
-                                        <div>
-                                          <span className="font-semibold text-gray-700">Cost:</span> ${material.costEstimate}
-                                        </div>
-                                      )}
-                                    </div>
-                                    
-                                    {/* Safety */}
-                                    {material.safetyConsiderations && (
-                                      <div className="mt-1 p-1 bg-amber-50 rounded border border-amber-200">
-                                        <p className="text-xs text-amber-700">⚠️ {material.safetyConsiderations}</p>
+                                    {/* Storage Location */}
+                                    {material.location && (
+                                      <div className="text-xs mt-1">
+                                        <span className="font-semibold text-gray-700">Location:</span> {material.location}
                                       </div>
                                     )}
                                     
                                     {/* Age Groups */}
                                     {material.ageGroups && material.ageGroups.length > 0 && (
-                                      <div className="mt-1 flex flex-wrap gap-1">
-                                        {material.ageGroups.map((ag: any) => (
-                                          <Badge key={ag.id} variant="secondary" className="text-xs py-0">
-                                            {ag.name}
-                                          </Badge>
-                                        ))}
+                                      <div className="mt-1">
+                                        <span className="text-xs font-semibold text-gray-700">Suitable for: </span>
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                          {material.ageGroups.map((ag: any) => (
+                                            <Badge key={ag.id} variant="secondary" className="text-xs py-0">
+                                              {ag.name}
+                                            </Badge>
+                                          ))}
+                                        </div>
                                       </div>
                                     )}
                                   </div>
