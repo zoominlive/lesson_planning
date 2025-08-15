@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Clock, Users, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Save, Play, Image } from "lucide-react";
+import { Clock, Users, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Save, Play, Image, Scissors, Target, ListChecks } from "lucide-react";
 import { format } from "date-fns";
 
 interface TabletRecordingViewProps {
@@ -270,52 +270,90 @@ export function TabletRecordingView({
             <p className="text-xs text-gray-500 mt-1">Switch to Planning mode to schedule activities</p>
           </div>
         ) : showingFullWeek ? (
-          // Show activities grouped by day for approved plans
-          activitiesByDay.map(({ day, dayName, activities }) => (
-            <div key={day} className="space-y-1.5">
-              {activities.length > 0 && (
-                <>
-                  <h3 className="font-medium text-xs text-gray-600 px-2 py-1">
-                    {dayName}
-                  </h3>
-                  {activities.map((scheduled) => {
-                    const isExpanded = expandedActivity === scheduled.id;
-                    const record = activityRecords[scheduled.id];
-                    const isCompleted = record?.completed || false;
+          // Show activities grouped by day for approved plans with grid layout
+          <div className="space-y-6">
+            {activitiesByDay.map(({ day, dayName, activities }) => {
+              if (activities.length === 0) return null;
+              
+              return (
+                <div key={day} className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-1 bg-gradient-to-b from-turquoise to-sky-blue rounded-full" />
+                    <h3 className="text-lg font-bold text-gray-800">
+                      {dayName}
+                    </h3>
+                    <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent" />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    {activities.map((scheduled) => {
+                      const isExpanded = expandedActivity === scheduled.id;
+                      const record = activityRecords[scheduled.id];
+                      const isCompleted = record?.completed || false;
 
-                    return (
-                      <div
-                        key={scheduled.id}
-                        className={`rounded-lg border transition-all ${
-                          isCompleted 
-                            ? 'bg-green-50 border-green-200' 
-                            : 'bg-white border-gray-200'
-                        }`}
-                      >
-                        <div className="p-3">
-                          {/* Activity Header */}
-                          <div className="flex items-start gap-3">
-                            {/* Activity Image Thumbnail */}
-                            {scheduled.activity?.activityImage && (
-                              <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
-                                <img 
-                                  src={scheduled.activity.activityImage} 
-                                  alt={scheduled.activity.title}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                  }}
-                                />
+                      return (
+                        <div
+                          key={scheduled.id}
+                          className={`rounded-xl border-2 transition-all transform hover:scale-[1.02] shadow-lg hover:shadow-xl ${
+                            isCompleted 
+                              ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300' 
+                              : 'bg-white border-gray-200'
+                          } ${isExpanded ? 'col-span-2' : ''}`}
+                        >
+                        <div className="relative">
+                          {/* Category Color Bar */}
+                          <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-lg ${
+                            scheduled.activity?.category === 'Art & Creativity' ? 'bg-gradient-to-r from-pink-400 to-rose-400' :
+                            scheduled.activity?.category === 'Physical Development' ? 'bg-gradient-to-r from-blue-400 to-sky-400' :
+                            scheduled.activity?.category === 'Social Development' ? 'bg-gradient-to-r from-green-400 to-emerald-400' :
+                            scheduled.activity?.category === 'Cognitive Development' ? 'bg-gradient-to-r from-purple-400 to-violet-400' :
+                            'bg-gradient-to-r from-gray-400 to-slate-400'
+                          }`} />
+                          
+                          <div className="p-4">
+                            {/* Time and Status Row */}
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-2.5 py-1">
+                                  <Clock className="h-3.5 w-3.5 text-gray-600" />
+                                  <span className="text-xs font-medium text-gray-700">
+                                    {getTimeLabel(scheduled.timeSlot)}
+                                  </span>
+                                </div>
+                                <Badge variant="outline" className="text-xs">
+                                  {scheduled.activity?.duration || 30}m
+                                </Badge>
                               </div>
-                            )}
-                            
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1.5">
-                                <span className="text-xs text-gray-500 flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {getTimeLabel(scheduled.timeSlot)}
-                                </span>
-                                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              <Checkbox
+                                checked={isCompleted}
+                                onCheckedChange={() => handleToggleComplete(scheduled.id)}
+                                className="h-5 w-5"
+                                data-testid={`complete-activity-${scheduled.id}`}
+                              />
+                            </div>
+
+                            {/* Activity Content */}
+                            <div className="space-y-3">
+                              {/* Activity Image (if exists and not expanded) */}
+                              {scheduled.activity?.activityImage && !isExpanded && (
+                                <div className="w-full h-32 rounded-lg overflow-hidden bg-gray-100">
+                                  <img 
+                                    src={scheduled.activity.activityImage} 
+                                    alt={scheduled.activity.title}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              
+                              {/* Title and Category */}
+                              <div>
+                                <h3 className={`font-semibold text-base text-gray-900 mb-1 ${isCompleted ? 'line-through opacity-60' : ''}`}>
+                                  {scheduled.activity?.title}
+                                </h3>
+                                <span className={`inline-block text-xs px-2.5 py-1 rounded-full ${
                                   scheduled.activity?.category === 'Art & Creativity' ? 'bg-pink-100 text-pink-700' :
                                   scheduled.activity?.category === 'Physical Development' ? 'bg-blue-100 text-blue-700' :
                                   scheduled.activity?.category === 'Social Development' ? 'bg-green-100 text-green-700' :
@@ -325,30 +363,56 @@ export function TabletRecordingView({
                                   {scheduled.activity?.category}
                                 </span>
                               </div>
-                              <h3 className={`font-medium text-sm text-gray-900 ${isCompleted ? 'line-through opacity-60' : ''}`}>
-                                {scheduled.activity?.title}
-                              </h3>
-                              {!isExpanded && (
-                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                                  {scheduled.activity?.description}
+                              
+                              {/* Description Preview */}
+                              {!isExpanded && scheduled.activity?.description && (
+                                <p className="text-sm text-gray-600 line-clamp-2">
+                                  {scheduled.activity.description}
                                 </p>
                               )}
-                            </div>
-                            
-                            <div className="flex items-center gap-1">
-                              <Checkbox
-                                checked={isCompleted}
-                                onCheckedChange={() => handleToggleComplete(scheduled.id)}
-                                className="h-5 w-5"
-                                data-testid={`complete-activity-${scheduled.id}`}
-                              />
+
+                              {/* Quick Info Pills */}
+                              {!isExpanded && (
+                                <div className="flex flex-wrap gap-2">
+                                  {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
+                                    <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 rounded-full px-2 py-1">
+                                      <Scissors className="h-3 w-3" />
+                                      <span>{scheduled.activity.materials.length} materials</span>
+                                    </div>
+                                  )}
+                                  {scheduled.activity?.milestones && scheduled.activity.milestones.length > 0 && (
+                                    <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 rounded-full px-2 py-1">
+                                      <Target className="h-3 w-3" />
+                                      <span>{scheduled.activity.milestones.length} milestones</span>
+                                    </div>
+                                  )}
+                                  {scheduled.activity?.steps && scheduled.activity.steps.length > 0 && (
+                                    <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 rounded-full px-2 py-1">
+                                      <ListChecks className="h-3 w-3" />
+                                      <span>{scheduled.activity.steps.length} steps</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {/* Expand/Collapse Button */}
                               <Button
-                                size="icon"
                                 variant="ghost"
+                                size="sm"
                                 onClick={() => setExpandedActivity(isExpanded ? null : scheduled.id)}
-                                className="h-7 w-7"
+                                className="w-full justify-center gap-2 hover:bg-gray-50"
                               >
-                                {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                                {isExpanded ? (
+                                  <>
+                                    <ChevronUp className="h-4 w-4" />
+                                    Show Less
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown className="h-4 w-4" />
+                                    Show Details & Record
+                                  </>
+                                )}
                               </Button>
                             </div>
                           </div>
@@ -562,50 +626,82 @@ export function TabletRecordingView({
                       </div>
                     );
                   })}
-                </>
-              )}
-            </div>
-          ))
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         ) : (
-          // Show regular single day activities
-          sortedActivities.map((scheduled) => {
-            const isExpanded = expandedActivity === scheduled.id;
-            const record = activityRecords[scheduled.id];
-            const isCompleted = record?.completed || false;
+          // Show regular single day activities in grid layout
+          <div className="grid grid-cols-2 gap-4">
+            {sortedActivities.map((scheduled) => {
+              const isExpanded = expandedActivity === scheduled.id;
+              const record = activityRecords[scheduled.id];
+              const isCompleted = record?.completed || false;
 
-            return (
-              <div
-                key={scheduled.id}
-                className={`rounded-lg border transition-all ${
-                  isCompleted 
-                    ? 'bg-green-50 border-green-200' 
-                    : 'bg-white border-gray-200'
-                }`}
-              >
-                <div className="p-3">
-                  {/* Activity Header */}
-                  <div className="flex items-start gap-3">
-                    {/* Activity Image Thumbnail */}
-                    {scheduled.activity?.activityImage && (
-                      <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
-                        <img 
-                          src={scheduled.activity.activityImage} 
-                          alt={scheduled.activity.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
+              return (
+                <div
+                  key={scheduled.id}
+                  className={`rounded-xl border-2 transition-all transform hover:scale-[1.02] shadow-lg hover:shadow-xl ${
+                    isCompleted 
+                      ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300' 
+                      : 'bg-white border-gray-200'
+                  } ${isExpanded ? 'col-span-2' : ''}`}
+                >
+                <div className="relative">
+                  {/* Category Color Bar */}
+                  <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-lg ${
+                    scheduled.activity?.category === 'Art & Creativity' ? 'bg-gradient-to-r from-pink-400 to-rose-400' :
+                    scheduled.activity?.category === 'Physical Development' ? 'bg-gradient-to-r from-blue-400 to-sky-400' :
+                    scheduled.activity?.category === 'Social Development' ? 'bg-gradient-to-r from-green-400 to-emerald-400' :
+                    scheduled.activity?.category === 'Cognitive Development' ? 'bg-gradient-to-r from-purple-400 to-violet-400' :
+                    'bg-gradient-to-r from-gray-400 to-slate-400'
+                  }`} />
+                  
+                  <div className="p-4">
+                    {/* Time and Status Row */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-2.5 py-1">
+                          <Clock className="h-3.5 w-3.5 text-gray-600" />
+                          <span className="text-xs font-medium text-gray-700">
+                            {getTimeLabel(scheduled.timeSlot)}
+                          </span>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {scheduled.activity?.duration || 30}m
+                        </Badge>
                       </div>
-                    )}
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-xs text-gray-500 flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {getTimeLabel(scheduled.timeSlot)}
-                        </span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      <Checkbox
+                        checked={isCompleted}
+                        onCheckedChange={() => handleToggleComplete(scheduled.id)}
+                        className="h-5 w-5"
+                        data-testid={`complete-activity-${scheduled.id}`}
+                      />
+                    </div>
+
+                    {/* Activity Content */}
+                    <div className="space-y-3">
+                      {/* Activity Image (if exists and not expanded) */}
+                      {scheduled.activity?.activityImage && !isExpanded && (
+                        <div className="w-full h-32 rounded-lg overflow-hidden bg-gray-100">
+                          <img 
+                            src={scheduled.activity.activityImage} 
+                            alt={scheduled.activity.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Title and Category */}
+                      <div>
+                        <h3 className={`font-semibold text-base text-gray-900 mb-1 ${isCompleted ? 'line-through opacity-60' : ''}`}>
+                          {scheduled.activity?.title}
+                        </h3>
+                        <span className={`inline-block text-xs px-2.5 py-1 rounded-full ${
                           scheduled.activity?.category === 'Art & Creativity' ? 'bg-pink-100 text-pink-700' :
                           scheduled.activity?.category === 'Physical Development' ? 'bg-blue-100 text-blue-700' :
                           scheduled.activity?.category === 'Social Development' ? 'bg-green-100 text-green-700' :
@@ -615,30 +711,56 @@ export function TabletRecordingView({
                           {scheduled.activity?.category}
                         </span>
                       </div>
-                      <h3 className={`font-medium text-sm text-gray-900 ${isCompleted ? 'line-through opacity-60' : ''}`}>
-                        {scheduled.activity?.title}
-                      </h3>
-                      {!isExpanded && (
-                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                          {scheduled.activity?.description}
+                      
+                      {/* Description Preview */}
+                      {!isExpanded && scheduled.activity?.description && (
+                        <p className="text-sm text-gray-600 line-clamp-2">
+                          {scheduled.activity.description}
                         </p>
                       )}
-                    </div>
-                    
-                    <div className="flex items-center gap-1">
-                      <Checkbox
-                        checked={isCompleted}
-                        onCheckedChange={() => handleToggleComplete(scheduled.id)}
-                        className="h-5 w-5"
-                        data-testid={`complete-activity-${scheduled.id}`}
-                      />
+
+                      {/* Quick Info Pills */}
+                      {!isExpanded && (
+                        <div className="flex flex-wrap gap-2">
+                          {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
+                            <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 rounded-full px-2 py-1">
+                              <Scissors className="h-3 w-3" />
+                              <span>{scheduled.activity.materials.length} materials</span>
+                            </div>
+                          )}
+                          {scheduled.activity?.milestones && scheduled.activity.milestones.length > 0 && (
+                            <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 rounded-full px-2 py-1">
+                              <Target className="h-3 w-3" />
+                              <span>{scheduled.activity.milestones.length} milestones</span>
+                            </div>
+                          )}
+                          {scheduled.activity?.steps && scheduled.activity.steps.length > 0 && (
+                            <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 rounded-full px-2 py-1">
+                              <ListChecks className="h-3 w-3" />
+                              <span>{scheduled.activity.steps.length} steps</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Expand/Collapse Button */}
                       <Button
-                        size="icon"
                         variant="ghost"
+                        size="sm"
                         onClick={() => setExpandedActivity(isExpanded ? null : scheduled.id)}
-                        className="h-7 w-7"
+                        className="w-full justify-center gap-2 hover:bg-gray-50"
                       >
-                        {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                        {isExpanded ? (
+                          <>
+                            <ChevronUp className="h-4 w-4" />
+                            Show Less
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-4 w-4" />
+                            Show Details & Record
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -851,10 +973,10 @@ export function TabletRecordingView({
                 </div>
               </div>
             );
-          })
+          })}
+          </div>
         )}
       </div>
-
 
     </div>
   );
