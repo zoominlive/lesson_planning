@@ -67,6 +67,8 @@ This project is a comprehensive lesson planning application for early childhood 
 - **Fixed API authentication**: Resolved JWT token format issues by using correct tenantId field format
 - **Parent token generation**: Created generate_parent_token.cjs script for testing parent authentication
 - **TypeScript fixes**: Corrected storage method calls to use proper interface methods (getLessonPlansForReview, getActivityRecords)
+- **Testing configuration**: Hardcoded parent view to show Aug 18, 2025 week for Main Campus - Toddler 2 room (for testing purposes)
+- **Week filtering**: Added weekStart query parameter support to parent API for filtering lesson plans by specific week
 
 ## Recent Changes (January 2025)
 

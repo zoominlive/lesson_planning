@@ -43,11 +43,13 @@ export default function ParentView() {
     return startOfWeek(today, { weekStartsOn: 1 });
   });
 
-  // Fetch approved lesson plans
+  // Fetch approved lesson plans - hardcoded for Aug 18 week for testing
+  // TODO: In production, this should fetch based on current week or allow week selection
   const { data: lessonPlans, isLoading } = useQuery<LessonPlan[]>({
-    queryKey: ['/api/parent/lesson-plans'],
+    queryKey: ['/api/parent/lesson-plans', '2025-08-18'],
     queryFn: async () => {
-      const response = await apiRequest('/api/parent/lesson-plans', 'GET');
+      // For testing, specifically fetch the Aug 18, 2025 week (Main Campus - Toddler 2 room)
+      const response = await apiRequest('/api/parent/lesson-plans?weekStart=2025-08-18', 'GET');
       return response;
     }
   });

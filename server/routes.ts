@@ -2086,6 +2086,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const tenantId = req.tenantId;
       const userId = req.userId;
+      const { weekStart } = req.query;
       
       if (!tenantId || !userId) {
         return res.status(401).json({ error: "Authentication required" });
@@ -2099,9 +2100,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allLessonPlans = await storage.getLessonPlansForReview();
       
       // Filter to only approved plans in authorized locations
-      const filteredPlans = allLessonPlans.filter((plan: any) => 
+      let filteredPlans = allLessonPlans.filter((plan: any) => 
         plan.status === 'approved' && authorizedLocationIds.includes(plan.locationId)
       );
+      
+      // If weekStart is provided, filter to only that week
+      if (weekStart) {
+        filteredPlans = filteredPlans.filter((plan: any) => 
+          plan.weekStart === weekStart || plan.weekStart.startsWith(weekStart as string)
+        );
+      }
       
       // Enrich with activities and related data
       const enrichedPlans = await Promise.all(filteredPlans.map(async (plan: any) => {
