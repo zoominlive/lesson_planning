@@ -786,19 +786,12 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                         </div>
                         
                         <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-1">
-                            {isCompleted ? (
-                              <>
-                                <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                                <span className="text-xs text-green-600 font-bold">Done!</span>
-                              </>
-                            ) : (
-                              <>
-                                <Clock className="h-2.5 w-2.5 text-gray-600" />
-                                <span className="text-xs text-gray-500 font-medium">{scheduledActivity.activity?.duration || 30}m</span>
-                              </>
-                            )}
-                          </div>
+                          {!isCompleted && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-2.5 w-2.5 text-gray-600" />
+                              <span className="text-xs text-gray-500 font-medium">{scheduledActivity.activity?.duration || 30}m</span>
+                            </div>
+                          )}
                           {!isCompleted && scheduledActivity.activity?.materialIds && scheduledActivity.activity.materialIds.length > 0 && (
                             <div className="flex items-center" title="Materials required">
                               <Scissors className="h-2.5 w-2.5 text-gray-600" />
