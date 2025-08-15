@@ -687,11 +687,11 @@ export function TabletRecordingView({
                                               {/* Age Groups with colorful badges */}
                                               {material.ageGroups && material.ageGroups.length > 0 && (
                                                 <div className="mt-2">
-                                                  <p className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-1">
-                                                    <span className="text-base">👶</span>
-                                                    Suitable for:
-                                                  </p>
-                                                  <div className="flex flex-wrap gap-1.5">
+                                                  <div className="flex flex-wrap items-center gap-1.5">
+                                                    <div className="flex items-center gap-1 text-xs font-bold text-gray-700">
+                                                      <span className="text-base">👶</span>
+                                                      <span>Suitable for:</span>
+                                                    </div>
                                                     {typeof material.ageGroups === 'string' ? (
                                                       /* If ageGroups is a string array */
                                                       <div className="px-3 py-1 bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700 border border-purple-300 rounded-full text-xs font-bold shadow-sm">
