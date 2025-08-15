@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Clock, Users, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Save, Play, Image, Scissors, Target, ListChecks } from "lucide-react";
+import { Clock, Users, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Save, Play, Image, Scissors, Target, ListChecks, Edit3, FileText } from "lucide-react";
 import { format } from "date-fns";
 
 interface TabletRecordingViewProps {
@@ -417,208 +417,269 @@ export function TabletRecordingView({
                             </div>
                           </div>
 
-                          {/* Expanded Content */}
+                          {/* Expanded Content - Beautiful Tablet Layout */}
                           {isExpanded && (
-                            <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
-                              {/* Full Activity Image */}
+                            <div className="mt-4 pt-4 border-t-2 border-gray-100">
+                              {/* Hero Image Section */}
                               {scheduled.activity?.activityImage && (
-                                <div className="rounded-lg overflow-hidden bg-gray-100">
+                                <div className="mb-4 rounded-xl overflow-hidden shadow-md">
                                   <img 
                                     src={scheduled.activity.activityImage} 
                                     alt={scheduled.activity.title}
-                                    className="w-full max-h-48 object-cover"
+                                    className="w-full h-48 object-cover"
                                   />
                                 </div>
                               )}
                               
-                              {/* Description */}
-                              {scheduled.activity?.description && (
-                                <div>
-                                  <h4 className="text-xs font-semibold text-gray-700 mb-1">Description</h4>
-                                  <p className="text-xs text-gray-600">
-                                    {scheduled.activity.description}
-                                  </p>
-                                </div>
-                              )}
-                              
-                              {/* Age Groups */}
-                              {scheduled.activity?.ageGroups && scheduled.activity.ageGroups.length > 0 && (
-                                <div>
-                                  <h4 className="text-xs font-semibold text-gray-700 mb-1">Age Groups</h4>
-                                  <div className="flex flex-wrap gap-1">
-                                    {scheduled.activity.ageGroups.map((ageGroup: any) => (
-                                      <Badge key={ageGroup.id} variant="outline" className="text-xs">
-                                        {ageGroup.name} ({ageGroup.description})
-                                      </Badge>
-                                    ))}
+                              {/* Main Content Grid - 2 Columns */}
+                              <div className="grid grid-cols-2 gap-4">
+                                {/* Left Column */}
+                                <div className="space-y-4">
+                                  {/* Description Card */}
+                                  {scheduled.activity?.description && (
+                                    <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-4 border border-blue-200 shadow-sm">
+                                      <div className="flex items-center gap-2 mb-3">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg flex items-center justify-center">
+                                          <FileText className="h-4 w-4 text-white" />
+                                        </div>
+                                        <h4 className="text-sm font-bold text-gray-800">Activity Overview</h4>
+                                      </div>
+                                      <p className="text-sm text-gray-600 leading-relaxed">
+                                        {scheduled.activity.description}
+                                      </p>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Group Information Card */}
+                                  <div className="bg-gradient-to-br from-green-50 to-white rounded-xl p-4 border border-green-200 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-500 rounded-lg flex items-center justify-center">
+                                        <Users className="h-4 w-4 text-white" />
+                                      </div>
+                                      <h4 className="text-sm font-bold text-gray-800">Group Details</h4>
+                                    </div>
+                                    
+                                    {/* Age Groups */}
+                                    {scheduled.activity?.ageGroups && scheduled.activity.ageGroups.length > 0 && (
+                                      <div className="mb-3">
+                                        <p className="text-xs font-semibold text-gray-600 mb-2">Age Groups</p>
+                                        <div className="flex flex-wrap gap-2">
+                                          {scheduled.activity.ageGroups.map((ageGroup: any) => (
+                                            <Badge key={ageGroup.id} className="bg-green-100 text-green-700 border-green-200">
+                                              {ageGroup.name}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {/* Group Size */}
+                                    <div>
+                                      <p className="text-xs font-semibold text-gray-600 mb-2">Recommended Size</p>
+                                      <div className="flex gap-3">
+                                        {scheduled.activity?.minChildren && (
+                                          <div className="flex items-center gap-1 bg-white rounded-lg px-3 py-1.5 border border-green-200">
+                                            <span className="text-xs text-gray-500">Min:</span>
+                                            <span className="text-sm font-semibold text-green-700">{scheduled.activity.minChildren}</span>
+                                          </div>
+                                        )}
+                                        {scheduled.activity?.maxChildren && (
+                                          <div className="flex items-center gap-1 bg-white rounded-lg px-3 py-1.5 border border-green-200">
+                                            <span className="text-xs text-gray-500">Max:</span>
+                                            <span className="text-sm font-semibold text-green-700">{scheduled.activity.maxChildren}</span>
+                                          </div>
+                                        )}
+                                        {!scheduled.activity?.minChildren && !scheduled.activity?.maxChildren && (
+                                          <span className="text-xs text-gray-500">Flexible group size</span>
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
+                                
+                                {/* Right Column */}
+                                <div className="space-y-4">
+                                  {/* Milestones Card */}
+                                  {scheduled.activity?.milestones && scheduled.activity.milestones.length > 0 && (
+                                    <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl p-4 border border-purple-200 shadow-sm">
+                                      <div className="flex items-center gap-2 mb-3">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-500 rounded-lg flex items-center justify-center">
+                                          <Target className="h-4 w-4 text-white" />
+                                        </div>
+                                        <h4 className="text-sm font-bold text-gray-800">Developmental Milestones</h4>
+                                      </div>
+                                      <div className="space-y-3">
+                                        {scheduled.activity.milestones.map((milestone: any) => (
+                                          <div key={milestone.id} className="flex gap-3 bg-white p-3 rounded-lg border border-purple-100">
+                                            {milestone.imageUrl && (
+                                              <img 
+                                                src={milestone.imageUrl} 
+                                                alt={milestone.title}
+                                                className="w-14 h-14 object-cover rounded-lg shadow-sm"
+                                              />
+                                            )}
+                                            <div className="flex-1">
+                                              <p className="text-sm font-semibold text-gray-700">{milestone.title}</p>
+                                              {milestone.description && (
+                                                <p className="text-xs text-gray-500 mt-1">{milestone.description}</p>
+                                              )}
+                                              <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-xs mt-2">
+                                                {milestone.category}
+                                              </Badge>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
                               )}
                               
-                              {/* Recommended Children Count */}
-                              <div>
-                                <h4 className="text-xs font-semibold text-gray-700 mb-1">Recommended Group Size</h4>
-                                <div className="flex gap-4 text-xs text-gray-600">
-                                  {scheduled.activity?.minChildren && (
-                                    <span>Min: {scheduled.activity.minChildren} children</span>
+                                  {/* Activity Steps Card */}
+                                  {scheduled.activity?.steps && scheduled.activity.steps.length > 0 && (
+                                    <div className="bg-gradient-to-br from-orange-50 to-white rounded-xl p-4 border border-orange-200 shadow-sm">
+                                      <div className="flex items-center gap-2 mb-3">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg flex items-center justify-center">
+                                          <ListChecks className="h-4 w-4 text-white" />
+                                        </div>
+                                        <h4 className="text-sm font-bold text-gray-800">Activity Steps</h4>
+                                      </div>
+                                      <ol className="space-y-3">
+                                        {scheduled.activity.steps.map((step: any, index: number) => (
+                                          <li key={index} className="flex gap-3">
+                                            <span className="flex-shrink-0 w-7 h-7 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-sm font-bold">
+                                              {index + 1}
+                                            </span>
+                                            <div className="flex-1">
+                                              <p className="text-sm text-gray-700">{step.instruction}</p>
+                                              {step.imageUrl && (
+                                                <img 
+                                                  src={step.imageUrl} 
+                                                  alt={`Step ${index + 1}`}
+                                                  className="mt-2 rounded-lg w-full max-h-32 object-cover shadow-sm"
+                                                />
+                                              )}
+                                            </div>
+                                          </li>
+                                        ))}
+                                      </ol>
+                                    </div>
                                   )}
-                                  {scheduled.activity?.maxChildren && (
-                                    <span>Max: {scheduled.activity.maxChildren} children</span>
-                                  )}
-                                  {!scheduled.activity?.minChildren && !scheduled.activity?.maxChildren && (
-                                    <span>No specific group size requirements</span>
-                                  )}
+                              
                                 </div>
                               </div>
                               
-                              {/* Developmental Milestones */}
-                              {scheduled.activity?.milestones && scheduled.activity.milestones.length > 0 && (
-                                <div>
-                                  <h4 className="text-xs font-semibold text-gray-700 mb-2">Developmental Milestones</h4>
-                                  <div className="space-y-2">
-                                    {scheduled.activity.milestones.map((milestone: any) => (
-                                      <div key={milestone.id} className="flex gap-2 bg-gray-50 p-2 rounded">
-                                        {milestone.imageUrl && (
-                                          <img 
-                                            src={milestone.imageUrl} 
-                                            alt={milestone.title}
-                                            className="w-12 h-12 object-cover rounded"
-                                          />
-                                        )}
-                                        <div className="flex-1">
-                                          <p className="text-xs font-medium text-gray-700">{milestone.title}</p>
-                                          {milestone.description && (
-                                            <p className="text-xs text-gray-500 mt-0.5">{milestone.description}</p>
-                                          )}
-                                          <Badge variant="secondary" className="text-xs mt-1">
-                                            {milestone.category}
-                                          </Badge>
+                              {/* Bottom Section - Materials and Recording */}
+                              <div className="mt-4 space-y-4">
+                                {/* Video Link */}
+                                {scheduled.activity?.videoUrl && (
+                                  <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-4 border border-blue-200 shadow-sm">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg flex items-center justify-center">
+                                          <Play className="h-4 w-4 text-white" />
                                         </div>
+                                        <h4 className="text-sm font-bold text-gray-800">Video Tutorial</h4>
                                       </div>
-                                    ))}
+                                      <a 
+                                        href={scheduled.activity.videoUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                                      >
+                                        <Play className="h-4 w-4" />
+                                        Watch Video
+                                      </a>
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                )}
                               
-                              {/* Activity Steps */}
-                              {scheduled.activity?.steps && scheduled.activity.steps.length > 0 && (
-                                <div>
-                                  <h4 className="text-xs font-semibold text-gray-700 mb-2">Activity Steps</h4>
-                                  <ol className="space-y-2">
-                                    {scheduled.activity.steps.map((step: any, index: number) => (
-                                      <li key={index} className="flex gap-2">
-                                        <span className="text-xs font-medium text-gray-500 flex-shrink-0">
-                                          {index + 1}.
-                                        </span>
-                                        <div className="flex-1">
-                                          <p className="text-xs text-gray-600">{step.instruction}</p>
-                                          {step.imageUrl && (
+                                {/* Materials Card */}
+                                {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
+                                  <div className="bg-gradient-to-br from-teal-50 to-white rounded-xl p-4 border border-teal-200 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-500 rounded-lg flex items-center justify-center">
+                                        <Scissors className="h-4 w-4 text-white" />
+                                      </div>
+                                      <h4 className="text-sm font-bold text-gray-800">Required Materials</h4>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                      {scheduled.activity.materials.map((material: any) => (
+                                        <div key={material.id} className="flex gap-3 bg-white p-3 rounded-lg border border-teal-100">
+                                          {material.imageUrl && (
                                             <img 
-                                              src={step.imageUrl} 
-                                              alt={`Step ${index + 1}`}
-                                              className="mt-1 rounded w-full max-h-32 object-cover"
+                                              src={material.imageUrl} 
+                                              alt={material.name}
+                                              className="w-16 h-16 object-cover rounded-lg shadow-sm"
                                             />
                                           )}
+                                          <div className="flex-1">
+                                            <p className="text-sm font-semibold text-gray-700">{material.name}</p>
+                                            {material.description && (
+                                              <p className="text-xs text-gray-500 mt-1 line-clamp-2">{material.description}</p>
+                                            )}
+                                            {material.quantity && (
+                                              <Badge className="bg-teal-100 text-teal-700 border-teal-200 text-xs mt-1">
+                                                Qty: {material.quantity}
+                                              </Badge>
+                                            )}
+                                          </div>
                                         </div>
-                                      </li>
-                                    ))}
-                                  </ol>
-                                </div>
-                              )}
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               
-                              {/* Video Link */}
-                              {scheduled.activity?.videoUrl && (
-                                <div>
-                                  <h4 className="text-xs font-semibold text-gray-700 mb-1">Video Tutorial</h4>
-                                  <a 
-                                    href={scheduled.activity.videoUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 text-xs text-blue-600 hover:text-blue-700"
-                                  >
-                                    <Play className="h-3 w-3" />
-                                    Watch video demonstration
-                                  </a>
-                                </div>
-                              )}
-                              
-                              {/* Materials */}
-                              {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
-                                <div>
-                                  <h4 className="text-xs font-semibold text-gray-700 mb-2">Required Materials</h4>
-                                  <div className="space-y-2">
-                                    {scheduled.activity.materials.map((material: any) => (
-                                      <div key={material.id} className="flex gap-2 bg-gray-50 p-2 rounded">
-                                        {material.imageUrl && (
-                                          <img 
-                                            src={material.imageUrl} 
-                                            alt={material.name}
-                                            className="w-12 h-12 object-cover rounded"
-                                          />
-                                        )}
-                                        <div className="flex-1">
-                                          <p className="text-xs font-medium text-gray-700">{material.name}</p>
-                                          {material.description && (
-                                            <p className="text-xs text-gray-500 mt-0.5">{material.description}</p>
-                                          )}
-                                          {material.quantity && (
-                                            <p className="text-xs text-gray-600 mt-0.5">Quantity: {material.quantity}</p>
-                                          )}
-                                        </div>
+                                {/* Recording Section Card */}
+                                <div className="bg-gradient-to-br from-yellow-50 to-white rounded-xl p-4 border border-yellow-200 shadow-sm">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center">
+                                      <Edit3 className="h-4 w-4 text-white" />
+                                    </div>
+                                    <h4 className="text-sm font-bold text-gray-800">Activity Recording</h4>
+                                  </div>
+                                  
+                                  <div className="space-y-3">
+                                    <div>
+                                      <Label htmlFor={`notes-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
+                                        Activity Notes
+                                      </Label>
+                                      <Textarea
+                                        id={`notes-${scheduled.id}`}
+                                        placeholder="How did the activity go? Any observations or adjustments made?"
+                                        value={record?.notes || ''}
+                                        onChange={(e) => handleNotesChange(scheduled.id, e.target.value)}
+                                        className="min-h-[80px] text-sm bg-white"
+                                        data-testid={`notes-${scheduled.id}`}
+                                      />
+                                    </div>
+
+                                    <div className="flex items-center gap-3 bg-yellow-50 p-3 rounded-lg">
+                                      <Checkbox
+                                        id={`materials-${scheduled.id}`}
+                                        checked={record?.materialsUsed || false}
+                                        onCheckedChange={() => handleMaterialsToggle(scheduled.id)}
+                                        className="h-5 w-5"
+                                      />
+                                      <Label htmlFor={`materials-${scheduled.id}`} className="text-sm font-medium text-gray-700 cursor-pointer">
+                                        All materials were used as planned
+                                      </Label>
+                                    </div>
+                                    
+                                    {record?.materialsUsed && (
+                                      <div>
+                                        <Label htmlFor={`material-notes-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
+                                          Material Notes
+                                        </Label>
+                                        <Textarea
+                                          id={`material-notes-${scheduled.id}`}
+                                          placeholder="Any notes about material usage or substitutions?"
+                                          value={record?.materialNotes || ''}
+                                          onChange={(e) => handleMaterialNotesChange(scheduled.id, e.target.value)}
+                                          className="min-h-[60px] text-sm bg-white"
+                                        />
                                       </div>
-                                    ))}
+                                    )}
                                   </div>
                                 </div>
-                              )}
-                              
-                              {/* Activity Details */}
-                              <div className="flex gap-3 text-xs text-gray-500">
-                                {scheduled.activity?.duration && (
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {scheduled.activity.duration} minutes
-                                  </span>
-                                )}
-                                {scheduled.activity?.groupSize && (
-                                  <span className="flex items-center gap-1">
-                                    <Users className="h-3 w-3" />
-                                    {scheduled.activity.groupSize}
-                                  </span>
-                                )}
-                              </div>
-                              
-                              {/* Recording Section */}
-                              <div className="border-t pt-3 space-y-2">
-                                <h4 className="text-xs font-semibold text-gray-700">Activity Recording</h4>
-                                
-                                <Textarea
-                                  placeholder="Add notes about how the activity went..."
-                                  value={record?.notes || ''}
-                                  onChange={(e) => handleNotesChange(scheduled.id, e.target.value)}
-                                  className="min-h-[60px] text-sm"
-                                  data-testid={`notes-${scheduled.id}`}
-                                />
-
-                                <div className="flex items-center gap-2">
-                                  <Checkbox
-                                    id={`materials-${scheduled.id}`}
-                                    checked={record?.materialsUsed || false}
-                                    onCheckedChange={() => handleMaterialsToggle(scheduled.id)}
-                                    className="h-4 w-4"
-                                  />
-                                  <Label htmlFor={`materials-${scheduled.id}`} className="text-xs text-gray-600">
-                                    Materials Used
-                                  </Label>
-                                </div>
-                                
-                                {record?.materialsUsed && (
-                                  <Textarea
-                                    placeholder="Notes about materials..."
-                                    value={record?.materialNotes || ''}
-                                    onChange={(e) => handleMaterialNotesChange(scheduled.id, e.target.value)}
-                                    className="min-h-[40px] text-sm"
-                                  />
-                                )}
                               </div>
                             </div>
                           )}
