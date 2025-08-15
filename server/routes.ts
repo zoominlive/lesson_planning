@@ -34,7 +34,8 @@ import {
   type InsertAgeGroup,
   insertAgeGroupSchema,
   insertTenantSettingsSchema,
-  insertTenantPermissionOverrideSchema
+  insertTenantPermissionOverrideSchema,
+  insertActivityRecordSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -879,6 +880,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error serving instruction image:', error);
       res.status(500).json({ error: 'Failed to retrieve instruction image' });
+    }
+  });
+
+  // Activity Records routes
+  app.post("/api/activity-records", async (req: AuthenticatedRequest, res) => {
+    try {
+      const dataWithTenant = {
+        ...req.body,
+        tenantId: req.tenantId,
+        userId: req.userId
+      };
+      
+      const data = insertActivityRecordSchema.parse(dataWithTenant);
+      
+      // Get the scheduled activity to validate access
+      const scheduledActivity = await storage.getScheduledActivity(data.scheduledActivityId);
+      if (!scheduledActivity) {
+        return res.status(404).json({ error: "Scheduled activity not found" });
+      }
+      
+      // TODO: Add location validation if needed based on scheduled activity's lesson plan
+      
+      const record = await storage.createActivityRecord(data);
+      res.status(201).json(record);
+    } catch (error) {
+      console.error('Error creating activity record:', error);
+      res.status(400).json({ 
+        error: "Invalid activity record data", 
+        details: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  app.get("/api/activity-records/scheduled/:scheduledActivityId", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { scheduledActivityId } = req.params;
+      
+      // Get the scheduled activity to validate access
+      const scheduledActivity = await storage.getScheduledActivity(scheduledActivityId);
+      if (!scheduledActivity) {
+        return res.status(404).json({ error: "Scheduled activity not found" });
+      }
+      
+      const records = await storage.getActivityRecords(scheduledActivityId);
+      res.json(records);
+    } catch (error) {
+      console.error('Error fetching activity records:', error);
+      res.status(500).json({ error: "Failed to fetch activity records" });
+    }
+  });
+
+  app.get("/api/activity-records/:id", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const record = await storage.getActivityRecord(id);
+      
+      if (!record) {
+        return res.status(404).json({ error: "Activity record not found" });
+      }
+      
+      res.json(record);
+    } catch (error) {
+      console.error('Error fetching activity record:', error);
+      res.status(500).json({ error: "Failed to fetch activity record" });
+    }
+  });
+
+  app.patch("/api/activity-records/:id", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const updates = insertActivityRecordSchema.partial().parse(req.body);
+      
+      const record = await storage.updateActivityRecord(id, updates);
+      if (!record) {
+        return res.status(404).json({ error: "Activity record not found" });
+      }
+      
+      res.json(record);
+    } catch (error) {
+      console.error('Error updating activity record:', error);
+      res.status(400).json({ 
+        error: "Invalid activity record data", 
+        details: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  app.delete("/api/activity-records/:id", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteActivityRecord(id);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Activity record not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting activity record:', error);
+      res.status(500).json({ error: "Failed to delete activity record" });
     }
   });
 

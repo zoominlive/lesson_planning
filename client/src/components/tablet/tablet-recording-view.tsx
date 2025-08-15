@@ -317,7 +317,30 @@ export function TabletRecordingView({
     );
   };
 
-  const handleSaveAll = () => {
+  // Mutation for creating activity records
+  const createActivityRecordMutation = useMutation({
+    mutationFn: async (recordData: any) => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('/api/activity-records', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify(recordData),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save activity record');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/activity-records'] });
+    },
+  });
+
+  const handleSaveAll = async () => {
     // Save all records to backend
     const recordsToSave = Object.values(activityRecords).filter(record => 
       record.completed || record.notes || record.materialsUsed
@@ -332,11 +355,27 @@ export function TabletRecordingView({
       return;
     }
 
-    // TODO: Implement backend save
-    toast({
-      title: "Records Saved",
-      description: `Successfully saved ${recordsToSave.length} activity records.`,
-    });
+    try {
+      // Save each record to backend
+      await Promise.all(
+        recordsToSave.map(record => createActivityRecordMutation.mutateAsync(record))
+      );
+      
+      // Clear local state after successful save
+      setActivityRecords({});
+      
+      toast({
+        title: "Records Saved",
+        description: `Successfully saved ${recordsToSave.length} activity records.`,
+      });
+    } catch (error) {
+      console.error('Error saving activity records:', error);
+      toast({
+        title: "Save Failed",
+        description: error instanceof Error ? error.message : "Failed to save activity records.",
+        variant: "destructive",
+      });
+    }
   };
 
   const completedCount = Object.values(activityRecords).filter(r => r.completed).length;
@@ -382,11 +421,12 @@ export function TabletRecordingView({
           </div>
           <Button
             onClick={handleSaveAll}
-            className="bg-gradient-to-r from-turquoise to-sky-blue text-white flex items-center justify-center gap-2"
+            disabled={createActivityRecordMutation.isPending}
+            className="bg-gradient-to-r from-turquoise to-sky-blue text-white flex items-center justify-center gap-2 disabled:opacity-50"
             size="sm"
           >
             <Save className="h-3.5 w-3.5" />
-            <span>Save</span>
+            <span>{createActivityRecordMutation.isPending ? 'Saving...' : 'Save'}</span>
           </Button>
         </div>
       </div>
@@ -470,7 +510,7 @@ export function TabletRecordingView({
                                   </h3>
                                   <Checkbox
                                     checked={isCompleted}
-                                    onCheckedChange={() => handleToggleComplete(scheduled.id)}
+                                    onCheckedChange={() => handleMarkComplete(scheduled.id)}
                                     className="h-5 w-5 mt-1"
                                     data-testid={`complete-activity-${scheduled.id}`}
                                   />

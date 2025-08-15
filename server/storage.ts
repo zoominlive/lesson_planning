@@ -48,11 +48,14 @@ import {
   type InsertTenantPermissionOverride,
   type Notification,
   type InsertNotification,
+  type ActivityRecord,
+  type InsertActivityRecord,
   permissions,
   roles,
   rolePermissions,
   tenantPermissionOverrides,
-  notifications
+  notifications,
+  activityRecords
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, isNull, inArray } from "drizzle-orm";
@@ -187,6 +190,13 @@ export interface IStorage {
   createNotification(notification: InsertNotification): Promise<Notification>;
   dismissNotification(notificationId: string, userId: string): Promise<boolean>;
   markNotificationAsRead(notificationId: string, userId: string): Promise<boolean>;
+  
+  // Activity Records
+  getActivityRecords(scheduledActivityId: string): Promise<ActivityRecord[]>;
+  getActivityRecord(id: string): Promise<ActivityRecord | undefined>;
+  createActivityRecord(activityRecord: InsertActivityRecord): Promise<ActivityRecord>;
+  updateActivityRecord(id: string, updates: Partial<InsertActivityRecord>): Promise<ActivityRecord | undefined>;
+  deleteActivityRecord(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -507,7 +517,7 @@ export class DatabaseStorage implements IStorage {
       : [];
     
     const activityAgeGroups = activity.ageGroupIds && activity.ageGroupIds.length > 0
-      ? allAgeGroups.filter(ag => activity.ageGroupIds.includes(ag.id))
+      ? allAgeGroups.filter(ag => activity.ageGroupIds!.includes(ag.id))
       : [];
     
     // Enrich activity with related data
@@ -591,6 +601,51 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(and(...conditions));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Activity Records
+  async getActivityRecords(scheduledActivityId: string): Promise<ActivityRecord[]> {
+    const conditions = [eq(activityRecords.scheduledActivityId, scheduledActivityId)];
+    if (this.tenantId) conditions.push(eq(activityRecords.tenantId, this.tenantId));
+    
+    return await this.db.select().from(activityRecords).where(and(...conditions));
+  }
+
+  async getActivityRecord(id: string): Promise<ActivityRecord | undefined> {
+    const conditions = [eq(activityRecords.id, id)];
+    if (this.tenantId) conditions.push(eq(activityRecords.tenantId, this.tenantId));
+    
+    const [record] = await this.db.select().from(activityRecords).where(and(...conditions));
+    return record || undefined;
+  }
+
+  async createActivityRecord(insertActivityRecord: InsertActivityRecord): Promise<ActivityRecord> {
+    const recordData = this.tenantId ? { ...insertActivityRecord, tenantId: this.tenantId } : insertActivityRecord;
+    const [record] = await this.db
+      .insert(activityRecords)
+      .values(recordData)
+      .returning();
+    return record;
+  }
+
+  async updateActivityRecord(id: string, updates: Partial<InsertActivityRecord>): Promise<ActivityRecord | undefined> {
+    const conditions = [eq(activityRecords.id, id)];
+    if (this.tenantId) conditions.push(eq(activityRecords.tenantId, this.tenantId));
+    
+    const [record] = await this.db
+      .update(activityRecords)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(...conditions))
+      .returning();
+    return record || undefined;
+  }
+
+  async deleteActivityRecord(id: string): Promise<boolean> {
+    const conditions = [eq(activityRecords.id, id)];
+    if (this.tenantId) conditions.push(eq(activityRecords.tenantId, this.tenantId));
+    
+    const result = await this.db.delete(activityRecords).where(and(...conditions));
     return (result.rowCount ?? 0) > 0;
   }
 
