@@ -4,7 +4,7 @@
 
 The lesson planning API has been successfully updated to support multi-tenant, multi-location architecture with RBAC permission management. All core endpoints now support location-based filtering and permission-based authorization.
 
-## Recent Updates (January 2025)
+## Recent Updates (August 2025)
 
 ### Permission Management System
 - ✅ Implemented Role-Based Access Control (RBAC) with configurable permissions

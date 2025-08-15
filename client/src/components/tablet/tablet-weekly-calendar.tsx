@@ -500,31 +500,30 @@ export function TabletWeeklyCalendar({
       )}
       <div className="min-h-full">
         
-        {/* Review Notes if rejected - Show at top */}
-        {currentLessonPlan?.status === 'rejected' && currentLessonPlan.reviewNotes && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-800 font-medium">Review Feedback:</p>
-            <p className="text-sm text-red-700 mt-1">{currentLessonPlan.reviewNotes}</p>
-          </div>
-        )}
-        
         {/* Calendar Header with Submit/Withdraw Button */}
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold text-gray-800">Weekly Schedule</h3>
             {currentLessonPlan?.status && (
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${
-                currentLessonPlan.status === 'draft' ? 'bg-gray-100 text-gray-700' :
-                currentLessonPlan.status === 'submitted' ? 'bg-amber-100 text-amber-800' :
-                currentLessonPlan.status === 'approved' ? 'bg-green-100 text-green-800' :
-                currentLessonPlan.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                'bg-gray-100 text-gray-700'
-              }`}>
-                {currentLessonPlan.status === 'submitted' ? 'Pending' :
-                 currentLessonPlan.status === 'approved' ? 'Approved' :
-                 currentLessonPlan.status === 'rejected' ? 'Returned' :
-                 'Draft'}
-              </span>
+              <div className="mt-1">
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                  currentLessonPlan.status === 'draft' ? 'bg-gray-100 text-gray-700' :
+                  currentLessonPlan.status === 'submitted' ? 'bg-amber-100 text-amber-800' :
+                  currentLessonPlan.status === 'approved' ? 'bg-green-100 text-green-800' :
+                  currentLessonPlan.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                  'bg-gray-100 text-gray-700'
+                }`}>
+                  {currentLessonPlan.status === 'submitted' ? 'Pending' :
+                   currentLessonPlan.status === 'approved' ? 'Approved' :
+                   currentLessonPlan.status === 'rejected' ? 'Returned' :
+                   'Draft'}
+                  {currentLessonPlan.status === 'rejected' && currentLessonPlan.reviewNotes && (
+                    <span className="ml-1">
+                      - {currentLessonPlan.reviewNotes}
+                    </span>
+                  )}
+                </span>
+              </div>
             )}
           </div>
           
