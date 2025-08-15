@@ -63,6 +63,28 @@ export function TabletRecordingView({
   const scheduleType = locationSettings?.value?.scheduleType || 'time-based';
   const isPositionBased = scheduleType === 'position-based';
 
+  // Fetch age groups for the location
+  const { data: ageGroups = [] } = useQuery<any[]>({
+    queryKey: ["/api/age-groups", selectedLocation],
+    queryFn: async () => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`/api/age-groups?locationId=${encodeURIComponent(selectedLocation)}`, {
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch age groups');
+      return response.json();
+    },
+    enabled: !!selectedLocation,
+  });
+
+  // Helper function to get age group name from ID
+  const getAgeGroupName = (ageGroupId: string) => {
+    const ageGroup = ageGroups.find((ag: any) => ag.id === ageGroupId);
+    return ageGroup?.name || ageGroupId;
+  };
+
   // Fetch the lesson plan to check if it's approved
   const { data: lessonPlans = [] } = useQuery<any[]>({
     queryKey: ["/api/lesson-plans", selectedLocation, currentDate.toISOString()],
@@ -674,7 +696,7 @@ export function TabletRecordingView({
                                                     ) : Array.isArray(material.ageGroups) ? (
                                                       /* If ageGroups is an array */
                                                       material.ageGroups.map((ag: any, agIdx: number) => {
-                                                        const ageText = typeof ag === 'string' ? ag : (ag.name || ag.description || 'Unknown');
+                                                        const ageText = typeof ag === 'string' ? getAgeGroupName(ag) : (ag.name || ag.description || 'Unknown');
                                                         const colors = [
                                                           'from-purple-100 to-pink-100 text-purple-700 border-purple-300',
                                                           'from-blue-100 to-cyan-100 text-blue-700 border-blue-300',
@@ -684,7 +706,7 @@ export function TabletRecordingView({
                                                         const colorClass = colors[agIdx % colors.length];
                                                         
                                                         return (
-                                                          <div key={ag.id || agIdx} className={`px-3 py-1 bg-gradient-to-r ${colorClass} rounded-full text-xs font-bold shadow-sm transform hover:scale-105 transition-transform`}>
+                                                          <div key={typeof ag === 'string' ? ag : (ag.id || agIdx)} className={`px-3 py-1 bg-gradient-to-r ${colorClass} rounded-full text-xs font-bold shadow-sm transform hover:scale-105 transition-transform`}>
                                                             {ageText}
                                                           </div>
                                                         );
@@ -1118,7 +1140,7 @@ export function TabletRecordingView({
                                             </span>
                                           ) : Array.isArray(material.ageGroups) ? (
                                             material.ageGroups.map((ag: any, agIdx: number) => {
-                                              const ageText = typeof ag === 'string' ? ag : (ag.name || ag.description || 'Unknown');
+                                              const ageText = typeof ag === 'string' ? getAgeGroupName(ag) : (ag.name || ag.description || 'Unknown');
                                               const colors = [
                                                 'from-purple-100 to-pink-100 text-purple-700 border-purple-300',
                                                 'from-blue-100 to-cyan-100 text-blue-700 border-blue-300',
@@ -1128,7 +1150,7 @@ export function TabletRecordingView({
                                               const colorClass = colors[agIdx % colors.length];
                                               
                                               return (
-                                                <span key={ag.id || agIdx} className={`px-2 py-0.5 bg-gradient-to-r ${colorClass} rounded-full text-xs font-bold`}>
+                                                <span key={typeof ag === 'string' ? ag : (ag.id || agIdx)} className={`px-2 py-0.5 bg-gradient-to-r ${colorClass} rounded-full text-xs font-bold`}>
                                                   {ageText}
                                                 </span>
                                               );
