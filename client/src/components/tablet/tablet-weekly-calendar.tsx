@@ -735,17 +735,38 @@ export function TabletWeeklyCalendar({
                   <div key={slot.id}>
                     {scheduledActivity ? (
                       <div
-                        draggable={currentLessonPlan?.status !== 'submitted'}
-                        onDragStart={(e) => handleDragStart(e, scheduledActivity)}
+                        draggable={false}
                         className={`h-20 w-full p-2 rounded-lg bg-gradient-to-br ${getCategoryColor(scheduledActivity.activity?.category || '')} border-2 transition-all ${
-                          currentLessonPlan?.status === 'submitted' ? 'cursor-not-allowed opacity-75' : 'cursor-move active:scale-95'
+                          currentLessonPlan?.status === 'submitted' ? 'cursor-not-allowed opacity-75' : 'cursor-pointer active:scale-95'
                         } shadow-lg hover:shadow-xl ${
                           draggedActivity?.id === scheduledActivity.id ? 'opacity-50 scale-95' : ''
                         }`}
-                        onTouchStart={(e) => handleTouchStart(e, scheduledActivity)}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
+                        onTouchStart={(e) => {
+                          e.preventDefault();
+                          handleTouchStart(e, scheduledActivity);
+                        }}
+                        onTouchMove={(e) => {
+                          e.preventDefault();
+                          handleTouchMove(e);
+                        }}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          handleTouchEnd();
+                        }}
                         onTouchCancel={handleTouchEnd}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          // Simulate touch for mouse events (for testing)
+                          const fakeTouch = {
+                            touches: [{ clientX: e.clientX, clientY: e.clientY }]
+                          } as any;
+                          handleTouchStart(fakeTouch, scheduledActivity);
+                        }}
+                        onMouseUp={(e) => {
+                          e.preventDefault();
+                          handleTouchEnd();
+                        }}
+                        onMouseLeave={handleTouchEnd}
                         data-testid={`scheduled-activity-${day.id}-${slot.id}`}
                       >
                         <div className="h-full flex flex-col justify-between relative">
