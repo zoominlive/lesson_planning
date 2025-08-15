@@ -63,6 +63,12 @@ export function TabletRecordingView({
   const scheduleType = locationSettings?.value?.scheduleType || 'time-based';
   const isPositionBased = scheduleType === 'position-based';
 
+  // Debug: Log schedule type
+  console.log('Current schedule type:', scheduleType);
+  console.log('Location settings found:', locationSettings);
+  console.log('All settings:', settings);
+  console.log('Selected location ID:', selectedLocation);
+
   // Fetch age groups for the location
   const { data: ageGroups = [] } = useQuery<any[]>({
     queryKey: ["/api/age-groups", selectedLocation],
