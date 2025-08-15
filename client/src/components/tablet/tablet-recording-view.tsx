@@ -310,35 +310,15 @@ export function TabletRecordingView({
                             'bg-gradient-to-r from-gray-400 to-slate-400'
                           }`} />
                           
-                          <div className="p-3">
-                            {/* Compact Header Row */}
-                            <div className="flex items-start justify-between gap-3 mb-2">
+                          <div className="p-4">
+                            {/* Enhanced Header Row */}
+                            <div className="flex items-start justify-between gap-3">
                               <div className="flex-1">
-                                {/* Title, Time, and Category Row */}
-                                <div className="flex items-start justify-between mb-2">
-                                  <div>
-                                    <h3 className={`font-semibold text-base text-gray-900 ${isCompleted ? 'line-through opacity-60' : ''}`}>
-                                      {scheduled.activity?.title}
-                                    </h3>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <div className="flex items-center gap-1 text-xs text-gray-600">
-                                        <Clock className="h-3 w-3" />
-                                        <span>{getTimeLabel(scheduled.timeSlot)}</span>
-                                      </div>
-                                      <span className="text-xs text-gray-500">•</span>
-                                      <span className="text-xs text-gray-600">{scheduled.activity?.duration || 30}m</span>
-                                      <span className="text-xs text-gray-500">•</span>
-                                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                        scheduled.activity?.category === 'Art & Creativity' ? 'bg-pink-100 text-pink-700' :
-                                        scheduled.activity?.category === 'Physical Development' ? 'bg-blue-100 text-blue-700' :
-                                        scheduled.activity?.category === 'Social Development' ? 'bg-green-100 text-green-700' :
-                                        scheduled.activity?.category === 'Cognitive Development' ? 'bg-purple-100 text-purple-700' :
-                                        'bg-gray-100 text-gray-700'
-                                      }`}>
-                                        {scheduled.activity?.category}
-                                      </span>
-                                    </div>
-                                  </div>
+                                {/* Title and Checkbox Row */}
+                                <div className="flex items-start justify-between mb-3">
+                                  <h3 className={`font-bold text-lg text-gray-900 ${isCompleted ? 'line-through opacity-60' : ''}`}>
+                                    {scheduled.activity?.title}
+                                  </h3>
                                   <Checkbox
                                     checked={isCompleted}
                                     onCheckedChange={() => handleToggleComplete(scheduled.id)}
@@ -347,20 +327,51 @@ export function TabletRecordingView({
                                   />
                                 </div>
 
-                                {/* Group Details Row (Always Visible) */}
-                                <div className="flex items-center gap-3 text-xs">
+                                {/* Time, Duration and Category Row */}
+                                <div className="flex flex-wrap items-center gap-2 mb-3">
+                                  <div className="flex items-center gap-1.5 bg-gradient-to-r from-blue-50 to-sky-50 border border-blue-200 rounded-lg px-3 py-1.5">
+                                    <Clock className="h-4 w-4 text-blue-600" />
+                                    <span className="text-sm font-semibold text-blue-700">
+                                      {getTimeLabel(scheduled.timeSlot)}
+                                    </span>
+                                  </div>
+                                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg px-3 py-1.5">
+                                    <span className="text-sm font-semibold text-amber-700">
+                                      {scheduled.activity?.duration || 30} minutes
+                                    </span>
+                                  </div>
+                                  <span className={`text-sm font-semibold px-3 py-1.5 rounded-lg ${
+                                    scheduled.activity?.category === 'Art & Creativity' ? 'bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 border border-pink-200' :
+                                    scheduled.activity?.category === 'Physical Development' ? 'bg-gradient-to-r from-blue-100 to-sky-100 text-blue-700 border border-blue-200' :
+                                    scheduled.activity?.category === 'Social Development' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200' :
+                                    scheduled.activity?.category === 'Cognitive Development' ? 'bg-gradient-to-r from-purple-100 to-violet-100 text-purple-700 border border-purple-200' :
+                                    'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border border-gray-200'
+                                  }`}>
+                                    {scheduled.activity?.category}
+                                  </span>
+                                </div>
+
+                                {/* Group Details Row with Colorful Badges */}
+                                <div className="flex flex-wrap items-center gap-2">
                                   {scheduled.activity?.ageGroups && scheduled.activity.ageGroups.length > 0 && (
-                                    <div className="flex items-center gap-1.5">
-                                      <Users className="h-3 w-3 text-gray-500" />
-                                      <span className="text-gray-600">
-                                        {scheduled.activity.ageGroups.map((ag: any) => ag.name).join(', ')}
-                                      </span>
-                                    </div>
+                                    <>
+                                      {scheduled.activity.ageGroups.map((ag: any, index: number) => (
+                                        <div key={ag.id} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm ${
+                                          ag.name.toLowerCase().includes('infant') ? 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border border-purple-200' :
+                                          ag.name.toLowerCase().includes('toddler') ? 'bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 border border-teal-200' :
+                                          ag.name.toLowerCase().includes('preschool') ? 'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700 border border-orange-200' :
+                                          'bg-gradient-to-r from-green-100 to-lime-100 text-green-700 border border-green-200'
+                                        }`}>
+                                          <Users className="h-4 w-4" />
+                                          <span>{ag.name}</span>
+                                        </div>
+                                      ))}
+                                    </>
                                   )}
                                   {(scheduled.activity?.minChildren || scheduled.activity?.maxChildren) && (
-                                    <div className="flex items-center gap-1 text-gray-600">
-                                      <span className="text-gray-500">•</span>
-                                      <span>
+                                    <div className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-100 to-blue-100 border border-indigo-200 rounded-lg px-3 py-1.5">
+                                      <Users className="h-4 w-4 text-indigo-600" />
+                                      <span className="text-sm font-semibold text-indigo-700">
                                         {scheduled.activity?.minChildren && scheduled.activity?.maxChildren 
                                           ? `${scheduled.activity.minChildren}-${scheduled.activity.maxChildren} children`
                                           : scheduled.activity?.minChildren 
@@ -682,25 +693,73 @@ export function TabletRecordingView({
                   }`} />
                   
                   <div className="p-4">
-                    {/* Time and Status Row */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-2.5 py-1">
-                          <Clock className="h-3.5 w-3.5 text-gray-600" />
-                          <span className="text-xs font-medium text-gray-700">
-                            {getTimeLabel(scheduled.timeSlot)}
-                          </span>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {scheduled.activity?.duration || 30}m
-                        </Badge>
-                      </div>
+                    {/* Enhanced Header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className={`font-bold text-lg text-gray-900 ${isCompleted ? 'line-through opacity-60' : ''}`}>
+                        {scheduled.activity?.title}
+                      </h3>
                       <Checkbox
                         checked={isCompleted}
                         onCheckedChange={() => handleToggleComplete(scheduled.id)}
-                        className="h-5 w-5"
+                        className="h-5 w-5 mt-1"
                         data-testid={`complete-activity-${scheduled.id}`}
                       />
+                    </div>
+
+                    {/* Time, Duration and Category Row */}
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <div className="flex items-center gap-1.5 bg-gradient-to-r from-blue-50 to-sky-50 border border-blue-200 rounded-lg px-3 py-1.5">
+                        <Clock className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-semibold text-blue-700">
+                          {getTimeLabel(scheduled.timeSlot)}
+                        </span>
+                      </div>
+                      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg px-3 py-1.5">
+                        <span className="text-sm font-semibold text-amber-700">
+                          {scheduled.activity?.duration || 30} min
+                        </span>
+                      </div>
+                      <span className={`text-sm font-semibold px-3 py-1.5 rounded-lg ${
+                        scheduled.activity?.category === 'Art & Creativity' ? 'bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 border border-pink-200' :
+                        scheduled.activity?.category === 'Physical Development' ? 'bg-gradient-to-r from-blue-100 to-sky-100 text-blue-700 border border-blue-200' :
+                        scheduled.activity?.category === 'Social Development' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200' :
+                        scheduled.activity?.category === 'Cognitive Development' ? 'bg-gradient-to-r from-purple-100 to-violet-100 text-purple-700 border border-purple-200' :
+                        'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border border-gray-200'
+                      }`}>
+                        {scheduled.activity?.category}
+                      </span>
+                    </div>
+
+                    {/* Group Details with Colorful Badges */}
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      {scheduled.activity?.ageGroups && scheduled.activity.ageGroups.length > 0 && (
+                        <>
+                          {scheduled.activity.ageGroups.map((ag: any) => (
+                            <div key={ag.id} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm ${
+                              ag.name.toLowerCase().includes('infant') ? 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border border-purple-200' :
+                              ag.name.toLowerCase().includes('toddler') ? 'bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 border border-teal-200' :
+                              ag.name.toLowerCase().includes('preschool') ? 'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700 border border-orange-200' :
+                              'bg-gradient-to-r from-green-100 to-lime-100 text-green-700 border border-green-200'
+                            }`}>
+                              <Users className="h-4 w-4" />
+                              <span>{ag.name}</span>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                      {(scheduled.activity?.minChildren || scheduled.activity?.maxChildren) && (
+                        <div className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-100 to-blue-100 border border-indigo-200 rounded-lg px-3 py-1.5">
+                          <Users className="h-4 w-4 text-indigo-600" />
+                          <span className="text-sm font-semibold text-indigo-700">
+                            {scheduled.activity?.minChildren && scheduled.activity?.maxChildren 
+                              ? `${scheduled.activity.minChildren}-${scheduled.activity.maxChildren} children`
+                              : scheduled.activity?.minChildren 
+                              ? `Min ${scheduled.activity.minChildren} children`
+                              : `Max ${scheduled.activity.maxChildren} children`
+                            }
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Activity Content */}
@@ -718,22 +777,6 @@ export function TabletRecordingView({
                           />
                         </div>
                       )}
-                      
-                      {/* Title and Category */}
-                      <div>
-                        <h3 className={`font-semibold text-base text-gray-900 mb-1 ${isCompleted ? 'line-through opacity-60' : ''}`}>
-                          {scheduled.activity?.title}
-                        </h3>
-                        <span className={`inline-block text-xs px-2.5 py-1 rounded-full ${
-                          scheduled.activity?.category === 'Art & Creativity' ? 'bg-pink-100 text-pink-700' :
-                          scheduled.activity?.category === 'Physical Development' ? 'bg-blue-100 text-blue-700' :
-                          scheduled.activity?.category === 'Social Development' ? 'bg-green-100 text-green-700' :
-                          scheduled.activity?.category === 'Cognitive Development' ? 'bg-purple-100 text-purple-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
-                          {scheduled.activity?.category}
-                        </span>
-                      </div>
                       
                       {/* Description Preview */}
                       {!isExpanded && scheduled.activity?.description && (
