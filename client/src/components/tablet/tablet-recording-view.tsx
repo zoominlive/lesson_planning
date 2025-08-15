@@ -595,50 +595,101 @@ export function TabletRecordingView({
                                   </div>
                                 )}
                               
-                                {/* Materials Card */}
+                                {/* Materials Card - Enhanced Beautiful Design */}
                                 {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
-                                  <div className="bg-gradient-to-br from-teal-50 to-white rounded-xl p-4 border border-teal-200 shadow-sm">
-                                    <div className="flex items-center gap-2 mb-3">
-                                      <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-500 rounded-lg flex items-center justify-center">
-                                        <Scissors className="h-4 w-4 text-white" />
+                                  <div className="bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 rounded-xl p-4 border-2 border-teal-300 shadow-lg">
+                                    <div className="flex items-center gap-2 mb-4">
+                                      <div className="w-10 h-10 bg-gradient-to-br from-teal-400 via-cyan-400 to-blue-400 rounded-xl flex items-center justify-center shadow-md animate-pulse">
+                                        <Scissors className="h-5 w-5 text-white" />
                                       </div>
-                                      <h4 className="text-sm font-bold text-gray-800">Required Materials</h4>
+                                      <h4 className="text-base font-bold text-gray-800">
+                                        🎨 Required Materials ({scheduled.activity.materials.length})
+                                      </h4>
                                     </div>
                                     <div className="space-y-3">
-                                      {scheduled.activity.materials.map((material: any) => (
-                                        <div key={material.id} className="bg-white p-4 rounded-lg border border-teal-100">
-                                          <div className="flex gap-3">
-                                            {material.imageUrl && (
-                                              <img 
-                                                src={material.imageUrl} 
-                                                alt={material.name}
-                                                className="w-20 h-20 object-cover rounded-lg shadow-sm flex-shrink-0"
-                                              />
-                                            )}
+                                      {scheduled.activity.materials.map((material: any, idx: number) => (
+                                        <div key={material.id} className="relative overflow-hidden bg-gradient-to-r from-white via-teal-50/30 to-white p-4 rounded-xl border-2 border-teal-200 shadow-md hover:shadow-xl transition-all transform hover:scale-[1.02]">
+                                          {/* Decorative corner ribbon */}
+                                          <div className="absolute top-0 right-0 w-16 h-16">
+                                            <div className="absolute transform rotate-45 bg-gradient-to-r from-yellow-400 to-orange-400 text-white text-xs font-bold py-1 right-[-28px] top-[8px] w-[100px] text-center shadow-sm">
+                                              #{idx + 1}
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="flex gap-4">
+                                            {/* Material Image with fallback */}
+                                            <div className="flex-shrink-0">
+                                              {material.photoUrl ? (
+                                                <img 
+                                                  src={material.photoUrl} 
+                                                  alt={material.name}
+                                                  className="w-24 h-24 object-cover rounded-xl shadow-md border-2 border-white"
+                                                  onError={(e) => {
+                                                    e.currentTarget.style.display = 'none';
+                                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                  }}
+                                                />
+                                              ) : null}
+                                              <div className={`${material.photoUrl ? 'hidden' : ''} w-24 h-24 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-xl shadow-md border-2 border-white flex items-center justify-center`}>
+                                                <Scissors className="h-10 w-10 text-teal-500" />
+                                              </div>
+                                            </div>
+                                            
                                             <div className="flex-1">
-                                              <p className="text-sm font-bold text-gray-800 mb-1">{material.name}</p>
-                                              {material.description && (
-                                                <p className="text-xs text-gray-600 mb-2">{material.description}</p>
-                                              )}
+                                              {/* Material Name with emoji */}
+                                              <p className="text-base font-bold text-gray-800 mb-2 flex items-center gap-2">
+                                                <span className="text-xl">📦</span>
+                                                {material.name}
+                                              </p>
                                               
-                                              {/* Storage Location */}
-                                              {material.location && (
-                                                <div className="flex items-center gap-1 text-xs mb-2">
-                                                  <span className="font-semibold text-gray-700">Storage Location:</span>
-                                                  <span className="text-gray-600">{material.location}</span>
+                                              {/* Description in a colorful box */}
+                                              {material.description && (
+                                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-2 mb-2 border border-blue-200">
+                                                  <p className="text-xs text-gray-700 italic">{material.description}</p>
                                                 </div>
                                               )}
                                               
-                                              {/* Age Groups - for safety/appropriate use */}
+                                              {/* Storage Location with icon */}
+                                              {material.location && (
+                                                <div className="flex items-center gap-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg px-3 py-1.5 mb-2 border border-amber-200">
+                                                  <span className="text-base">📍</span>
+                                                  <span className="text-xs font-semibold text-amber-800">Location:</span>
+                                                  <span className="text-xs text-amber-700">{material.location}</span>
+                                                </div>
+                                              )}
+                                              
+                                              {/* Age Groups with colorful badges */}
                                               {material.ageGroups && material.ageGroups.length > 0 && (
                                                 <div className="mt-2">
-                                                  <p className="text-xs font-semibold text-gray-700 mb-1">Suitable for:</p>
-                                                  <div className="flex flex-wrap gap-1">
-                                                    {material.ageGroups.map((ag: any) => (
-                                                      <Badge key={ag.id} className="bg-teal-100 text-teal-700 border-teal-200 text-xs">
-                                                        {ag.name}
-                                                      </Badge>
-                                                    ))}
+                                                  <p className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-1">
+                                                    <span className="text-base">👶</span>
+                                                    Suitable for:
+                                                  </p>
+                                                  <div className="flex flex-wrap gap-1.5">
+                                                    {typeof material.ageGroups === 'string' ? (
+                                                      /* If ageGroups is a string array */
+                                                      <div className="px-3 py-1 bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700 border border-purple-300 rounded-full text-xs font-bold shadow-sm">
+                                                        {material.ageGroups}
+                                                      </div>
+                                                    ) : Array.isArray(material.ageGroups) ? (
+                                                      /* If ageGroups is an array */
+                                                      material.ageGroups.map((ag: any, agIdx: number) => {
+                                                        const ageText = typeof ag === 'string' ? ag : (ag.name || ag.description || 'Unknown');
+                                                        const colors = [
+                                                          'from-purple-100 to-pink-100 text-purple-700 border-purple-300',
+                                                          'from-blue-100 to-cyan-100 text-blue-700 border-blue-300',
+                                                          'from-green-100 to-emerald-100 text-green-700 border-green-300',
+                                                          'from-orange-100 to-amber-100 text-orange-700 border-orange-300',
+                                                        ];
+                                                        const colorClass = colors[agIdx % colors.length];
+                                                        
+                                                        return (
+                                                          <div key={ag.id || agIdx} className={`px-3 py-1 bg-gradient-to-r ${colorClass} rounded-full text-xs font-bold shadow-sm transform hover:scale-105 transition-transform`}>
+                                                            {ageText}
+                                                          </div>
+                                                        );
+                                                      })
+                                                    ) : null}
                                                   </div>
                                                 </div>
                                               )}
@@ -1005,44 +1056,84 @@ export function TabletRecordingView({
                         </div>
                       )}
                       
-                      {/* Materials */}
+                      {/* Materials - Beautiful Design */}
                       {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
-                        <div>
-                          <h4 className="text-xs font-semibold text-gray-700 mb-2">Required Materials</h4>
+                        <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-lg p-3 border border-teal-200">
+                          <h4 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <Scissors className="h-4 w-4 text-teal-600" />
+                            🎨 Required Materials ({scheduled.activity.materials.length})
+                          </h4>
                           <div className="space-y-2">
-                            {scheduled.activity.materials.map((material: any) => (
-                              <div key={material.id} className="bg-gray-50 p-3 rounded">
-                                <div className="flex gap-2">
-                                  {material.imageUrl && (
-                                    <img 
-                                      src={material.imageUrl} 
-                                      alt={material.name}
-                                      className="w-14 h-14 object-cover rounded flex-shrink-0"
-                                    />
-                                  )}
+                            {scheduled.activity.materials.map((material: any, idx: number) => (
+                              <div key={material.id} className="relative bg-white p-3 rounded-lg border border-teal-100 shadow-sm hover:shadow-md transition-shadow">
+                                {/* Material number badge */}
+                                <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-orange-400 to-yellow-400 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                                  {idx + 1}
+                                </div>
+                                
+                                <div className="flex gap-3">
+                                  {/* Image with fallback */}
+                                  <div className="flex-shrink-0">
+                                    {material.photoUrl ? (
+                                      <img 
+                                        src={material.photoUrl} 
+                                        alt={material.name}
+                                        className="w-16 h-16 object-cover rounded-lg border-2 border-white shadow-sm"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                        }}
+                                      />
+                                    ) : null}
+                                    <div className={`${material.photoUrl ? 'hidden' : ''} w-16 h-16 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-lg flex items-center justify-center border-2 border-white shadow-sm`}>
+                                      <Scissors className="h-8 w-8 text-teal-500" />
+                                    </div>
+                                  </div>
+                                  
                                   <div className="flex-1">
-                                    <p className="text-xs font-bold text-gray-800">{material.name}</p>
+                                    <p className="text-sm font-bold text-gray-800 flex items-center gap-1">
+                                      📦 {material.name}
+                                    </p>
                                     {material.description && (
-                                      <p className="text-xs text-gray-600 mt-0.5">{material.description}</p>
+                                      <p className="text-xs text-gray-600 mt-1 italic bg-blue-50 rounded px-1 py-0.5">{material.description}</p>
                                     )}
                                     
                                     {/* Storage Location */}
                                     {material.location && (
-                                      <div className="text-xs mt-1">
-                                        <span className="font-semibold text-gray-700">Location:</span> {material.location}
+                                      <div className="text-xs mt-1 bg-amber-50 rounded px-2 py-0.5 inline-flex items-center gap-1">
+                                        📍 <span className="font-semibold">Location:</span> {material.location}
                                       </div>
                                     )}
                                     
-                                    {/* Age Groups */}
+                                    {/* Age Groups with colorful badges */}
                                     {material.ageGroups && material.ageGroups.length > 0 && (
-                                      <div className="mt-1">
-                                        <span className="text-xs font-semibold text-gray-700">Suitable for: </span>
+                                      <div className="mt-2">
+                                        <div className="flex items-center gap-1 text-xs font-semibold text-gray-700">
+                                          👶 Suitable for:
+                                        </div>
                                         <div className="flex flex-wrap gap-1 mt-1">
-                                          {material.ageGroups.map((ag: any) => (
-                                            <Badge key={ag.id} variant="secondary" className="text-xs py-0">
-                                              {ag.name}
-                                            </Badge>
-                                          ))}
+                                          {typeof material.ageGroups === 'string' ? (
+                                            <span className="px-2 py-0.5 bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700 border border-purple-300 rounded-full text-xs font-bold">
+                                              {material.ageGroups}
+                                            </span>
+                                          ) : Array.isArray(material.ageGroups) ? (
+                                            material.ageGroups.map((ag: any, agIdx: number) => {
+                                              const ageText = typeof ag === 'string' ? ag : (ag.name || ag.description || 'Unknown');
+                                              const colors = [
+                                                'from-purple-100 to-pink-100 text-purple-700 border-purple-300',
+                                                'from-blue-100 to-cyan-100 text-blue-700 border-blue-300',
+                                                'from-green-100 to-emerald-100 text-green-700 border-green-300',
+                                                'from-orange-100 to-amber-100 text-orange-700 border-orange-300',
+                                              ];
+                                              const colorClass = colors[agIdx % colors.length];
+                                              
+                                              return (
+                                                <span key={ag.id || agIdx} className={`px-2 py-0.5 bg-gradient-to-r ${colorClass} rounded-full text-xs font-bold`}>
+                                                  {ageText}
+                                                </span>
+                                              );
+                                            })
+                                          ) : null}
                                         </div>
                                       </div>
                                     )}
