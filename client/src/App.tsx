@@ -8,6 +8,7 @@ import { setPermissionOverrides } from "./lib/permission-utils";
 import LessonPlanner from "@/pages/lesson-planner";
 import TabletPlanner from "@/pages/tablet-planner";
 import { Settings } from "@/pages/Settings";
+import ParentView from "@/pages/parent-view";
 import NotFound from "@/pages/not-found";
 import { TokenSwitcher } from "@/components/token-switcher";
 import { useEffect } from "react";
@@ -28,6 +29,7 @@ function Router() {
     <Switch>
       <Route path="/" component={LessonPlanner} />
       <Route path="/tablet" component={TabletPlanner} />
+      <Route path="/parent" component={ParentView} />
       <Route path="/settings" component={Settings} />
       <Route path="/review" component={ReviewRedirect} />
       <Route component={NotFound} />

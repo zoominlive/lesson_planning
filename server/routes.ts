@@ -2081,6 +2081,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Parent API Routes
+  app.get("/api/parent/lesson-plans", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId;
+      const userId = req.userId;
+      
+      if (!tenantId || !userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      
+      // For parent view, we'll need to determine which room(s) to show
+      // For now, we'll fetch all approved lesson plans for all rooms in authorized locations
+      const authorizedLocationIds = await getUserAuthorizedLocationIds(req);
+      
+      // Get lesson plans that are approved
+      const allLessonPlans = await storage.getLessonPlansForReview();
+      
+      // Filter to only approved plans in authorized locations
+      const filteredPlans = allLessonPlans.filter((plan: any) => 
+        plan.status === 'approved' && authorizedLocationIds.includes(plan.locationId)
+      );
+      
+      // Enrich with activities and related data
+      const enrichedPlans = await Promise.all(filteredPlans.map(async (plan: any) => {
+        // Get scheduled activities for this lesson plan
+        const scheduledActivities = await storage.getScheduledActivities(plan.id);
+        
+        // Get room and location details (already included in getLessonPlansForReview response)
+        const room = plan.room || await storage.getRoom(plan.roomId);
+        const location = plan.location || await storage.getLocation(plan.locationId);
+        
+        // Enrich activities with related data
+        const enrichedActivities = await Promise.all(scheduledActivities.map(async (scheduledActivity: any) => {
+          const activity = await storage.getActivity(scheduledActivity.activityId);
+          const activityRecords = await storage.getActivityRecords(scheduledActivity.id);
+          
+          // Get milestones and materials
+          const milestones = scheduledActivity.milestoneIds && scheduledActivity.milestoneIds.length > 0
+            ? await Promise.all(scheduledActivity.milestoneIds.map((id: string) => storage.getMilestone(id)))
+            : [];
+          
+          const materials = scheduledActivity.materialIds && scheduledActivity.materialIds.length > 0
+            ? await Promise.all(scheduledActivity.materialIds.map((id: string) => storage.getMaterial(id)))
+            : [];
+          
+          // Get activity steps from the enriched activity data (instructions field)
+          const steps = (activity as any)?.steps || activity?.instructions || [];
+          
+          // Check if activity is completed (has any records)
+          const isCompleted = activityRecords && activityRecords.length > 0;
+          const avgRating = isCompleted && activityRecords.length > 0
+            ? activityRecords.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / activityRecords.length
+            : undefined;
+          
+          return {
+            id: scheduledActivity.id,
+            title: activity?.title || 'Untitled Activity',
+            description: activity?.description,
+            dayOfWeek: scheduledActivity.dayOfWeek,
+            position: scheduledActivity.position,
+            startTime: scheduledActivity.startTime,
+            endTime: scheduledActivity.endTime,
+            completed: isCompleted,
+            rating: avgRating ? Math.round(avgRating) : undefined,
+            milestones: milestones.filter(m => m).map(m => ({
+              id: m!.id,
+              name: m!.name
+            })),
+            materials: materials.filter(m => m).map(m => ({
+              id: m!.id,
+              name: m!.name
+            })),
+            steps: Array.isArray(steps) ? steps.map((s: any, index: number) => ({
+              orderIndex: s.orderIndex !== undefined ? s.orderIndex : index,
+              instruction: s.instruction || s
+            })) : []
+          };
+        }));
+        
+        return {
+          id: plan.id,
+          weekStart: plan.weekStart,
+          status: plan.status,
+          approvedAt: plan.approvedAt,
+          scheduleType: plan.scheduleType,
+          activities: enrichedActivities,
+          room: room ? { id: room.id, name: room.name } : undefined,
+          location: location ? { id: location.id, name: location.name } : undefined
+        };
+      }));
+      
+      res.json(enrichedPlans);
+    } catch (error) {
+      console.error("Parent lesson plans fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch lesson plans" });
+    }
+  });
+
   // Organization Settings API Routes
   app.get("/api/organization-settings", async (req: AuthenticatedRequest, res) => {
     try {
