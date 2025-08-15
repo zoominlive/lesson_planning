@@ -144,8 +144,8 @@ export function TabletWeeklyCalendar({
   
   const requiresApproval = requiresLessonPlanApproval();
   
-  // Check if lesson plan is locked (submitted or approved)
-  const isLessonPlanLocked = currentLessonPlan?.status === 'submitted' || currentLessonPlan?.status === 'approved';
+  // Check if lesson plan is locked (submitted or approved) - only if a lesson plan exists
+  const isLessonPlanLocked = currentLessonPlan && (currentLessonPlan.status === 'submitted' || currentLessonPlan.status === 'approved');
   const isLessonPlanApproved = currentLessonPlan?.status === 'approved';
 
   // Generate time slots based on current settings
