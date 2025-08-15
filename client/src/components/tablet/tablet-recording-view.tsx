@@ -481,39 +481,8 @@ export function TabletRecordingView({
                                 </div>
                               )}
                               
-                              {/* Activity Steps Card - Full Width */}
-                              {scheduled.activity?.steps && scheduled.activity.steps.length > 0 && (
-                                <div className="bg-gradient-to-br from-orange-50 to-white rounded-xl p-4 border border-orange-200 shadow-sm mb-4">
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg flex items-center justify-center">
-                                      <ListChecks className="h-4 w-4 text-white" />
-                                    </div>
-                                    <h4 className="text-sm font-bold text-gray-800">Activity Steps</h4>
-                                  </div>
-                                  <ol className="space-y-3">
-                                    {scheduled.activity.steps.map((step: any, index: number) => (
-                                      <li key={index} className="flex gap-3">
-                                        <span className="flex-shrink-0 w-7 h-7 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-sm font-bold">
-                                          {index + 1}
-                                        </span>
-                                        <div className="flex-1">
-                                          <p className="text-sm text-gray-700">{step.instruction}</p>
-                                          {step.imageUrl && (
-                                            <img 
-                                              src={step.imageUrl} 
-                                              alt={`Step ${index + 1}`}
-                                              className="mt-2 rounded-lg w-full max-h-32 object-cover shadow-sm"
-                                            />
-                                          )}
-                                        </div>
-                                      </li>
-                                    ))}
-                                  </ol>
-                                </div>
-                              )}
-
-                              {/* Main Content Grid - 2 Columns for remaining cards */}
-                              <div className="grid grid-cols-2 gap-4">
+                              {/* Main Content Grid - 2 Columns for Overview and Milestones */}
+                              <div className="grid grid-cols-2 gap-4 mb-4">
                                 {/* Left Column */}
                                 <div className="space-y-4">
                                   {/* Description Card */}
@@ -569,6 +538,37 @@ export function TabletRecordingView({
                               )}
                                 </div>
                               </div>
+                              
+                              {/* Activity Steps Card - Full Width */}
+                              {scheduled.activity?.steps && scheduled.activity.steps.length > 0 && (
+                                <div className="bg-gradient-to-br from-orange-50 to-white rounded-xl p-4 border border-orange-200 shadow-sm mb-4">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg flex items-center justify-center">
+                                      <ListChecks className="h-4 w-4 text-white" />
+                                    </div>
+                                    <h4 className="text-sm font-bold text-gray-800">Activity Steps</h4>
+                                  </div>
+                                  <ol className="space-y-3">
+                                    {scheduled.activity.steps.map((step: any, index: number) => (
+                                      <li key={index} className="flex gap-3">
+                                        <span className="flex-shrink-0 w-7 h-7 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-sm font-bold">
+                                          {index + 1}
+                                        </span>
+                                        <div className="flex-1">
+                                          <p className="text-sm text-gray-700">{step.instruction}</p>
+                                          {step.imageUrl && (
+                                            <img 
+                                              src={step.imageUrl} 
+                                              alt={`Step ${index + 1}`}
+                                              className="mt-2 rounded-lg w-full max-h-32 object-cover shadow-sm"
+                                            />
+                                          )}
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ol>
+                                </div>
+                              )}
                               
                               {/* Bottom Section - Materials and Recording */}
                               <div className="mt-4 space-y-4">
