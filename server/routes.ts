@@ -767,12 +767,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
+      // Fetch existing activities to avoid duplicates
+      const existingActivities = await storage.getActivities();
+      const existingActivityInfo = existingActivities.map(activity => ({
+        title: activity.title,
+        description: activity.description
+      }));
+
       // Generate activity using Perplexity AI
       const generatedActivity = await perplexityService.generateActivity({
         ageGroup: ageGroupName,
         category,
         isQuiet,
-        ageRange: ageRange || { start: 2, end: 5 }
+        ageRange: ageRange || { start: 2, end: 5 },
+        existingActivities: existingActivityInfo
       });
 
       // Transform the AI response to match our activity form structure
