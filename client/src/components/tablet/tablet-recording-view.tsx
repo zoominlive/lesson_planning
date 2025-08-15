@@ -290,11 +290,11 @@ export function TabletRecordingView({
           </div>
           <Button
             onClick={handleSaveAll}
-            className="bg-gradient-to-r from-turquoise to-sky-blue text-white"
+            className="bg-gradient-to-r from-turquoise to-sky-blue text-white flex items-center justify-center gap-2"
             size="sm"
           >
-            <Save className="h-3.5 w-3.5 mr-1.5" />
-            Save
+            <Save className="h-3.5 w-3.5" />
+            <span>Save</span>
           </Button>
         </div>
       </div>
