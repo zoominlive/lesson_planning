@@ -171,7 +171,7 @@ export function TabletHeader({
               data-testid="mode-recording-button"
             >
               <CheckSquare className="h-4 w-4 mr-2" />
-              Recording
+              Teaching
             </Button>
           </div>
 

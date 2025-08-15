@@ -729,7 +729,7 @@ export function TabletRecordingView({
                                     <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center">
                                       <Edit3 className="h-4 w-4 text-white" />
                                     </div>
-                                    <h4 className="text-sm font-bold text-gray-800">Activity Recording</h4>
+                                    <h4 className="text-sm font-bold text-gray-800">Activity Teaching</h4>
                                   </div>
                                   
                                   <div className="space-y-3">
@@ -1183,9 +1183,9 @@ export function TabletRecordingView({
                         )}
                       </div>
                       
-                      {/* Recording Section */}
+                      {/* Teaching Section */}
                       <div className="border-t pt-3 space-y-2">
-                        <h4 className="text-xs font-semibold text-gray-700">Activity Recording</h4>
+                        <h4 className="text-xs font-semibold text-gray-700">Activity Teaching</h4>
                         
                         <Textarea
                           placeholder="Add notes about how the activity went..."

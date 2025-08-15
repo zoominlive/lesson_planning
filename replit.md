@@ -15,6 +15,7 @@ This project is a comprehensive lesson planning application for early childhood 
 - **Added submit/finalize button to tablet planning**: Integrated lesson plan submission functionality directly in tablet weekly calendar with permission-based button text
 - **Fixed timezone date comparison**: Resolved issue where lesson plans weren't found due to timezone conversion by comparing date strings directly (yyyy-MM-dd format)
 - **Fixed tablet schedule type configuration**: Tablet view now properly fetches schedule settings from API instead of localStorage, ensuring correct position-based/time-based display per location
+- **Renamed "Recording" to "Teaching"**: Updated tablet interface terminology from "Recording" mode to "Teaching" mode for better clarity and educational context
 
 ### Consistent Week Display Format (January 13, 2025)
 - **Updated week range display**: Changed week display format from Monday-Sunday to Monday-Friday throughout the application
