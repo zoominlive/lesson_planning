@@ -565,6 +565,112 @@ export function TabletRecordingView({
                                 </div>
                               </div>
                               
+                              {/* Materials Card - Enhanced Beautiful Design */}
+                              {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
+                                <div className="bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 rounded-xl p-4 border-2 border-teal-300 shadow-lg mb-4">
+                                  <div className="flex items-center gap-2 mb-4">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-teal-400 via-cyan-400 to-blue-400 rounded-xl flex items-center justify-center shadow-md animate-pulse">
+                                      <Scissors className="h-5 w-5 text-white" />
+                                    </div>
+                                    <h4 className="text-base font-bold text-gray-800">
+                                      🎨 Required Materials ({scheduled.activity.materials.length})
+                                    </h4>
+                                  </div>
+                                  <div className="space-y-3">
+                                    {scheduled.activity.materials.map((material: any, idx: number) => (
+                                      <div key={material.id} className="relative overflow-hidden bg-gradient-to-r from-white via-teal-50/30 to-white p-4 rounded-xl border-2 border-teal-200 shadow-md hover:shadow-xl transition-all transform hover:scale-[1.02]">
+                                        {/* Decorative corner ribbon */}
+                                        <div className="absolute top-0 right-0 w-16 h-16">
+                                          <div className="absolute transform rotate-45 bg-gradient-to-r from-yellow-400 to-orange-400 text-white text-xs font-bold py-1 right-[-28px] top-[8px] w-[100px] text-center shadow-sm">
+                                            #{idx + 1}
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="flex gap-4">
+                                          {/* Material Image with fallback */}
+                                          <div className="flex-shrink-0">
+                                            {material.photoUrl ? (
+                                              <img 
+                                                src={material.photoUrl} 
+                                                alt={material.name}
+                                                className="w-24 h-24 object-cover rounded-xl shadow-md border-2 border-white"
+                                                onError={(e) => {
+                                                  e.currentTarget.style.display = 'none';
+                                                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                }}
+                                              />
+                                            ) : null}
+                                            <div className={`${material.photoUrl ? 'hidden' : ''} w-24 h-24 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-xl shadow-md border-2 border-white flex items-center justify-center`}>
+                                              <Scissors className="h-10 w-10 text-teal-500" />
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="flex-1">
+                                            {/* Material Name with emoji */}
+                                            <p className="text-base font-bold text-gray-800 mb-2 flex items-center gap-2">
+                                              <span className="text-xl">📦</span>
+                                              {material.name}
+                                            </p>
+                                            
+                                            {/* Description in a colorful box */}
+                                            {material.description && (
+                                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-2 mb-2 border border-blue-200">
+                                                <p className="text-xs text-gray-700 italic">{material.description}</p>
+                                              </div>
+                                            )}
+                                            
+                                            {/* Storage Location with icon */}
+                                            {material.location && (
+                                              <div className="flex items-center gap-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg px-3 py-1.5 mb-2 border border-amber-200">
+                                                <span className="text-base">📍</span>
+                                                <span className="text-xs font-semibold text-amber-800">Location:</span>
+                                                <span className="text-xs text-amber-700">{material.location}</span>
+                                              </div>
+                                            )}
+                                            
+                                            {/* Age Groups with colorful badges */}
+                                            {material.ageGroups && material.ageGroups.length > 0 && (
+                                              <div className="mt-2">
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                  <div className="flex items-center gap-1 text-xs font-bold text-gray-700">
+                                                    <span className="text-base">👶</span>
+                                                    <span>Suitable for:</span>
+                                                  </div>
+                                                  {typeof material.ageGroups === 'string' ? (
+                                                    /* If ageGroups is a string array */
+                                                    <div className="px-3 py-1 bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700 border border-purple-300 rounded-full text-xs font-bold shadow-sm">
+                                                      {material.ageGroups}
+                                                    </div>
+                                                  ) : Array.isArray(material.ageGroups) ? (
+                                                    /* If ageGroups is an array */
+                                                    material.ageGroups.map((ag: any, agIdx: number) => {
+                                                      const ageText = typeof ag === 'string' ? getAgeGroupName(ag) : (ag.name || ag.description || 'Unknown');
+                                                      const colors = [
+                                                        'from-purple-100 to-pink-100 text-purple-700 border-purple-300',
+                                                        'from-blue-100 to-cyan-100 text-blue-700 border-blue-300',
+                                                        'from-green-100 to-emerald-100 text-green-700 border-green-300',
+                                                        'from-orange-100 to-amber-100 text-orange-700 border-orange-300',
+                                                      ];
+                                                      const colorClass = colors[agIdx % colors.length];
+                                                      
+                                                      return (
+                                                        <div key={typeof ag === 'string' ? ag : (ag.id || agIdx)} className={`px-3 py-1 bg-gradient-to-r ${colorClass} rounded-full text-xs font-bold shadow-sm transform hover:scale-105 transition-transform`}>
+                                                          {ageText}
+                                                        </div>
+                                                      );
+                                                    })
+                                                  ) : null}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
                               {/* Activity Steps Card - Full Width */}
                               {scheduled.activity?.steps && scheduled.activity.steps.length > 0 && (
                                 <div className="bg-gradient-to-br from-orange-50 to-white rounded-xl p-4 border border-orange-200 shadow-sm mb-4">
@@ -620,112 +726,7 @@ export function TabletRecordingView({
                                     </div>
                                   </div>
                                 )}
-                              
-                                {/* Materials Card - Enhanced Beautiful Design */}
-                                {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
-                                  <div className="bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 rounded-xl p-4 border-2 border-teal-300 shadow-lg">
-                                    <div className="flex items-center gap-2 mb-4">
-                                      <div className="w-10 h-10 bg-gradient-to-br from-teal-400 via-cyan-400 to-blue-400 rounded-xl flex items-center justify-center shadow-md animate-pulse">
-                                        <Scissors className="h-5 w-5 text-white" />
-                                      </div>
-                                      <h4 className="text-base font-bold text-gray-800">
-                                        🎨 Required Materials ({scheduled.activity.materials.length})
-                                      </h4>
-                                    </div>
-                                    <div className="space-y-3">
-                                      {scheduled.activity.materials.map((material: any, idx: number) => (
-                                        <div key={material.id} className="relative overflow-hidden bg-gradient-to-r from-white via-teal-50/30 to-white p-4 rounded-xl border-2 border-teal-200 shadow-md hover:shadow-xl transition-all transform hover:scale-[1.02]">
-                                          {/* Decorative corner ribbon */}
-                                          <div className="absolute top-0 right-0 w-16 h-16">
-                                            <div className="absolute transform rotate-45 bg-gradient-to-r from-yellow-400 to-orange-400 text-white text-xs font-bold py-1 right-[-28px] top-[8px] w-[100px] text-center shadow-sm">
-                                              #{idx + 1}
-                                            </div>
-                                          </div>
-                                          
-                                          <div className="flex gap-4">
-                                            {/* Material Image with fallback */}
-                                            <div className="flex-shrink-0">
-                                              {material.photoUrl ? (
-                                                <img 
-                                                  src={material.photoUrl} 
-                                                  alt={material.name}
-                                                  className="w-24 h-24 object-cover rounded-xl shadow-md border-2 border-white"
-                                                  onError={(e) => {
-                                                    e.currentTarget.style.display = 'none';
-                                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                                  }}
-                                                />
-                                              ) : null}
-                                              <div className={`${material.photoUrl ? 'hidden' : ''} w-24 h-24 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-xl shadow-md border-2 border-white flex items-center justify-center`}>
-                                                <Scissors className="h-10 w-10 text-teal-500" />
-                                              </div>
-                                            </div>
-                                            
-                                            <div className="flex-1">
-                                              {/* Material Name with emoji */}
-                                              <p className="text-base font-bold text-gray-800 mb-2 flex items-center gap-2">
-                                                <span className="text-xl">📦</span>
-                                                {material.name}
-                                              </p>
-                                              
-                                              {/* Description in a colorful box */}
-                                              {material.description && (
-                                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-2 mb-2 border border-blue-200">
-                                                  <p className="text-xs text-gray-700 italic">{material.description}</p>
-                                                </div>
-                                              )}
-                                              
-                                              {/* Storage Location with icon */}
-                                              {material.location && (
-                                                <div className="flex items-center gap-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg px-3 py-1.5 mb-2 border border-amber-200">
-                                                  <span className="text-base">📍</span>
-                                                  <span className="text-xs font-semibold text-amber-800">Location:</span>
-                                                  <span className="text-xs text-amber-700">{material.location}</span>
-                                                </div>
-                                              )}
-                                              
-                                              {/* Age Groups with colorful badges */}
-                                              {material.ageGroups && material.ageGroups.length > 0 && (
-                                                <div className="mt-2">
-                                                  <div className="flex flex-wrap items-center gap-1.5">
-                                                    <div className="flex items-center gap-1 text-xs font-bold text-gray-700">
-                                                      <span className="text-base">👶</span>
-                                                      <span>Suitable for:</span>
-                                                    </div>
-                                                    {typeof material.ageGroups === 'string' ? (
-                                                      /* If ageGroups is a string array */
-                                                      <div className="px-3 py-1 bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700 border border-purple-300 rounded-full text-xs font-bold shadow-sm">
-                                                        {material.ageGroups}
-                                                      </div>
-                                                    ) : Array.isArray(material.ageGroups) ? (
-                                                      /* If ageGroups is an array */
-                                                      material.ageGroups.map((ag: any, agIdx: number) => {
-                                                        const ageText = typeof ag === 'string' ? getAgeGroupName(ag) : (ag.name || ag.description || 'Unknown');
-                                                        const colors = [
-                                                          'from-purple-100 to-pink-100 text-purple-700 border-purple-300',
-                                                          'from-blue-100 to-cyan-100 text-blue-700 border-blue-300',
-                                                          'from-green-100 to-emerald-100 text-green-700 border-green-300',
-                                                          'from-orange-100 to-amber-100 text-orange-700 border-orange-300',
-                                                        ];
-                                                        const colorClass = colors[agIdx % colors.length];
-                                                        
-                                                        return (
-                                                          <div key={typeof ag === 'string' ? ag : (ag.id || agIdx)} className={`px-3 py-1 bg-gradient-to-r ${colorClass} rounded-full text-xs font-bold shadow-sm transform hover:scale-105 transition-transform`}>
-                                                            {ageText}
-                                                          </div>
-                                                        );
-                                                      })
-                                                    ) : null}
-                                                  </div>
-                                                </div>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
+
                               
                                 {/* Recording Section Card */}
                                 <div className="bg-gradient-to-br from-yellow-50 to-white rounded-xl p-4 border border-yellow-200 shadow-sm">
