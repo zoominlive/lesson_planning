@@ -149,29 +149,29 @@ export function TabletHeader({
               size="sm"
               variant={viewMode === 'planning' ? 'default' : 'ghost'}
               onClick={() => onViewModeChange?.('planning')}
-              className={`rounded-lg px-3 py-1.5 transition-all ${
+              className={`rounded-lg px-4 py-2 transition-all flex items-center justify-center gap-2 ${
                 viewMode === 'planning' 
                   ? 'bg-gradient-to-r from-turquoise to-sky-blue text-white shadow-md' 
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
               data-testid="mode-planning-button"
             >
-              <Calendar className="h-4 w-4 mr-2" />
-              Planning
+              <Calendar className="h-4 w-4" />
+              <span>Planning</span>
             </Button>
             <Button
               size="sm"
               variant={viewMode === 'recording' ? 'default' : 'ghost'}
               onClick={() => onViewModeChange?.('recording')}
-              className={`rounded-lg px-3 py-1.5 transition-all ${
+              className={`rounded-lg px-4 py-2 transition-all flex items-center justify-center gap-2 ${
                 viewMode === 'recording' 
                   ? 'bg-gradient-to-r from-coral-red to-soft-yellow text-white shadow-md' 
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
               data-testid="mode-recording-button"
             >
-              <CheckSquare className="h-4 w-4 mr-2" />
-              Teaching
+              <CheckSquare className="h-4 w-4" />
+              <span>Teaching</span>
             </Button>
           </div>
 
