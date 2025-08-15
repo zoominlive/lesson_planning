@@ -727,17 +727,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                           draggedScheduledActivity?.id === scheduledActivity.id ? 'opacity-50 scale-95' : ''
                         }`}
                       >
-                        {/* Completion Badge - Fun visual indicator */}
-                        {isCompleted && (
-                          <div className="absolute -top-2 -right-2 z-10 animate-bounce">
-                            <div className="relative">
-                              <div className="absolute inset-0 bg-yellow-400 rounded-full blur-md opacity-50 animate-pulse"></div>
-                              <div className="relative bg-gradient-to-br from-yellow-300 to-amber-400 rounded-full p-1.5 shadow-lg border-2 border-white">
-                                <Trophy className="h-4 w-4 text-white" />
-                              </div>
-                            </div>
-                          </div>
-                        )}
+
                         
                         {!isReviewMode && !isCompleted && (
                           <button
