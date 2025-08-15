@@ -473,7 +473,7 @@ export function TabletRecordingView({
                               variant="ghost"
                               size="sm"
                               onClick={() => setExpandedActivity(isExpanded ? null : scheduled.id)}
-                              className="w-full justify-center gap-2 hover:bg-gray-50 mt-2"
+                              className={`w-full justify-center gap-2 hover:bg-gray-50 ${isExpanded ? 'mt-1' : 'mt-2'}`}
                             >
                               {isExpanded ? (
                                 <>
@@ -491,7 +491,7 @@ export function TabletRecordingView({
 
                           {/* Expanded Content - Beautiful Tablet Layout */}
                           {isExpanded && (
-                            <div className="mt-4 pt-4 border-t-2 border-gray-100">
+                            <div className="mt-2 pt-3 border-t-2 border-gray-100">
                               {/* Hero Image Section */}
                               {scheduled.activity?.activityImage && (
                                 <div className="mb-4 rounded-xl overflow-hidden shadow-md">
@@ -936,7 +936,7 @@ export function TabletRecordingView({
                         variant="ghost"
                         size="sm"
                         onClick={() => setExpandedActivity(isExpanded ? null : scheduled.id)}
-                        className="w-full justify-center gap-2 hover:bg-gray-50"
+                        className={`w-full justify-center gap-2 hover:bg-gray-50 ${isExpanded ? 'mt-1' : 'mt-2'}`}
                       >
                         {isExpanded ? (
                           <>
@@ -955,7 +955,7 @@ export function TabletRecordingView({
 
                   {/* Expanded Content */}
                   {isExpanded && (
-                    <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
+                    <div className="mt-2 pt-2 border-t border-gray-100 space-y-3">
                       {/* Full Activity Image */}
                       {scheduled.activity?.activityImage && (
                         <div className="rounded-lg overflow-hidden bg-gray-100">
