@@ -289,21 +289,22 @@ export function TabletWeeklyCalendar({
     const touch = e.touches[0];
     touchStartPos.current = { x: touch.clientX, y: touch.clientY };
     
-    // Start the long press timer
+    // Start the long press timer for draft and approved states
     longPressTimer.current = setTimeout(() => {
       // Trigger haptic feedback if available
       if ('vibrate' in navigator) {
         navigator.vibrate(50);
       }
       
-      // Check if lesson plan is approved and show warning
+      // Check if lesson plan is approved and show warning first
       if (isLessonPlanApproved) {
         setPendingAction({
           type: 'delete',
-          data: scheduledActivity.id
+          data: scheduledActivity
         });
         setShowApprovedWarning(true);
       } else {
+        // For draft state, show delete dialog directly
         setActivityToDelete(scheduledActivity);
         setDeleteDialogOpen(true);
       }
@@ -336,10 +337,25 @@ export function TabletWeeklyCalendar({
     touchStartPos.current = null;
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (activityToDelete) {
-      deleteScheduledMutation.mutate(activityToDelete.id);
+      await deleteScheduledMutation.mutateAsync(activityToDelete.id);
+      // If lesson plan was approved and is now modified, reset it to draft
+      if (isLessonPlanApproved && currentLessonPlan?.id) {
+        await resetLessonPlanToDraft.mutateAsync(currentLessonPlan.id);
+        toast({
+          title: "Activity Removed",
+          description: "The activity has been removed and the lesson plan has been reset to draft for re-review.",
+        });
+      } else {
+        toast({
+          title: "Activity Removed",
+          description: "The activity has been removed from the schedule.",
+        });
+      }
     }
+    setActivityToDelete(null);
+    setDeleteDialogOpen(false);
   };
 
   // Add scheduled activity mutation for undo
@@ -859,7 +875,8 @@ export function TabletWeeklyCalendar({
             <AlertDialogAction onClick={() => {
               if (pendingAction) {
                 if (pendingAction.type === 'delete') {
-                  setActivityToDelete(scheduledActivities.find((a: any) => a.id === pendingAction.data));
+                  // pendingAction.data is already the scheduledActivity object
+                  setActivityToDelete(pendingAction.data);
                   setDeleteDialogOpen(true);
                 } else if (pendingAction.type === 'move') {
                   moveActivityMutation.mutate(pendingAction.data);
