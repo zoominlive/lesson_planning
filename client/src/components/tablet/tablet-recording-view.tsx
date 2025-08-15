@@ -173,25 +173,70 @@ export function TabletRecordingView({
     }
   };
 
+  // Mutation to save activity record to database
+  const createActivityRecordMutation = useMutation({
+    mutationFn: async (recordData: any) => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('/api/activity-records', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify(recordData),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save activity record');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Activity Completed",
+        description: "Activity has been marked as complete and saved.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save activity completion.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleMarkComplete = (activityId: string) => {
+    const record = activityRecords[activityId];
+    
+    // Update local state first
+    const updatedRecord = {
+      ...record,
+      scheduledActivityId: activityId,
+      completed: true,
+      notes: record?.notes || '',
+      materialsUsed: record?.materialsUsed || false,
+      materialFeedback: record?.materialFeedback || '',
+      rating: record?.rating || 0,
+      ratingFeedback: record?.ratingFeedback || '',
+    };
+    
     setActivityRecords(prev => ({
       ...prev,
-      [activityId]: {
-        ...prev[activityId],
-        scheduledActivityId: activityId,
-        completed: true,
-        notes: prev[activityId]?.notes || '',
-        materialsUsed: prev[activityId]?.materialsUsed || false,
-        materialNotes: prev[activityId]?.materialNotes || '',
-        materialFeedback: prev[activityId]?.materialFeedback || '',
-        rating: prev[activityId]?.rating || 0,
-        ratingFeedback: prev[activityId]?.ratingFeedback || '',
-      }
+      [activityId]: updatedRecord
     }));
     
-    toast({
-      title: "Activity Completed",
-      description: "Activity has been marked as complete.",
+    // Save to database
+    createActivityRecordMutation.mutate({
+      scheduledActivityId: activityId,
+      completed: true,
+      notes: updatedRecord.notes,
+      materialsUsed: updatedRecord.materialsUsed,
+      materialFeedback: updatedRecord.materialFeedback,
+      rating: updatedRecord.rating,
+      ratingFeedback: updatedRecord.ratingFeedback,
     });
   };
 
@@ -317,28 +362,7 @@ export function TabletRecordingView({
     );
   };
 
-  // Mutation for creating activity records
-  const createActivityRecordMutation = useMutation({
-    mutationFn: async (recordData: any) => {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch('/api/activity-records', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-        },
-        body: JSON.stringify(recordData),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to save activity record');
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/activity-records'] });
-    },
-  });
+  // Activity completion mutation is already defined above
 
   const handleSaveAll = async () => {
     // Save all records to backend
