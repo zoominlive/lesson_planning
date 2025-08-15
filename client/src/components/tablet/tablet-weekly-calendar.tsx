@@ -275,6 +275,10 @@ export function TabletWeeklyCalendar({
   };
 
   const handleTouchStart = (e: React.TouchEvent, scheduledActivity: any) => {
+    console.log('Touch started on activity:', scheduledActivity.activity?.title);
+    console.log('Current lesson plan status:', currentLessonPlan?.status);
+    console.log('Is approved?', isLessonPlanApproved);
+    
     // Check if lesson plan is submitted/pending
     if (currentLessonPlan?.status === 'submitted') {
       toast({
@@ -291,13 +295,15 @@ export function TabletWeeklyCalendar({
     
     // Start the long press timer for draft and approved states
     longPressTimer.current = setTimeout(() => {
+      console.log('Long press triggered!');
       // Trigger haptic feedback if available
       if ('vibrate' in navigator) {
         navigator.vibrate(50);
       }
       
       // Check if lesson plan is approved and show warning first
-      if (isLessonPlanApproved) {
+      if (currentLessonPlan?.status === 'approved') {
+        console.log('Showing approved warning dialog');
         setPendingAction({
           type: 'delete',
           data: scheduledActivity
@@ -305,6 +311,7 @@ export function TabletWeeklyCalendar({
         setShowApprovedWarning(true);
       } else {
         // For draft state, show delete dialog directly
+        console.log('Showing delete dialog for draft');
         setActivityToDelete(scheduledActivity);
         setDeleteDialogOpen(true);
       }
@@ -320,6 +327,7 @@ export function TabletWeeklyCalendar({
       
       // If finger moved more than 10 pixels, cancel the long press
       if (deltaX > 10 || deltaY > 10) {
+        console.log('Touch moved too much, cancelling long press');
         if (longPressTimer.current) {
           clearTimeout(longPressTimer.current);
           longPressTimer.current = null;
@@ -329,6 +337,7 @@ export function TabletWeeklyCalendar({
   };
 
   const handleTouchEnd = () => {
+    console.log('Touch ended, clearing timer');
     // Clear the timer if touch ends before long press triggers
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
