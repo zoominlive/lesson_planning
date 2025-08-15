@@ -760,57 +760,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Generate activity using AI
   app.post('/api/activities/generate', async (req: AuthenticatedRequest, res) => {
-    try {
-      const { ageGroupId, ageGroupName, ageRange, category, isQuiet, locationId } = req.body;
+    const { ageGroupId, ageGroupName, ageRange, category, isQuiet, locationId } = req.body;
+    
+    if (!ageGroupName || !category || isQuiet === undefined) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Fetch existing activities to avoid duplicates
+    const existingActivities = await storage.getActivities();
+    const existingActivityInfo = existingActivities.map(activity => ({
+      title: activity.title,
+      description: activity.description
+    }));
+
+    let attempts = 0;
+    const maxAttempts = 2;
+    
+    while (attempts < maxAttempts) {
+      attempts++;
       
-      if (!ageGroupName || !category || isQuiet === undefined) {
-        return res.status(400).json({ error: 'Missing required fields' });
+      try {
+        // Generate activity using Perplexity AI
+        const generatedActivity = await perplexityService.generateActivity({
+          ageGroup: ageGroupName,
+          category,
+          isQuiet,
+          ageRange: ageRange || { start: 2, end: 5 },
+          existingActivities: existingActivityInfo
+        });
+
+        // Check if the generation failed
+        if (generatedActivity.title === "Activity Generation Failed") {
+          console.log(`[Activity Generation] Attempt ${attempts} failed, ${attempts < maxAttempts ? 'retrying...' : 'no more retries'}`);
+          
+          if (attempts < maxAttempts) {
+            // Send a status update to the client that we're retrying
+            continue; // Try again
+          } else {
+            // All attempts failed
+            return res.status(503).json({ 
+              error: 'Activity generation temporarily unavailable. Please try again later or create the activity manually.',
+              retryable: false 
+            });
+          }
+        }
+
+        // Transform the AI response to match our activity form structure
+        const transformedActivity = {
+          title: generatedActivity.title,
+          description: generatedActivity.description,
+          duration: generatedActivity.duration,
+          ageRangeStart: ageRange.start,
+          ageRangeEnd: ageRange.end,
+          objectives: generatedActivity.learningObjectives,
+          preparationTime: generatedActivity.setupTime,
+          safetyConsiderations: generatedActivity.safetyConsiderations,
+          category,
+          spaceRequired: generatedActivity.spaceRequired,
+          groupSize: generatedActivity.groupSize,
+          messLevel: generatedActivity.messLevel,
+          instructions: generatedActivity.instructions.map((inst: any, index: number) => ({
+            stepNumber: index + 1,
+            text: inst.text,
+            tip: inst.tip || '',
+            imageUrl: ''
+          })),
+          variations: generatedActivity.variations,
+          imagePrompt: generatedActivity.imagePrompt
+        };
+
+        res.json(transformedActivity);
+        return; // Success, exit the function
+        
+      } catch (error) {
+        console.error(`Activity generation error (attempt ${attempts}/${maxAttempts}):`, error);
+        
+        if (attempts >= maxAttempts) {
+          res.status(500).json({ 
+            error: 'Failed to generate activity after multiple attempts. Please try again later.',
+            retryable: true 
+          });
+          return;
+        }
+        // Continue to next attempt
       }
-
-      // Fetch existing activities to avoid duplicates
-      const existingActivities = await storage.getActivities();
-      const existingActivityInfo = existingActivities.map(activity => ({
-        title: activity.title,
-        description: activity.description
-      }));
-
-      // Generate activity using Perplexity AI
-      const generatedActivity = await perplexityService.generateActivity({
-        ageGroup: ageGroupName,
-        category,
-        isQuiet,
-        ageRange: ageRange || { start: 2, end: 5 },
-        existingActivities: existingActivityInfo
-      });
-
-      // Transform the AI response to match our activity form structure
-      const transformedActivity = {
-        title: generatedActivity.title,
-        description: generatedActivity.description,
-        duration: generatedActivity.duration,
-        ageRangeStart: ageRange.start,
-        ageRangeEnd: ageRange.end,
-        objectives: generatedActivity.learningObjectives,
-        preparationTime: generatedActivity.setupTime,
-        safetyConsiderations: generatedActivity.safetyConsiderations,
-        category,
-        spaceRequired: generatedActivity.spaceRequired,
-        groupSize: generatedActivity.groupSize,
-        messLevel: generatedActivity.messLevel,
-        instructions: generatedActivity.instructions.map((inst: any, index: number) => ({
-          stepNumber: index + 1,
-          text: inst.text,
-          tip: inst.tip || '',
-          imageUrl: ''
-        })),
-        variations: generatedActivity.variations,
-        imagePrompt: generatedActivity.imagePrompt
-      };
-
-      res.json(transformedActivity);
-    } catch (error) {
-      console.error('Activity generation error:', error);
-      res.status(500).json({ error: 'Failed to generate activity. Please try again.' });
     }
   });
 

@@ -28,6 +28,8 @@ export default function AiActivityGenerator({
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isQuiet, setIsQuiet] = useState<boolean | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationMessage, setGenerationMessage] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
 
   const handleGenerate = async () => {
     if (!selectedAgeGroup || !selectedCategory || isQuiet === null) {
@@ -40,6 +42,8 @@ export default function AiActivityGenerator({
     }
 
     setIsGenerating(true);
+    setRetryCount(0);
+    setGenerationMessage("Generating your activity...");
     const ageGroup = ageGroups.find(ag => ag.id === selectedAgeGroup);
     
     try {
@@ -63,16 +67,50 @@ export default function AiActivityGenerator({
         })
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to generate activity');
+        // Check if the error is retryable or not
+        if (response.status === 503) {
+          // Service unavailable - AI failed after retries
+          toast({
+            title: "AI Service Temporarily Unavailable",
+            description: result.error || "The AI is having trouble generating activities right now. Please try again later or create an activity manually.",
+            variant: "destructive"
+          });
+        } else if (response.status === 500 && result.retryable) {
+          // Server error but retryable
+          toast({
+            title: "Generation Failed",
+            description: "There was an issue generating the activity. Please try again in a moment.",
+            variant: "destructive"
+          });
+        } else {
+          // Other errors
+          toast({
+            title: "Generation Failed",
+            description: result.error || "Unable to generate activity. Please try again.",
+            variant: "destructive"
+          });
+        }
+        return;
       }
 
-      const generatedActivity = await response.json();
+      // Check if the generation succeeded
+      if (result.title === "Activity Generation Failed") {
+        // This shouldn't happen anymore with backend retry, but just in case
+        toast({
+          title: "Generation Issue",
+          description: "The AI couldn't generate a proper activity. Please try again or create one manually.",
+          variant: "destructive"
+        });
+        return;
+      }
       
       // Pass the generated activity data to the parent component
       // Include the selected category and age group from the wizard
       onGenerated({
-        ...generatedActivity,
+        ...result,
         category: selectedCategory,
         selectedAgeGroupId: selectedAgeGroup
       });
@@ -82,6 +120,7 @@ export default function AiActivityGenerator({
       setSelectedAgeGroup("");
       setSelectedCategory("");
       setIsQuiet(null);
+      setGenerationMessage("");
       onOpenChange(false);
       
       toast({
@@ -91,12 +130,13 @@ export default function AiActivityGenerator({
     } catch (error) {
       console.error('Error generating activity:', error);
       toast({
-        title: "Generation Failed",
-        description: "Unable to generate activity. Please try again.",
+        title: "Connection Error",
+        description: "Unable to connect to the server. Please check your connection and try again.",
         variant: "destructive"
       });
     } finally {
       setIsGenerating(false);
+      setGenerationMessage("");
     }
   };
 
@@ -282,7 +322,7 @@ export default function AiActivityGenerator({
               {isGenerating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
+                  {generationMessage || "Generating..."}
                 </>
               ) : step === 3 ? (
                 <>
