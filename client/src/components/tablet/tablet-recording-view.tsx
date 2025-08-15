@@ -362,7 +362,7 @@ export function TabletRecordingView({
                             'bg-gradient-to-r from-gray-400 to-slate-400'
                           }`} />
                           
-                          <div className="p-4">
+                          <div className={`px-4 pt-4 ${isExpanded ? 'pb-2' : 'pb-4'}`}>
                             {/* Enhanced Header Row */}
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1">
@@ -814,7 +814,7 @@ export function TabletRecordingView({
                     'bg-gradient-to-r from-gray-400 to-slate-400'
                   }`} />
                   
-                  <div className="p-4">
+                  <div className={`px-4 pt-4 ${isExpanded ? 'pb-2' : 'pb-4'}`}>
                     {/* Enhanced Header */}
                     <div className="flex items-start justify-between mb-3">
                       <h3 className={`font-bold text-lg text-gray-900 ${isCompleted ? 'line-through opacity-60' : ''}`}>
