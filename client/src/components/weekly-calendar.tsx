@@ -704,6 +704,8 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
               {timeSlots.map((slot) => {
                 const scheduledActivity = isSlotOccupied(day.id, slot.id);
                 const isCompleted = scheduledActivity?.activityRecords?.some((record: any) => record.completed) || false;
+                const completedRecord = scheduledActivity?.activityRecords?.find((record: any) => record.completed);
+                const activityRating = completedRecord?.rating || 0;
                 
                 return (
                   <div 
@@ -792,15 +794,14 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                             </>
                           ) : (
                             <>
-                              <div></div>
                               <div className="flex items-center gap-1">
                                 <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
                                 <span className="text-xs text-green-600 font-bold">Completed</span>
-                                <div className="flex gap-0.5 ml-1">
-                                  {[1,2,3].map((i) => (
-                                    <Star key={i} className="h-2.5 w-2.5 text-yellow-400 fill-yellow-400" />
-                                  ))}
-                                </div>
+                              </div>
+                              <div className="flex gap-0.5">
+                                {[...Array(activityRating || 3)].map((_, i) => (
+                                  <Star key={i} className="h-2.5 w-2.5 text-yellow-400 fill-yellow-400" />
+                                ))}
                               </div>
                             </>
                           )}
