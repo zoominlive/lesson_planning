@@ -143,6 +143,10 @@ export function TabletWeeklyCalendar({
   });
   
   const requiresApproval = requiresLessonPlanApproval();
+  
+  // Check if lesson plan is locked (submitted or approved)
+  const isLessonPlanLocked = currentLessonPlan?.status === 'submitted' || currentLessonPlan?.status === 'approved';
+  const isLessonPlanApproved = currentLessonPlan?.status === 'approved';
 
   // Generate time slots based on current settings
   const timeSlots = generateTimeSlots(scheduleSettings);
@@ -237,6 +241,16 @@ export function TabletWeeklyCalendar({
   };
 
   const handleTouchStart = (e: React.TouchEvent, scheduledActivity: any) => {
+    // Prevent interactions if lesson plan is locked
+    if (isLessonPlanLocked) {
+      toast({
+        title: "Lesson Plan Locked",
+        description: "Withdraw the lesson plan from review to make changes.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Store the initial touch position
     const touch = e.touches[0];
     touchStartPos.current = { x: touch.clientX, y: touch.clientY };
@@ -369,6 +383,17 @@ export function TabletWeeklyCalendar({
 
   // Drag and drop handlers
   const handleDragStart = (e: React.DragEvent, scheduledActivity: any) => {
+    // Prevent dragging if lesson plan is locked
+    if (isLessonPlanLocked) {
+      e.preventDefault();
+      toast({
+        title: "Lesson Plan Locked",
+        description: "Withdraw the lesson plan from review to make changes.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setDraggedActivity(scheduledActivity);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', scheduledActivity.id);
@@ -387,6 +412,17 @@ export function TabletWeeklyCalendar({
   const handleDrop = (e: React.DragEvent, targetDay: number, targetSlot: number) => {
     e.preventDefault();
     setDragOverSlot(null);
+    
+    // Prevent drops if lesson plan is locked
+    if (isLessonPlanLocked) {
+      toast({
+        title: "Lesson Plan Locked",
+        description: "Withdraw the lesson plan from review to make changes.",
+        variant: "destructive",
+      });
+      setDraggedActivity(null);
+      return;
+    }
     
     if (!draggedActivity) return;
     
@@ -611,9 +647,11 @@ export function TabletWeeklyCalendar({
                   <div key={slot.id}>
                     {scheduledActivity ? (
                       <div
-                        draggable={true}
+                        draggable={!isLessonPlanLocked}
                         onDragStart={(e) => handleDragStart(e, scheduledActivity)}
-                        className={`h-20 w-full p-2 rounded-lg bg-gradient-to-br ${getCategoryColor(scheduledActivity.activity?.category || '')} border-2 transition-all cursor-move active:scale-95 shadow-lg hover:shadow-xl ${
+                        className={`h-20 w-full p-2 rounded-lg bg-gradient-to-br ${getCategoryColor(scheduledActivity.activity?.category || '')} border-2 transition-all ${
+                          isLessonPlanLocked ? 'cursor-not-allowed opacity-75' : 'cursor-move active:scale-95'
+                        } shadow-lg hover:shadow-xl ${
                           draggedActivity?.id === scheduledActivity.id ? 'opacity-50 scale-95' : ''
                         }`}
                         onTouchStart={(e) => handleTouchStart(e, scheduledActivity)}
@@ -652,7 +690,9 @@ export function TabletWeeklyCalendar({
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, day.id, slot.id)}
                         className={`h-20 w-full p-1 rounded-lg transition-all ${
-                          dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id
+                          isLessonPlanLocked
+                            ? 'bg-gray-50 border border-gray-200 cursor-not-allowed'
+                            : dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id
                             ? 'bg-gradient-to-br from-turquoise/30 to-sky-blue/30 border-2 border-dashed border-turquoise scale-105'
                             : isSelected 
                             ? 'bg-gradient-to-br from-turquoise/20 to-sky-blue/20 border-2 border-dashed border-turquoise hover:from-turquoise/30 hover:to-sky-blue/30 shadow-inner' 
@@ -661,13 +701,26 @@ export function TabletWeeklyCalendar({
                         data-testid={`slot-${day.id}-${slot.id}`}
                       >
                         <button
-                          onClick={() => onSlotTap(day.id, slot.id)}
+                          onClick={() => {
+                            if (isLessonPlanLocked) {
+                              toast({
+                                title: "Lesson Plan Locked",
+                                description: "Withdraw the lesson plan from review to make changes.",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            onSlotTap(day.id, slot.id);
+                          }}
                           className="h-full w-full flex items-center justify-center"
+                          disabled={isLessonPlanLocked}
                         >
                           {dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? (
                             <span className="text-xs font-bold text-turquoise animate-pulse">Drop Here</span>
                           ) : isSelected ? (
                             <span className="text-xs font-bold text-turquoise animate-pulse">Tap</span>
+                          ) : isLessonPlanLocked ? (
+                            <span className="text-lg text-gray-200">×</span>
                           ) : (
                             <span className="text-lg text-gray-300 hover:text-gray-400">+</span>
                           )}
