@@ -681,23 +681,28 @@ export function TabletRecordingView({
                                     <h4 className="text-sm font-bold text-gray-800">Activity Steps</h4>
                                   </div>
                                   <ol className="space-y-3">
-                                    {scheduled.activity.steps.map((step: any, index: number) => (
-                                      <li key={index} className="flex gap-3">
-                                        <span className="flex-shrink-0 w-7 h-7 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-sm font-bold">
-                                          {index + 1}
-                                        </span>
-                                        <div className="flex-1">
-                                          <p className="text-sm text-gray-700">{step.instruction}</p>
-                                          {step.imageUrl && (
-                                            <img 
-                                              src={step.imageUrl} 
-                                              alt={`Step ${index + 1}`}
-                                              className="mt-2 rounded-lg w-full max-h-32 object-cover shadow-sm"
-                                            />
-                                          )}
-                                        </div>
-                                      </li>
-                                    ))}
+                                    {scheduled.activity.steps.map((step: any, index: number) => {
+                                      console.log('Step data:', step);
+                                      return (
+                                        <li key={index} className="flex gap-3">
+                                          <span className="flex-shrink-0 w-7 h-7 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-sm font-bold">
+                                            {index + 1}
+                                          </span>
+                                          <div className="flex-1">
+                                            <p className="text-sm text-gray-700 font-medium">
+                                              {step.instruction || step.text || step.description || 'No instruction available'}
+                                            </p>
+                                            {step.imageUrl && (
+                                              <img 
+                                                src={step.imageUrl} 
+                                                alt={`Step ${index + 1}`}
+                                                className="mt-2 rounded-lg w-full max-h-32 object-cover shadow-sm"
+                                              />
+                                            )}
+                                          </div>
+                                        </li>
+                                      );
+                                    })}
                                   </ol>
                                 </div>
                               )}
