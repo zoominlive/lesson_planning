@@ -40,34 +40,27 @@ export function TabletRecordingView({
   const dayOfWeek = todayDate.getDay() === 0 ? 6 : todayDate.getDay() - 1; // Convert to 0-4 (Mon-Fri)
 
   // Fetch settings to determine if it's position-based or time-based
-  const { data: settings = [] } = useQuery<any[]>({
-    queryKey: ["/api/settings", selectedLocation],
+  const { data: locationSettings } = useQuery<any>({
+    queryKey: ["/api/locations", selectedLocation, "settings"],
     queryFn: async () => {
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`/api/settings?locationId=${encodeURIComponent(selectedLocation)}`, {
+      const response = await fetch(`/api/locations/${encodeURIComponent(selectedLocation)}/settings`, {
         headers: {
           ...(token && { 'Authorization': `Bearer ${token}` }),
         },
       });
-      if (!response.ok) throw new Error('Failed to fetch settings');
+      if (!response.ok) throw new Error('Failed to fetch location settings');
       return response.json();
     },
     enabled: !!selectedLocation,
   });
 
-  // Find location settings
-  const locationSettings = settings.find((s: any) => 
-    s.locationId === selectedLocation && s.key === 'schedule_type'
-  );
-
-  const scheduleType = locationSettings?.value?.scheduleType || 'time-based';
+  const scheduleType = locationSettings?.scheduleType || 'time-based';
   const isPositionBased = scheduleType === 'position-based';
 
   // Debug: Log schedule type
   console.log('Current schedule type:', scheduleType);
-  console.log('Location settings found:', locationSettings);
-  console.log('All settings:', settings);
-  console.log('Selected location ID:', selectedLocation);
+  console.log('Location settings:', locationSettings);
 
   // Fetch age groups for the location
   const { data: ageGroups = [] } = useQuery<any[]>({
