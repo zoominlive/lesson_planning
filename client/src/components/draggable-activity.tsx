@@ -11,15 +11,15 @@ export default function DraggableActivity({ activity, onDragStart }: DraggableAc
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "Social Development":
-        return "bg-mint-green text-white";
+        return "bg-primary-green text-white";
       case "Art & Creativity":
-        return "bg-coral-red text-white";
+        return "bg-primary-purple text-white";
       case "Physical Development":
-        return "bg-turquoise text-white";
+        return "bg-primary-blue text-white";
       case "Cognitive Development":
-        return "bg-sky-blue text-white";
+        return "bg-primary-dark-blue text-white";
       case "Music & Movement":
-        return "bg-soft-yellow text-charcoal";
+        return "bg-primary-green/80 text-white";
       default:
         return "bg-gray-500 text-white";
     }
@@ -32,7 +32,7 @@ export default function DraggableActivity({ activity, onDragStart }: DraggableAc
 
   return (
     <div 
-      className="border border-gray-200 rounded-lg p-4 material-shadow-hover cursor-move transition-all duration-200 hover:border-turquoise" 
+      className="border border-gray-200 rounded-lg p-4 material-shadow-hover cursor-move transition-all duration-200 hover:border-primary-blue" 
       draggable={true}
       onDragStart={handleDragStart}
       data-testid={`draggable-activity-${activity.id}`}
@@ -59,10 +59,10 @@ export default function DraggableActivity({ activity, onDragStart }: DraggableAc
         
         <div className="flex space-x-2">
           {activity.videoUrl && (
-            <Play className="h-4 w-4 text-gray-400" title="Has video" />
+            <Play className="h-4 w-4 text-gray-400" />
           )}
           {activity.materialIds.length > 0 && (
-            <Package className="h-4 w-4 text-gray-400" title="Materials required" />
+            <Package className="h-4 w-4 text-gray-400" />
           )}
         </div>
       </div>

@@ -3,6 +3,17 @@ This project is a comprehensive lesson planning application for early childhood 
 
 ## Recent Changes (January 2025)
 
+### Color Palette Integration for Parent App (January 17, 2025)
+- **Implemented new color palette**: Replaced old childcare-themed colors with parent app's primary colors (#2BABE2 light blue, #88B73E green, #8100FF purple, #297AB1 darker blue)
+- **Updated CSS variables**: Modified all primary, secondary, and accent color variables in index.css to use new color scheme
+- **Tailwind configuration updated**: Added new color utilities (primary-blue, primary-green, primary-purple, primary-dark-blue) to tailwind.config.ts
+- **Component color updates**: Updated color gradients and category colors in:
+  - Weekly Calendar component (desktop view)
+  - Tablet Weekly Calendar component
+  - Draggable Activity component
+- **Replaced old color references**: Changed all instances of turquoise, coral-red, mint-green, sky-blue, soft-yellow to new palette colors
+- **Visual consistency**: App now properly blends with parent app when iframed, maintaining professional appearance
+
 ### Tablet Review Workflow Implementation (January 15, 2025)
 - **Added tablet-friendly review interface**: Created TabletLessonReview component with optimized UI for tablet devices
 - **Integrated tab navigation**: Added Calendar and Review tabs to tablet view with consistent navigation pattern (/tablet?tab=review)

@@ -262,13 +262,13 @@ export function TabletWeeklyCalendar({
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "Social Development":
-        return "from-green-100 via-emerald-100 to-teal-100 border-green-300 shadow-green-200/50";
+        return "from-primary-green/10 via-primary-blue/10 to-primary-green/20 border-primary-green/40 shadow-primary-green/20";
       case "Art & Creativity":
-        return "from-pink-100 via-rose-100 to-fuchsia-100 border-pink-300 shadow-pink-200/50";
+        return "from-primary-purple/10 via-primary-blue/10 to-primary-purple/20 border-primary-purple/40 shadow-primary-purple/20";
       case "Physical Development":
-        return "from-cyan-100 via-sky-100 to-blue-100 border-blue-300 shadow-blue-200/50";
+        return "from-primary-blue/10 via-primary-dark-blue/10 to-primary-blue/20 border-primary-blue/40 shadow-primary-blue/20";
       case "Cognitive Development":
-        return "from-indigo-100 via-purple-100 to-violet-100 border-indigo-300 shadow-indigo-200/50";
+        return "from-primary-dark-blue/10 via-primary-purple/10 to-primary-dark-blue/20 border-primary-dark-blue/40 shadow-primary-dark-blue/20";
       default:
         return "from-gray-100 via-slate-100 to-gray-200 border-gray-300 shadow-gray-200/50";
     }
@@ -704,7 +704,7 @@ export function TabletWeeklyCalendar({
         <div className="grid gap-2 bg-gradient-to-br from-white via-white to-gray-50 rounded-2xl shadow-2xl p-3 border border-gray-100" style={{gridTemplateColumns: "80px repeat(5, 1fr)"}}>
           {/* Position Column */}
           <div className="space-y-2">
-            <div className="h-12 flex items-center justify-center text-xs font-bold bg-gradient-to-r from-turquoise/20 to-sky-blue/20 rounded-lg">
+            <div className="h-12 flex items-center justify-center text-xs font-bold bg-gradient-to-r from-primary-green/20 to-primary-blue/20 rounded-lg">
               {scheduleSettings.type === 'position-based' ? 'Position' : 'Time'}
             </div>
             {timeSlots.map((slot) => (
@@ -721,8 +721,8 @@ export function TabletWeeklyCalendar({
           {weekDays.map((day) => (
             <div key={day.id} className="space-y-2">
               {/* Day Header */}
-              <div className="h-12 bg-gradient-to-br from-turquoise/30 via-sky-blue/20 to-mint-green/30 rounded-lg shadow-sm flex flex-col items-center justify-center border border-turquoise/20">
-                <span className="text-xs font-bold text-charcoal">{day.name}</span>
+              <div className="h-12 bg-gradient-to-br from-primary-blue/30 via-primary-green/20 to-primary-purple/30 rounded-lg shadow-sm flex flex-col items-center justify-center border border-primary-blue/20">
+                <span className="text-xs font-bold text-primary-dark-blue">{day.name}</span>
                 <span className="text-[10px] text-gray-600">{day.date}</span>
               </div>
               
@@ -802,9 +802,9 @@ export function TabletWeeklyCalendar({
                           currentLessonPlan?.status === 'submitted'
                             ? 'bg-gray-50 border border-gray-200 cursor-not-allowed'
                             : dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id
-                            ? 'bg-gradient-to-br from-turquoise/30 to-sky-blue/30 border-2 border-dashed border-turquoise scale-105'
+                            ? 'bg-gradient-to-br from-primary-purple/30 to-primary-blue/30 border-2 border-dashed border-primary-purple scale-105'
                             : isSelected 
-                            ? 'bg-gradient-to-br from-turquoise/20 to-sky-blue/20 border-2 border-dashed border-turquoise hover:from-turquoise/30 hover:to-sky-blue/30 shadow-inner' 
+                            ? 'bg-gradient-to-br from-primary-purple/20 to-primary-blue/20 border-2 border-dashed border-primary-purple hover:from-primary-purple/30 hover:to-primary-blue/30 shadow-inner' 
                             : 'bg-white border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
                         }`}
                         data-testid={`slot-${day.id}-${slot.id}`}

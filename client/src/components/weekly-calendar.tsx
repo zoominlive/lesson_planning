@@ -212,15 +212,15 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
   const getCategoryGradient = (category: string) => {
     switch (category) {
       case "Social Development":
-        return "from-green-100 to-emerald-200";
+        return "from-primary-green/10 to-primary-blue/10";
       case "Art & Creativity":
-        return "from-pink-100 to-rose-200";
+        return "from-primary-purple/10 to-primary-blue/10";
       case "Physical Development":
-        return "from-cyan-100 to-blue-200";
+        return "from-primary-blue/10 to-primary-green/10";
       case "Cognitive Development":
-        return "from-blue-100 to-indigo-200";
+        return "from-primary-dark-blue/10 to-primary-blue/10";
       case "Music & Movement":
-        return "from-yellow-100 to-amber-200";
+        return "from-primary-purple/10 to-primary-green/10";
       default:
         return "from-gray-100 to-gray-200";
     }
@@ -677,26 +677,26 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
       <div className="flex">
         {/* Calendar Grid */}
         <div className={`transition-all duration-300 ${drawerOpen && !isReviewMode ? 'w-[calc(100%-416px)] mr-4' : 'w-full'}`}>
-          <Card className="material-shadow overflow-hidden bg-gradient-to-br from-white to-sky-blue/5 border-2 border-sky-blue/10">
+          <Card className="material-shadow overflow-hidden bg-gradient-to-br from-white to-primary-blue/5 border-2 border-primary-blue/20">
             <div className="grid gap-0" style={{gridTemplateColumns: "100px repeat(5, 1fr)"}}>
           {/* Position Column */}
-          <div className="bg-gradient-to-b from-mint-green/10 to-sky-blue/10 border-r-2 border-sky-blue/20">
-            <div className="h-16 border-b-2 border-sky-blue/20 flex items-center justify-center font-bold bg-white/50 text-[#000000]">
+          <div className="bg-gradient-to-b from-primary-green/10 to-primary-blue/10 border-r-2 border-primary-blue/20">
+            <div className="h-16 border-b-2 border-primary-blue/20 flex items-center justify-center font-bold bg-white/50 text-primary-dark-blue">
               {scheduleSettings.type === 'position-based' ? 'Position' : 'Time'}
             </div>
             {timeSlots.map((slot) => (
-              <div key={slot.id} className="h-24 border-b border-sky-blue/10 flex items-center justify-center bg-white/30 hover:bg-white/50 transition-colors">
-                <span data-testid={`time-slot-${slot.id}`} className="text-sm font-semibold text-charcoal">{slot.label}</span>
+              <div key={slot.id} className="h-24 border-b border-primary-blue/10 flex items-center justify-center bg-white/30 hover:bg-primary-blue/5 transition-colors">
+                <span data-testid={`time-slot-${slot.id}`} className="text-sm font-semibold text-primary-dark-blue">{slot.label}</span>
               </div>
             ))}
           </div>
 
           {/* Days of Week */}
           {weekDays.map((day) => (
-            <div key={day.id} className="border-r-2 border-sky-blue/10 last:border-r-0">
+            <div key={day.id} className="border-r-2 border-primary-blue/10 last:border-r-0">
               {/* Day Header */}
-              <div className="h-16 bg-gradient-to-b from-turquoise/10 to-mint-green/10 text-black border-b-2 border-sky-blue/20 flex flex-col items-center justify-center">
-                <span className="font-bold text-xl tracking-wide text-turquoise" data-testid={`day-name-${day.id}`}>{day.name}</span>
+              <div className="h-16 bg-gradient-to-b from-primary-blue/10 to-primary-green/10 text-black border-b-2 border-primary-blue/20 flex flex-col items-center justify-center">
+                <span className="font-bold text-xl tracking-wide text-primary-blue" data-testid={`day-name-${day.id}`}>{day.name}</span>
                 <span className="text-xs text-gray-600 mt-1 font-semibold" data-testid={`day-date-${day.id}`}>{day.date}</span>
               </div>
               
@@ -710,8 +710,8 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                 return (
                   <div 
                     key={slot.id} 
-                    className={`h-24 p-1.5 border border-sky-blue/10 hover:border-turquoise/40 transition-all bg-white/40 hover:bg-turquoise/5 ${
-                      dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? 'border-turquoise border-2 bg-turquoise/10' : ''
+                    className={`h-24 p-1.5 border border-primary-blue/10 hover:border-primary-purple/40 transition-all bg-white/40 hover:bg-primary-purple/5 ${
+                      dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? 'border-primary-purple border-2 bg-primary-purple/10' : ''
                     }`}
                     onDragOver={(e) => handleDragOver(e, day.id, slot.id)}
                     onDragLeave={handleDragLeave}
@@ -799,19 +799,19 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                       </div>
                     ) : (
                       <button 
-                        className={`h-full w-full flex items-center justify-center text-gray-400 border-2 border-dashed border-turquoise/20 rounded-lg hover:border-turquoise/40 hover:bg-turquoise/5 transition-all group ${isReviewMode ? '' : 'cursor-pointer'} ${
-                          dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? 'border-turquoise bg-turquoise/10' : ''
+                        className={`h-full w-full flex items-center justify-center text-gray-400 border-2 border-dashed border-primary-blue/20 rounded-lg hover:border-primary-purple/40 hover:bg-primary-purple/5 transition-all group ${isReviewMode ? '' : 'cursor-pointer'} ${
+                          dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? 'border-primary-purple bg-primary-purple/10' : ''
                         }`}
                         onClick={() => !isReviewMode && setDrawerOpen(true)}
                         data-testid={`empty-slot-${day.id}-${slot.id}`}
                         disabled={isReviewMode}
                       >
                         {dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? (
-                          <span className="text-xs text-turquoise font-semibold">Drop Here</span>
+                          <span className="text-xs text-primary-purple font-semibold">Drop Here</span>
                         ) : !isReviewMode ? (
                           <>
-                            <Plus className="h-3 w-3 mr-1 opacity-50 group-hover:opacity-70 text-turquoise" />
-                            <span className="text-xs opacity-50 group-hover:opacity-70 text-turquoise">Drop Activity</span>
+                            <Plus className="h-3 w-3 mr-1 opacity-50 group-hover:opacity-70 text-primary-blue" />
+                            <span className="text-xs opacity-50 group-hover:opacity-70 text-primary-blue">Drop Activity</span>
                           </>
                         ) : null}
                       </button>

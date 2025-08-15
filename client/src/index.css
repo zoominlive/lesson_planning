@@ -3,39 +3,45 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(248, 50%, 99%);
-  --foreground: hsl(46, 8%, 18%);
-  --muted: hsl(210, 40%, 96%);
-  --muted-foreground: hsl(215, 13%, 45%);
+  --background: hsl(0, 0%, 99%);
+  --foreground: hsl(210, 29%, 24%);
+  --muted: hsl(200, 73%, 95%);
+  --muted-foreground: hsl(210, 29%, 40%);
   --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(46, 8%, 18%);
+  --popover-foreground: hsl(210, 29%, 24%);
   --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(46, 8%, 18%);
-  --border: hsl(214, 32%, 91%);
-  --input: hsl(214, 32%, 91%);
-  --primary: hsl(358, 100%, 69%);
-  --primary-foreground: hsl(210, 40%, 98%);
-  --secondary: hsl(174, 58%, 65%);
-  --secondary-foreground: hsl(46, 8%, 18%);
-  --accent: hsl(200, 60%, 63%);
-  --accent-foreground: hsl(46, 8%, 18%);
-  --success: hsl(144, 35%, 72%);
-  --success-foreground: hsl(46, 8%, 18%);
-  --warning: hsl(48, 100%, 79%);
-  --warning-foreground: hsl(46, 8%, 18%);
+  --card-foreground: hsl(210, 29%, 24%);
+  --border: hsl(200, 73%, 88%);
+  --input: hsl(200, 73%, 92%);
+  --primary: hsl(200, 73%, 54%); /* #2BABE2 */
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(86, 48%, 49%); /* #88B73E */
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --accent: hsl(264, 100%, 50%); /* #8100FF */
+  --accent-foreground: hsl(0, 0%, 100%);
+  --success: hsl(86, 48%, 49%); /* Green from palette */
+  --success-foreground: hsl(0, 0%, 100%);
+  --warning: hsl(48, 73%, 54%);
+  --warning-foreground: hsl(210, 29%, 24%);
   --destructive: hsl(0, 84%, 60%);
-  --destructive-foreground: hsl(210, 40%, 98%);
-  --ring: hsl(46, 8%, 18%);
-  --radius: 0.75rem;
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --ring: hsl(200, 73%, 54%);
+  --radius: 0.5rem;
 
-  /* Custom childcare colors */
-  --coral-red: hsl(358, 100%, 69%);
-  --turquoise: hsl(174, 58%, 65%);
-  --sky-blue: hsl(200, 60%, 63%);
-  --mint-green: hsl(144, 35%, 72%);
-  --soft-yellow: hsl(48, 100%, 79%);
-  --light-grey: hsl(210, 17%, 98%);
-  --charcoal: hsl(46, 8%, 18%);
+  /* New primary palette colors */
+  --primary-blue: hsl(200, 73%, 54%); /* #2BABE2 */
+  --primary-green: hsl(86, 48%, 49%); /* #88B73E */
+  --primary-purple: hsl(264, 100%, 50%); /* #8100FF */
+  --primary-dark-blue: hsl(207, 60%, 44%); /* #297AB1 */
+  
+  /* Mapped to childcare theme names for compatibility */
+  --coral-red: hsl(264, 100%, 50%); /* Purple for primary actions */
+  --turquoise: hsl(200, 73%, 54%); /* Light blue */
+  --sky-blue: hsl(207, 60%, 44%); /* Dark blue */
+  --mint-green: hsl(86, 48%, 49%); /* Green */
+  --soft-yellow: hsl(48, 73%, 54%);
+  --light-grey: hsl(200, 73%, 98%);
+  --charcoal: hsl(210, 29%, 24%);
 }
 
 .dark {
@@ -93,41 +99,41 @@
 
   /* Tab active state */
   .tab-active {
-    background: linear-gradient(135deg, var(--coral-red), var(--turquoise));
+    background: linear-gradient(135deg, var(--primary-blue), var(--primary-dark-blue));
     color: white;
   }
 
   /* Milestone badges */
   .milestone-badge {
-    background: linear-gradient(135deg, var(--sky-blue), var(--mint-green));
+    background: linear-gradient(135deg, var(--primary-blue), var(--primary-green));
   }
 
   /* Drag zone styling */
   .drag-over {
-    border-color: var(--coral-red) !important;
-    background-color: hsl(358, 100%, 69%, 0.1) !important;
+    border-color: var(--primary-purple) !important;
+    background-color: hsl(264, 100%, 50%, 0.1) !important;
     border-width: 3px !important;
   }
 
   /* Activity card gradients */
   .activity-social {
-    background: linear-gradient(135deg, var(--mint-green), var(--sky-blue));
+    background: linear-gradient(135deg, var(--primary-green), var(--primary-blue));
   }
 
   .activity-emotional {
-    background: linear-gradient(135deg, var(--coral-red), var(--soft-yellow));
+    background: linear-gradient(135deg, var(--primary-purple), var(--primary-blue));
   }
 
   .activity-cognitive {
-    background: linear-gradient(135deg, var(--sky-blue), var(--turquoise));
+    background: linear-gradient(135deg, var(--primary-dark-blue), var(--primary-blue));
   }
 
   .activity-physical {
-    background: linear-gradient(135deg, var(--turquoise), var(--mint-green));
+    background: linear-gradient(135deg, var(--primary-blue), var(--primary-green));
   }
 
   .activity-art {
-    background: linear-gradient(135deg, var(--soft-yellow), var(--coral-red));
+    background: linear-gradient(135deg, var(--primary-purple), var(--primary-green));
   }
 
   /* Status indicators */

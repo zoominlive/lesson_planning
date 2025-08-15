@@ -44,6 +44,18 @@ export default {
         border: "var(--border)",
         input: "var(--input)",
         ring: "var(--ring)",
+        // New primary palette colors
+        "primary-blue": "#2BABE2",
+        "primary-green": "#88B73E",
+        "primary-purple": "#8100FF",
+        "primary-dark-blue": "#297AB1",
+        // Legacy mappings for compatibility
+        "coral-red": "var(--coral-red)",
+        "turquoise": "var(--turquoise)",
+        "sky-blue": "var(--sky-blue)",
+        "mint-green": "var(--mint-green)",
+        "soft-yellow": "var(--soft-yellow)",
+        "charcoal": "var(--charcoal)",
         chart: {
           "1": "var(--chart-1)",
           "2": "var(--chart-2)",
