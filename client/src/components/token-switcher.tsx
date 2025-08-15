@@ -13,44 +13,50 @@ import { setAuthToken, getUserInfo, clearAuthToken } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 // Test tokens for different user roles (signed with 'dev-secret-key')
-// All tokens now include locations as string names ["Main Campus", "Third Location"] instead of UUIDs
+// All tokens now include locations as string names ["Main Campus", "Third Location"]
 const TEST_TOKENS = {
   admin: {
     label: "Admin User",
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImU1YjdmMGRlLWM4NjgtNGU0MC1hMGJkLWUxNTkzN2NiMzA5NyIsInVzZXJGaXJzdE5hbWUiOiJBZG1pbiIsInVzZXJMYXN0TmFtZSI6IlVzZXIiLCJ1c2VybmFtZSI6ImFkbWluQGV4YW1wbGUuY29tIiwicm9sZSI6IkFkbWluIiwibG9jYXRpb25zIjpbIk1haW4gQ2FtcHVzIiwiVGhpcmQgTG9jYXRpb24iXSwiaWF0IjoxNzU0ODAzMDM0fQ.atm0PWAUeYKXddW1eT-wodxP5H3eYdW0B7e98NtU1yk",
+    token:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImU1YjdmMGRlLWM4NjgtNGU0MC1hMGJkLWUxNTkzN2NiMzA5NyIsInVzZXJGaXJzdE5hbWUiOiJBZG1pbiIsInVzZXJMYXN0TmFtZSI6IlVzZXIiLCJ1c2VybmFtZSI6ImFkbWluQGV4YW1wbGUuY29tIiwicm9sZSI6IkFkbWluIiwibG9jYXRpb25zIjpbIk1haW4gQ2FtcHVzIiwiVGhpcmQgTG9jYXRpb24iXSwiaWF0IjoxNzU0ODAzMDM0fQ.atm0PWAUeYKXddW1eT-wodxP5H3eYdW0B7e98NtU1yk",
     role: "Admin",
-    username: "admin@example.com"
+    username: "admin@example.com",
   },
   teacher: {
     label: "Teacher User",
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InRlYWNoZXIxMjMiLCJ1c2VyRmlyc3ROYW1lIjoiU2FyYWgiLCJ1c2VyTGFzdE5hbWUiOiJKb2huc29uIiwidXNlcm5hbWUiOiJ0ZWFjaGVyQGV4YW1wbGUuY29tIiwicm9sZSI6IlRlYWNoZXIiLCJsb2NhdGlvbnMiOlsiTWFpbiBDYW1wdXMiLCJUaGlyZCBMb2NhdGlvbiJdLCJpYXQiOjE3NTQ4MDMwMzR9.4FXmkDHk_ow0fwnex-598l-JRN4fF69iAIeNJ_gs5U4",
+    token:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InRlYWNoZXIxMjMiLCJ1c2VyRmlyc3ROYW1lIjoiU2FyYWgiLCJ1c2VyTGFzdE5hbWUiOiJKb2huc29uIiwidXNlcm5hbWUiOiJ0ZWFjaGVyQGV4YW1wbGUuY29tIiwicm9sZSI6IlRlYWNoZXIiLCJsb2NhdGlvbnMiOlsiTWFpbiBDYW1wdXMiLCJUaGlyZCBMb2NhdGlvbiJdLCJpYXQiOjE3NTQ4MDMwMzR9.4FXmkDHk_ow0fwnex-598l-JRN4fF69iAIeNJ_gs5U4",
     role: "Teacher",
-    username: "teacher@example.com"
+    username: "teacher@example.com",
   },
   teacher2: {
     label: "Teacher 2",
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InRlYWNoZXIyXzEyMyIsInVzZXJGaXJzdE5hbWUiOiJKZW5uaWZlciIsInVzZXJMYXN0TmFtZSI6IldpbHNvbiIsInVzZXJuYW1lIjoidGVhY2hlcjJAZXhhbXBsZS5jb20iLCJyb2xlIjoiVGVhY2hlciIsImxvY2F0aW9ucyI6WyJNYWluIENhbXB1cyJdLCJpYXQiOjE3NTQ4MDMwMzR9.hjee-gbNbMhSHSTg7e42qawo5m9HaHIUBzCVkT1ZjS4",
+    token:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InRlYWNoZXIyXzEyMyIsInVzZXJGaXJzdE5hbWUiOiJKZW5uaWZlciIsInVzZXJMYXN0TmFtZSI6IldpbHNvbiIsInVzZXJuYW1lIjoidGVhY2hlcjJAZXhhbXBsZS5jb20iLCJyb2xlIjoiVGVhY2hlciIsImxvY2F0aW9ucyI6WyJNYWluIENhbXB1cyJdLCJpYXQiOjE3NTQ4MDMwMzR9.hjee-gbNbMhSHSTg7e42qawo5m9HaHIUBzCVkT1ZjS4",
     role: "Teacher",
-    username: "teacher2@example.com"
+    username: "teacher2@example.com",
   },
   director: {
     label: "Director User",
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImRpcmVjdG9yMTIzIiwidXNlckZpcnN0TmFtZSI6Ik1pY2hhZWwiLCJ1c2VyTGFzdE5hbWUiOiJCcm93biIsInVzZXJuYW1lIjoiZGlyZWN0b3JAZXhhbXBsZS5jb20iLCJyb2xlIjoiRGlyZWN0b3IiLCJsb2NhdGlvbnMiOlsiTWFpbiBDYW1wdXMiLCJUaGlyZCBMb2NhdGlvbiJdLCJpYXQiOjE3NTQ4MDMwMzR9.5lPRnjVNB_r52opefcfqDMmX0Tg08kfiHfTlBCdLMBk",
+    token:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImRpcmVjdG9yMTIzIiwidXNlckZpcnN0TmFtZSI6Ik1pY2hhZWwiLCJ1c2VyTGFzdE5hbWUiOiJCcm93biIsInVzZXJuYW1lIjoiZGlyZWN0b3JAZXhhbXBsZS5jb20iLCJyb2xlIjoiRGlyZWN0b3IiLCJsb2NhdGlvbnMiOlsiTWFpbiBDYW1wdXMiLCJUaGlyZCBMb2NhdGlvbiJdLCJpYXQiOjE3NTQ4MDMwMzR9.5lPRnjVNB_r52opefcfqDMmX0Tg08kfiHfTlBCdLMBk",
     role: "Director",
-    username: "director@example.com"
+    username: "director@example.com",
   },
   assistant_director: {
     label: "Assistant Director",
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImFzc2lzdGFudF9kaXJlY3RvcjEyMyIsInVzZXJGaXJzdE5hbWUiOiJFbWlseSIsInVzZXJMYXN0TmFtZSI6IkRhdmlzIiwidXNlcm5hbWUiOiJhc3Npc3RhbnRfZGlyZWN0b3JAZXhhbXBsZS5jb20iLCJyb2xlIjoiYXNzaXN0YW50X2RpcmVjdG9yIiwibG9jYXRpb25zIjpbIk1haW4gQ2FtcHVzIiwiVGhpcmQgTG9jYXRpb24iXSwiaWF0IjoxNzU0ODAzMDM0fQ.wXH-fetlXp4HFxwhLK8uvWpF1NFavoPhN7vWoczrFVU",
-    role: "assistant_director",  // Fixed: use underscore to match JWT token
-    username: "assistant_director@example.com"
+    token:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImFzc2lzdGFudF9kaXJlY3RvcjEyMyIsInVzZXJGaXJzdE5hbWUiOiJFbWlseSIsInVzZXJMYXN0TmFtZSI6IkRhdmlzIiwidXNlcm5hbWUiOiJhc3Npc3RhbnRfZGlyZWN0b3JAZXhhbXBsZS5jb20iLCJyb2xlIjoiYXNzaXN0YW50X2RpcmVjdG9yIiwibG9jYXRpb25zIjpbIk1haW4gQ2FtcHVzIiwiVGhpcmQgTG9jYXRpb24iXSwiaWF0IjoxNzU0ODAzMDM0fQ.wXH-fetlXp4HFxwhLK8uvWpF1NFavoPhN7vWoczrFVU",
+    role: "assistant_director", // Fixed: use underscore to match JWT token
+    username: "assistant_director@example.com",
   },
   superadmin: {
     label: "Super Admin User",
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InN1cGVyYWRtaW4xMjMiLCJ1c2VyRmlyc3ROYW1lIjoiU3VwZXIiLCJ1c2VyTGFzdE5hbWUiOiJBZG1pbiIsInVzZXJuYW1lIjoic3VwZXJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJTdXBlckFkbWluIiwibG9jYXRpb25zIjpbIk1haW4gQ2FtcHVzIiwiVGhpcmQgTG9jYXRpb24iXSwiaWF0IjoxNzU0ODAzMDM0fQ.sL6vGq831g17WnO_-TKWahkB2f-MtxTa9BqXnZtSPlI",
+    token:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InN1cGVyYWRtaW4xMjMiLCJ1c2VyRmlyc3ROYW1lIjoiU3VwZXIiLCJ1c2VyTGFzdE5hbWUiOiJBZG1pbiIsInVzZXJuYW1lIjoic3VwZXJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJTdXBlckFkbWluIiwibG9jYXRpb25zIjpbIk1haW4gQ2FtcHVzIiwiVGhpcmQgTG9jYXRpb24iXSwiaWF0IjoxNzU0ODAzMDM0fQ.sL6vGq831g17WnO_-TKWahkB2f-MtxTa9BqXnZtSPlI",
     role: "SuperAdmin",
-    username: "superadmin@example.com"
-  }
+    username: "superadmin@example.com",
+  },
 };
 
 export function TokenSwitcher() {
@@ -58,9 +64,9 @@ export function TokenSwitcher() {
   const userInfo = getUserInfo();
   const getCurrentUserType = (): keyof typeof TEST_TOKENS => {
     if (!userInfo) return "admin";
-    
+
     // Match by userId to determine which test token is active
-    switch(userInfo.userId) {
+    switch (userInfo.userId) {
       case "teacher123":
         return "teacher";
       case "teacher2_123":
@@ -76,51 +82,60 @@ export function TokenSwitcher() {
         return "admin";
     }
   };
-  
-  const [currentUser, setCurrentUser] = useState<keyof typeof TEST_TOKENS>(getCurrentUserType());
+
+  const [currentUser, setCurrentUser] =
+    useState<keyof typeof TEST_TOKENS>(getCurrentUserType());
   const { toast } = useToast();
 
   const switchUser = (userType: keyof typeof TEST_TOKENS) => {
     const user = TEST_TOKENS[userType];
-    
+
     // Clear ALL cached data first
     localStorage.clear();
     sessionStorage.clear();
-    
+
     // Clear the in-memory auth token
     clearAuthToken();
-    
+
     // Set the new token
     setAuthToken(user.token);
     setCurrentUser(userType);
-    
+
     // Mark that the token was manually set
-    localStorage.setItem('tokenManuallySet', 'true');
-    
+    localStorage.setItem("tokenManuallySet", "true");
+
     // If switching to SuperAdmin, ensure all locations are fetched and cached
-    if (user.role === 'SuperAdmin') {
-      fetch('/api/locations', {
+    if (user.role === "SuperAdmin") {
+      fetch("/api/locations", {
         headers: {
-          'Authorization': `Bearer ${user.token}`
-        }
+          Authorization: `Bearer ${user.token}`,
+        },
       })
-        .then(res => res.json())
-        .then(locations => {
+        .then((res) => res.json())
+        .then((locations) => {
           if (Array.isArray(locations)) {
-            const locationNames = locations.map(loc => loc.name);
-            localStorage.setItem('allLocationNames', JSON.stringify(locationNames));
-            console.log('SuperAdmin: Cached all location names:', locationNames);
+            const locationNames = locations.map((loc) => loc.name);
+            localStorage.setItem(
+              "allLocationNames",
+              JSON.stringify(locationNames),
+            );
+            console.log(
+              "SuperAdmin: Cached all location names:",
+              locationNames,
+            );
           }
         })
-        .catch(err => console.warn('Could not fetch locations for SuperAdmin:', err));
+        .catch((err) =>
+          console.warn("Could not fetch locations for SuperAdmin:", err),
+        );
     }
-    
+
     // Pre-cache location names for Teacher 2 specifically
-    if (userType === 'teacher2') {
-      console.log('Caching locations for Teacher 2: Main Campus');
-      localStorage.setItem('cachedLocations', JSON.stringify(['Main Campus']));
+    if (userType === "teacher2") {
+      console.log("Caching locations for Teacher 2: Main Campus");
+      localStorage.setItem("cachedLocations", JSON.stringify(["Main Campus"]));
     }
-    
+
     toast({
       title: "User Switched",
       description: `Now logged in as ${user.label} (${user.role})`,
@@ -138,8 +153,8 @@ export function TokenSwitcher() {
     <div className="fixed bottom-4 right-4 z-50">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="bg-white/90 backdrop-blur-sm shadow-lg border-2"
             data-testid="button-token-switcher"
           >
@@ -160,7 +175,9 @@ export function TokenSwitcher() {
             >
               <div className="flex flex-col">
                 <div className="font-medium">{user.label}</div>
-                <div className="text-xs text-muted-foreground">{user.username}</div>
+                <div className="text-xs text-muted-foreground">
+                  {user.username}
+                </div>
                 <div className="text-xs text-muted-foreground">{user.role}</div>
               </div>
             </DropdownMenuItem>

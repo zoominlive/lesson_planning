@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
-import { Clock, Undo2, Package, Scissors } from "lucide-react";
+import { Clock, Undo2, Package, Scissors, Send, CheckCircle } from "lucide-react";
+import { requiresLessonPlanApproval } from "@/lib/permission-utils";
 import type { Activity } from "@shared/schema";
 import {
   AlertDialog,
@@ -99,57 +100,58 @@ export function TabletWeeklyCalendar({
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
   const undoTimer = useRef<NodeJS.Timeout | null>(null);
-  const [scheduleSettings, setScheduleSettings] = useState<any>({
-    type: 'time-based',
+  const [draggedActivity, setDraggedActivity] = useState<any>(null);
+  const [dragOverSlot, setDragOverSlot] = useState<{day: number, slot: number} | null>(null);
+  const [showApprovedWarning, setShowApprovedWarning] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{
+    type: 'delete' | 'move' | 'add';
+    data: any;
+  } | null>(null);
+  
+  // Fetch location settings to get correct schedule type
+  const { data: locationSettings } = useQuery<{
+    scheduleType: 'time-based' | 'position-based';
+    startTime: string;
+    endTime: string;
+    slotsPerDay: number;
+  }>({
+    queryKey: [`/api/locations/${selectedLocation}/settings`],
+    enabled: !!selectedLocation,
+  });
+
+  // Use settings from API, fallback to defaults
+  // Map scheduleType to type for compatibility with generateTimeSlots
+  const scheduleSettings = locationSettings ? {
+    type: locationSettings.scheduleType,
+    startTime: locationSettings.startTime,
+    endTime: locationSettings.endTime,
+    slotsPerDay: locationSettings.slotsPerDay
+  } : {
+    type: 'time-based' as const,
     startTime: '06:00',
     endTime: '18:00',
     slotsPerDay: 8
+  };
+  
+  // Fetch lesson plans to check status - use query parameters
+  const { data: lessonPlans = [] } = useQuery<any[]>({
+    queryKey: [`/api/lesson-plans?locationId=${selectedLocation}&roomId=${selectedRoom}`],
+    enabled: !!selectedLocation && !!selectedRoom,
   });
-  const [draggedActivity, setDraggedActivity] = useState<any>(null);
-  const [dragOverSlot, setDragOverSlot] = useState<{day: number, slot: number} | null>(null);
-
-  // Load schedule settings from localStorage for the specific location
-  useEffect(() => {
-    const loadSettings = () => {
-      // Try to load location-specific settings first
-      const locationSettings = localStorage.getItem(`scheduleSettings_${selectedLocation}`);
-      if (locationSettings) {
-        try {
-          const parsed = JSON.parse(locationSettings);
-          setScheduleSettings(parsed);
-        } catch (error) {
-          console.error('Error loading location schedule settings:', error);
-        }
-      } else {
-        // Fall back to general settings if no location-specific settings exist
-        const savedSettings = localStorage.getItem('scheduleSettings');
-        if (savedSettings) {
-          try {
-            const parsed = JSON.parse(savedSettings);
-            setScheduleSettings(parsed);
-          } catch (error) {
-            console.error('Error loading schedule settings:', error);
-          }
-        }
-      }
-    };
-
-    loadSettings();
-
-    // Listen for settings changes
-    const handleSettingsChange = (event: CustomEvent) => {
-      // Only update if the change is for the current location or a general update
-      if (!event.detail.locationId || event.detail.locationId === selectedLocation) {
-        const { locationId, ...settings } = event.detail;
-        setScheduleSettings(settings);
-      }
-    };
-
-    window.addEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
-    return () => {
-      window.removeEventListener('scheduleSettingsChanged' as any, handleSettingsChange as any);
-    };
-  }, [selectedLocation]);
+  
+  // Find the current lesson plan for this week
+  const currentLessonPlan = lessonPlans.find((plan: any) => {
+    // Parse the ISO string and compare just the date parts without timezone effects
+    const planDate = plan.weekStart.split('T')[0];
+    const currentDate = format(currentWeekDate, 'yyyy-MM-dd');
+    return planDate === currentDate;
+  });
+  
+  const requiresApproval = requiresLessonPlanApproval();
+  
+  // Check if lesson plan is locked (submitted or approved) - only if a lesson plan exists
+  const isLessonPlanLocked = currentLessonPlan && (currentLessonPlan.status === 'submitted' || currentLessonPlan.status === 'approved');
+  const isLessonPlanApproved = currentLessonPlan?.status === 'approved';
 
   // Generate time slots based on current settings
   const timeSlots = generateTimeSlots(scheduleSettings);
@@ -171,6 +173,29 @@ export function TabletWeeklyCalendar({
       return response.json();
     },
     enabled: !!selectedRoom && !!selectedLocation,
+  });
+
+  // Reset lesson plan to draft mutation
+  const resetLessonPlanToDraft = useMutation({
+    mutationFn: async (lessonPlanId: string) => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`/api/lesson-plans/${lessonPlanId}/reset-to-draft`, {
+        method: 'PATCH',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to reset lesson plan');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/lesson-plans`] });
+    },
   });
 
   // Delete scheduled activity mutation
@@ -195,7 +220,12 @@ export function TabletWeeklyCalendar({
       
       return response.json();
     },
-    onSuccess: (_, deletedId) => {
+    onSuccess: async (_, deletedId) => {
+      // If lesson plan was approved and is now modified, reset it to draft
+      if (isLessonPlanApproved && currentLessonPlan?.id && pendingAction) {
+        await resetLessonPlanToDraft.mutateAsync(currentLessonPlan.id);
+      }
+      
       // Store the deleted activity for undo
       const deletedActivity = scheduledActivities.find((a: any) => a.id === deletedId);
       if (deletedActivity) {
@@ -212,10 +242,11 @@ export function TabletWeeklyCalendar({
       });
       toast({
         title: "Activity Removed",
-        description: "Tap the undo button to restore.",
+        description: isLessonPlanApproved ? "The activity has been removed and the lesson plan has been reset to draft for re-review." : "Tap the undo button to restore.",
       });
       setDeleteDialogOpen(false);
       setActivityToDelete(null);
+      setPendingAction(null);
     },
   });
 
@@ -244,18 +275,46 @@ export function TabletWeeklyCalendar({
   };
 
   const handleTouchStart = (e: React.TouchEvent, scheduledActivity: any) => {
+    console.log('Touch started on activity:', scheduledActivity.activity?.title);
+    console.log('Current lesson plan status:', currentLessonPlan?.status);
+    console.log('Is approved?', isLessonPlanApproved);
+    
+    // Check if lesson plan is submitted/pending
+    if (currentLessonPlan?.status === 'submitted') {
+      toast({
+        title: "Lesson Plan Locked",
+        description: "Withdraw the lesson plan from review to make changes.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Store the initial touch position
     const touch = e.touches[0];
     touchStartPos.current = { x: touch.clientX, y: touch.clientY };
     
-    // Start the long press timer
+    // Start the long press timer for draft and approved states
     longPressTimer.current = setTimeout(() => {
+      console.log('Long press triggered!');
       // Trigger haptic feedback if available
       if ('vibrate' in navigator) {
         navigator.vibrate(50);
       }
-      setActivityToDelete(scheduledActivity);
-      setDeleteDialogOpen(true);
+      
+      // Check if lesson plan is approved and show warning first
+      if (currentLessonPlan?.status === 'approved') {
+        console.log('Showing approved warning dialog');
+        setPendingAction({
+          type: 'delete',
+          data: scheduledActivity
+        });
+        setShowApprovedWarning(true);
+      } else {
+        // For draft state, show delete dialog directly
+        console.log('Showing delete dialog for draft');
+        setActivityToDelete(scheduledActivity);
+        setDeleteDialogOpen(true);
+      }
     }, 500); // 500ms for long press
   };
 
@@ -268,6 +327,7 @@ export function TabletWeeklyCalendar({
       
       // If finger moved more than 10 pixels, cancel the long press
       if (deltaX > 10 || deltaY > 10) {
+        console.log('Touch moved too much, cancelling long press');
         if (longPressTimer.current) {
           clearTimeout(longPressTimer.current);
           longPressTimer.current = null;
@@ -277,6 +337,7 @@ export function TabletWeeklyCalendar({
   };
 
   const handleTouchEnd = () => {
+    console.log('Touch ended, clearing timer');
     // Clear the timer if touch ends before long press triggers
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
@@ -285,10 +346,25 @@ export function TabletWeeklyCalendar({
     touchStartPos.current = null;
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (activityToDelete) {
-      deleteScheduledMutation.mutate(activityToDelete.id);
+      await deleteScheduledMutation.mutateAsync(activityToDelete.id);
+      // If lesson plan was approved and is now modified, reset it to draft
+      if (isLessonPlanApproved && currentLessonPlan?.id) {
+        await resetLessonPlanToDraft.mutateAsync(currentLessonPlan.id);
+        toast({
+          title: "Activity Removed",
+          description: "The activity has been removed and the lesson plan has been reset to draft for re-review.",
+        });
+      } else {
+        toast({
+          title: "Activity Removed",
+          description: "The activity has been removed from the schedule.",
+        });
+      }
     }
+    setActivityToDelete(null);
+    setDeleteDialogOpen(false);
   };
 
   // Add scheduled activity mutation for undo
@@ -355,16 +431,22 @@ export function TabletWeeklyCalendar({
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // If lesson plan was approved and is now modified, reset it to draft
+      if (isLessonPlanApproved && currentLessonPlan?.id && pendingAction) {
+        await resetLessonPlanToDraft.mutateAsync(currentLessonPlan.id);
+      }
+      
       queryClient.invalidateQueries({ 
         queryKey: ['/api/scheduled-activities', selectedRoom, currentWeekDate.toISOString(), selectedLocation] 
       });
       toast({
         title: "Activity Moved",
-        description: "The activity has been moved to the new time slot.",
+        description: isLessonPlanApproved ? "The activity has been moved and the lesson plan has been reset to draft for re-review." : "The activity has been moved to the new time slot.",
       });
       setDraggedActivity(null);
       setDragOverSlot(null);
+      setPendingAction(null);
     },
   });
 
@@ -376,6 +458,17 @@ export function TabletWeeklyCalendar({
 
   // Drag and drop handlers
   const handleDragStart = (e: React.DragEvent, scheduledActivity: any) => {
+    // Check if lesson plan is submitted/pending
+    if (currentLessonPlan?.status === 'submitted') {
+      e.preventDefault();
+      toast({
+        title: "Lesson Plan Locked",
+        description: "Withdraw the lesson plan from review to make changes.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setDraggedActivity(scheduledActivity);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', scheduledActivity.id);
@@ -395,6 +488,17 @@ export function TabletWeeklyCalendar({
     e.preventDefault();
     setDragOverSlot(null);
     
+    // Check if lesson plan is submitted/pending
+    if (currentLessonPlan?.status === 'submitted') {
+      toast({
+        title: "Lesson Plan Locked",
+        description: "Withdraw the lesson plan from review to make changes.",
+        variant: "destructive",
+      });
+      setDraggedActivity(null);
+      return;
+    }
+    
     if (!draggedActivity) return;
     
     // Check if target slot is already occupied
@@ -413,13 +517,76 @@ export function TabletWeeklyCalendar({
       return;
     }
     
-    // Move the activity
-    moveActivityMutation.mutate({
-      scheduledActivityId: draggedActivity.id,
-      newDay: targetDay,
-      newSlot: targetSlot
-    });
+    // Check if lesson plan is approved and show warning
+    if (isLessonPlanApproved) {
+      setPendingAction({
+        type: 'move',
+        data: {
+          scheduledActivityId: draggedActivity.id,
+          newDay: targetDay,
+          newSlot: targetSlot
+        }
+      });
+      setShowApprovedWarning(true);
+    } else {
+      // Move the activity
+      moveActivityMutation.mutate({
+        scheduledActivityId: draggedActivity.id,
+        newDay: targetDay,
+        newSlot: targetSlot
+      });
+    }
   };
+
+  // Submit lesson plan mutation
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentLessonPlan) {
+        throw new Error('No lesson plan found for this week');
+      }
+      return apiRequest("POST", `/api/lesson-plans/${currentLessonPlan.id}/submit`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/lesson-plans'] });
+      toast({
+        title: requiresApproval ? "Lesson Plan Submitted" : "Lesson Plan Finalized",
+        description: requiresApproval 
+          ? "The lesson plan has been submitted for review." 
+          : "The lesson plan has been finalized successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Submission Failed",
+        description: error.message || "Failed to submit the lesson plan.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Withdraw lesson plan mutation
+  const withdrawMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentLessonPlan) {
+        throw new Error('No lesson plan found for this week');
+      }
+      return apiRequest("POST", `/api/lesson-plans/${currentLessonPlan.id}/withdraw`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/lesson-plans'] });
+      toast({
+        title: "Submission Withdrawn",
+        description: "The lesson plan has been withdrawn and is now editable.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Withdrawal Failed",
+        description: error.message || "Failed to withdraw the lesson plan.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Clear undo state when adding a new activity
   useEffect(() => {
@@ -436,8 +603,11 @@ export function TabletWeeklyCalendar({
     };
   }, []);
 
+  const canSubmit = currentLessonPlan?.status === 'draft' || currentLessonPlan?.status === 'rejected';
+  const canWithdraw = currentLessonPlan?.status === 'submitted';
+
   return (
-    <div className="h-full overflow-auto p-4 relative">
+    <div className="h-full overflow-auto p-4 relative flex flex-col">
       {/* Undo Button */}
       {recentlyDeleted && (
         <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
@@ -453,6 +623,83 @@ export function TabletWeeklyCalendar({
         </div>
       )}
       <div className="min-h-full">
+        
+        {/* Calendar Header with Submit/Withdraw Button */}
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800">Weekly Schedule</h3>
+            {currentLessonPlan?.status && (
+              <div className="mt-1">
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                  currentLessonPlan.status === 'draft' ? 'bg-gray-100 text-gray-700' :
+                  currentLessonPlan.status === 'submitted' ? 'bg-amber-100 text-amber-800' :
+                  currentLessonPlan.status === 'approved' ? 'bg-green-100 text-green-800' :
+                  currentLessonPlan.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                  'bg-gray-100 text-gray-700'
+                }`}>
+                  {currentLessonPlan.status === 'submitted' ? 'Pending' :
+                   currentLessonPlan.status === 'approved' ? 'Approved' :
+                   currentLessonPlan.status === 'rejected' ? 'Returned' :
+                   'Draft'}
+                  {currentLessonPlan.status === 'rejected' && currentLessonPlan.reviewNotes && (
+                    <span className="ml-1">
+                      - {currentLessonPlan.reviewNotes}
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
+          </div>
+          
+          {/* Submit/Withdraw Buttons - Compact top-right position */}
+          {currentLessonPlan && (canSubmit || canWithdraw) && (
+            <>
+              {/* Submit Button for draft/rejected status */}
+              {canSubmit && (
+                <Button
+                  onClick={() => submitMutation.mutate()}
+                  disabled={submitMutation.isPending}
+                  className="px-3 py-1.5 text-sm font-semibold bg-gradient-to-r from-coral-red to-purple-500 hover:from-coral-red/90 hover:to-purple-500/90 text-white shadow-lg active:scale-95 transition-transform rounded-lg"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                  data-testid="tablet-submit-lesson-plan"
+                >
+                  {submitMutation.isPending ? (
+                    "Processing..."
+                  ) : (
+                    <>
+                      {requiresApproval ? (
+                        <>
+                          <Send className="mr-1 h-4 w-4" />
+                          Submit for Review
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="mr-1 h-4 w-4" />
+                          Finalize
+                        </>
+                      )}
+                    </>
+                  )}
+                </Button>
+              )}
+              
+              {/* Withdraw Button for submitted status */}
+              {canWithdraw && (
+                <Button
+                  onClick={() => withdrawMutation.mutate()}
+                  disabled={withdrawMutation.isPending}
+                  variant="outline"
+                  className="px-3 py-1.5 text-sm font-semibold border-2 border-gray-400 hover:bg-gray-100 shadow-md active:scale-95 transition-transform rounded-lg"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                  data-testid="tablet-withdraw-lesson-plan"
+                >
+                  {withdrawMutation.isPending ? "Processing..." : "Withdraw"}
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+        
         {/* Calendar Grid - Optimized for touch */}
         <div className="grid gap-2 bg-gradient-to-br from-white via-white to-gray-50 rounded-2xl shadow-2xl p-3 border border-gray-100" style={{gridTemplateColumns: "80px repeat(5, 1fr)"}}>
           {/* Position Column */}
@@ -488,15 +735,38 @@ export function TabletWeeklyCalendar({
                   <div key={slot.id}>
                     {scheduledActivity ? (
                       <div
-                        draggable={true}
-                        onDragStart={(e) => handleDragStart(e, scheduledActivity)}
-                        className={`h-20 w-full p-2 rounded-lg bg-gradient-to-br ${getCategoryColor(scheduledActivity.activity?.category || '')} border-2 transition-all cursor-move active:scale-95 shadow-lg hover:shadow-xl ${
+                        draggable={false}
+                        className={`h-20 w-full p-2 rounded-lg bg-gradient-to-br ${getCategoryColor(scheduledActivity.activity?.category || '')} border-2 transition-all ${
+                          currentLessonPlan?.status === 'submitted' ? 'cursor-not-allowed opacity-75' : 'cursor-pointer active:scale-95'
+                        } shadow-lg hover:shadow-xl ${
                           draggedActivity?.id === scheduledActivity.id ? 'opacity-50 scale-95' : ''
                         }`}
-                        onTouchStart={(e) => handleTouchStart(e, scheduledActivity)}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
+                        onTouchStart={(e) => {
+                          e.preventDefault();
+                          handleTouchStart(e, scheduledActivity);
+                        }}
+                        onTouchMove={(e) => {
+                          e.preventDefault();
+                          handleTouchMove(e);
+                        }}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          handleTouchEnd();
+                        }}
                         onTouchCancel={handleTouchEnd}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          // Simulate touch for mouse events (for testing)
+                          const fakeTouch = {
+                            touches: [{ clientX: e.clientX, clientY: e.clientY }]
+                          } as any;
+                          handleTouchStart(fakeTouch, scheduledActivity);
+                        }}
+                        onMouseUp={(e) => {
+                          e.preventDefault();
+                          handleTouchEnd();
+                        }}
+                        onMouseLeave={handleTouchEnd}
                         data-testid={`scheduled-activity-${day.id}-${slot.id}`}
                       >
                         <div className="h-full flex flex-col justify-between relative">
@@ -529,7 +799,9 @@ export function TabletWeeklyCalendar({
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, day.id, slot.id)}
                         className={`h-20 w-full p-1 rounded-lg transition-all ${
-                          dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id
+                          currentLessonPlan?.status === 'submitted'
+                            ? 'bg-gray-50 border border-gray-200 cursor-not-allowed'
+                            : dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id
                             ? 'bg-gradient-to-br from-turquoise/30 to-sky-blue/30 border-2 border-dashed border-turquoise scale-105'
                             : isSelected 
                             ? 'bg-gradient-to-br from-turquoise/20 to-sky-blue/20 border-2 border-dashed border-turquoise hover:from-turquoise/30 hover:to-sky-blue/30 shadow-inner' 
@@ -538,13 +810,43 @@ export function TabletWeeklyCalendar({
                         data-testid={`slot-${day.id}-${slot.id}`}
                       >
                         <button
-                          onClick={() => onSlotTap(day.id, slot.id)}
+                          onClick={() => {
+                            // Check if lesson plan is submitted/pending
+                            if (currentLessonPlan?.status === 'submitted') {
+                              toast({
+                                title: "Lesson Plan Locked",
+                                description: "Withdraw the lesson plan from review to make changes.",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            
+                            // Check if lesson plan is approved and show warning  
+                            if (isLessonPlanApproved && selectedActivity) {
+                              setPendingAction({
+                                type: 'add',
+                                data: {
+                                  dayId: day.id,
+                                  slotId: slot.id,
+                                  activity: selectedActivity
+                                }
+                              });
+                              setShowApprovedWarning(true);
+                              return;
+                            }
+                            
+                            // Otherwise proceed normally
+                            onSlotTap(day.id, slot.id);
+                          }}
                           className="h-full w-full flex items-center justify-center"
+                          disabled={currentLessonPlan?.status === 'submitted'}
                         >
                           {dragOverSlot?.day === day.id && dragOverSlot?.slot === slot.id ? (
                             <span className="text-xs font-bold text-turquoise animate-pulse">Drop Here</span>
                           ) : isSelected ? (
                             <span className="text-xs font-bold text-turquoise animate-pulse">Tap</span>
+                          ) : currentLessonPlan?.status === 'submitted' ? (
+                            <span className="text-lg text-gray-200">×</span>
                           ) : (
                             <span className="text-lg text-gray-300 hover:text-gray-400">+</span>
                           )}
@@ -576,6 +878,46 @@ export function TabletWeeklyCalendar({
               className="bg-red-500 hover:bg-red-600 text-white"
             >
               Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Alert Dialog for modifying approved lesson plans */}
+      <AlertDialog open={showApprovedWarning} onOpenChange={setShowApprovedWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Modify Approved Lesson Plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This lesson plan has been approved. Making changes will reset it to draft status and require re-approval.
+              
+              Do you want to continue with this modification?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setPendingAction(null);
+              setDraggedActivity(null);
+              setActivityToDelete(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (pendingAction) {
+                if (pendingAction.type === 'delete') {
+                  // pendingAction.data is already the scheduledActivity object
+                  setActivityToDelete(pendingAction.data);
+                  setDeleteDialogOpen(true);
+                } else if (pendingAction.type === 'move') {
+                  moveActivityMutation.mutate(pendingAction.data);
+                } else if (pendingAction.type === 'add') {
+                  // Call the onSlotTap with the pending data
+                  onSlotTap(pendingAction.data.dayId, pendingAction.data.slotId);
+                }
+              }
+              setShowApprovedWarning(false);
+            }}>
+              Continue and Reset to Draft
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

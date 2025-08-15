@@ -210,6 +210,25 @@ export const scheduledActivities = pgTable("scheduled_activities", {
   dayOfWeek: integer("day_of_week").notNull(), // 0-4 (Monday-Friday)
   timeSlot: integer("time_slot").notNull(), // 0-4 (time slots throughout day)
   notes: text("notes"),
+  completed: boolean("completed").default(false),
+  completedAt: timestamp("completed_at"),
+});
+
+// Activity Records - tracks completion and feedback for scheduled activities during teaching
+export const activityRecords = pgTable("activity_records", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  scheduledActivityId: varchar("scheduled_activity_id").notNull().references(() => scheduledActivities.id),
+  userId: varchar("user_id").notNull().references(() => users.id), // Teacher who completed the activity
+  completed: boolean("completed").default(false).notNull(),
+  notes: text("notes"), // Teaching notes about how the activity went
+  materialsUsed: boolean("materials_used"), // Whether suggested materials were used
+  materialFeedback: text("material_feedback"), // Feedback about the materials
+  rating: integer("rating"), // 1-5 star rating for the activity
+  ratingFeedback: text("rating_feedback"), // Optional feedback about the rating
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Notifications table for tracking lesson plan notifications
@@ -287,6 +306,12 @@ export const insertActivityUsageSchema = createInsertSchema(activityUsage).omit(
 export const insertActivityReviewSchema = createInsertSchema(activityReviews).omit({
   id: true,
   createdAt: true,
+});
+
+export const insertActivityRecordSchema = createInsertSchema(activityRecords).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 export const insertNotificationSchema = createInsertSchema(notifications).omit({
@@ -452,6 +477,9 @@ export type InsertActivityUsage = z.infer<typeof insertActivityUsageSchema>;
 export type ActivityReview = typeof activityReviews.$inferSelect;
 export type InsertActivityReview = z.infer<typeof insertActivityReviewSchema>;
 
+export type ActivityRecord = typeof activityRecords.$inferSelect;
+export type InsertActivityRecord = z.infer<typeof insertActivityRecordSchema>;
+
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
@@ -495,4 +523,21 @@ export const categoriesRelations = relations(categories, ({ one }) => ({
 
 export const ageGroupsRelations = relations(ageGroups, ({ one }) => ({
   tenant: one(tenants, { fields: [ageGroups.tenantId], references: [tenants.id] }),
+}));
+
+// Activity Records relations
+export const activityRecordsRelations = relations(activityRecords, ({ one }) => ({
+  tenant: one(tenants, { fields: [activityRecords.tenantId], references: [tenants.id] }),
+  scheduledActivity: one(scheduledActivities, { fields: [activityRecords.scheduledActivityId], references: [scheduledActivities.id] }),
+  user: one(users, { fields: [activityRecords.userId], references: [users.id] }),
+}));
+
+// Scheduled Activities relations
+export const scheduledActivitiesRelations = relations(scheduledActivities, ({ one, many }) => ({
+  tenant: one(tenants, { fields: [scheduledActivities.tenantId], references: [tenants.id] }),
+  location: one(locations, { fields: [scheduledActivities.locationId], references: [locations.id] }),
+  room: one(rooms, { fields: [scheduledActivities.roomId], references: [rooms.id] }),
+  lessonPlan: one(lessonPlans, { fields: [scheduledActivities.lessonPlanId], references: [lessonPlans.id] }),
+  activity: one(activities, { fields: [scheduledActivities.activityId], references: [activities.id] }),
+  activityRecords: many(activityRecords),
 }));

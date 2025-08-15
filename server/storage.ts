@@ -48,14 +48,17 @@ import {
   type InsertTenantPermissionOverride,
   type Notification,
   type InsertNotification,
+  type ActivityRecord,
+  type InsertActivityRecord,
   permissions,
   roles,
   rolePermissions,
   tenantPermissionOverrides,
-  notifications
+  notifications,
+  activityRecords
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, isNull } from "drizzle-orm";
+import { eq, and, sql, isNull, inArray } from "drizzle-orm";
 
 // Re-importing schema to use it within the class
 import * as schema from "@shared/schema";
@@ -187,6 +190,13 @@ export interface IStorage {
   createNotification(notification: InsertNotification): Promise<Notification>;
   dismissNotification(notificationId: string, userId: string): Promise<boolean>;
   markNotificationAsRead(notificationId: string, userId: string): Promise<boolean>;
+  
+  // Activity Records
+  getActivityRecords(scheduledActivityId: string): Promise<ActivityRecord[]>;
+  getActivityRecord(id: string): Promise<ActivityRecord | undefined>;
+  createActivityRecord(activityRecord: InsertActivityRecord): Promise<ActivityRecord>;
+  updateActivityRecord(id: string, updates: Partial<InsertActivityRecord>): Promise<ActivityRecord | undefined>;
+  deleteActivityRecord(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -480,7 +490,47 @@ export class DatabaseStorage implements IStorage {
     conditions.push(isNull(activities.deletedOn));
     
     const [activity] = await this.db.select().from(activities).where(and(...conditions));
-    return activity || undefined;
+    
+    if (!activity) return undefined;
+    
+    // Fetch all related data for the activity using the ID arrays stored in the activity
+    // Simple approach: fetch all records for the tenant and filter in JavaScript
+    const [allMilestones, allMaterials, allAgeGroups] = await Promise.all([
+      this.db.select().from(milestones).where(
+        this.tenantId ? eq(milestones.tenantId, this.tenantId) : undefined
+      ),
+      this.db.select().from(materials).where(
+        this.tenantId ? eq(materials.tenantId, this.tenantId) : undefined
+      ),
+      this.db.select().from(ageGroups).where(
+        this.tenantId ? eq(ageGroups.tenantId, this.tenantId) : undefined
+      )
+    ]);
+    
+    // Filter to only the ones referenced by the activity
+    const activityMilestones = activity.milestoneIds && activity.milestoneIds.length > 0
+      ? allMilestones.filter(m => activity.milestoneIds.includes(m.id))
+      : [];
+    
+    const activityMaterials = activity.materialIds && activity.materialIds.length > 0
+      ? allMaterials.filter(m => activity.materialIds.includes(m.id))
+      : [];
+    
+    const activityAgeGroups = activity.ageGroupIds && activity.ageGroupIds.length > 0
+      ? allAgeGroups.filter(ag => activity.ageGroupIds!.includes(ag.id))
+      : [];
+    
+    // Enrich activity with related data
+    const enrichedActivity: any = {
+      ...activity,
+      milestones: activityMilestones,
+      materials: activityMaterials,
+      ageGroups: activityAgeGroups,
+      // Instructions are already stored as JSON in the activity, just rename to steps
+      steps: activity.instructions || []
+    };
+    
+    return enrichedActivity;
   }
 
   async createActivity(insertActivity: InsertActivity): Promise<Activity> {
@@ -551,6 +601,66 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(and(...conditions));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Activity Records
+  async getActivityRecords(scheduledActivityId: string): Promise<ActivityRecord[]> {
+    const conditions = [eq(activityRecords.scheduledActivityId, scheduledActivityId)];
+    if (this.tenantId) conditions.push(eq(activityRecords.tenantId, this.tenantId));
+    
+    return await this.db.select().from(activityRecords).where(and(...conditions));
+  }
+
+  async getActivityRecord(id: string): Promise<ActivityRecord | undefined> {
+    const conditions = [eq(activityRecords.id, id)];
+    if (this.tenantId) conditions.push(eq(activityRecords.tenantId, this.tenantId));
+    
+    const [record] = await this.db.select().from(activityRecords).where(and(...conditions));
+    return record || undefined;
+  }
+
+  async createActivityRecord(insertActivityRecord: InsertActivityRecord): Promise<ActivityRecord> {
+    const recordData = this.tenantId ? { ...insertActivityRecord, tenantId: this.tenantId } : insertActivityRecord;
+    
+    // Set completed_at timestamp if the activity is being marked as completed
+    if (recordData.completed) {
+      recordData.completedAt = new Date();
+    }
+    
+    const [record] = await this.db
+      .insert(activityRecords)
+      .values(recordData)
+      .returning();
+    
+    // Also mark the scheduled activity as completed
+    if (recordData.completed && recordData.scheduledActivityId) {
+      await this.updateScheduledActivity(recordData.scheduledActivityId, {
+        completed: true,
+        completedAt: new Date()
+      });
+    }
+    
+    return record;
+  }
+
+  async updateActivityRecord(id: string, updates: Partial<InsertActivityRecord>): Promise<ActivityRecord | undefined> {
+    const conditions = [eq(activityRecords.id, id)];
+    if (this.tenantId) conditions.push(eq(activityRecords.tenantId, this.tenantId));
+    
+    const [record] = await this.db
+      .update(activityRecords)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(...conditions))
+      .returning();
+    return record || undefined;
+  }
+
+  async deleteActivityRecord(id: string): Promise<boolean> {
+    const conditions = [eq(activityRecords.id, id)];
+    if (this.tenantId) conditions.push(eq(activityRecords.tenantId, this.tenantId));
+    
+    const result = await this.db.delete(activityRecords).where(and(...conditions));
     return (result.rowCount ?? 0) > 0;
   }
 
