@@ -769,40 +769,40 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                         )}
                         
                         <div>
-                          <div className="flex items-start gap-1">
-                            <h4 className={`font-semibold text-xs text-charcoal line-clamp-2 ${isCompleted ? 'pr-2' : 'pr-6'} ${isCompleted ? 'text-green-700' : ''}`} data-testid={`activity-title-${scheduledActivity.activity?.id}`}>
-                              {scheduledActivity.activity?.title || 'Untitled Activity'}
-                            </h4>
-                            {isCompleted && (
-                              <div className="flex items-center gap-0.5 shrink-0">
-                                <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                                <Sparkles className="h-3 w-3 text-yellow-500 animate-pulse" />
-                              </div>
-                            )}
-                          </div>
+                          <h4 className={`font-semibold text-xs text-charcoal line-clamp-2 pr-6 ${isCompleted ? 'text-green-700' : ''}`} data-testid={`activity-title-${scheduledActivity.activity?.id}`}>
+                            {scheduledActivity.activity?.title || 'Untitled Activity'}
+                          </h4>
                           <p className={`text-xs mt-1 ${isCompleted ? 'text-green-600 font-medium' : 'text-gray-600'}`}>
-                            {isCompleted ? '✨ Completed!' : (scheduledActivity.activity?.category || 'Uncategorized')}
+                            {scheduledActivity.activity?.category || 'Uncategorized'}
                           </p>
                         </div>
                         
                         <div className="flex justify-between items-center">
-                          {!isCompleted && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-2.5 w-2.5 text-gray-600" />
-                              <span className="text-xs text-gray-500 font-medium">{scheduledActivity.activity?.duration || 30}m</span>
-                            </div>
-                          )}
-                          {!isCompleted && scheduledActivity.activity?.materialIds && scheduledActivity.activity.materialIds.length > 0 && (
-                            <div className="flex items-center" title="Materials required">
-                              <Scissors className="h-2.5 w-2.5 text-gray-600" />
-                            </div>
-                          )}
-                          {isCompleted && (
-                            <div className="flex gap-0.5">
-                              {[1,2,3].map((i) => (
-                                <Star key={i} className="h-2.5 w-2.5 text-yellow-400 fill-yellow-400" />
-                              ))}
-                            </div>
+                          {!isCompleted ? (
+                            <>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-2.5 w-2.5 text-gray-600" />
+                                <span className="text-xs text-gray-500 font-medium">{scheduledActivity.activity?.duration || 30}m</span>
+                              </div>
+                              {scheduledActivity.activity?.materialIds && scheduledActivity.activity.materialIds.length > 0 && (
+                                <div className="flex items-center" title="Materials required">
+                                  <Scissors className="h-2.5 w-2.5 text-gray-600" />
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <div></div>
+                              <div className="flex items-center gap-1">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                                <span className="text-xs text-green-600 font-bold">Completed</span>
+                                <div className="flex gap-0.5 ml-1">
+                                  {[1,2,3].map((i) => (
+                                    <Star key={i} className="h-2.5 w-2.5 text-yellow-400 fill-yellow-400" />
+                                  ))}
+                                </div>
+                              </div>
+                            </>
                           )}
                         </div>
                       </div>
