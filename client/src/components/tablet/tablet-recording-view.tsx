@@ -604,26 +604,70 @@ export function TabletRecordingView({
                                       </div>
                                       <h4 className="text-sm font-bold text-gray-800">Required Materials</h4>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-3">
                                       {scheduled.activity.materials.map((material: any) => (
-                                        <div key={material.id} className="flex gap-3 bg-white p-3 rounded-lg border border-teal-100">
-                                          {material.imageUrl && (
-                                            <img 
-                                              src={material.imageUrl} 
-                                              alt={material.name}
-                                              className="w-16 h-16 object-cover rounded-lg shadow-sm"
-                                            />
-                                          )}
-                                          <div className="flex-1">
-                                            <p className="text-sm font-semibold text-gray-700">{material.name}</p>
-                                            {material.description && (
-                                              <p className="text-xs text-gray-500 mt-1 line-clamp-2">{material.description}</p>
+                                        <div key={material.id} className="bg-white p-4 rounded-lg border border-teal-100">
+                                          <div className="flex gap-3">
+                                            {material.imageUrl && (
+                                              <img 
+                                                src={material.imageUrl} 
+                                                alt={material.name}
+                                                className="w-20 h-20 object-cover rounded-lg shadow-sm flex-shrink-0"
+                                              />
                                             )}
-                                            {material.quantity && (
-                                              <Badge className="bg-teal-100 text-teal-700 border-teal-200 text-xs mt-1">
-                                                Qty: {material.quantity}
-                                              </Badge>
-                                            )}
+                                            <div className="flex-1">
+                                              <p className="text-sm font-bold text-gray-800 mb-1">{material.name}</p>
+                                              {material.description && (
+                                                <p className="text-xs text-gray-600 mb-2">{material.description}</p>
+                                              )}
+                                              
+                                              {/* Material Details Grid */}
+                                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                                {material.quantity && (
+                                                  <div className="flex items-center gap-1">
+                                                    <span className="font-semibold text-gray-700">Quantity:</span>
+                                                    <span className="text-gray-600">{material.quantity}</span>
+                                                  </div>
+                                                )}
+                                                {material.category && (
+                                                  <div className="flex items-center gap-1">
+                                                    <span className="font-semibold text-gray-700">Category:</span>
+                                                    <span className="text-gray-600">{material.category}</span>
+                                                  </div>
+                                                )}
+                                                {material.preparationTime && (
+                                                  <div className="flex items-center gap-1">
+                                                    <span className="font-semibold text-gray-700">Prep Time:</span>
+                                                    <span className="text-gray-600">{material.preparationTime} min</span>
+                                                  </div>
+                                                )}
+                                                {material.costEstimate && (
+                                                  <div className="flex items-center gap-1">
+                                                    <span className="font-semibold text-gray-700">Est. Cost:</span>
+                                                    <span className="text-gray-600">${material.costEstimate}</span>
+                                                  </div>
+                                                )}
+                                              </div>
+                                              
+                                              {/* Safety Considerations */}
+                                              {material.safetyConsiderations && (
+                                                <div className="mt-2 p-2 bg-amber-50 rounded border border-amber-200">
+                                                  <p className="text-xs font-semibold text-amber-800 mb-1">⚠️ Safety Notes:</p>
+                                                  <p className="text-xs text-amber-700">{material.safetyConsiderations}</p>
+                                                </div>
+                                              )}
+                                              
+                                              {/* Age Groups */}
+                                              {material.ageGroups && material.ageGroups.length > 0 && (
+                                                <div className="mt-2 flex flex-wrap gap-1">
+                                                  {material.ageGroups.map((ag: any) => (
+                                                    <Badge key={ag.id} className="bg-teal-100 text-teal-700 border-teal-200 text-xs">
+                                                      {ag.name}
+                                                    </Badge>
+                                                  ))}
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
                                       ))}
@@ -992,22 +1036,63 @@ export function TabletRecordingView({
                           <h4 className="text-xs font-semibold text-gray-700 mb-2">Required Materials</h4>
                           <div className="space-y-2">
                             {scheduled.activity.materials.map((material: any) => (
-                              <div key={material.id} className="flex gap-2 bg-gray-50 p-2 rounded">
-                                {material.imageUrl && (
-                                  <img 
-                                    src={material.imageUrl} 
-                                    alt={material.name}
-                                    className="w-12 h-12 object-cover rounded"
-                                  />
-                                )}
-                                <div className="flex-1">
-                                  <p className="text-xs font-medium text-gray-700">{material.name}</p>
-                                  {material.description && (
-                                    <p className="text-xs text-gray-500 mt-0.5">{material.description}</p>
+                              <div key={material.id} className="bg-gray-50 p-3 rounded">
+                                <div className="flex gap-2">
+                                  {material.imageUrl && (
+                                    <img 
+                                      src={material.imageUrl} 
+                                      alt={material.name}
+                                      className="w-14 h-14 object-cover rounded flex-shrink-0"
+                                    />
                                   )}
-                                  {material.quantity && (
-                                    <p className="text-xs text-gray-600 mt-0.5">Quantity: {material.quantity}</p>
-                                  )}
+                                  <div className="flex-1">
+                                    <p className="text-xs font-bold text-gray-800">{material.name}</p>
+                                    {material.description && (
+                                      <p className="text-xs text-gray-600 mt-0.5">{material.description}</p>
+                                    )}
+                                    
+                                    {/* Material Details */}
+                                    <div className="grid grid-cols-2 gap-1 mt-1 text-xs">
+                                      {material.quantity && (
+                                        <div>
+                                          <span className="font-semibold text-gray-700">Qty:</span> {material.quantity}
+                                        </div>
+                                      )}
+                                      {material.category && (
+                                        <div>
+                                          <span className="font-semibold text-gray-700">Category:</span> {material.category}
+                                        </div>
+                                      )}
+                                      {material.preparationTime && (
+                                        <div>
+                                          <span className="font-semibold text-gray-700">Prep:</span> {material.preparationTime}min
+                                        </div>
+                                      )}
+                                      {material.costEstimate && (
+                                        <div>
+                                          <span className="font-semibold text-gray-700">Cost:</span> ${material.costEstimate}
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    {/* Safety */}
+                                    {material.safetyConsiderations && (
+                                      <div className="mt-1 p-1 bg-amber-50 rounded border border-amber-200">
+                                        <p className="text-xs text-amber-700">⚠️ {material.safetyConsiderations}</p>
+                                      </div>
+                                    )}
+                                    
+                                    {/* Age Groups */}
+                                    {material.ageGroups && material.ageGroups.length > 0 && (
+                                      <div className="mt-1 flex flex-wrap gap-1">
+                                        {material.ageGroups.map((ag: any) => (
+                                          <Badge key={ag.id} variant="secondary" className="text-xs py-0">
+                                            {ag.name}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             ))}
