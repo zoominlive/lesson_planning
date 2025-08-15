@@ -69,6 +69,10 @@ This project is a comprehensive lesson planning application for early childhood 
 - **TypeScript fixes**: Corrected storage method calls to use proper interface methods (getLessonPlansForReview, getActivityRecords)
 - **Testing configuration**: Hardcoded parent view to show Aug 18, 2025 week for Main Campus - Toddler 2 room (for testing purposes)
 - **Week filtering**: Added weekStart query parameter support to parent API for filtering lesson plans by specific week
+- **Teacher token with room**: Added new teacher token ("Teacher (Toddler 2)") to token switcher with roomId and roomName in payload for filtering parent view
+- **Room-based filtering**: Parent API now supports roomId query parameter to filter lesson plans for specific rooms
+- **Dynamic room display**: Parent view extracts room information from JWT token and displays it in the header
+- **Token generation script**: Created generate_teacher_parent_token.cjs to generate teacher tokens with room information
 
 ## Recent Changes (January 2025)
 

@@ -2086,7 +2086,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const tenantId = req.tenantId;
       const userId = req.userId;
-      const { weekStart } = req.query;
+      const { weekStart, roomId } = req.query;
       
       if (!tenantId || !userId) {
         return res.status(401).json({ error: "Authentication required" });
@@ -2103,6 +2103,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let filteredPlans = allLessonPlans.filter((plan: any) => 
         plan.status === 'approved' && authorizedLocationIds.includes(plan.locationId)
       );
+      
+      // If roomId is provided, filter to only that room
+      if (roomId) {
+        filteredPlans = filteredPlans.filter((plan: any) => 
+          plan.roomId === roomId
+        );
+      }
       
       // If weekStart is provided, filter to only that week
       if (weekStart) {

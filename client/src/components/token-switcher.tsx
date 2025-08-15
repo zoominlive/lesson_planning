@@ -36,6 +36,13 @@ const TEST_TOKENS = {
     role: "Teacher",
     username: "teacher2@example.com",
   },
+  teacherWithRoom: {
+    label: "Teacher (Toddler 2)",
+    token:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InRlYWNoZXJfcGFyZW50XzEyMyIsInVzZXJGaXJzdE5hbWUiOiJNYXJ5IiwidXNlckxhc3ROYW1lIjoiVGhvbXBzb24iLCJ1c2VybmFtZSI6Im1hcnkudGhvbXBzb25AZXhhbXBsZS5jb20iLCJyb2xlIjoidGVhY2hlciIsImxvY2F0aW9ucyI6WyJiZmQxZGMxNC02YzZiLTRmYTMtODkwYi1lNWIwOTZjZDI5ZjQiXSwibG9jYXRpb25OYW1lcyI6WyJNYWluIENhbXB1cyJdLCJyb29tSWQiOiJiZTNlNmE3Ni0xN2NiLTQ0MjEtODI0YS0yNzJlMjRjZjMwMmYiLCJyb29tTmFtZSI6IlRvZGRsZXIgMiIsImlhdCI6MTc1NTI0MjI4MH0.FjvFW1X8oQbe1bP_n4Nr46vO3sf7c0uHUtTcflfNNuE",
+    role: "Teacher",
+    username: "mary.thompson@example.com",
+  },
   director: {
     label: "Director User",
     token:
@@ -71,6 +78,8 @@ export function TokenSwitcher() {
         return "teacher";
       case "teacher2_123":
         return "teacher2";
+      case "teacher_parent_123":
+        return "teacherWithRoom";
       case "director123":
         return "director";
       case "assistant_director123":

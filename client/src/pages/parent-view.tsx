@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, Clock, Users, BookOpen, Target, Package, ChevronDown, ChevronUp, Star, CheckCircle } from 'lucide-react';
 import { format, startOfWeek, addDays, parseISO } from 'date-fns';
 import { apiRequest } from '@/lib/queryClient';
+import { getUserInfo } from '@/lib/auth';
 
 interface Activity {
   id: string;
@@ -43,15 +44,27 @@ export default function ParentView() {
     return startOfWeek(today, { weekStartsOn: 1 });
   });
 
-  // Fetch approved lesson plans - hardcoded for Aug 18 week for testing
-  // TODO: In production, this should fetch based on current week or allow week selection
+  // Get user info from token
+  const userInfo = getUserInfo();
+  const roomId = (userInfo as any)?.roomId || (userInfo as any)?.childRoom;
+  const roomName = (userInfo as any)?.roomName;
+  
+  // Use Aug 18 week for testing
+  const testWeek = '2025-08-18';
+
+  // Fetch approved lesson plans based on room from token
   const { data: lessonPlans, isLoading } = useQuery<LessonPlan[]>({
-    queryKey: ['/api/parent/lesson-plans', '2025-08-18'],
+    queryKey: ['/api/parent/lesson-plans', testWeek, roomId],
     queryFn: async () => {
-      // For testing, specifically fetch the Aug 18, 2025 week (Main Campus - Toddler 2 room)
-      const response = await apiRequest('/api/parent/lesson-plans?weekStart=2025-08-18', 'GET');
+      // Use roomId from token if available, otherwise fall back to test data
+      const queryParams = new URLSearchParams({ weekStart: testWeek });
+      if (roomId) {
+        queryParams.append('roomId', roomId);
+      }
+      const response = await apiRequest(`/api/parent/lesson-plans?${queryParams.toString()}`, 'GET');
       return response;
-    }
+    },
+    enabled: !!userInfo // Only fetch if we have user info
   });
 
   // Group activities by day
@@ -91,7 +104,9 @@ export default function ParentView() {
           <h1 className="text-xl font-bold bg-gradient-to-r from-[#2BABE2] to-[#297AB1] bg-clip-text text-transparent">
             Weekly Lesson Plans
           </h1>
-          <p className="text-sm text-gray-600 mt-1">See what your child is learning</p>
+          <p className="text-sm text-gray-600 mt-1">
+            {roomName ? `${roomName} Room - ` : ''}See what your child is learning
+          </p>
         </div>
       </div>
 
