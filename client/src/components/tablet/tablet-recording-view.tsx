@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Clock, Users, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Save, Play, Image, Scissors, Target, ListChecks, Edit3, FileText } from "lucide-react";
+import { Clock, Users, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Save, Play, Image, Scissors, Target, ListChecks, Edit3, FileText, Star } from "lucide-react";
 import { format } from "date-fns";
 
 interface TabletRecordingViewProps {
@@ -25,6 +25,9 @@ interface ActivityRecord {
   notes: string;
   materialsUsed: boolean;
   materialNotes: string;
+  materialFeedback: string;
+  rating: number;
+  ratingFeedback: string;
 }
 
 export function TabletRecordingView({
@@ -170,18 +173,26 @@ export function TabletRecordingView({
     }
   };
 
-  const handleToggleComplete = (activityId: string) => {
+  const handleMarkComplete = (activityId: string) => {
     setActivityRecords(prev => ({
       ...prev,
       [activityId]: {
         ...prev[activityId],
         scheduledActivityId: activityId,
-        completed: !prev[activityId]?.completed,
+        completed: true,
         notes: prev[activityId]?.notes || '',
         materialsUsed: prev[activityId]?.materialsUsed || false,
         materialNotes: prev[activityId]?.materialNotes || '',
+        materialFeedback: prev[activityId]?.materialFeedback || '',
+        rating: prev[activityId]?.rating || 0,
+        ratingFeedback: prev[activityId]?.ratingFeedback || '',
       }
     }));
+    
+    toast({
+      title: "Activity Completed",
+      description: "Activity has been marked as complete.",
+    });
   };
 
   const handleNotesChange = (activityId: string, notes: string) => {
@@ -194,6 +205,9 @@ export function TabletRecordingView({
         completed: prev[activityId]?.completed || false,
         materialsUsed: prev[activityId]?.materialsUsed || false,
         materialNotes: prev[activityId]?.materialNotes || '',
+        materialFeedback: prev[activityId]?.materialFeedback || '',
+        rating: prev[activityId]?.rating || 0,
+        ratingFeedback: prev[activityId]?.ratingFeedback || '',
       }
     }));
   };
@@ -208,6 +222,9 @@ export function TabletRecordingView({
         completed: prev[activityId]?.completed || false,
         notes: prev[activityId]?.notes || '',
         materialNotes: prev[activityId]?.materialNotes || '',
+        materialFeedback: prev[activityId]?.materialFeedback || '',
+        rating: prev[activityId]?.rating || 0,
+        ratingFeedback: prev[activityId]?.ratingFeedback || '',
       }
     }));
   };
@@ -222,8 +239,82 @@ export function TabletRecordingView({
         completed: prev[activityId]?.completed || false,
         notes: prev[activityId]?.notes || '',
         materialsUsed: prev[activityId]?.materialsUsed || false,
+        materialFeedback: prev[activityId]?.materialFeedback || '',
+        rating: prev[activityId]?.rating || 0,
+        ratingFeedback: prev[activityId]?.ratingFeedback || '',
       }
     }));
+  };
+
+  const handleMaterialFeedbackChange = (activityId: string, materialFeedback: string) => {
+    setActivityRecords(prev => ({
+      ...prev,
+      [activityId]: {
+        ...prev[activityId],
+        scheduledActivityId: activityId,
+        materialFeedback,
+        completed: prev[activityId]?.completed || false,
+        notes: prev[activityId]?.notes || '',
+        materialsUsed: prev[activityId]?.materialsUsed || false,
+        materialNotes: prev[activityId]?.materialNotes || '',
+        rating: prev[activityId]?.rating || 0,
+        ratingFeedback: prev[activityId]?.ratingFeedback || '',
+      }
+    }));
+  };
+
+  const handleRatingChange = (activityId: string, rating: number) => {
+    setActivityRecords(prev => ({
+      ...prev,
+      [activityId]: {
+        ...prev[activityId],
+        scheduledActivityId: activityId,
+        rating,
+        completed: prev[activityId]?.completed || false,
+        notes: prev[activityId]?.notes || '',
+        materialsUsed: prev[activityId]?.materialsUsed || false,
+        materialNotes: prev[activityId]?.materialNotes || '',
+        materialFeedback: prev[activityId]?.materialFeedback || '',
+        ratingFeedback: prev[activityId]?.ratingFeedback || '',
+      }
+    }));
+  };
+
+  const handleRatingFeedbackChange = (activityId: string, ratingFeedback: string) => {
+    setActivityRecords(prev => ({
+      ...prev,
+      [activityId]: {
+        ...prev[activityId],
+        scheduledActivityId: activityId,
+        ratingFeedback,
+        completed: prev[activityId]?.completed || false,
+        notes: prev[activityId]?.notes || '',
+        materialsUsed: prev[activityId]?.materialsUsed || false,
+        materialNotes: prev[activityId]?.materialNotes || '',
+        materialFeedback: prev[activityId]?.materialFeedback || '',
+        rating: prev[activityId]?.rating || 0,
+      }
+    }));
+  };
+
+  // Star Rating Component
+  const StarRating = ({ activityId, rating, onRatingChange }: { activityId: string, rating: number, onRatingChange: (activityId: string, rating: number) => void }) => {
+    return (
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => onRatingChange(activityId, star)}
+            className={`transition-colors hover:scale-110 ${
+              star <= rating ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-300'
+            }`}
+          >
+            <Star className="h-6 w-6 fill-current" />
+          </button>
+        ))}
+      </div>
+    );
   };
 
   const handleSaveAll = () => {
@@ -730,16 +821,17 @@ export function TabletRecordingView({
                                 )}
 
                               
-                                {/* Recording Section Card */}
+                                {/* Enhanced Activity Teaching Card */}
                                 <div className="bg-gradient-to-br from-yellow-50 to-white rounded-xl p-4 border border-yellow-200 shadow-sm">
-                                  <div className="flex items-center gap-2 mb-3">
+                                  <div className="flex items-center gap-2 mb-4">
                                     <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center">
                                       <Edit3 className="h-4 w-4 text-white" />
                                     </div>
                                     <h4 className="text-sm font-bold text-gray-800">Activity Teaching</h4>
                                   </div>
                                   
-                                  <div className="space-y-3">
+                                  <div className="space-y-4">
+                                    {/* Activity Notes */}
                                     <div>
                                       <Label htmlFor={`notes-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
                                         Activity Notes
@@ -754,32 +846,98 @@ export function TabletRecordingView({
                                       />
                                     </div>
 
-                                    <div className="flex items-center gap-3 bg-yellow-50 p-3 rounded-lg">
-                                      <Checkbox
-                                        id={`materials-${scheduled.id}`}
-                                        checked={record?.materialsUsed || false}
-                                        onCheckedChange={() => handleMaterialsToggle(scheduled.id)}
-                                        className="h-5 w-5"
-                                      />
-                                      <Label htmlFor={`materials-${scheduled.id}`} className="text-sm font-medium text-gray-700 cursor-pointer">
-                                        All materials were used as planned
+                                    {/* Materials Usage Questions */}
+                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                      <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                                        Did you use the suggested materials?
                                       </Label>
-                                    </div>
-                                    
-                                    {record?.materialsUsed && (
+                                      <div className="flex items-center gap-3 mb-3">
+                                        <Button
+                                          type="button"
+                                          variant={record?.materialsUsed === true ? "default" : "outline"}
+                                          size="sm"
+                                          onClick={() => handleMaterialsToggle(scheduled.id)}
+                                          className="text-xs"
+                                        >
+                                          Yes
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          variant={record?.materialsUsed === false ? "default" : "outline"}
+                                          size="sm"
+                                          onClick={() => handleMaterialsToggle(scheduled.id)}
+                                          className="text-xs"
+                                        >
+                                          No
+                                        </Button>
+                                      </div>
+                                      
                                       <div>
-                                        <Label htmlFor={`material-notes-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
-                                          Material Notes
+                                        <Label htmlFor={`material-feedback-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
+                                          Material Feedback
                                         </Label>
                                         <Textarea
-                                          id={`material-notes-${scheduled.id}`}
-                                          placeholder="Any notes about material usage or substitutions?"
-                                          value={record?.materialNotes || ''}
-                                          onChange={(e) => handleMaterialNotesChange(scheduled.id, e.target.value)}
+                                          id={`material-feedback-${scheduled.id}`}
+                                          placeholder="How were the materials? Any suggestions for improvement or substitutions?"
+                                          value={record?.materialFeedback || ''}
+                                          onChange={(e) => handleMaterialFeedbackChange(scheduled.id, e.target.value)}
                                           className="min-h-[60px] text-sm bg-white"
                                         />
                                       </div>
-                                    )}
+                                    </div>
+
+                                    {/* Activity Rating */}
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                      <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                                        How would you rate this activity?
+                                      </Label>
+                                      <div className="mb-3">
+                                        <StarRating 
+                                          activityId={scheduled.id}
+                                          rating={record?.rating || 0}
+                                          onRatingChange={handleRatingChange}
+                                        />
+                                      </div>
+                                      
+                                      {record?.rating > 0 && (
+                                        <div>
+                                          <Label htmlFor={`rating-feedback-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
+                                            Rating Feedback (Optional)
+                                          </Label>
+                                          <Textarea
+                                            id={`rating-feedback-${scheduled.id}`}
+                                            placeholder="What made this activity great or how could it be improved?"
+                                            value={record?.ratingFeedback || ''}
+                                            onChange={(e) => handleRatingFeedbackChange(scheduled.id, e.target.value)}
+                                            className="min-h-[60px] text-sm bg-white"
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Complete Activity Button */}
+                                    <Button
+                                      onClick={() => handleMarkComplete(scheduled.id)}
+                                      disabled={record?.completed || false}
+                                      className={`w-full ${
+                                        record?.completed 
+                                          ? 'bg-green-600 text-white cursor-not-allowed' 
+                                          : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
+                                      }`}
+                                      size="lg"
+                                    >
+                                      {record?.completed ? (
+                                        <>
+                                          <CheckCircle2 className="h-5 w-5 mr-2" />
+                                          Activity Completed
+                                        </>
+                                      ) : (
+                                        <>
+                                          <CheckCircle2 className="h-5 w-5 mr-2" />
+                                          Mark Activity as Complete
+                                        </>
+                                      )}
+                                    </Button>
                                   </div>
                                 </div>
                               </div>
@@ -827,12 +985,12 @@ export function TabletRecordingView({
                       <h3 className={`font-bold text-lg text-gray-900 ${isCompleted ? 'line-through opacity-60' : ''}`}>
                         {scheduled.activity?.title}
                       </h3>
-                      <Checkbox
-                        checked={isCompleted}
-                        onCheckedChange={() => handleToggleComplete(scheduled.id)}
-                        className="h-5 w-5 mt-1"
-                        data-testid={`complete-activity-${scheduled.id}`}
-                      />
+                      {isCompleted && (
+                        <div className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
+                          <CheckCircle2 className="h-4 w-4" />
+                          Complete
+                        </div>
+                      )}
                     </div>
 
                     {/* All Tags in Single Row */}
@@ -1188,38 +1346,126 @@ export function TabletRecordingView({
                         )}
                       </div>
                       
-                      {/* Teaching Section */}
-                      <div className="border-t pt-3 space-y-2">
-                        <h4 className="text-xs font-semibold text-gray-700">Activity Teaching</h4>
-                        
-                        <Textarea
-                          placeholder="Add notes about how the activity went..."
-                          value={record?.notes || ''}
-                          onChange={(e) => handleNotesChange(scheduled.id, e.target.value)}
-                          className="min-h-[60px] text-sm"
-                          data-testid={`notes-${scheduled.id}`}
-                        />
+                      {/* Enhanced Activity Teaching Section */}
+                      <div className="border-t pt-3">
+                        <div className="bg-gradient-to-br from-yellow-50 to-white rounded-lg p-3 border border-yellow-200">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-6 h-6 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-md flex items-center justify-center">
+                              <Edit3 className="h-3 w-3 text-white" />
+                            </div>
+                            <h4 className="text-xs font-bold text-gray-800">Activity Teaching</h4>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            {/* Activity Notes */}
+                            <div>
+                              <Label htmlFor={`notes-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
+                                Activity Notes
+                              </Label>
+                              <Textarea
+                                id={`notes-${scheduled.id}`}
+                                placeholder="How did the activity go? Any observations or adjustments made?"
+                                value={record?.notes || ''}
+                                onChange={(e) => handleNotesChange(scheduled.id, e.target.value)}
+                                className="min-h-[60px] text-xs bg-white"
+                                data-testid={`notes-${scheduled.id}`}
+                              />
+                            </div>
 
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id={`materials-${scheduled.id}`}
-                            checked={record?.materialsUsed || false}
-                            onCheckedChange={() => handleMaterialsToggle(scheduled.id)}
-                            className="h-4 w-4"
-                          />
-                          <Label htmlFor={`materials-${scheduled.id}`} className="text-xs text-gray-600">
-                            Materials Used
-                          </Label>
+                            {/* Materials Usage Questions */}
+                            <div className="bg-orange-50 border border-orange-200 rounded-md p-2">
+                              <Label className="text-xs font-semibold text-gray-700 mb-2 block">
+                                Did you use the suggested materials?
+                              </Label>
+                              <div className="flex items-center gap-2 mb-2">
+                                <Button
+                                  type="button"
+                                  variant={record?.materialsUsed === true ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => handleMaterialsToggle(scheduled.id)}
+                                  className="text-xs h-7"
+                                >
+                                  Yes
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant={record?.materialsUsed === false ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => handleMaterialsToggle(scheduled.id)}
+                                  className="text-xs h-7"
+                                >
+                                  No
+                                </Button>
+                              </div>
+                              
+                              <div>
+                                <Label htmlFor={`material-feedback-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
+                                  Material Feedback
+                                </Label>
+                                <Textarea
+                                  id={`material-feedback-${scheduled.id}`}
+                                  placeholder="How were the materials? Any suggestions for improvement?"
+                                  value={record?.materialFeedback || ''}
+                                  onChange={(e) => handleMaterialFeedbackChange(scheduled.id, e.target.value)}
+                                  className="min-h-[40px] text-xs bg-white"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Activity Rating */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-md p-2">
+                              <Label className="text-xs font-semibold text-gray-700 mb-2 block">
+                                How would you rate this activity?
+                              </Label>
+                              <div className="mb-2">
+                                <StarRating 
+                                  activityId={scheduled.id}
+                                  rating={record?.rating || 0}
+                                  onRatingChange={handleRatingChange}
+                                />
+                              </div>
+                              
+                              {record?.rating > 0 && (
+                                <div>
+                                  <Label htmlFor={`rating-feedback-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
+                                    Rating Feedback (Optional)
+                                  </Label>
+                                  <Textarea
+                                    id={`rating-feedback-${scheduled.id}`}
+                                    placeholder="What made this activity great or how could it be improved?"
+                                    value={record?.ratingFeedback || ''}
+                                    onChange={(e) => handleRatingFeedbackChange(scheduled.id, e.target.value)}
+                                    className="min-h-[40px] text-xs bg-white"
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Complete Activity Button */}
+                            <Button
+                              onClick={() => handleMarkComplete(scheduled.id)}
+                              disabled={record?.completed || false}
+                              className={`w-full ${
+                                record?.completed 
+                                  ? 'bg-green-600 text-white cursor-not-allowed' 
+                                  : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
+                              }`}
+                              size="sm"
+                            >
+                              {record?.completed ? (
+                                <>
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  Completed
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  Mark Complete
+                                </>
+                              )}
+                            </Button>
+                          </div>
                         </div>
-                        
-                        {record?.materialsUsed && (
-                          <Textarea
-                            placeholder="Notes about materials..."
-                            value={record?.materialNotes || ''}
-                            onChange={(e) => handleMaterialNotesChange(scheduled.id, e.target.value)}
-                            className="min-h-[40px] text-sm"
-                          />
-                        )}
                       </div>
                     </div>
                   )}
