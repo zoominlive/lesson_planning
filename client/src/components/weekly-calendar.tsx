@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Plus, Play, Package, Filter, X, Trash2, Clock, Scissors, Lock, CheckCircle, AlertCircle, MessageSquare } from "lucide-react";
+import { Search, Plus, Play, Package, Filter, X, Trash2, Clock, Scissors, Lock, CheckCircle, AlertCircle, MessageSquare, Star, Trophy, Sparkles, CheckCircle2 } from "lucide-react";
 import DraggableActivity from "./draggable-activity";
 import { toast } from "@/hooks/use-toast";
 import type { Activity, Category, AgeGroup } from "@shared/schema";
@@ -703,6 +703,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
               {/* Time Slots */}
               {timeSlots.map((slot) => {
                 const scheduledActivity = isSlotOccupied(day.id, slot.id);
+                const isCompleted = scheduledActivity?.activityRecords?.some((record: any) => record.completed) || false;
                 
                 return (
                   <div 
@@ -720,11 +721,23 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                         draggable={!isReviewMode}
                         onDragStart={(e) => !isReviewMode && handleScheduledActivityDragStart(e, scheduledActivity)}
                         onDragEnd={handleDragEnd}
-                        className={`bg-gradient-to-br ${getCategoryGradient(scheduledActivity.activity?.category || 'Other')} border border-gray-200 rounded-lg p-2 h-full flex flex-col justify-between ${isReviewMode ? 'cursor-default' : 'cursor-move'} shadow-sm hover:shadow-md transition-all relative group ${
+                        className={`bg-gradient-to-br ${isCompleted ? 'from-green-100 to-emerald-100 border-green-400' : getCategoryGradient(scheduledActivity.activity?.category || 'Other') + ' border-gray-200'} border rounded-lg p-2 h-full flex flex-col justify-between ${isReviewMode ? 'cursor-default' : 'cursor-move'} shadow-sm hover:shadow-md transition-all relative group ${
                           draggedScheduledActivity?.id === scheduledActivity.id ? 'opacity-50 scale-95' : ''
                         }`}
                       >
-                        {!isReviewMode && (
+                        {/* Completion Badge - Fun visual indicator */}
+                        {isCompleted && (
+                          <div className="absolute -top-2 -right-2 z-10 animate-bounce">
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-yellow-400 rounded-full blur-md opacity-50 animate-pulse"></div>
+                              <div className="relative bg-gradient-to-br from-yellow-300 to-amber-400 rounded-full p-1.5 shadow-lg border-2 border-white">
+                                <Trophy className="h-4 w-4 text-white" />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {!isReviewMode && !isCompleted && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -754,20 +767,48 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                             <Trash2 className="h-3 w-3 text-red-500" />
                           </button>
                         )}
+                        
                         <div>
-                          <h4 className="font-semibold text-xs text-charcoal line-clamp-2 pr-6" data-testid={`activity-title-${scheduledActivity.activity?.id}`}>
-                            {scheduledActivity.activity?.title || 'Untitled Activity'}
-                          </h4>
-                          <p className="text-xs text-gray-600 mt-1">{scheduledActivity.activity?.category || 'Uncategorized'}</p>
+                          <div className="flex items-start gap-1">
+                            <h4 className={`font-semibold text-xs text-charcoal line-clamp-2 ${isCompleted ? 'pr-2' : 'pr-6'} ${isCompleted ? 'text-green-700' : ''}`} data-testid={`activity-title-${scheduledActivity.activity?.id}`}>
+                              {scheduledActivity.activity?.title || 'Untitled Activity'}
+                            </h4>
+                            {isCompleted && (
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                                <Sparkles className="h-3 w-3 text-yellow-500 animate-pulse" />
+                              </div>
+                            )}
+                          </div>
+                          <p className={`text-xs mt-1 ${isCompleted ? 'text-green-600 font-medium' : 'text-gray-600'}`}>
+                            {isCompleted ? '✨ Completed!' : (scheduledActivity.activity?.category || 'Uncategorized')}
+                          </p>
                         </div>
+                        
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-1">
-                            <Clock className="h-2.5 w-2.5 text-gray-600" />
-                            <span className="text-xs text-gray-500 font-medium">{scheduledActivity.activity?.duration || 30}m</span>
+                            {isCompleted ? (
+                              <>
+                                <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                                <span className="text-xs text-green-600 font-bold">Done!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Clock className="h-2.5 w-2.5 text-gray-600" />
+                                <span className="text-xs text-gray-500 font-medium">{scheduledActivity.activity?.duration || 30}m</span>
+                              </>
+                            )}
                           </div>
-                          {scheduledActivity.activity?.materialIds && scheduledActivity.activity.materialIds.length > 0 && (
+                          {!isCompleted && scheduledActivity.activity?.materialIds && scheduledActivity.activity.materialIds.length > 0 && (
                             <div className="flex items-center" title="Materials required">
                               <Scissors className="h-2.5 w-2.5 text-gray-600" />
+                            </div>
+                          )}
+                          {isCompleted && (
+                            <div className="flex gap-0.5">
+                              {[1,2,3].map((i) => (
+                                <Star key={i} className="h-2.5 w-2.5 text-yellow-400 fill-yellow-400" />
+                              ))}
                             </div>
                           )}
                         </div>
