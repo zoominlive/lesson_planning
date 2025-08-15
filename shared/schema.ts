@@ -210,6 +210,8 @@ export const scheduledActivities = pgTable("scheduled_activities", {
   dayOfWeek: integer("day_of_week").notNull(), // 0-4 (Monday-Friday)
   timeSlot: integer("time_slot").notNull(), // 0-4 (time slots throughout day)
   notes: text("notes"),
+  completed: boolean("completed").default(false),
+  completedAt: timestamp("completed_at"),
 });
 
 // Activity Records - tracks completion and feedback for scheduled activities during teaching

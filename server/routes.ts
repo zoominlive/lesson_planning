@@ -1224,6 +1224,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         roomScheduledActivities.map(async (sa) => {
           const activity = await storage.getActivity(sa.activityId);
           const enrichedActivity = activity as any;
+          
+          // Get any existing activity records for this scheduled activity
+          const activityRecords = await storage.getActivityRecords(sa.id);
+          
           console.log('[GET /api/scheduled-activities] Activity data for', sa.activityId, ':', {
             hasActivity: !!activity,
             hasMilestones: !!(enrichedActivity?.milestones),
@@ -1240,7 +1244,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           return {
             ...sa,
-            activity
+            activity,
+            activityRecords: activityRecords || []
           };
         })
       );

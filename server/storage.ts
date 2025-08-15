@@ -622,10 +622,25 @@ export class DatabaseStorage implements IStorage {
 
   async createActivityRecord(insertActivityRecord: InsertActivityRecord): Promise<ActivityRecord> {
     const recordData = this.tenantId ? { ...insertActivityRecord, tenantId: this.tenantId } : insertActivityRecord;
+    
+    // Set completed_at timestamp if the activity is being marked as completed
+    if (recordData.completed) {
+      recordData.completedAt = new Date();
+    }
+    
     const [record] = await this.db
       .insert(activityRecords)
       .values(recordData)
       .returning();
+    
+    // Also mark the scheduled activity as completed
+    if (recordData.completed && recordData.scheduledActivityId) {
+      await this.updateScheduledActivity(recordData.scheduledActivityId, {
+        completed: true,
+        completedAt: new Date()
+      });
+    }
+    
     return record;
   }
 

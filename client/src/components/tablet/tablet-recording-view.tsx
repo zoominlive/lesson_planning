@@ -194,6 +194,11 @@ export function TabletRecordingView({
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate and refetch scheduled activities to show completion status
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/scheduled-activities", selectedRoom] 
+      });
+      
       toast({
         title: "Activity Completed",
         description: "Activity has been marked as complete and saved.",
@@ -402,7 +407,14 @@ export function TabletRecordingView({
     }
   };
 
-  const completedCount = Object.values(activityRecords).filter(r => r.completed).length;
+  // Helper function to check if an activity is completed (from database or local state)
+  const isActivityCompleted = (scheduledActivity: any) => {
+    return scheduledActivity.completed || 
+           scheduledActivity.activityRecords?.some((record: any) => record.completed) ||
+           activityRecords[scheduledActivity.id]?.completed;
+  };
+  
+  const completedCount = sortedActivities.filter(isActivityCompleted).length;
   const totalCount = sortedActivities.length;
 
   // Group activities by day if showing approved lesson plan
@@ -502,7 +514,7 @@ export function TabletRecordingView({
                     {activities.map((scheduled) => {
                       const isExpanded = expandedActivity === scheduled.id;
                       const record = activityRecords[scheduled.id];
-                      const isCompleted = record?.completed || false;
+                      const isCompleted = isActivityCompleted(scheduled);
 
                       return (
                         <div
