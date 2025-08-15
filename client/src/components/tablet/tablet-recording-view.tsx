@@ -58,10 +58,6 @@ export function TabletRecordingView({
   const scheduleType = locationSettings?.scheduleType || 'time-based';
   const isPositionBased = scheduleType === 'position-based';
 
-  // Debug: Log schedule type
-  console.log('Current schedule type:', scheduleType);
-  console.log('Location settings:', locationSettings);
-
   // Fetch age groups for the location
   const { data: ageGroups = [] } = useQuery<any[]>({
     queryKey: ["/api/age-groups", selectedLocation],
@@ -124,12 +120,12 @@ export function TabletRecordingView({
       if (!response.ok) throw new Error('Failed to fetch scheduled activities');
       const allActivities = await response.json();
       
-      // Show all activities for the week if there's an approved lesson plan
-      // Otherwise only show today's activities
+      // Only show activities if there's an approved lesson plan
       if (approvedLessonPlan) {
         return allActivities;
       } else {
-        return allActivities.filter((activity: any) => activity.dayOfWeek === dayOfWeek);
+        // No approved lesson plan - return empty array
+        return [];
       }
     },
     enabled: !!selectedRoom && !!selectedLocation,
@@ -313,12 +309,17 @@ export function TabletRecordingView({
           <div className="text-center py-8">
             <AlertCircle className="h-10 w-10 text-gray-400 mx-auto mb-2" />
             <p className="text-gray-600 text-sm">
-              {showingFullWeek 
+              {approvedLessonPlan 
                 ? "No activities found in the approved lesson plan" 
-                : "No activities scheduled for today"
+                : "No approved lesson plan found for this room"
               }
             </p>
-            <p className="text-xs text-gray-500 mt-1">Switch to Planning mode to schedule activities</p>
+            <p className="text-xs text-gray-500 mt-1">
+              {approvedLessonPlan 
+                ? "Switch to Planning mode to schedule activities"
+                : "The lesson plan must be approved before activities can be recorded"
+              }
+            </p>
           </div>
         ) : showingFullWeek ? (
           // Show activities grouped by day for approved plans with grid layout
