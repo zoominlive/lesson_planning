@@ -830,7 +830,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             imageUrl: ''
           })),
           variations: generatedActivity.variations,
-          imagePrompt: generatedActivity.imagePrompt
+          imagePrompt: generatedActivity.imagePrompt,
+          suggestedMaterials: generatedActivity.suggestedMaterials || []
         };
 
         res.json(transformedActivity);
