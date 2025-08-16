@@ -895,6 +895,75 @@ export default function ActivityForm({
             </span>
           </div>
 
+          {/* AI Suggested Materials Section */}
+          {initialData?.suggestedMaterials && initialData.suggestedMaterials.length > 0 && (
+            <div className="border-2 border-dashed border-turquoise/50 rounded-lg p-4 bg-gradient-to-br from-turquoise/5 to-coral-red/5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-coral-red to-turquoise flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h4 className="font-semibold text-sm">AI Suggested Materials</h4>
+                <span className="text-xs text-gray-500">
+                  Ready to add to your materials library
+                </span>
+              </div>
+              <div className="space-y-2">
+                {initialData.suggestedMaterials.map((material: any, index: number) => (
+                  <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-sm">{material.name}</span>
+                          <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
+                            {material.category || "General"}
+                          </span>
+                          {material.quantity && (
+                            <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                              Qty: {material.quantity}
+                            </span>
+                          )}
+                        </div>
+                        {material.description && (
+                          <p className="text-xs text-gray-600">{material.description}</p>
+                        )}
+                        {material.safetyNotes && (
+                          <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                            <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
+                            Safety: {material.safetyNotes}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="ml-2"
+                        onClick={() => {
+                          // TODO: Add material to database
+                          toast({
+                            title: "Coming Soon",
+                            description: "Quick add to materials library will be available soon",
+                          });
+                        }}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Quick Add
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 p-2 bg-amber-50 rounded-md">
+                <p className="text-xs text-amber-800">
+                  💡 <strong>Tip:</strong> Use "Quick Add" to instantly save these materials to your library, 
+                  or manually select from existing materials below.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Materials Filters */}
           <div className="flex gap-3 items-center">
             <div className="flex-1">

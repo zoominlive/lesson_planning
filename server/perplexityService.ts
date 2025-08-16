@@ -203,7 +203,10 @@ Ensure the activity is:
         try {
           const firstAttempt = JSON.parse(cleanedContent);
           console.log('[PerplexityService] Successfully parsed activity data on first attempt');
-          return firstAttempt;
+          
+          // Extract and format materials from the activity
+          const parsedActivity = this.parseMaterialsFromActivity(firstAttempt);
+          return parsedActivity;
         } catch (e) {
           // If that fails, try more aggressive cleaning
           console.log('[PerplexityService] First parse attempt failed, trying aggressive cleaning');
@@ -223,7 +226,10 @@ Ensure the activity is:
           try {
             const secondAttempt = JSON.parse(cleanedContent);
             console.log('[PerplexityService] Successfully parsed activity data on second attempt');
-            return secondAttempt;
+            
+            // Extract and format materials from the activity
+            const parsedActivity = this.parseMaterialsFromActivity(secondAttempt);
+            return parsedActivity;
           } catch (e2) {
             // If still failing, try one more approach - remove problematic quotes altogether
             console.log('[PerplexityService] Second parse attempt failed, removing problematic quotes');
@@ -235,7 +241,10 @@ Ensure the activity is:
             console.log('[PerplexityService] Final cleaned content:', cleanedContent.substring(0, 500) + '...');
             const finalAttempt = JSON.parse(cleanedContent);
             console.log('[PerplexityService] Successfully parsed activity data on final attempt');
-            return finalAttempt;
+            
+            // Extract and format materials from the activity
+            const parsedActivity = this.parseMaterialsFromActivity(finalAttempt);
+            return parsedActivity;
           }
         }
       } catch (parseError) {
@@ -263,6 +272,123 @@ Ensure the activity is:
       console.error("Error generating activity with Perplexity:", error);
       throw error;
     }
+  }
+
+  // Parse materials from the AI-generated activity description
+  private parseMaterialsFromActivity(activity: any): any {
+    const suggestedMaterials: any[] = [];
+    
+    // Parse materials from the description and instructions
+    const description = activity.description || '';
+    const instructions = activity.instructions || [];
+    
+    // Common material patterns to look for
+    const materialPatterns = [
+      // Materials explicitly mentioned
+      /(?:using|with|need|require[s]?|gather)\s+([^,.]+(?:,\s*[^,.]+)*)/gi,
+      // Items in quotes that might be materials
+      /"([^"]+)"/g,
+      // Materials after keywords
+      /materials?:\s*([^.]+)/gi,
+      /supplies:\s*([^.]+)/gi,
+      /items:\s*([^.]+)/gi
+    ];
+    
+    // Extract materials from description
+    const foundMaterials = new Set<string>();
+    
+    // Check description for materials
+    materialPatterns.forEach((pattern: RegExp) => {
+      const matches = Array.from(description.matchAll(pattern));
+      for (const match of matches) {
+        if (match && match[1]) {
+          // Split by commas and clean up each material
+          const items = match[1].split(/,|\sand\s/);
+          items.forEach((item: string) => {
+            const cleaned = item.trim().toLowerCase();
+            if (cleaned && cleaned.length > 2 && cleaned.length < 50) {
+              foundMaterials.add(cleaned);
+            }
+          });
+        }
+      }
+    });
+    
+    // Check instructions for materials
+    instructions.forEach((instruction: any) => {
+      const text = instruction.text || instruction;
+      if (typeof text === 'string') {
+        materialPatterns.forEach((pattern: RegExp) => {
+          const matches = Array.from(text.matchAll(pattern));
+          for (const match of matches) {
+            if (match && match[1]) {
+              const items = match[1].split(/,|\sand\s/);
+              items.forEach((item: string) => {
+                const cleaned = item.trim().toLowerCase();
+                if (cleaned && cleaned.length > 2 && cleaned.length < 50) {
+                  foundMaterials.add(cleaned);
+                }
+              });
+            }
+          }
+        });
+      }
+    });
+    
+    // Format materials for database insertion
+    const commonMaterials = [
+      { keyword: 'paper', name: 'Construction Paper', category: 'Art Supplies', quantity: 'Multiple sheets' },
+      { keyword: 'crayon', name: 'Washable Crayons', category: 'Art Supplies', quantity: '1 set' },
+      { keyword: 'marker', name: 'Washable Markers', category: 'Art Supplies', quantity: '1 set' },
+      { keyword: 'glue', name: 'Child-Safe Glue', category: 'Art Supplies', quantity: '1 bottle' },
+      { keyword: 'scissor', name: 'Safety Scissors', category: 'Art Supplies', quantity: '1 pair per child' },
+      { keyword: 'paint', name: 'Washable Paint', category: 'Art Supplies', quantity: 'Assorted colors' },
+      { keyword: 'block', name: 'Building Blocks', category: 'Manipulatives', quantity: '1 set' },
+      { keyword: 'book', name: 'Picture Books', category: 'Reading Materials', quantity: 'Various' },
+      { keyword: 'puzzle', name: 'Age-Appropriate Puzzles', category: 'Manipulatives', quantity: '2-3 puzzles' },
+      { keyword: 'ball', name: 'Soft Play Balls', category: 'Gross Motor', quantity: '3-5 balls' },
+      { keyword: 'music', name: 'Musical Instruments', category: 'Music', quantity: 'Assorted' },
+      { keyword: 'tissue', name: 'Tissue Paper', category: 'Art Supplies', quantity: 'Multiple colors' },
+      { keyword: 'jar', name: 'Small Jars or Containers', category: 'Containers', quantity: '1 per child' },
+      { keyword: 'cup', name: 'Plastic Cups', category: 'Containers', quantity: '1 per child' },
+      { keyword: 'brush', name: 'Paint Brushes', category: 'Art Supplies', quantity: '1 per child' },
+    ];
+    
+    // Match found materials with common materials database
+    foundMaterials.forEach(material => {
+      const matchedMaterial = commonMaterials.find(cm => 
+        material.includes(cm.keyword)
+      );
+      
+      if (matchedMaterial) {
+        // Check if not already added
+        if (!suggestedMaterials.some(m => m.name === matchedMaterial.name)) {
+          suggestedMaterials.push({
+            name: matchedMaterial.name,
+            category: matchedMaterial.category,
+            quantity: matchedMaterial.quantity,
+            description: `Required for: ${activity.title || 'this activity'}`,
+            safetyNotes: material.includes('scissor') ? 'Adult supervision required' : 
+                        material.includes('glue') || material.includes('paint') ? 'Non-toxic materials only' : null
+          });
+        }
+      } else if (!material.includes('children') && !material.includes('activity')) {
+        // Add as custom material if it doesn't match common ones
+        const capitalizedMaterial = material.charAt(0).toUpperCase() + material.slice(1);
+        suggestedMaterials.push({
+          name: capitalizedMaterial,
+          category: 'General Supplies',
+          quantity: '1',
+          description: `Required for: ${activity.title || 'this activity'}`
+        });
+      }
+    });
+    
+    // Add the parsed materials to the activity object
+    return {
+      ...activity,
+      suggestedMaterials: suggestedMaterials.slice(0, 10) // Limit to 10 suggestions
+    };
   }
 }
 
