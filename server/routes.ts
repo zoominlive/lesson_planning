@@ -1703,7 +1703,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             weekStart: targetWeekStart,
             scheduleType: sourceLessonPlan.scheduleType,
             status: sourceLessonPlan.status, // Preserve the approval status
-            submittedBy: sourceLessonPlan.submittedBy || req.userId // Use current user if source has NULL
+            submittedBy: req.userId // Always use current user as submittedBy for copied plans
           });
           
           console.log('[COPY] Created lesson plan:', newLessonPlan.id, 'with status:', newLessonPlan.status);
@@ -1713,7 +1713,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log('[COPY] Updating approval fields for:', newLessonPlan.id);
             const updateResult = await storage.updateLessonPlanApprovalFields(newLessonPlan.id, {
               submittedAt: sourceLessonPlan.submittedAt || new Date(),
-              submittedBy: sourceLessonPlan.submittedBy || req.userId,
+              submittedBy: req.userId, // Always use current user as submittedBy for copied plans
               approvedAt: sourceLessonPlan.approvedAt,
               approvedBy: sourceLessonPlan.approvedBy || (sourceLessonPlan.status === 'approved' ? req.userId : null),
               reviewNotes: sourceLessonPlan.reviewNotes ? `Copied from approved plan: ${sourceLessonPlan.reviewNotes}` : 'Copied from approved plan'
