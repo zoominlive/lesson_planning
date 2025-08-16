@@ -5,6 +5,10 @@ import {
   type InsertMilestone,
   type Material,
   type InsertMaterial,
+  type MaterialCollection,
+  type InsertMaterialCollection,
+  type MaterialCollectionItem,
+  type InsertMaterialCollectionItem,
   type Activity,
   type InsertActivity,
   type LessonPlan,
@@ -28,6 +32,8 @@ import {
   users,
   milestones,
   materials,
+  materialCollections,
+  materialCollectionItems,
   activities,
   lessonPlans,
   scheduledActivities,
@@ -93,6 +99,20 @@ export interface IStorage {
   createMaterial(material: InsertMaterial): Promise<Material>;
   updateMaterial(id: string, material: Partial<InsertMaterial>): Promise<Material | undefined>;
   deleteMaterial(id: string): Promise<boolean>;
+  
+  // Material Collections
+  getMaterialCollections(): Promise<MaterialCollection[]>;
+  getMaterialCollection(id: string): Promise<MaterialCollection | undefined>;
+  createMaterialCollection(collection: InsertMaterialCollection): Promise<MaterialCollection>;
+  updateMaterialCollection(id: string, collection: Partial<InsertMaterialCollection>): Promise<MaterialCollection | undefined>;
+  deleteMaterialCollection(id: string): Promise<boolean>;
+  
+  // Material-Collection associations
+  getMaterialsByCollection(collectionId: string): Promise<Material[]>;
+  getCollectionsByMaterial(materialId: string): Promise<MaterialCollection[]>;
+  addMaterialToCollection(materialId: string, collectionId: string): Promise<MaterialCollectionItem>;
+  removeMaterialFromCollection(materialId: string, collectionId: string): Promise<boolean>;
+  updateMaterialCollections(materialId: string, collectionIds: string[]): Promise<void>;
 
   // Activities
   getActivities(): Promise<Activity[]>;
@@ -468,6 +488,115 @@ export class DatabaseStorage implements IStorage {
     
     const result = await this.db.delete(materials).where(and(...conditions));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Material Collections
+  async getMaterialCollections(): Promise<MaterialCollection[]> {
+    const conditions = [];
+    if (this.tenantId) conditions.push(eq(materialCollections.tenantId, this.tenantId));
+    
+    return await this.db.select().from(materialCollections).where(conditions.length ? and(...conditions) : undefined);
+  }
+
+  async getMaterialCollection(id: string): Promise<MaterialCollection | undefined> {
+    const conditions = [eq(materialCollections.id, id)];
+    if (this.tenantId) conditions.push(eq(materialCollections.tenantId, this.tenantId));
+    
+    const [collection] = await this.db.select().from(materialCollections).where(and(...conditions));
+    return collection || undefined;
+  }
+
+  async createMaterialCollection(insertCollection: InsertMaterialCollection): Promise<MaterialCollection> {
+    const collectionData = this.tenantId ? { ...insertCollection, tenantId: this.tenantId } : insertCollection;
+    const [collection] = await this.db
+      .insert(materialCollections)
+      .values(collectionData as any)
+      .returning();
+    return collection;
+  }
+
+  async updateMaterialCollection(id: string, updates: Partial<InsertMaterialCollection>): Promise<MaterialCollection | undefined> {
+    const conditions = [eq(materialCollections.id, id)];
+    if (this.tenantId) conditions.push(eq(materialCollections.tenantId, this.tenantId));
+    
+    const [collection] = await this.db
+      .update(materialCollections)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(...conditions))
+      .returning();
+    return collection || undefined;
+  }
+
+  async deleteMaterialCollection(id: string): Promise<boolean> {
+    const conditions = [eq(materialCollections.id, id)];
+    if (this.tenantId) conditions.push(eq(materialCollections.tenantId, this.tenantId));
+    
+    const result = await this.db.delete(materialCollections).where(and(...conditions));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Material-Collection associations
+  async getMaterialsByCollection(collectionId: string): Promise<Material[]> {
+    const collectionItems = await this.db
+      .select()
+      .from(materialCollectionItems)
+      .where(eq(materialCollectionItems.collectionId, collectionId));
+    
+    if (collectionItems.length === 0) return [];
+    
+    const materialIds = collectionItems.map(item => item.materialId);
+    const conditions = [inArray(materials.id, materialIds)];
+    if (this.tenantId) conditions.push(eq(materials.tenantId, this.tenantId));
+    
+    return await this.db.select().from(materials).where(and(...conditions));
+  }
+
+  async getCollectionsByMaterial(materialId: string): Promise<MaterialCollection[]> {
+    const collectionItems = await this.db
+      .select()
+      .from(materialCollectionItems)
+      .where(eq(materialCollectionItems.materialId, materialId));
+    
+    if (collectionItems.length === 0) return [];
+    
+    const collectionIds = collectionItems.map(item => item.collectionId);
+    const conditions = [inArray(materialCollections.id, collectionIds)];
+    if (this.tenantId) conditions.push(eq(materialCollections.tenantId, this.tenantId));
+    
+    return await this.db.select().from(materialCollections).where(and(...conditions));
+  }
+
+  async addMaterialToCollection(materialId: string, collectionId: string): Promise<MaterialCollectionItem> {
+    const [item] = await this.db
+      .insert(materialCollectionItems)
+      .values({ materialId, collectionId })
+      .returning();
+    return item;
+  }
+
+  async removeMaterialFromCollection(materialId: string, collectionId: string): Promise<boolean> {
+    const result = await this.db
+      .delete(materialCollectionItems)
+      .where(and(
+        eq(materialCollectionItems.materialId, materialId),
+        eq(materialCollectionItems.collectionId, collectionId)
+      ));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async updateMaterialCollections(materialId: string, collectionIds: string[]): Promise<void> {
+    // Start a transaction to ensure consistency
+    await this.db.transaction(async (tx) => {
+      // First, remove all existing associations for this material
+      await tx.delete(materialCollectionItems).where(eq(materialCollectionItems.materialId, materialId));
+      
+      // Then add the new associations
+      if (collectionIds.length > 0) {
+        await tx.insert(materialCollectionItems).values(
+          collectionIds.map(collectionId => ({ materialId, collectionId }))
+        );
+      }
+    });
   }
 
   // Activities

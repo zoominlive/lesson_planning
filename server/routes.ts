@@ -545,6 +545,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Material Collections endpoints
+  app.get("/api/material-collections", async (req: AuthenticatedRequest, res) => {
+    try {
+      const collections = await storage.getMaterialCollections();
+      res.json(collections);
+    } catch (error) {
+      console.error('[GET /api/material-collections] Error:', error);
+      res.status(500).json({ error: "Failed to fetch material collections" });
+    }
+  });
+
+  app.post("/api/material-collections", async (req: AuthenticatedRequest, res) => {
+    try {
+      const data = req.body;
+      const collection = await storage.createMaterialCollection(data);
+      res.json(collection);
+    } catch (error) {
+      console.error('[POST /api/material-collections] Error:', error);
+      res.status(400).json({ 
+        error: "Invalid collection data",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.put("/api/material-collections/:id", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const data = req.body;
+      const collection = await storage.updateMaterialCollection(id, data);
+      if (!collection) {
+        return res.status(404).json({ error: "Collection not found" });
+      }
+      res.json(collection);
+    } catch (error) {
+      console.error('[PUT /api/material-collections] Error:', error);
+      res.status(400).json({ 
+        error: "Invalid collection data",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.delete("/api/material-collections/:id", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteMaterialCollection(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Collection not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error('[DELETE /api/material-collections] Error:', error);
+      res.status(500).json({ error: "Failed to delete collection" });
+    }
+  });
+
+  // Get materials by collection
+  app.get("/api/material-collections/:id/materials", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const materials = await storage.getMaterialsByCollection(id);
+      res.json(materials);
+    } catch (error) {
+      console.error('[GET /api/material-collections/:id/materials] Error:', error);
+      res.status(500).json({ error: "Failed to fetch materials for collection" });
+    }
+  });
+
+  // Get collections for a material
+  app.get("/api/materials/:id/collections", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const collections = await storage.getCollectionsByMaterial(id);
+      res.json(collections);
+    } catch (error) {
+      console.error('[GET /api/materials/:id/collections] Error:', error);
+      res.status(500).json({ error: "Failed to fetch collections for material" });
+    }
+  });
+
+  // Update material collections
+  app.put("/api/materials/:id/collections", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { collectionIds } = req.body;
+      
+      if (!Array.isArray(collectionIds)) {
+        return res.status(400).json({ error: "collectionIds must be an array" });
+      }
+      
+      await storage.updateMaterialCollections(id, collectionIds);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('[PUT /api/materials/:id/collections] Error:', error);
+      res.status(500).json({ error: "Failed to update material collections" });
+    }
+  });
+
   // Legacy object storage routes (kept for backward compatibility)
   app.post("/api/objects/upload", async (req: AuthenticatedRequest, res) => {
     try {

@@ -5,6 +5,10 @@ This project is a comprehensive lesson planning application for early childhood 
 - **Mobile Component Architecture**: Organized parent view components into `/client/src/components/mobile/` directory structure to reflect mobile webview integration purpose
 - **Parent View Enhancements**: Implemented stunning Instagram-like design with collapsible "How it works" sections, full-width material display, and proper developmental milestone naming
 - **Data Display Fixes**: Corrected server-side data mapping for materials, milestones, and categories with proper field name mapping from database to frontend
+- **Material Collections System**: Implemented complete material collections feature with many-to-many relationships, allowing materials to be organized into collections for easier browsing and filtering
+  - Database schema: Added `material_collections` and `material_collection_items` tables
+  - Backend API: Full CRUD operations for collections and material-collection associations  
+  - UI enhancements: Collection selection in material forms and filtering in materials library
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

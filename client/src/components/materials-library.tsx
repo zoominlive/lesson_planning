@@ -16,6 +16,7 @@ export default function MaterialsLibrary() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [ageGroupFilter, setAgeGroupFilter] = useState("all");
+  const [selectedCollectionId, setSelectedCollectionId] = useState("all");
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState("");
@@ -46,6 +47,11 @@ export default function MaterialsLibrary() {
     enabled: !!selectedLocationId,
   });
 
+  // Fetch material collections for filtering
+  const { data: collections = [] } = useQuery({
+    queryKey: ["/api/material-collections"],
+  });
+
   // Auto-select first authorized location if none selected  
   useEffect(() => {
     if (!selectedLocationId && Array.isArray(locations) && locations.length > 0) {
@@ -61,12 +67,26 @@ export default function MaterialsLibrary() {
     }
   }, [locations, selectedLocationId]);
 
+  // Fetch materials in selected collection if a collection is selected
+  const { data: collectionMaterials = [] } = useQuery({
+    queryKey: [`/api/material-collections/${selectedCollectionId}/materials`],
+    queryFn: async () => {
+      const data = await apiRequest("GET", `/api/material-collections/${selectedCollectionId}/materials`);
+      return data || [];
+    },
+    enabled: selectedCollectionId !== "all" && !!selectedCollectionId,
+  });
+
   const filteredMaterials = materials.filter(material => {
     const matchesSearch = material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          material.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesAgeGroup = ageGroupFilter === "all" || (material.ageGroups && material.ageGroups.includes(ageGroupFilter));
     
-    return matchesSearch && matchesAgeGroup;
+    // If a collection is selected, only show materials in that collection
+    const matchesCollection = selectedCollectionId === "all" || 
+                             collectionMaterials.some((m: any) => m.id === material.id);
+    
+    return matchesSearch && matchesAgeGroup && matchesCollection;
   });
 
   const getAgeGroupNames = (ageGroupIds: string[]) => {
@@ -202,6 +222,24 @@ export default function MaterialsLibrary() {
                   ))
                 ) : (
                   <SelectItem value="none" disabled>No age groups available</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            
+            <Select value={selectedCollectionId} onValueChange={setSelectedCollectionId}>
+              <SelectTrigger className="w-48" data-testid="select-collection-filter">
+                <SelectValue placeholder="All Collections" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Collections</SelectItem>
+                {Array.isArray(collections) && collections.length > 0 ? (
+                  collections.map((collection: any) => (
+                    <SelectItem key={collection.id} value={collection.id}>
+                      {collection.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="none" disabled>No collections available</SelectItem>
                 )}
               </SelectContent>
             </Select>
