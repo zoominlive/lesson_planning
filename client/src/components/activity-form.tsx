@@ -811,17 +811,30 @@ export default function ActivityForm({
           </CardContent>
         </Card>
 
-        {/* Additional Details (from AI generation) */}
-        {initialData && (
+        {/* Additional Details (from AI generation or existing activity) */}
+        {(initialData || activity) && (
           <Card>
             <CardContent className="p-4 space-y-4">
               <h3 className="font-semibold text-lg">Additional Details</h3>
+              
+              {/* Show message if no additional details are available */}
+              {!((initialData?.objectives?.length > 0 || activity?.objectives?.length > 0) ||
+                 (initialData?.preparationTime || activity?.preparationTime) ||
+                 (initialData?.spaceRequired || activity?.spaceRequired) ||
+                 (initialData?.groupSize || activity?.groupSize) ||
+                 (initialData?.messLevel || activity?.messLevel) ||
+                 (initialData?.safetyConsiderations?.length > 0 || activity?.safetyConsiderations?.length > 0) ||
+                 (initialData?.variations?.length > 0 || activity?.variations?.length > 0)) && (
+                <p className="text-sm text-gray-500 italic">
+                  No additional details available. These fields are typically added when generating activities with AI.
+                </p>
+              )}
 
-              {initialData.objectives && (
+              {(initialData?.objectives || activity?.objectives) && (initialData?.objectives?.length > 0 || activity?.objectives?.length > 0) && (
                 <div>
                   <Label>Learning Objectives</Label>
                   <div className="space-y-2">
-                    {initialData.objectives.map(
+                    {(initialData?.objectives || activity?.objectives || []).map(
                       (objective: string, index: number) => (
                         <div key={index} className="flex items-start gap-2">
                           <span className="text-sm text-gray-500 mt-0.5">
@@ -835,42 +848,42 @@ export default function ActivityForm({
                 </div>
               )}
 
-              {initialData.preparationTime && (
+              {(initialData?.preparationTime || activity?.preparationTime) && (
                 <div>
                   <Label>Preparation Time</Label>
                   <p className="text-sm">
-                    {initialData.preparationTime} minutes
+                    {initialData?.preparationTime || activity?.preparationTime} minutes
                   </p>
                 </div>
               )}
 
-              {initialData.spaceRequired && (
+              {(initialData?.spaceRequired || activity?.spaceRequired) && (
                 <div>
                   <Label>Space Required</Label>
-                  <p className="text-sm">{initialData.spaceRequired}</p>
+                  <p className="text-sm">{initialData?.spaceRequired || activity?.spaceRequired}</p>
                 </div>
               )}
 
-              {initialData.groupSize && (
+              {(initialData?.groupSize || activity?.groupSize) && (
                 <div>
                   <Label>Group Size</Label>
-                  <p className="text-sm">{initialData.groupSize}</p>
+                  <p className="text-sm">{initialData?.groupSize || activity?.groupSize}</p>
                 </div>
               )}
 
-              {initialData.messLevel && (
+              {(initialData?.messLevel || activity?.messLevel) && (
                 <div>
                   <Label>Mess Level</Label>
-                  <p className="text-sm">{initialData.messLevel}</p>
+                  <p className="text-sm">{initialData?.messLevel || activity?.messLevel}</p>
                 </div>
               )}
 
-              {initialData.safetyConsiderations &&
-                initialData.safetyConsiderations.length > 0 && (
+              {((initialData?.safetyConsiderations && initialData.safetyConsiderations.length > 0) ||
+                (activity?.safetyConsiderations && activity.safetyConsiderations.length > 0)) && (
                   <div>
                     <Label>Safety Considerations</Label>
                     <div className="space-y-2">
-                      {initialData.safetyConsiderations.map(
+                      {(initialData?.safetyConsiderations || activity?.safetyConsiderations || []).map(
                         (safety: string, index: number) => (
                           <div key={index} className="flex items-start gap-2">
                             <span className="text-sm text-amber-500 mt-0.5">
@@ -884,11 +897,12 @@ export default function ActivityForm({
                   </div>
                 )}
 
-              {initialData.variations && initialData.variations.length > 0 && (
+              {((initialData?.variations && initialData.variations.length > 0) ||
+                (activity?.variations && activity.variations.length > 0)) && (
                 <div>
                   <Label>Activity Variations</Label>
                   <div className="space-y-2">
-                    {initialData.variations.map(
+                    {(initialData?.variations || activity?.variations || []).map(
                       (variation: string, index: number) => (
                         <div key={index} className="flex items-start gap-2">
                           <span className="text-sm text-turquoise mt-0.5">
