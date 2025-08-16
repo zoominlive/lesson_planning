@@ -381,12 +381,18 @@ export function CopyLessonPlanModal({
               The following lesson plans already exist and will be permanently
               overwritten:
               <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-                {existingPlans.map((plan, idx) => (
-                  <div key={idx} className="text-sm">
-                    • {plan.roomName} - Week of{" "}
-                    {format(new Date(plan.weekStart), "MMM dd, yyyy")}
-                  </div>
-                ))}
+                {existingPlans.map((plan, idx) => {
+                  // Parse the date string as local date to avoid timezone issues
+                  const [year, month, day] = plan.weekStart.split(/[-T]/);
+                  const weekDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                  const weekStart = startOfWeek(weekDate, { weekStartsOn: 1 });
+                  return (
+                    <div key={idx} className="text-sm">
+                      • {plan.roomName} - Week of{" "}
+                      {format(weekStart, "MMM dd, yyyy")}
+                    </div>
+                  );
+                })}
               </div>
               <div className="mt-3 font-semibold">
                 This action cannot be undone. Are you sure you want to continue?
