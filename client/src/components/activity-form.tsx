@@ -399,7 +399,7 @@ export default function ActivityForm({
       safetyNotes: material.safetyNotes || "",
       location: storageLocation,
       locationIds: locationIds, // All user locations
-      ageGroups: materialAgeGroups,
+      ageGroupIds: materialAgeGroups, // Changed from ageGroups to ageGroupIds
       photoUrl: `/api/materials/images/${material.name.toLowerCase().replace(/\s+/g, '_')}.png`
     };
 
