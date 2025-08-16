@@ -209,70 +209,43 @@ export function CopyLessonPlanModal({
                     <p className="text-sm text-muted-foreground">
                       Click any weekday to select/deselect that week
                     </p>
-                    <div
-                      onClick={(e) => {
-                        // Intercept clicks on calendar day buttons
-                        const target = e.target as HTMLElement;
-                        console.log('Click detected on:', target);
-                        
-                        // Check if we clicked on a day button or its child
-                        let button = target.closest('button[name="day"]');
-                        console.log('Button found:', button);
-                        
-                        if (button && !button.hasAttribute('disabled')) {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          
-                          // Get the date from the button's aria-label
-                          const ariaLabel = button.getAttribute('aria-label');
-                          console.log('Aria label:', ariaLabel);
-                          
-                          if (ariaLabel) {
-                            // Parse the date from aria-label
-                            const parsedDate = new Date(ariaLabel);
-                            console.log('Parsed date:', parsedDate);
-                            
-                            if (!isNaN(parsedDate.getTime())) {
-                              console.log('Toggling week for:', parsedDate);
-                              toggleWeek(parsedDate);
-                            }
-                          }
+                    <Calendar
+                      mode="single"
+                      selected={undefined}
+                      onSelect={(date) => {
+                        // Handle date selection
+                        if (date) {
+                          toggleWeek(date);
                         }
                       }}
-                    >
-                      <Calendar
-                        mode="single"
-                        selected={undefined}
-                        onSelect={() => {}} // Disable default selection to avoid conflicts
-                        disabled={isDateDisabled}
-                        modifiers={{
-                          weekSelected: (date) => {
-                            // Only highlight Monday through Friday
-                            const dayOfWeek = date.getDay();
-                            if (dayOfWeek === 0 || dayOfWeek === 6) {
-                              return false; // Don't highlight weekends
-                            }
-                            
-                            const weekStart = startOfWeek(date, { weekStartsOn: 1 });
-                            const weekString = format(weekStart, 'yyyy-MM-dd');
-                            return selectedWeeks.some(week => {
-                              const selectedWeekString = format(startOfWeek(week, { weekStartsOn: 1 }), 'yyyy-MM-dd');
-                              return selectedWeekString === weekString;
-                            });
+                      disabled={isDateDisabled}
+                      modifiers={{
+                        weekSelected: (date) => {
+                          // Only highlight Monday through Friday
+                          const dayOfWeek = date.getDay();
+                          if (dayOfWeek === 0 || dayOfWeek === 6) {
+                            return false; // Don't highlight weekends
                           }
-                        }}
-                        modifiersStyles={{
-                          weekSelected: { 
-                            backgroundColor: 'hsl(var(--primary))',
-                            color: 'hsl(var(--primary-foreground))',
-                            fontWeight: 'bold',
-                            borderRadius: '4px'
-                          }
-                        }}
-                        className="rounded-md border"
-                        initialFocus
-                      />
-                    </div>
+                          
+                          const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+                          const weekString = format(weekStart, 'yyyy-MM-dd');
+                          return selectedWeeks.some(week => {
+                            const selectedWeekString = format(startOfWeek(week, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+                            return selectedWeekString === weekString;
+                          });
+                        }
+                      }}
+                      modifiersStyles={{
+                        weekSelected: { 
+                          backgroundColor: 'hsl(var(--primary))',
+                          color: 'hsl(var(--primary-foreground))',
+                          fontWeight: 'bold',
+                          borderRadius: '4px'
+                        }
+                      }}
+                      className="rounded-md border"
+                      initialFocus
+                    />
                   </div>
                 </PopoverContent>
               </Popover>
