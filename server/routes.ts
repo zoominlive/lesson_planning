@@ -8,6 +8,7 @@ import {
   validateLocationAccess,
   getUserAuthorizedLocationIds 
 } from "./auth-middleware";
+import { redirectToAuthorizedView, checkViewAccess } from "./middleware/view-access-control";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -176,6 +177,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     next();
   });
+
+  // Apply view access control middleware to check role-based redirects
+  app.use("/", redirectToAuthorizedView);
   
   // Add a route to get current user information
   app.get("/api/user", async (req: AuthenticatedRequest, res) => {
