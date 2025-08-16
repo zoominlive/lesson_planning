@@ -400,6 +400,12 @@ export default function ActivityForm({
       photoUrl: `/api/materials/images/${material.name.toLowerCase().replace(/\s+/g, '_')}.png`
     };
 
+    console.log("[QuickAdd] Creating material with data:", materialData);
+    console.log("[QuickAdd] Material name:", material.name);
+    console.log("[QuickAdd] Storage location:", storageLocation);
+    console.log("[QuickAdd] Location IDs:", locationIds);
+    console.log("[QuickAdd] Age groups:", materialAgeGroups);
+
     const createdMaterial = await apiRequest("POST", "/api/materials", materialData);
 
     // Add material to collection

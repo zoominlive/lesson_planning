@@ -388,9 +388,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/materials", async (req: AuthenticatedRequest, res) => {
     try {
+      console.log('[POST /api/materials] Request body:', req.body);
+      
       // Remove tenantId from the request body to prevent overriding
       const { tenantId, ...bodyWithoutTenant } = req.body;
+      console.log('[POST /api/materials] Body without tenant:', bodyWithoutTenant);
+      
       const data = insertMaterialSchema.parse(bodyWithoutTenant);
+      console.log('[POST /api/materials] Parsed data:', data);
       
       // Validate that user has access to ALL locations they're assigning the material to
       if (data.locationIds && data.locationIds.length > 0) {
@@ -405,6 +410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const material = await storage.createMaterial(data);
       res.status(201).json(material);
     } catch (error) {
+      console.error('[POST /api/materials] Error:', error);
       res.status(400).json({ error: "Invalid material data" });
     }
   });
