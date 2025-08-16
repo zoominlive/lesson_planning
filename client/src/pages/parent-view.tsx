@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Target, Package, BookOpen, Star, CheckCircle, Award, Image as ImageIcon, Play } from 'lucide-react';
+import { Calendar, Clock, Target, Package, BookOpen, Star, CheckCircle, Award, Image as ImageIcon, Play, ChevronDown, ChevronUp } from 'lucide-react';
 import { format, startOfWeek, addDays, parseISO } from 'date-fns';
 import { getUserInfo, getAuthToken } from '@/lib/auth';
 import { useState } from 'react';
@@ -76,11 +76,7 @@ const ActivityImage = ({ activity }: { activity: Activity }) => {
             <ImageIcon className="h-12 w-12 text-white/70" />
           </div>
         </div>
-        {activity.category && (
-          <div className="absolute top-3 left-3">
-            <CategoryBadge category={activity.category} />
-          </div>
-        )}
+
         {activity.completed && (
           <div className="absolute top-3 right-3">
             <Badge className="bg-green-500 text-white border-0 shadow-lg">
@@ -98,11 +94,7 @@ const ActivityImage = ({ activity }: { activity: Activity }) => {
       <div className="flex items-center justify-center h-full">
         <Play className="h-16 w-16 text-white/80" />
       </div>
-      {activity.category && (
-        <div className="absolute top-3 left-3">
-          <CategoryBadge category={activity.category} />
-        </div>
-      )}
+
       {activity.completed && (
         <div className="absolute top-3 right-3">
           <Badge className="bg-green-500 text-white border-0 shadow-lg">
@@ -122,6 +114,8 @@ export default function ParentView() {
   
   // Week toggle state - start with current week (Aug 18, 2025 is a Monday)
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+  // Track which activities have expanded "How it works" sections
+  const [expandedActivities, setExpandedActivities] = useState<Set<string>>(new Set());
   const getCurrentMondayWeek = (offset: number = 0) => {
     const aug18Monday = parseISO('2025-08-18'); // This is already a Monday
     return format(addDays(aug18Monday, offset * 7), 'yyyy-MM-dd');
@@ -344,7 +338,7 @@ export default function ParentView() {
                                 <div className="p-1.5 bg-purple-100 rounded-lg">
                                   <Target className="h-4 w-4 text-purple-600" />
                                 </div>
-                                <span className="font-semibold text-gray-800">Learning Goals</span>
+                                <span className="font-semibold text-gray-800">Developmental Milestones</span>
                               </div>
                               <div className="grid gap-2">
                                 {activity.milestones.map(milestone => (
@@ -354,7 +348,7 @@ export default function ParentView() {
                                   >
                                     <Award className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
                                     <div>
-                                      <p className="font-medium text-purple-800 text-sm">{milestone.name}</p>
+                                      <p className="font-medium text-purple-800 text-sm">{milestone.title}</p>
                                       {milestone.description && (
                                         <p className="text-xs text-purple-600 mt-1">{milestone.description}</p>
                                       )}
@@ -390,7 +384,7 @@ export default function ParentView() {
                                         <Package className="h-4 w-4 text-green-600" />
                                       </div>
                                     )}
-                                    <span className="text-sm font-medium text-green-800 truncate">
+                                    <span className="text-sm font-medium text-green-800">
                                       {material.name}
                                     </span>
                                   </div>
@@ -401,26 +395,57 @@ export default function ParentView() {
 
                           {activity.steps?.length && (
                             <div className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="p-1.5 bg-blue-100 rounded-lg">
-                                  <BookOpen className="h-4 w-4 text-blue-600" />
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className="p-1.5 bg-blue-100 rounded-lg">
+                                    <BookOpen className="h-4 w-4 text-blue-600" />
+                                  </div>
+                                  <span className="font-semibold text-gray-800">How It Works</span>
                                 </div>
-                                <span className="font-semibold text-gray-800">How It Works</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const newExpanded = new Set(expandedActivities);
+                                    if (newExpanded.has(activity.id)) {
+                                      newExpanded.delete(activity.id);
+                                    } else {
+                                      newExpanded.add(activity.id);
+                                    }
+                                    setExpandedActivities(newExpanded);
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                >
+                                  {expandedActivities.has(activity.id) ? (
+                                    <>
+                                      <ChevronUp className="h-4 w-4 mr-1" />
+                                      Hide Steps
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ChevronDown className="h-4 w-4 mr-1" />
+                                      Show Steps
+                                    </>
+                                  )}
+                                </Button>
                               </div>
-                              <div className="space-y-2">
-                                {activity.steps
-                                  .sort((a, b) => a.orderIndex - b.orderIndex)
-                                  .map((step, idx) => (
-                                    <div key={idx} className="flex gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                                      <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                                        {idx + 1}
+                              
+                              {expandedActivities.has(activity.id) && (
+                                <div className="space-y-2">
+                                  {activity.steps
+                                    .sort((a, b) => a.orderIndex - b.orderIndex)
+                                    .map((step, idx) => (
+                                      <div key={idx} className="flex gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                        <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                                          {idx + 1}
+                                        </div>
+                                        <p className="text-sm text-blue-900 leading-relaxed">
+                                          {renderStepInstruction(step)}
+                                        </p>
                                       </div>
-                                      <p className="text-sm text-blue-900 leading-relaxed">
-                                        {renderStepInstruction(step)}
-                                      </p>
-                                    </div>
-                                  ))}
-                              </div>
+                                    ))}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
