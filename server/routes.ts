@@ -2235,7 +2235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             rating: avgRating ? Math.round(avgRating) : undefined,
             milestones: milestones.filter(m => m).map(m => ({
               id: m!.id,
-              name: m!.name,
+              name: m!.title, // Map database 'title' field to 'name' for frontend
               description: m!.description
             })),
             materials: materials.filter(m => m).map(m => ({

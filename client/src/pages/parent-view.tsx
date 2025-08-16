@@ -348,7 +348,7 @@ export default function ParentView() {
                                   >
                                     <Award className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
                                     <div>
-                                      <p className="font-medium text-purple-800 text-sm">{milestone.title}</p>
+                                      <p className="font-medium text-purple-800 text-sm">{milestone.name}</p>
                                       {milestone.description && (
                                         <p className="text-xs text-purple-600 mt-1">{milestone.description}</p>
                                       )}
