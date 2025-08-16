@@ -99,12 +99,12 @@ export default function MaterialForm({
   });
 
   // Fetch available material collections
-  const { data: collections = [] } = useQuery({
+  const { data: collections = [] } = useQuery<any[]>({
     queryKey: ["/api/material-collections"],
   });
 
   // Fetch existing collections for this material if editing
-  const { data: materialCollections = [] } = useQuery({
+  const { data: materialCollections = [] } = useQuery<any[]>({
     queryKey: [`/api/materials/${material?.id}/collections`],
     enabled: !!material?.id,
   });
@@ -366,8 +366,8 @@ export default function MaterialForm({
               </span>
             </div>
           ) : (
-            <ScrollArea className="h-[200px] p-3">
-              <div className="space-y-2">
+            <ScrollArea className={collections.length > 5 ? "h-[200px]" : ""}>
+              <div className="space-y-2 p-3">
                 {collections.map((collection: any) => {
                   const isSelected = selectedCollections.includes(collection.id);
                   return (
