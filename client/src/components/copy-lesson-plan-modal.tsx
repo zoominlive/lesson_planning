@@ -286,6 +286,15 @@ export function CopyLessonPlanModal({
                       className="rounded-md border"
                       initialFocus
                     />
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => setDatePickerOpen(false)}
+                      >
+                        Done
+                      </Button>
+                    </div>
                   </div>
                 </PopoverContent>
               </Popover>
