@@ -93,6 +93,8 @@ export function TokenSwitcher() {
         return "assistant_director";
       case "superadmin123":
         return "superadmin";
+      case "parent_toddler2_123":
+        return "parent";
       case "e5b7f0de-c868-4e40-a0bd-e15937cb3097":
       default:
         return "admin";
