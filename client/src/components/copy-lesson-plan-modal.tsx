@@ -211,7 +211,7 @@ export function CopyLessonPlanModal({
                 <PopoverContent className="w-auto p-0" align="start">
                   <div className="p-3 space-y-2">
                     <p className="text-sm text-muted-foreground">
-                      Click on any date to select/deselect the week
+                      Click any weekday to select/deselect that week
                     </p>
                     <Calendar
                       mode="single"
@@ -220,6 +220,12 @@ export function CopyLessonPlanModal({
                       disabled={isDateDisabled}
                       modifiers={{
                         selected: (date) => {
+                          // Only highlight Monday through Friday
+                          const dayOfWeek = date.getDay();
+                          if (dayOfWeek === 0 || dayOfWeek === 6) {
+                            return false; // Don't highlight weekends
+                          }
+                          
                           const weekStart = startOfWeek(date, { weekStartsOn: 1 });
                           const weekString = format(weekStart, 'yyyy-MM-dd');
                           return selectedWeeks.some(week => {
@@ -240,31 +246,8 @@ export function CopyLessonPlanModal({
                       initialFocus
                     />
                     {selectedWeeks.length > 0 && (
-                      <div className="pt-2 border-t">
-                        <p className="text-sm font-medium mb-1">Selected weeks:</p>
-                        <div className="space-y-1">
-                          {selectedWeeks
-                            .sort((a, b) => a.getTime() - b.getTime())
-                            .map(week => (
-                              <div 
-                                key={week.toISOString()} 
-                                className="text-sm text-muted-foreground flex items-center justify-between"
-                              >
-                                <span>Week of {format(week, 'MMM d, yyyy')}</span>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleWeekSelect(week);
-                                  }}
-                                  className="h-6 px-2"
-                                >
-                                  Remove
-                                </Button>
-                              </div>
-                            ))}
-                        </div>
+                      <div className="text-sm text-muted-foreground">
+                        {selectedWeeks.length} week{selectedWeeks.length !== 1 ? 's' : ''} selected
                       </div>
                     )}
                   </div>
