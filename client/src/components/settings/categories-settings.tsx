@@ -242,8 +242,16 @@ export function CategoriesSettings() {
           `for ${locations.find(l => l.id === selectedLocationId)?.name}`}
         </h3>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          console.log("[Categories] Dialog open state changed to:", open);
           setIsDialogOpen(open);
-          if (!open) resetForm();
+          if (!open) {
+            console.log("[Categories] Dialog closing, resetting form");
+            resetForm();
+          } else {
+            console.log("[Categories] Dialog opened");
+            console.log("[Categories] Current form state:", form.getValues());
+            console.log("[Categories] Selected location ID:", selectedLocationId);
+          }
         }}>
           <DialogTrigger asChild>
             <Button 
@@ -259,7 +267,13 @@ export function CategoriesSettings() {
               <DialogTitle>{editingCategory ? "Edit Category" : "Add Category"}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <form onSubmit={(e) => {
+                console.log("[Categories] Form submit event triggered");
+                console.log("[Categories] Form is valid:", form.formState.isValid);
+                console.log("[Categories] Form errors:", form.formState.errors);
+                console.log("[Categories] Form values:", form.getValues());
+                form.handleSubmit(handleSubmit)(e);
+              }} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="name"
@@ -337,7 +351,19 @@ export function CategoriesSettings() {
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} data-testid="button-cancel">
                     Cancel
                   </Button>
-                  <Button type="submit" data-testid="button-save-category">
+                  <Button 
+                    type="submit" 
+                    data-testid="button-save-category"
+                    onClick={(e) => {
+                      console.log("[Categories] Create/Update button clicked");
+                      console.log("[Categories] Button event type:", e.type);
+                      console.log("[Categories] Is form submitting:", form.formState.isSubmitting);
+                      console.log("[Categories] Form validation errors:", form.formState.errors);
+                      console.log("[Categories] Form isDirty:", form.formState.isDirty);
+                      console.log("[Categories] Current form values:", form.getValues());
+                      // Don't prevent default - let form submission handle it
+                    }}
+                  >
                     {editingCategory ? "Update" : "Create"}
                   </Button>
                 </div>
