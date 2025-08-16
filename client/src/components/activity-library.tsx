@@ -359,7 +359,7 @@ export default function ActivityLibrary() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredActivities.map((activity) => (
-            <Card key={activity.id} className="material-shadow overflow-hidden material-shadow-hover">
+            <Card key={activity.id} className="material-shadow overflow-hidden material-shadow-hover flex flex-col h-full">
               {/* Activity Image/Video Thumbnail */}
               <div className="relative h-48 bg-gradient-to-br from-coral-red to-turquoise">
                 {activity.imageUrl ? (
@@ -386,25 +386,26 @@ export default function ActivityLibrary() {
                 </div>
               </div>
               
-              <CardContent className="p-6">
-                <h3 className="text-xl font-bold text-charcoal mb-2" data-testid={`activity-title-${activity.id}`}>
-                  {activity.title}
-                </h3>
-                <p className="text-gray-600 text-sm mb-4" data-testid={`activity-description-${activity.id}`}>
-                  {activity.description}
-                </p>
+              <CardContent className="p-6 flex flex-col flex-grow">
+                <div className="flex-grow">
+                  <h3 className="text-xl font-bold text-charcoal mb-2 line-clamp-2" data-testid={`activity-title-${activity.id}`}>
+                    {activity.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-3" data-testid={`activity-description-${activity.id}`}>
+                    {activity.description}
+                  </p>
                 
                 <div className="space-y-3 mb-4">
                   <div>
                     <h4 className="font-semibold text-sm text-charcoal mb-1">Milestones:</h4>
                     <ul className="text-xs text-gray-600 space-y-1">
                       {activity.milestoneIds && activity.milestoneIds.length > 0 ? (
-                        activity.milestoneIds.slice(0, 3).map((milestoneId) => {
+                        activity.milestoneIds.slice(0, 2).map((milestoneId) => {
                           const milestone = milestones.find((m: any) => m.id === milestoneId);
                           return (
                             <li key={milestoneId} className="flex items-start">
                               <span className="mr-1">•</span>
-                              <span className="flex-1">
+                              <span className="flex-1 line-clamp-1">
                                 {milestone ? milestone.title : "Unknown milestone"}
                               </span>
                             </li>
@@ -413,8 +414,8 @@ export default function ActivityLibrary() {
                       ) : (
                         <li className="text-gray-400">• No milestones linked</li>
                       )}
-                      {activity.milestoneIds && activity.milestoneIds.length > 3 && (
-                        <li className="text-gray-500 italic">• ...and {activity.milestoneIds.length - 3} more</li>
+                      {activity.milestoneIds && activity.milestoneIds.length > 2 && (
+                        <li className="text-gray-500 italic">• ...and {activity.milestoneIds.length - 2} more</li>
                       )}
                     </ul>
                   </div>
@@ -423,7 +424,7 @@ export default function ActivityLibrary() {
                     <h4 className="font-semibold text-sm text-charcoal mb-1">Materials Needed:</h4>
                     <div className="flex flex-wrap gap-1">
                       {activity.materialIds && activity.materialIds.length > 0 ? (
-                        activity.materialIds.slice(0, 4).map((materialId) => {
+                        activity.materialIds.slice(0, 3).map((materialId) => {
                           const material = materials.find((m: any) => m.id === materialId);
                           return (
                             <Badge key={materialId} variant="secondary" className="text-xs">
@@ -434,9 +435,9 @@ export default function ActivityLibrary() {
                       ) : (
                         <span className="text-xs text-gray-500">No materials specified</span>
                       )}
-                      {activity.materialIds && activity.materialIds.length > 4 && (
+                      {activity.materialIds && activity.materialIds.length > 3 && (
                         <Badge variant="outline" className="text-xs">
-                          +{activity.materialIds.length - 4} more
+                          +{activity.materialIds.length - 3} more
                         </Badge>
                       )}
                     </div>
@@ -476,8 +477,9 @@ export default function ActivityLibrary() {
                     )}
                   </span>
                 </div>
+                </div>
                 
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 mt-4">
                   <Button 
                     variant="outline"
                     size="sm"
