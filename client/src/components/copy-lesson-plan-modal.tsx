@@ -210,19 +210,30 @@ export function CopyLessonPlanModal({
                       Click any weekday to select/deselect that week
                     </p>
                     <div
-                      onMouseDown={(e) => {
-                        // Capture mousedown events on the calendar
+                      onClick={(e) => {
+                        // Intercept clicks on calendar day buttons
                         const target = e.target as HTMLElement;
-                        const button = target.closest('button[name="day"]');
+                        console.log('Click detected on:', target);
+                        
+                        // Check if we clicked on a day button or its child
+                        let button = target.closest('button[name="day"]');
+                        console.log('Button found:', button);
                         
                         if (button && !button.hasAttribute('disabled')) {
                           e.preventDefault();
+                          e.stopPropagation();
+                          
+                          // Get the date from the button's aria-label
                           const ariaLabel = button.getAttribute('aria-label');
+                          console.log('Aria label:', ariaLabel);
+                          
                           if (ariaLabel) {
-                            // Extract date from aria-label (format: "Monday, August 19, 2024")
-                            const dateStr = ariaLabel.replace(/^\w+,\s*/, ''); // Remove day name
-                            const parsedDate = new Date(dateStr);
+                            // Parse the date from aria-label
+                            const parsedDate = new Date(ariaLabel);
+                            console.log('Parsed date:', parsedDate);
+                            
                             if (!isNaN(parsedDate.getTime())) {
+                              console.log('Toggling week for:', parsedDate);
                               toggleWeek(parsedDate);
                             }
                           }
@@ -232,7 +243,7 @@ export function CopyLessonPlanModal({
                       <Calendar
                         mode="single"
                         selected={undefined}
-                        onSelect={() => {}} // Disable default selection
+                        onSelect={() => {}} // Disable default selection to avoid conflicts
                         disabled={isDateDisabled}
                         modifiers={{
                           weekSelected: (date) => {
