@@ -64,6 +64,13 @@ const TEST_TOKENS = {
     role: "SuperAdmin",
     username: "superadmin@example.com",
   },
+  parent: {
+    label: "Parent (Toddler 2)",
+    token:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InBhcmVudF90b2RkbGVyMl8xMjMiLCJ1c2VyRmlyc3ROYW1lIjoiTGlzYSIsInVzZXJMYXN0TmFtZSI6IkpvaG5zb24iLCJ1c2VybmFtZSI6Imxpc2Fuam9obnNvbkBwYXJlbnQuY29tIiwicm9sZSI6InBhcmVudCIsImxvY2F0aW9ucyI6WyJiZmQxZGMxNC02YzZiLTRmYTMtODkwYi1lNWIwOTZjZDI5ZjQiXSwibG9jYXRpb25OYW1lcyI6WyJNYWluIENhbXB1cyJdLCJyb29tSWQiOiJiZTNlNmE3Ni0xN2NiLTQ0MjEtODI0YS0yNzJlMjRjZjMwMmYiLCJyb29tTmFtZSI6IlRvZGRsZXIgMiIsImNoaWxkUm9vbSI6ImJlM2U2YTc2LTE3Y2ItNDQyMS04MjRhLTI3MmUyNGNmMzAyZiIsImlhdCI6MTc1NTMwODQzM30.IsoM6Mb_WzryAnLXMKz1JuGRhvJvcP1qLRr-do35PQ0",
+    role: "parent",
+    username: "lisa.johnson@parent.com",
+  },
 };
 
 export function TokenSwitcher() {
