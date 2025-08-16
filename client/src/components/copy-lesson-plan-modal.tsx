@@ -128,18 +128,26 @@ export function CopyLessonPlanModal({
   const handleWeekSelect = (date: Date | undefined) => {
     if (!date) return;
     
-    const weekStart = startOfWeek(date, { weekStartsOn: 1 });
-    const isSelected = selectedWeeks.some(week => 
-      isSameWeek(week, weekStart, { weekStartsOn: 1 })
-    );
+    const clickedWeekStart = startOfWeek(date, { weekStartsOn: 1 });
+    const clickedWeekString = format(clickedWeekStart, 'yyyy-MM-dd');
     
-    if (isSelected) {
-      setSelectedWeeks(prev => 
-        prev.filter(week => !isSameWeek(week, weekStart, { weekStartsOn: 1 }))
-      );
-    } else {
-      setSelectedWeeks(prev => [...prev, weekStart]);
-    }
+    setSelectedWeeks(prev => {
+      const isSelected = prev.some(week => {
+        const weekString = format(startOfWeek(week, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+        return weekString === clickedWeekString;
+      });
+      
+      if (isSelected) {
+        // Remove the week
+        return prev.filter(week => {
+          const weekString = format(startOfWeek(week, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+          return weekString !== clickedWeekString;
+        });
+      } else {
+        // Add the week
+        return [...prev, clickedWeekStart];
+      }
+    });
   };
   
   const handleCopy = async () => {
@@ -201,37 +209,64 @@ export function CopyLessonPlanModal({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={undefined}
-                    onSelect={handleWeekSelect}
-                    disabled={isDateDisabled}
-                    modifiers={{
-                      selected: selectedWeeks,
-                    }}
-                    modifiersStyles={{
-                      selected: { 
-                        backgroundColor: 'hsl(var(--primary))',
-                        color: 'hsl(var(--primary-foreground))'
-                      }
-                    }}
-                    initialFocus
-                  />
-                  <div className="p-3 border-t">
-                    <div className="text-xs text-muted-foreground mb-2">
-                      Selected weeks:
-                    </div>
-                    <div className="space-y-1 max-h-24 overflow-y-auto">
-                      {selectedWeeks.length === 0 ? (
-                        <div className="text-xs text-muted-foreground">None selected</div>
-                      ) : (
-                        selectedWeeks.map((week, idx) => (
-                          <div key={idx} className="text-xs">
-                            Week of {format(week, 'MMM dd, yyyy')}
-                          </div>
-                        ))
-                      )}
-                    </div>
+                  <div className="p-3 space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Click on any date to select/deselect the week
+                    </p>
+                    <Calendar
+                      mode="single"
+                      selected={undefined}
+                      onSelect={handleWeekSelect}
+                      disabled={isDateDisabled}
+                      modifiers={{
+                        selected: (date) => {
+                          const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+                          const weekString = format(weekStart, 'yyyy-MM-dd');
+                          return selectedWeeks.some(week => {
+                            const selectedWeekString = format(startOfWeek(week, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+                            return selectedWeekString === weekString;
+                          });
+                        }
+                      }}
+                      modifiersStyles={{
+                        selected: { 
+                          backgroundColor: 'hsl(var(--primary))',
+                          color: 'hsl(var(--primary-foreground))',
+                          fontWeight: 'bold',
+                          borderRadius: '4px'
+                        }
+                      }}
+                      className="rounded-md border"
+                      initialFocus
+                    />
+                    {selectedWeeks.length > 0 && (
+                      <div className="pt-2 border-t">
+                        <p className="text-sm font-medium mb-1">Selected weeks:</p>
+                        <div className="space-y-1">
+                          {selectedWeeks
+                            .sort((a, b) => a.getTime() - b.getTime())
+                            .map(week => (
+                              <div 
+                                key={week.toISOString()} 
+                                className="text-sm text-muted-foreground flex items-center justify-between"
+                              >
+                                <span>Week of {format(week, 'MMM d, yyyy')}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleWeekSelect(week);
+                                  }}
+                                  className="h-6 px-2"
+                                >
+                                  Remove
+                                </Button>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </PopoverContent>
               </Popover>
