@@ -20,7 +20,10 @@ const categorySchema = z.object({
   name: z.string().min(1, "Category name is required"),
   description: z.string().optional(),
   locationId: z.string().min(1, "Location is required"),
-  color: z.string().regex(/^#[0-9A-F]{6}$/i, "Please enter a valid hex color").optional(),
+  color: z.union([
+    z.string().regex(/^#[0-9A-F]{6}$/i, "Please enter a valid hex color"),
+    z.literal(""),
+  ]).optional(),
   isActive: z.boolean().default(true),
 });
 
