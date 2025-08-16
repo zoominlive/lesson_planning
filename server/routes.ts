@@ -389,12 +389,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/materials", async (req: AuthenticatedRequest, res) => {
     try {
       console.log('[POST /api/materials] Request body:', req.body);
+      console.log('[POST /api/materials] Request tenantId:', req.tenantId);
       
-      // Remove tenantId from the request body to prevent overriding
-      const { tenantId, ...bodyWithoutTenant } = req.body;
-      console.log('[POST /api/materials] Body without tenant:', bodyWithoutTenant);
+      // Don't accept tenantId from body, use it from the authenticated request
+      const { tenantId: bodyTenantId, ...bodyWithoutTenant } = req.body;
       
-      const data = insertMaterialSchema.parse(bodyWithoutTenant);
+      // Add the tenantId from the authenticated request
+      const materialDataWithTenant = {
+        ...bodyWithoutTenant,
+        tenantId: req.tenantId // Use the authenticated tenant ID
+      };
+      
+      console.log('[POST /api/materials] Data with tenant:', materialDataWithTenant);
+      
+      const data = insertMaterialSchema.parse(materialDataWithTenant);
       console.log('[POST /api/materials] Parsed data:', data);
       
       // Validate that user has access to ALL locations they're assigning the material to
@@ -422,9 +430,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const { id } = req.params;
-      // Remove tenantId from the request body to prevent overriding
-      const { tenantId, ...bodyWithoutTenant } = req.body;
-      const data = insertMaterialSchema.partial().parse(bodyWithoutTenant);
+      // Don't accept tenantId from body, use it from the authenticated request
+      const { tenantId: bodyTenantId, ...bodyWithoutTenant } = req.body;
+      
+      // Add the tenantId from the authenticated request for partial updates
+      const materialDataWithTenant = {
+        ...bodyWithoutTenant,
+        tenantId: req.tenantId // Use the authenticated tenant ID
+      };
+      
+      const data = insertMaterialSchema.partial().parse(materialDataWithTenant);
       console.log('[PUT /api/materials] Parsed data:', data);
       
       // Get existing material to check location access
