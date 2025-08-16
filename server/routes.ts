@@ -1690,7 +1690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await storage.deleteLessonPlan(existingPlan.id);
           }
           
-          // Create new lesson plan
+          // Create new lesson plan with basic fields
           const newLessonPlan = await storage.createLessonPlan({
             tenantId: req.tenantId!,
             locationId: sourceLessonPlan.locationId,
@@ -1698,8 +1698,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             teacherId: req.userId || sourceLessonPlan.teacherId,
             weekStart: targetWeekStart,
             scheduleType: sourceLessonPlan.scheduleType,
-            status: 'draft'
+            status: sourceLessonPlan.status // Preserve the approval status
           });
+          
+          // Update the lesson plan with approval fields if source was approved
+          if (sourceLessonPlan.status === 'approved') {
+            await storage.updateLessonPlanApprovalFields(newLessonPlan.id, {
+              submittedAt: sourceLessonPlan.submittedAt,
+              submittedBy: sourceLessonPlan.submittedBy,
+              approvedAt: sourceLessonPlan.approvedAt,
+              approvedBy: sourceLessonPlan.approvedBy,
+              reviewNotes: sourceLessonPlan.reviewNotes ? `Copied from approved plan: ${sourceLessonPlan.reviewNotes}` : 'Copied from approved plan'
+            });
+          }
           
           // Copy all scheduled activities
           for (const activity of sourceActivities) {

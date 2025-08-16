@@ -706,6 +706,24 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return lessonPlan || undefined;
   }
+  
+  async updateLessonPlanApprovalFields(id: string, approvalData: {
+    submittedAt?: Date | null;
+    submittedBy?: string | null;
+    approvedAt?: Date | null;
+    approvedBy?: string | null;
+    reviewNotes?: string | null;
+  }): Promise<LessonPlan | undefined> {
+    const conditions = [eq(lessonPlans.id, id)];
+    if (this.tenantId) conditions.push(eq(lessonPlans.tenantId, this.tenantId));
+    
+    const [lessonPlan] = await this.db
+      .update(lessonPlans)
+      .set(approvalData)
+      .where(and(...conditions))
+      .returning();
+    return lessonPlan || undefined;
+  }
 
   async deleteLessonPlan(id: string): Promise<boolean> {
     const conditions = [eq(lessonPlans.id, id)];
