@@ -91,7 +91,7 @@ export function CategoriesSettings() {
   const createMutation = useMutation({
     mutationFn: async (data: CategoryFormData) => {
       const response = await apiRequest("POST", "/api/categories", data);
-      return await response.json();
+      return response; // apiRequest already returns parsed JSON
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories", selectedLocationId] });
@@ -100,7 +100,8 @@ export function CategoriesSettings() {
       setSelectedColor("");
       toast({ title: "Category created successfully" });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Failed to create category:", error);
       toast({ title: "Failed to create category", variant: "destructive" });
     },
   });
@@ -108,7 +109,7 @@ export function CategoriesSettings() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: CategoryFormData }) => {
       const response = await apiRequest("PUT", `/api/categories/${id}?locationId=${selectedLocationId}`, data);
-      return await response.json();
+      return response; // apiRequest already returns parsed JSON
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories", selectedLocationId] });
@@ -118,7 +119,8 @@ export function CategoriesSettings() {
       setSelectedColor("");
       toast({ title: "Category updated successfully" });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Failed to update category:", error);
       toast({ title: "Failed to update category", variant: "destructive" });
     },
   });
@@ -136,18 +138,28 @@ export function CategoriesSettings() {
     },
   });
 
-  const handleSubmit = (data: CategoryFormData) => {
-    console.log("Form submitted with data:", data);
-    const submissionData = { 
-      ...data, 
-      locationId: selectedLocationId,
-      color: selectedColor || data.color 
-    };
-    console.log("Final submission data:", submissionData);
-    if (editingCategory) {
-      updateMutation.mutate({ id: editingCategory.id, data: submissionData });
-    } else {
-      createMutation.mutate(submissionData);
+  const handleSubmit = async (data: CategoryFormData) => {
+    try {
+      console.log("Form submitted with data:", data);
+      const submissionData = { 
+        ...data, 
+        locationId: selectedLocationId,
+        color: selectedColor || data.color 
+      };
+      console.log("Final submission data:", submissionData);
+      
+      if (editingCategory) {
+        updateMutation.mutate({ id: editingCategory.id, data: submissionData });
+      } else {
+        createMutation.mutate(submissionData);
+      }
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      toast({ 
+        title: "An error occurred", 
+        description: "Please check the console for details",
+        variant: "destructive" 
+      });
     }
   };
 
