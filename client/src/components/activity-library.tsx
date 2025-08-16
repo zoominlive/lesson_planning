@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Plus, Edit, List, Trash2, Play, Package, Clock, Users } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getUserAuthorizedLocations } from "@/lib/auth";
@@ -24,6 +25,7 @@ export default function ActivityLibrary() {
   const [showAiGenerator, setShowAiGenerator] = useState(false);
   const [aiGeneratedData, setAiGeneratedData] = useState<any>(null);
   const [selectedLocationId, setSelectedLocationId] = useState("");
+  const [activityToDelete, setActivityToDelete] = useState<Activity | null>(null);
 
   const { data: activities = [], isLoading } = useQuery<Activity[]>({
     queryKey: ["/api/activities", selectedLocationId],
@@ -155,9 +157,14 @@ export default function ActivityLibrary() {
     setEditingActivity(activity);
   };
 
-  const handleDelete = async (activity: Activity) => {
-    if (confirm(`Are you sure you want to delete "${activity.title}"? This action cannot be undone.`)) {
-      await deleteMutation.mutateAsync(activity.id);
+  const handleDelete = (activity: Activity) => {
+    setActivityToDelete(activity);
+  };
+
+  const confirmDelete = async () => {
+    if (activityToDelete) {
+      await deleteMutation.mutateAsync(activityToDelete.id);
+      setActivityToDelete(null);
     }
   };
 
@@ -475,6 +482,27 @@ export default function ActivityLibrary() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Delete Activity Confirmation Dialog */}
+      <AlertDialog open={!!activityToDelete} onOpenChange={() => setActivityToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Activity</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{activityToDelete?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
