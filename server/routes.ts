@@ -2195,23 +2195,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? activityRecords.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / activityRecords.length
             : undefined;
           
+          // Get category details - activities use 'category' field, not 'categoryId'
+          const category = activity?.category ? await storage.getCategory(activity.category) : null;
+          
+          // Calculate duration
+          let duration = null;
+          if (scheduledActivity.startTime && scheduledActivity.endTime) {
+            const start = new Date(`2000-01-01T${scheduledActivity.startTime}`);
+            const end = new Date(`2000-01-01T${scheduledActivity.endTime}`);
+            const diffMs = end.getTime() - start.getTime();
+            duration = Math.round(diffMs / (1000 * 60)); // minutes
+          }
+
           return {
             id: scheduledActivity.id,
             title: activity?.title || 'Untitled Activity',
             description: activity?.description,
+            imageUrl: activity?.imageUrl,
+            categoryId: activity?.category,
+            category: category ? {
+              id: category.id,
+              name: category.name,
+              color: category.color || '#2BABE2'
+            } : null,
             dayOfWeek: scheduledActivity.dayOfWeek,
             position: scheduledActivity.position,
             startTime: scheduledActivity.startTime,
             endTime: scheduledActivity.endTime,
+            duration: duration,
             completed: isCompleted,
             rating: avgRating ? Math.round(avgRating) : undefined,
             milestones: milestones.filter(m => m).map(m => ({
               id: m!.id,
-              name: m!.name
+              name: m!.name,
+              description: m!.description
             })),
             materials: materials.filter(m => m).map(m => ({
               id: m!.id,
-              name: m!.name
+              name: m!.name,
+              photoUrl: m!.photoUrl
             })),
             steps: Array.isArray(steps) ? steps.map((s: any, index: number) => ({
               orderIndex: s.orderIndex !== undefined ? s.orderIndex : index,
