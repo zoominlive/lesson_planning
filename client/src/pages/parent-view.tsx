@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Target, Package, BookOpen, Star, CheckCircle, Award, Image as ImageIcon, Play } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, Clock, Target, Package, BookOpen, Star, CheckCircle, Award, Image as ImageIcon, Play, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, startOfWeek, addDays, parseISO } from 'date-fns';
 import { getUserInfo, getAuthToken } from '@/lib/auth';
+import { useState } from 'react';
 
 interface Category {
   id: string;
@@ -117,12 +119,19 @@ export default function ParentView() {
   const userInfo = getUserInfo();
   const roomId = (userInfo as any)?.roomId || (userInfo as any)?.childRoom;
   const roomName = (userInfo as any)?.roomName;
-  const testWeek = '2025-08-18';
+  
+  // Week toggle state - start with current week (Aug 18, 2025 is a Monday)
+  const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+  const getCurrentMondayWeek = (offset: number = 0) => {
+    const aug18Monday = parseISO('2025-08-18'); // This is already a Monday
+    return format(addDays(aug18Monday, offset * 7), 'yyyy-MM-dd');
+  };
+  const currentWeek = getCurrentMondayWeek(currentWeekOffset);
 
   const { data: lessonPlans, isLoading } = useQuery<LessonPlan[]>({
-    queryKey: ['/api/parent/lesson-plans', testWeek, roomId],
+    queryKey: ['/api/parent/lesson-plans', currentWeek, roomId],
     queryFn: async () => {
-      const queryParams = new URLSearchParams({ weekStart: testWeek });
+      const queryParams = new URLSearchParams({ weekStart: currentWeek });
       if (roomId) queryParams.append('roomId', roomId);
       
       const response = await fetch(`/api/parent/lesson-plans?${queryParams.toString()}`, {
@@ -168,8 +177,10 @@ export default function ParentView() {
 
   const formatWeekRange = (weekStart: string) => {
     const start = parseISO(weekStart);
-    const end = addDays(start, 4);
-    return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
+    // Ensure we start on Monday and end on Friday (Mon=0, Fri=4)
+    const monday = startOfWeek(start, { weekStartsOn: 1 });
+    const friday = addDays(monday, 4);
+    return `${format(monday, 'MMM d')} - ${format(friday, 'MMM d, yyyy')}`;
   };
 
   const formatTime = (time: string) => {
@@ -196,6 +207,13 @@ export default function ParentView() {
 
   const activitiesByDay = getActivitiesByDay();
 
+  // Debug logging
+  console.log('Parent View - Lesson Plans:', lessonPlans);
+  console.log('Parent View - Activities by Day:', activitiesByDay);
+  if (lessonPlans?.length) {
+    console.log('Sample Activity Data:', lessonPlans[0].activities?.[0]);
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Hero Header */}
@@ -207,15 +225,63 @@ export default function ParentView() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-4 backdrop-blur-sm">
               <Calendar className="h-8 w-8" />
             </div>
-            <h1 className="text-2xl font-bold mb-2">This Week's Learning Journey</h1>
+            <h1 className="text-2xl font-bold mb-2">
+              {currentWeekOffset === 0 ? "This Week's Learning Journey" : "Next Week's Learning Journey"}
+            </h1>
             <p className="text-blue-100 mb-1">
               {roomName ? `${roomName} Room` : 'Your Child\'s Activities'}
             </p>
-            {lessonPlans?.length && (
-              <p className="text-xs text-blue-200">
-                {formatWeekRange(lessonPlans[0].weekStart)}
-              </p>
-            )}
+            <p className="text-xs text-blue-200">
+              {formatWeekRange(currentWeek)}
+            </p>
+            
+            {/* Week Toggle */}
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCurrentWeekOffset(Math.max(-1, currentWeekOffset - 1))}
+                disabled={currentWeekOffset <= 0}
+                className="text-white hover:bg-white/10 disabled:text-white/50"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              <div className="flex gap-1">
+                <Button
+                  variant={currentWeekOffset === 0 ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setCurrentWeekOffset(0)}
+                  className={currentWeekOffset === 0 
+                    ? "bg-white text-blue-600 hover:bg-white/90" 
+                    : "text-white hover:bg-white/10"
+                  }
+                >
+                  This Week
+                </Button>
+                <Button
+                  variant={currentWeekOffset === 1 ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setCurrentWeekOffset(1)}
+                  className={currentWeekOffset === 1 
+                    ? "bg-white text-blue-600 hover:bg-white/90" 
+                    : "text-white hover:bg-white/10"
+                  }
+                >
+                  Next Week
+                </Button>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCurrentWeekOffset(Math.min(1, currentWeekOffset + 1))}
+                disabled={currentWeekOffset >= 1}
+                className="text-white hover:bg-white/10 disabled:text-white/50"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -256,8 +322,12 @@ export default function ParentView() {
                               {activity.title}
                             </h3>
                             
+                            {/* Category and Time Row */}
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4 text-sm text-gray-600">
+                              <div className="flex items-center gap-3 text-sm text-gray-600">
+                                {activity.category && (
+                                  <CategoryBadge category={activity.category} />
+                                )}
                                 {activity.startTime && (
                                   <div className="flex items-center gap-1">
                                     <Clock className="h-4 w-4 text-blue-500" />
