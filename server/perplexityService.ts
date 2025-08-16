@@ -278,6 +278,8 @@ Ensure the activity is:
   private parseMaterialsFromActivity(activity: any): any {
     const suggestedMaterials: any[] = [];
     
+    console.log('[PerplexityService] Parsing materials from activity:', activity.title);
+    
     // Parse materials from the description and instructions
     const description = activity.description || '';
     const instructions = activity.instructions || [];
@@ -383,6 +385,9 @@ Ensure the activity is:
         });
       }
     });
+    
+    console.log('[PerplexityService] Found materials:', foundMaterials);
+    console.log('[PerplexityService] Suggested materials:', suggestedMaterials);
     
     // Add the parsed materials to the activity object
     return {
