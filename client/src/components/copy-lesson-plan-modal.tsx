@@ -129,22 +129,28 @@ export function CopyLessonPlanModal({
     if (!date) return;
     
     const clickedWeekStart = startOfWeek(date, { weekStartsOn: 1 });
-    const clickedWeekString = format(clickedWeekStart, 'yyyy-MM-dd');
+    const clickedWeekKey = format(clickedWeekStart, 'yyyy-MM-dd');
     
     setSelectedWeeks(prev => {
-      const isSelected = prev.some(week => {
-        const weekString = format(startOfWeek(week, { weekStartsOn: 1 }), 'yyyy-MM-dd');
-        return weekString === clickedWeekString;
+      // Create week keys for comparison
+      const prevWeekKeys = prev.map(w => format(startOfWeek(w, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+      const isSelected = prevWeekKeys.includes(clickedWeekKey);
+      
+      console.log('Week selection:', { 
+        clickedWeekKey, 
+        isSelected, 
+        prevWeekKeys,
+        prevLength: prev.length 
       });
       
       if (isSelected) {
-        // Remove the week
+        // Week is selected, remove it
         return prev.filter(week => {
-          const weekString = format(startOfWeek(week, { weekStartsOn: 1 }), 'yyyy-MM-dd');
-          return weekString !== clickedWeekString;
+          const weekKey = format(startOfWeek(week, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+          return weekKey !== clickedWeekKey;
         });
       } else {
-        // Add the week
+        // Week is not selected, add it
         return [...prev, clickedWeekStart];
       }
     });
@@ -245,11 +251,6 @@ export function CopyLessonPlanModal({
                       className="rounded-md border"
                       initialFocus
                     />
-                    {selectedWeeks.length > 0 && (
-                      <div className="text-sm text-muted-foreground">
-                        {selectedWeeks.length} week{selectedWeeks.length !== 1 ? 's' : ''} selected
-                      </div>
-                    )}
                   </div>
                 </PopoverContent>
               </Popover>
