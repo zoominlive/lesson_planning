@@ -2177,13 +2177,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const activity = await storage.getActivity(scheduledActivity.activityId);
           const activityRecords = await storage.getActivityRecords(scheduledActivity.id);
           
-          // Get milestones and materials
-          const milestones = scheduledActivity.milestoneIds && scheduledActivity.milestoneIds.length > 0
-            ? await Promise.all(scheduledActivity.milestoneIds.map((id: string) => storage.getMilestone(id)))
+          // Get milestones and materials from the activity (not scheduled activity)
+          const milestones = activity?.milestoneIds && activity.milestoneIds.length > 0
+            ? await Promise.all(activity.milestoneIds.map((id: string) => storage.getMilestone(id)))
             : [];
           
-          const materials = scheduledActivity.materialIds && scheduledActivity.materialIds.length > 0
-            ? await Promise.all(scheduledActivity.materialIds.map((id: string) => storage.getMaterial(id)))
+          const materials = activity?.materialIds && activity.materialIds.length > 0
+            ? await Promise.all(activity.materialIds.map((id: string) => storage.getMaterial(id)))
             : [];
           
           // Get activity steps from the enriched activity data (instructions field)
@@ -2195,17 +2195,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? activityRecords.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / activityRecords.length
             : undefined;
           
-          // Get category details - activities use 'category' field, not 'categoryId'
-          const category = activity?.category ? await storage.getCategory(activity.category) : null;
-          
-          // Calculate duration
-          let duration = null;
-          if (scheduledActivity.startTime && scheduledActivity.endTime) {
-            const start = new Date(`2000-01-01T${scheduledActivity.startTime}`);
-            const end = new Date(`2000-01-01T${scheduledActivity.endTime}`);
-            const diffMs = end.getTime() - start.getTime();
-            duration = Math.round(diffMs / (1000 * 60)); // minutes
+          // Get category details - activity.category contains category name, need to find by name
+          let category = null;
+          if (activity?.category) {
+            try {
+              // First try to get by ID (in case it's an ID)
+              category = await storage.getCategory(activity.category);
+              
+              // If that fails, try to find by name
+              if (!category) {
+                const categories = await storage.getCategories();
+                category = categories.find((c: any) => c.name === activity.category);
+              }
+            } catch (error) {
+              console.log(`Failed to fetch category for ${activity.category}:`, error);
+            }
           }
+          
+          // Get duration from activity (activities have duration field)
+          const duration = activity?.duration || null;
 
           return {
             id: scheduledActivity.id,
@@ -2219,9 +2227,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               color: category.color || '#2BABE2'
             } : null,
             dayOfWeek: scheduledActivity.dayOfWeek,
-            position: scheduledActivity.position,
-            startTime: scheduledActivity.startTime,
-            endTime: scheduledActivity.endTime,
+            position: scheduledActivity.timeSlot, // Use timeSlot as position
+            startTime: null, // Position-based schedule doesn't have specific times
+            endTime: null,
             duration: duration,
             completed: isCompleted,
             rating: avgRating ? Math.round(avgRating) : undefined,

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Target, Package, BookOpen, Star, CheckCircle, Award, Image as ImageIcon, Play, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, Target, Package, BookOpen, Star, CheckCircle, Award, Image as ImageIcon, Play } from 'lucide-react';
 import { format, startOfWeek, addDays, parseISO } from 'date-fns';
 import { getUserInfo, getAuthToken } from '@/lib/auth';
 import { useState } from 'react';
@@ -207,12 +207,7 @@ export default function ParentView() {
 
   const activitiesByDay = getActivitiesByDay();
 
-  // Debug logging
-  console.log('Parent View - Lesson Plans:', lessonPlans);
-  console.log('Parent View - Activities by Day:', activitiesByDay);
-  if (lessonPlans?.length) {
-    console.log('Sample Activity Data:', lessonPlans[0].activities?.[0]);
-  }
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -236,50 +231,28 @@ export default function ParentView() {
             </p>
             
             {/* Week Toggle */}
-            <div className="flex items-center justify-center gap-2 mt-4">
+            <div className="flex justify-center gap-1 mt-4">
               <Button
-                variant="ghost"
+                variant={currentWeekOffset === 0 ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setCurrentWeekOffset(Math.max(-1, currentWeekOffset - 1))}
-                disabled={currentWeekOffset <= 0}
-                className="text-white hover:bg-white/10 disabled:text-white/50"
+                onClick={() => setCurrentWeekOffset(0)}
+                className={currentWeekOffset === 0 
+                  ? "bg-white text-blue-600 hover:bg-white/90" 
+                  : "text-white hover:bg-white/10"
+                }
               >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous
+                This Week
               </Button>
-              <div className="flex gap-1">
-                <Button
-                  variant={currentWeekOffset === 0 ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setCurrentWeekOffset(0)}
-                  className={currentWeekOffset === 0 
-                    ? "bg-white text-blue-600 hover:bg-white/90" 
-                    : "text-white hover:bg-white/10"
-                  }
-                >
-                  This Week
-                </Button>
-                <Button
-                  variant={currentWeekOffset === 1 ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setCurrentWeekOffset(1)}
-                  className={currentWeekOffset === 1 
-                    ? "bg-white text-blue-600 hover:bg-white/90" 
-                    : "text-white hover:bg-white/10"
-                  }
-                >
-                  Next Week
-                </Button>
-              </div>
               <Button
-                variant="ghost"
+                variant={currentWeekOffset === 1 ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setCurrentWeekOffset(Math.min(1, currentWeekOffset + 1))}
-                disabled={currentWeekOffset >= 1}
-                className="text-white hover:bg-white/10 disabled:text-white/50"
+                onClick={() => setCurrentWeekOffset(1)}
+                className={currentWeekOffset === 1 
+                  ? "bg-white text-blue-600 hover:bg-white/90" 
+                  : "text-white hover:bg-white/10"
+                }
               >
-                Next
-                <ChevronRight className="h-4 w-4 ml-1" />
+                Next Week
               </Button>
             </div>
           </div>
@@ -459,14 +432,16 @@ export default function ParentView() {
             })}
           </div>
         ) : (
-          <Card className="text-center py-12 border-0 shadow-xl bg-white/95">
-            <div className="space-y-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto">
-                <Calendar className="h-8 w-8 text-white" />
+          <Card className="text-center py-16 border-0 shadow-xl bg-white/95">
+            <div className="space-y-6 max-w-xs mx-auto">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto">
+                <Calendar className="h-10 w-10 text-white" />
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">No Activities This Week</h3>
-                <p className="text-gray-600">Check back soon for exciting new learning adventures!</p>
+              <div className="space-y-3">
+                <h3 className="text-xl font-bold text-gray-900">No Activities Posted Yet...</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Check back soon for exciting new learning adventures!
+                </p>
               </div>
             </div>
           </Card>
