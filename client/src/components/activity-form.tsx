@@ -419,6 +419,43 @@ export default function ActivityForm({
     return createdMaterial;
   };
 
+  const handleBatchAddAll = async () => {
+    if (!storageLocation.trim()) {
+      toast({
+        title: "Storage location required",
+        description: "Please enter a default storage location for all materials",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setProcessingQuickAdd(true);
+    try {
+      // Add all remaining materials with the same storage location
+      const addedMaterials = [];
+      for (const material of remainingMaterials) {
+        const created = await createMaterialFromSuggestion(material, storageLocation);
+        addedMaterials.push(created);
+      }
+
+      toast({
+        title: `${remainingMaterials.length} materials added`,
+        description: `All materials have been added to the "${watch("title") || "Activity"}" collection`,
+      });
+
+      setQuickAddDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
+    } catch (error) {
+      toast({
+        title: "Failed to add materials",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingQuickAdd(false);
+    }
+  };
+
   const handleQuickAddSubmit = async () => {
     if (!storageLocation.trim()) {
       toast({
@@ -438,13 +475,13 @@ export default function ActivityForm({
         description: `${currentQuickAddMaterial.name} has been added to your materials library`,
       });
 
-      // If there are remaining materials, ask about batch processing
+      // After first material, ask if they want to add ALL remaining materials
       if (remainingMaterials.length > 0 && !batchProcessMode) {
         setBatchProcessMode(true);
-        setCurrentQuickAddMaterial(remainingMaterials[0]);
-        setStorageLocation("");
+        setCurrentQuickAddMaterial(null); // Clear to show batch choice UI
+        setStorageLocation(""); // Reset for batch mode
       } else if (batchProcessMode && remainingMaterials.length > 1) {
-        // Continue batch processing
+        // Continue one-by-one processing
         const nextMaterials = remainingMaterials.slice(1);
         setRemainingMaterials(nextMaterials);
         setCurrentQuickAddMaterial(remainingMaterials[0]);
@@ -1391,16 +1428,76 @@ export default function ActivityForm({
           <DialogHeader>
             <DialogTitle>
               {batchProcessMode && remainingMaterials.length > 0
-                ? `Add All Remaining Materials (${remainingMaterials.length + 1} total)`
+                ? `${remainingMaterials.length} Materials Remaining`
                 : "Quick Add Material"}
             </DialogTitle>
             <DialogDescription>
               {batchProcessMode && remainingMaterials.length > 0
-                ? "Would you like to add all remaining materials to the same collection? You'll need to specify storage location for each."
+                ? "Choose how you'd like to add the remaining materials"
                 : "This will create a new material and add it to your library."}
             </DialogDescription>
           </DialogHeader>
 
+          {/* Batch mode choice after first material */}
+          {batchProcessMode && remainingMaterials.length > 0 && !currentQuickAddMaterial && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm font-medium mb-2">You've successfully added the first material!</p>
+                <p className="text-sm text-gray-600">
+                  {remainingMaterials.length} material{remainingMaterials.length !== 1 ? 's' : ''} remaining. 
+                  How would you like to proceed?
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="batch-storage-location">Default Storage Location (for all materials)</Label>
+                <Input
+                  id="batch-storage-location"
+                  placeholder="e.g., Art Cabinet A, Supply Closet 2, etc."
+                  value={storageLocation}
+                  onChange={(e) => setStorageLocation(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Button
+                  type="button"
+                  onClick={handleBatchAddAll}
+                  disabled={processingQuickAdd || !storageLocation.trim()}
+                  className="w-full"
+                >
+                  {processingQuickAdd ? "Adding All..." : `Add All ${remainingMaterials.length} Materials`}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setCurrentQuickAddMaterial(remainingMaterials[0]);
+                    setStorageLocation("");
+                  }}
+                  disabled={processingQuickAdd}
+                  className="w-full"
+                >
+                  Add One by One
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setQuickAddDialogOpen(false);
+                    setBatchProcessMode(false);
+                    setRemainingMaterials([]);
+                  }}
+                  disabled={processingQuickAdd}
+                  className="w-full"
+                >
+                  Skip Remaining
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Individual material add */}
           {currentQuickAddMaterial && (
             <div className="space-y-4">
               <div className="bg-gray-50 p-3 rounded-md space-y-2">
@@ -1438,37 +1535,37 @@ export default function ActivityForm({
                 </p>
               </div>
 
-              {batchProcessMode && remainingMaterials.length > 0 && (
+              {batchProcessMode && remainingMaterials.length > 1 && (
                 <div className="bg-blue-50 p-3 rounded-md">
                   <p className="text-sm text-blue-800">
-                    {remainingMaterials.length} more material{remainingMaterials.length !== 1 ? 's' : ''} remaining after this one
+                    {remainingMaterials.length - 1} more material{remainingMaterials.length - 1 !== 1 ? 's' : ''} after this one
                   </p>
                 </div>
               )}
+
+              <DialogFooter className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setQuickAddDialogOpen(false);
+                    setBatchProcessMode(false);
+                    setRemainingMaterials([]);
+                  }}
+                  disabled={processingQuickAdd}
+                >
+                  {batchProcessMode ? "Skip Remaining" : "Cancel"}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleQuickAddSubmit}
+                  disabled={processingQuickAdd || !storageLocation.trim()}
+                >
+                  {processingQuickAdd ? "Adding..." : "Add Material"}
+                </Button>
+              </DialogFooter>
             </div>
           )}
-
-          <DialogFooter className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setQuickAddDialogOpen(false);
-                setBatchProcessMode(false);
-                setRemainingMaterials([]);
-              }}
-              disabled={processingQuickAdd}
-            >
-              {batchProcessMode ? "Skip Remaining" : "Cancel"}
-            </Button>
-            <Button
-              type="button"
-              onClick={handleQuickAddSubmit}
-              disabled={processingQuickAdd || !storageLocation.trim()}
-            >
-              {processingQuickAdd ? "Adding..." : batchProcessMode ? "Add & Continue" : "Add Material"}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </form>
