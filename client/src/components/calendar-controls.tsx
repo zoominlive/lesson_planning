@@ -25,9 +25,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ChevronLeft, ChevronRight, Send, MapPin, Calendar, CheckCircle, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Send, MapPin, Calendar, CheckCircle, RotateCcw, Copy } from "lucide-react";
 import { getUserAuthorizedLocations } from "@/lib/auth";
-import { requiresLessonPlanApproval } from "@/lib/permission-utils";
+import { requiresLessonPlanApproval, hasPermission } from "@/lib/permission-utils";
 import { DayPicker } from "react-day-picker";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -43,6 +43,7 @@ interface CalendarControlsProps {
   selectedLocation?: string;
   currentLessonPlan?: any;
   onWithdrawFromReview?: () => void;
+  onCopyLessonPlan?: () => void;
 }
 
 export function CalendarControls({
@@ -55,6 +56,7 @@ export function CalendarControls({
   selectedLocation,
   currentLessonPlan,
   onWithdrawFromReview,
+  onCopyLessonPlan,
 }: CalendarControlsProps) {
   // Remove internal state and use prop directly
   const currentLocation = selectedLocation || "";
@@ -246,8 +248,51 @@ export function CalendarControls({
               </SelectContent>
             </Select>
 
+            {/* Copy Button for Approved Plans */}
+            {currentLessonPlan?.status === 'approved' && hasPermission('lesson_plan.copy') && (
+              <Button
+                onClick={onCopyLessonPlan}
+                variant="outline"
+                className="border-turquoise text-turquoise hover:bg-turquoise/10"
+                data-testid="button-copy-lesson-plan"
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Copy Plan
+              </Button>
+            )}
+            
             {/* Submit/Withdraw Button */}
-            {currentLessonPlan?.status === 'submitted' ? (
+            {currentLessonPlan?.status === 'approved' ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    className="bg-slate-600 hover:bg-slate-700 text-white hover:shadow-lg transition-all duration-300"
+                    data-testid="button-withdraw-approved"
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Withdraw to Draft
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Withdraw Approved Plan</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to withdraw this approved lesson plan? 
+                      This will return it to draft status and allow you to make changes.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={onWithdrawFromReview}
+                      className="bg-slate-600 hover:bg-slate-700"
+                    >
+                      Withdraw to Draft
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : currentLessonPlan?.status === 'submitted' ? (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button

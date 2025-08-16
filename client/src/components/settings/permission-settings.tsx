@@ -31,6 +31,7 @@ const PERMISSION_GROUPS = {
   'Lesson Plans': [
     { name: 'lesson_plan.submit', description: 'Submit lesson plans for review' },
     { name: 'lesson_plan.approve', description: 'Review lesson plans (approve/reject)', isReviewPermission: true },
+    { name: 'lesson_plan.copy', description: 'Copy lesson plans to other rooms' },
   ],
   'Activities': [
     { name: 'activity.create', description: 'Create new activities' },
@@ -277,6 +278,41 @@ export default function PermissionSettings() {
                                     checked={override?.autoApproveRoles?.includes(role.id) || false}
                                     onCheckedChange={() => handleRoleToggle(permission.name, role.id, 'autoApprove')}
                                     data-testid={`switch-settings-access-${role.id}`}
+                                  />
+                                  <Label htmlFor={`${permission.name}-${role.id}-access`} className="text-sm">
+                                    {role.name}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  }
+                  
+                  // For copy permission, only show which roles can copy
+                  if (permission.name === 'lesson_plan.copy') {
+                    return (
+                      <Card key={permission.name} className="p-4">
+                        <div className="mb-4">
+                          <h4 className="font-semibold">{permission.description}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Select which roles can copy approved lesson plans to other rooms
+                          </p>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">Roles with Copy Permission</Label>
+                            <div className="grid grid-cols-2 gap-3">
+                              {ROLES.filter(r => r.id !== 'superadmin').map(role => (
+                                <div key={role.id} className="flex items-center space-x-2">
+                                  <Switch
+                                    id={`${permission.name}-${role.id}-access`}
+                                    checked={override?.autoApproveRoles?.includes(role.id) || false}
+                                    onCheckedChange={() => handleRoleToggle(permission.name, role.id, 'autoApprove')}
+                                    data-testid={`switch-copy-access-${role.id}`}
                                   />
                                   <Label htmlFor={`${permission.name}-${role.id}-access`} className="text-sm">
                                     {role.name}
