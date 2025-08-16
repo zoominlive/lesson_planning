@@ -390,16 +390,13 @@ export default function ActivityForm({
     }) as any[];
     const locationIds = userLocations.map((loc: any) => loc.id);
 
-    // Create the material
+    // Create the material - only include fields that exist in the materials table
     const materialData = {
       name: material.name,
-      description: material.description || `${material.quantity} - Required for: ${activityTitle}`,
-      category: material.category || "General Supplies",
-      quantity: material.quantity || "As needed",
-      safetyNotes: material.safetyNotes || "",
+      description: material.description || `${material.quantity || "As needed"} - Required for: ${activityTitle}`,
       location: storageLocation,
       locationIds: locationIds, // All user locations
-      ageGroupIds: materialAgeGroups, // Changed from ageGroups to ageGroupIds
+      ageGroups: materialAgeGroups, // Note: it's ageGroups not ageGroupIds in the schema
       photoUrl: `/api/materials/images/${material.name.toLowerCase().replace(/\s+/g, '_')}.png`
     };
 
