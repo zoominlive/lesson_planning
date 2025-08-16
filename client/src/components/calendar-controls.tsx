@@ -262,7 +262,38 @@ export function CalendarControls({
             )}
             
             {/* Submit/Withdraw Button */}
-            {currentLessonPlan?.status === 'submitted' ? (
+            {currentLessonPlan?.status === 'approved' ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="border-gray-400 text-gray-700 hover:bg-gray-100"
+                    data-testid="button-withdraw-approved"
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Withdraw to Draft
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Withdraw Approved Plan</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to withdraw this approved lesson plan? 
+                      This will return it to draft status and allow you to make changes.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={onWithdrawFromReview}
+                      className="bg-gray-600 hover:bg-gray-700"
+                    >
+                      Withdraw to Draft
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : currentLessonPlan?.status === 'submitted' ? (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
