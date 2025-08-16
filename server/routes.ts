@@ -388,7 +388,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/materials", async (req: AuthenticatedRequest, res) => {
     try {
-      const data = insertMaterialSchema.parse(req.body);
+      // Remove tenantId from the request body to prevent overriding
+      const { tenantId, ...bodyWithoutTenant } = req.body;
+      const data = insertMaterialSchema.parse(bodyWithoutTenant);
       
       // Validate that user has access to ALL locations they're assigning the material to
       if (data.locationIds && data.locationIds.length > 0) {
@@ -414,7 +416,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const { id } = req.params;
-      const data = insertMaterialSchema.partial().parse(req.body);
+      // Remove tenantId from the request body to prevent overriding
+      const { tenantId, ...bodyWithoutTenant } = req.body;
+      const data = insertMaterialSchema.partial().parse(bodyWithoutTenant);
       console.log('[PUT /api/materials] Parsed data:', data);
       
       // Get existing material to check location access
