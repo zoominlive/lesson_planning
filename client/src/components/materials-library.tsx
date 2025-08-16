@@ -15,7 +15,6 @@ import type { Material } from "@shared/schema";
 
 export default function MaterialsLibrary() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
   const [ageGroupFilter, setAgeGroupFilter] = useState("all");
   const [selectedCollectionId, setSelectedCollectionId] = useState("all");
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
@@ -213,21 +212,6 @@ export default function MaterialsLibrary() {
                 ) : (
                   <SelectItem value="none" disabled>No authorized locations</SelectItem>
                 )}
-              </SelectContent>
-            </Select>
-            
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-48" data-testid="select-category-filter">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="Art Supplies">Art Supplies</SelectItem>
-                <SelectItem value="Building Materials">Building Materials</SelectItem>
-                <SelectItem value="Books & Reading">Books & Reading</SelectItem>
-                <SelectItem value="Science & Nature">Science & Nature</SelectItem>
-                <SelectItem value="Music & Movement">Music & Movement</SelectItem>
-                <SelectItem value="Dramatic Play">Dramatic Play</SelectItem>
               </SelectContent>
             </Select>
             
