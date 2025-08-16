@@ -125,7 +125,7 @@ export function CopyLessonPlanModal({
       const totalCopied = selectedRooms.length * selectedWeeks.length;
       toast({
         title: "Success",
-        description: `Lesson plan copied to ${totalCopied} room(s)`,
+        description: `Lesson plan copied successfully.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans"] });
       handleClose();
@@ -382,7 +382,11 @@ export function CopyLessonPlanModal({
                 {existingPlans.map((plan, idx) => {
                   // Parse the date string as local date to avoid timezone issues
                   const [year, month, day] = plan.weekStart.split(/[-T]/);
-                  const weekDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                  const weekDate = new Date(
+                    parseInt(year),
+                    parseInt(month) - 1,
+                    parseInt(day),
+                  );
                   const weekStart = startOfWeek(weekDate, { weekStartsOn: 1 });
                   return (
                     <div key={idx} className="text-sm">
