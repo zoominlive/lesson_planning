@@ -125,25 +125,22 @@ export function CopyLessonPlanModal({
     }
   };
   
-  const handleWeekSelect = (date: Date | undefined) => {
-    if (!date) return;
-    
+  const toggleWeek = (date: Date) => {
     const clickedWeekStart = startOfWeek(date, { weekStartsOn: 1 });
     const clickedWeekKey = format(clickedWeekStart, 'yyyy-MM-dd');
     
-    // Toggle week selection regardless of current state
     setSelectedWeeks(prev => {
       const prevWeekKeys = prev.map(w => format(startOfWeek(w, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
       const isSelected = prevWeekKeys.includes(clickedWeekKey);
       
       if (isSelected) {
-        // Week is selected, remove it
+        // Remove the week
         return prev.filter(week => {
           const weekKey = format(startOfWeek(week, { weekStartsOn: 1 }), 'yyyy-MM-dd');
           return weekKey !== clickedWeekKey;
         });
       } else {
-        // Week is not selected, add it
+        // Add the week
         return [...prev, clickedWeekStart];
       }
     });
@@ -212,21 +209,21 @@ export function CopyLessonPlanModal({
                     <p className="text-sm text-muted-foreground">
                       Click any weekday to select/deselect that week
                     </p>
-                    <div 
-                      onClick={(e) => {
-                        // Intercept all clicks on calendar days
+                    <div
+                      onMouseDown={(e) => {
+                        // Capture mousedown events on the calendar
                         const target = e.target as HTMLElement;
-                        const buttonElement = target.closest('button[name="day"]');
-                        if (buttonElement && !buttonElement.disabled) {
+                        const button = target.closest('button[name="day"]');
+                        
+                        if (button && !button.hasAttribute('disabled')) {
                           e.preventDefault();
-                          e.stopPropagation();
-                          const ariaLabel = buttonElement.getAttribute('aria-label');
+                          const ariaLabel = button.getAttribute('aria-label');
                           if (ariaLabel) {
-                            // Parse date from aria-label
-                            const dateMatch = ariaLabel.match(/(\w+\s+\d+,\s+\d{4})/);
-                            if (dateMatch) {
-                              const clickedDate = new Date(dateMatch[1]);
-                              handleWeekSelect(clickedDate);
+                            // Extract date from aria-label (format: "Monday, August 19, 2024")
+                            const dateStr = ariaLabel.replace(/^\w+,\s*/, ''); // Remove day name
+                            const parsedDate = new Date(dateStr);
+                            if (!isNaN(parsedDate.getTime())) {
+                              toggleWeek(parsedDate);
                             }
                           }
                         }
@@ -235,7 +232,7 @@ export function CopyLessonPlanModal({
                       <Calendar
                         mode="single"
                         selected={undefined}
-                        onSelect={() => {}} // Empty handler to prevent default behavior
+                        onSelect={() => {}} // Disable default selection
                         disabled={isDateDisabled}
                         modifiers={{
                           weekSelected: (date) => {
