@@ -284,105 +284,147 @@ Ensure the activity is:
     const description = activity.description || '';
     const instructions = activity.instructions || [];
     
-    // Common material patterns to look for
-    const materialPatterns = [
-      // Materials explicitly mentioned
-      /(?:using|with|need|require[s]?|gather)\s+([^,.]+(?:,\s*[^,.]+)*)/gi,
-      // Items in quotes that might be materials
-      /"([^"]+)"/g,
-      // Materials after keywords
-      /materials?:\s*([^.]+)/gi,
-      /supplies:\s*([^.]+)/gi,
-      /items:\s*([^.]+)/gi
-    ];
-    
-    // Extract materials from description
-    const foundMaterials = new Set<string>();
-    
-    // Check description for materials
-    materialPatterns.forEach((pattern: RegExp) => {
-      const matches = Array.from(description.matchAll(pattern));
-      for (const match of matches) {
-        if (match && match[1]) {
-          // Split by commas and clean up each material
-          const items = match[1].split(/,|\sand\s/);
-          items.forEach((item: string) => {
-            const cleaned = item.trim().toLowerCase();
-            if (cleaned && cleaned.length > 2 && cleaned.length < 50) {
-              foundMaterials.add(cleaned);
-            }
-          });
-        }
+    // Combine all text for parsing
+    let fullText = description + ' ';
+    instructions.forEach((inst: any) => {
+      const text = inst.text || inst;
+      if (typeof text === 'string') {
+        fullText += text + ' ';
       }
     });
     
-    // Check instructions for materials
-    instructions.forEach((instruction: any) => {
-      const text = instruction.text || instruction;
-      if (typeof text === 'string') {
-        materialPatterns.forEach((pattern: RegExp) => {
-          const matches = Array.from(text.matchAll(pattern));
-          for (const match of matches) {
-            if (match && match[1]) {
-              const items = match[1].split(/,|\sand\s/);
-              items.forEach((item: string) => {
-                const cleaned = item.trim().toLowerCase();
-                if (cleaned && cleaned.length > 2 && cleaned.length < 50) {
-                  foundMaterials.add(cleaned);
-                }
-              });
+    // Look for specific material keywords
+    const materialKeywords = [
+      'paper', 'tissue paper', 'contact paper', 'construction paper',
+      'crayon', 'marker', 'pencil', 'paint', 'brush',
+      'glue', 'tape', 'scissor', 'stick',
+      'block', 'book', 'puzzle', 'ball',
+      'jar', 'cup', 'container', 'bottle',
+      'fabric', 'cloth', 'yarn', 'string',
+      'bead', 'button', 'shell', 'stone',
+      'leaf', 'flower', 'nature item',
+      'card', 'sheet', 'board',
+      'toy', 'doll', 'figurine',
+      'instrument', 'shaker', 'drum',
+      'tray', 'basket', 'box',
+      'light', 'candle', 'lantern', 'LED', 'tealight'
+    ];
+    
+    // Extract materials from text
+    const foundMaterials = new Set<string>();
+    const lowerText = fullText.toLowerCase();
+    
+    // Find materials by keywords
+    materialKeywords.forEach(keyword => {
+      // Create regex to find the keyword with context
+      const regex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}s?\\b`, 'gi');
+      const matches = lowerText.match(regex);
+      if (matches) {
+        // Look for modifiers before the keyword (e.g., "colored tissue paper", "clear contact paper")
+        const contextRegex = new RegExp(`(\\w+\\s+)?${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}s?`, 'gi');
+        const contextMatches = fullText.match(contextRegex);
+        if (contextMatches) {
+          contextMatches.forEach(match => {
+            const cleaned = match.trim().toLowerCase();
+            // Skip if it's just a pronoun or article
+            if (!['the', 'a', 'an', 'their', 'each', 'every', 'any', 'some'].includes(cleaned.split(' ')[0])) {
+              foundMaterials.add(cleaned);
             }
-          }
-        });
+          });
+        } else {
+          foundMaterials.add(keyword);
+        }
       }
     });
     
     // Format materials for database insertion
-    const commonMaterials = [
-      { keyword: 'paper', name: 'Construction Paper', category: 'Art Supplies', quantity: 'Multiple sheets' },
-      { keyword: 'crayon', name: 'Washable Crayons', category: 'Art Supplies', quantity: '1 set' },
-      { keyword: 'marker', name: 'Washable Markers', category: 'Art Supplies', quantity: '1 set' },
-      { keyword: 'glue', name: 'Child-Safe Glue', category: 'Art Supplies', quantity: '1 bottle' },
-      { keyword: 'scissor', name: 'Safety Scissors', category: 'Art Supplies', quantity: '1 pair per child' },
-      { keyword: 'paint', name: 'Washable Paint', category: 'Art Supplies', quantity: 'Assorted colors' },
-      { keyword: 'block', name: 'Building Blocks', category: 'Manipulatives', quantity: '1 set' },
-      { keyword: 'book', name: 'Picture Books', category: 'Reading Materials', quantity: 'Various' },
-      { keyword: 'puzzle', name: 'Age-Appropriate Puzzles', category: 'Manipulatives', quantity: '2-3 puzzles' },
-      { keyword: 'ball', name: 'Soft Play Balls', category: 'Gross Motor', quantity: '3-5 balls' },
-      { keyword: 'music', name: 'Musical Instruments', category: 'Music', quantity: 'Assorted' },
-      { keyword: 'tissue', name: 'Tissue Paper', category: 'Art Supplies', quantity: 'Multiple colors' },
-      { keyword: 'jar', name: 'Small Jars or Containers', category: 'Containers', quantity: '1 per child' },
-      { keyword: 'cup', name: 'Plastic Cups', category: 'Containers', quantity: '1 per child' },
-      { keyword: 'brush', name: 'Paint Brushes', category: 'Art Supplies', quantity: '1 per child' },
-    ];
-    
-    // Match found materials with common materials database
-    foundMaterials.forEach(material => {
-      const matchedMaterial = commonMaterials.find(cm => 
-        material.includes(cm.keyword)
-      );
+    const materialMappings: { [key: string]: { name: string, category: string, quantity: string, safety?: string } } = {
+      // Paper types
+      'tissue paper': { name: 'Tissue Paper', category: 'Art Supplies', quantity: 'Multiple colors' },
+      'colored tissue paper': { name: 'Colored Tissue Paper', category: 'Art Supplies', quantity: 'Assorted colors' },
+      'contact paper': { name: 'Clear Contact Paper', category: 'Art Supplies', quantity: '1 roll' },
+      'clear contact paper': { name: 'Clear Contact Paper', category: 'Art Supplies', quantity: '1 roll' },
+      'construction paper': { name: 'Construction Paper', category: 'Art Supplies', quantity: 'Multiple sheets' },
+      'paper': { name: 'Paper', category: 'Art Supplies', quantity: 'Multiple sheets' },
       
-      if (matchedMaterial) {
+      // Art supplies
+      'crayon': { name: 'Washable Crayons', category: 'Art Supplies', quantity: '1 set' },
+      'marker': { name: 'Washable Markers', category: 'Art Supplies', quantity: '1 set' },
+      'paint': { name: 'Washable Paint', category: 'Art Supplies', quantity: 'Assorted colors' },
+      'brush': { name: 'Paint Brushes', category: 'Art Supplies', quantity: '1 per child' },
+      'glue': { name: 'Child-Safe Glue', category: 'Art Supplies', quantity: '1 bottle' },
+      'tape': { name: 'Transparent Tape', category: 'Art Supplies', quantity: '1 roll' },
+      'scissor': { name: 'Safety Scissors', category: 'Art Supplies', quantity: '1 pair per child', safety: 'Adult supervision required' },
+      'scissors': { name: 'Safety Scissors', category: 'Art Supplies', quantity: '1 pair per child', safety: 'Adult supervision required' },
+      
+      // Manipulatives
+      'block': { name: 'Building Blocks', category: 'Manipulatives', quantity: '1 set' },
+      'puzzle': { name: 'Age-Appropriate Puzzles', category: 'Manipulatives', quantity: '2-3 puzzles' },
+      
+      // Containers
+      'jar': { name: 'Small Jars', category: 'Containers', quantity: '1 per child' },
+      'cup': { name: 'Plastic Cups', category: 'Containers', quantity: '1 per child' },
+      'container': { name: 'Storage Containers', category: 'Containers', quantity: 'As needed' },
+      
+      // Lights
+      'tealight': { name: 'Battery-Operated Tealights', category: 'Safety Items', quantity: '1 per child' },
+      'led': { name: 'LED Lights', category: 'Safety Items', quantity: 'As needed' },
+      'candle': { name: 'Battery-Operated Candles', category: 'Safety Items', quantity: '1 per child' },
+      
+      // Natural materials
+      'leaf': { name: 'Pressed Leaves', category: 'Natural Materials', quantity: 'Various' },
+      'flower': { name: 'Pressed Flowers', category: 'Natural Materials', quantity: 'Various' }
+    };
+    
+    // Process found materials
+    foundMaterials.forEach(material => {
+      const lowerMaterial = material.toLowerCase();
+      
+      // Try exact match first
+      if (materialMappings[lowerMaterial]) {
+        const mapped = materialMappings[lowerMaterial];
         // Check if not already added
-        if (!suggestedMaterials.some(m => m.name === matchedMaterial.name)) {
+        if (!suggestedMaterials.some(m => m.name === mapped.name)) {
           suggestedMaterials.push({
-            name: matchedMaterial.name,
-            category: matchedMaterial.category,
-            quantity: matchedMaterial.quantity,
+            name: mapped.name,
+            category: mapped.category,
+            quantity: mapped.quantity,
             description: `Required for: ${activity.title || 'this activity'}`,
-            safetyNotes: material.includes('scissor') ? 'Adult supervision required' : 
-                        material.includes('glue') || material.includes('paint') ? 'Non-toxic materials only' : null
+            safetyNotes: mapped.safety || null
           });
         }
-      } else if (!material.includes('children') && !material.includes('activity')) {
-        // Add as custom material if it doesn't match common ones
-        const capitalizedMaterial = material.charAt(0).toUpperCase() + material.slice(1);
-        suggestedMaterials.push({
-          name: capitalizedMaterial,
-          category: 'General Supplies',
-          quantity: '1',
-          description: `Required for: ${activity.title || 'this activity'}`
-        });
+      } else {
+        // Try partial match
+        let found = false;
+        for (const [key, value] of Object.entries(materialMappings)) {
+          if (lowerMaterial.includes(key)) {
+            if (!suggestedMaterials.some(m => m.name === value.name)) {
+              suggestedMaterials.push({
+                name: value.name,
+                category: value.category,
+                quantity: value.quantity,
+                description: `Required for: ${activity.title || 'this activity'}`,
+                safetyNotes: value.safety || null
+              });
+              found = true;
+              break;
+            }
+          }
+        }
+        
+        // If still no match and it's a valid material term, add as custom
+        if (!found && lowerMaterial.length > 3 && !lowerMaterial.includes('children') && !lowerMaterial.includes('activity')) {
+          const words = material.split(' ');
+          const formattedName = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+          if (!suggestedMaterials.some(m => m.name === formattedName)) {
+            suggestedMaterials.push({
+              name: formattedName,
+              category: 'General Supplies',
+              quantity: 'As needed',
+              description: `Required for: ${activity.title || 'this activity'}`
+            });
+          }
+        }
       }
     });
     
