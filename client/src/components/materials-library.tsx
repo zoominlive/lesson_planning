@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Check, Package } from "lucide-react";
+import { Plus, Edit, Check, Package, FolderOpen } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import MaterialForm from "./material-form";
+import CollectionsManager from "./collections-manager";
 import type { Material } from "@shared/schema";
 
 export default function MaterialsLibrary() {
@@ -19,6 +20,7 @@ export default function MaterialsLibrary() {
   const [selectedCollectionId, setSelectedCollectionId] = useState("all");
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCollectionsDialogOpen, setIsCollectionsDialogOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState("");
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
@@ -142,27 +144,48 @@ export default function MaterialsLibrary() {
             <h2 className="text-2xl font-bold text-charcoal" data-testid="materials-title">
               Materials Library
             </h2>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  className="bg-gradient-to-r from-turquoise to-sky-blue text-white hover:shadow-lg transition-all duration-300"
-                  data-testid="button-add-material"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add New Material
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Material</DialogTitle>
-                </DialogHeader>
-                <MaterialForm 
-                  onSuccess={() => setIsCreateDialogOpen(false)}
-                  onCancel={() => setIsCreateDialogOpen(false)}
-                  selectedLocationId={selectedLocationId}
-                />
-              </DialogContent>
-            </Dialog>
+            <div className="flex gap-2">
+              <Dialog open={isCollectionsDialogOpen} onOpenChange={setIsCollectionsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline"
+                    className="border-purple-600 text-purple-600 hover:bg-purple-50"
+                    data-testid="button-manage-collections"
+                  >
+                    <FolderOpen className="mr-2 h-4 w-4" />
+                    Manage Collections
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl">
+                  <DialogHeader>
+                    <DialogTitle>Manage Collections</DialogTitle>
+                  </DialogHeader>
+                  <CollectionsManager />
+                </DialogContent>
+              </Dialog>
+              
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    className="bg-gradient-to-r from-turquoise to-sky-blue text-white hover:shadow-lg transition-all duration-300"
+                    data-testid="button-add-material"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add New Material
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Material</DialogTitle>
+                  </DialogHeader>
+                  <MaterialForm 
+                    onSuccess={() => setIsCreateDialogOpen(false)}
+                    onCancel={() => setIsCreateDialogOpen(false)}
+                    selectedLocationId={selectedLocationId}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
           
           <div className="flex flex-wrap gap-4 items-center">
