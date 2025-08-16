@@ -36,12 +36,27 @@ export class PerplexityService {
     category: string;
     isQuiet: boolean;
     ageRange: { start: number; end: number };
+    existingActivities?: Array<{ title: string; description: string }>;
   }): Promise<any> {
     const quietDescription = params.isQuiet
       ? "This should be a quiet, calm activity suitable for quiet time, nap preparation, or low-energy periods."
       : "This can be an active, engaging activity.";
 
-    const prompt = `Create a comprehensive educational activity for ${params.ageGroup} children (${params.ageRange.start}-${params.ageRange.end} years old) in the category of ${params.category}. ${quietDescription}
+    // Create a list of existing activities to avoid duplicates
+    let existingActivitiesContext = "";
+    if (params.existingActivities && params.existingActivities.length > 0) {
+      const activityList = params.existingActivities
+        .map(a => `- "${a.title}": ${a.description}`)
+        .join("\n");
+      existingActivitiesContext = `
+
+IMPORTANT: Avoid creating activities similar to these existing ones:
+${activityList}
+
+Create something unique and different from the above activities. Do not repeat similar concepts, themes, or approaches.`;
+    }
+
+    const prompt = `Create a comprehensive educational activity for ${params.ageGroup} children (${params.ageRange.start}-${params.ageRange.end} years old) in the category of ${params.category}. ${quietDescription}${existingActivitiesContext}
 
 Please generate a complete activity with the following structure. Return ONLY valid JSON:
 {

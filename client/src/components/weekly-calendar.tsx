@@ -764,7 +764,7 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
                           <h4 className={`font-semibold text-xs text-charcoal line-clamp-2 pr-6 ${isCompleted ? 'text-green-700' : ''}`} data-testid={`activity-title-${scheduledActivity.activity?.id}`}>
                             {scheduledActivity.activity?.title || 'Untitled Activity'}
                           </h4>
-                          <p className={`text-xs mt-1 ${isCompleted ? 'text-green-600 font-medium' : 'text-gray-600'}`}>
+                          <p className={`text-xs mt-1 truncate ${isCompleted ? 'text-green-600 font-medium' : 'text-gray-600'}`}>
                             {scheduledActivity.activity?.category || 'Uncategorized'}
                           </p>
                         </div>

@@ -36,6 +36,13 @@ const TEST_TOKENS = {
     role: "Teacher",
     username: "teacher2@example.com",
   },
+  teacherWithRoom: {
+    label: "Teacher (Toddler 2)",
+    token:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InRlYWNoZXJfcGFyZW50XzEyMyIsInVzZXJGaXJzdE5hbWUiOiJNYXJ5IiwidXNlckxhc3ROYW1lIjoiVGhvbXBzb24iLCJ1c2VybmFtZSI6Im1hcnkudGhvbXBzb25AZXhhbXBsZS5jb20iLCJyb2xlIjoidGVhY2hlciIsImxvY2F0aW9ucyI6WyJiZmQxZGMxNC02YzZiLTRmYTMtODkwYi1lNWIwOTZjZDI5ZjQiXSwibG9jYXRpb25OYW1lcyI6WyJNYWluIENhbXB1cyJdLCJyb29tSWQiOiJiZTNlNmE3Ni0xN2NiLTQ0MjEtODI0YS0yNzJlMjRjZjMwMmYiLCJyb29tTmFtZSI6IlRvZGRsZXIgMiIsImlhdCI6MTc1NTI0MjI4MH0.FjvFW1X8oQbe1bP_n4Nr46vO3sf7c0uHUtTcflfNNuE",
+    role: "Teacher",
+    username: "mary.thompson@example.com",
+  },
   director: {
     label: "Director User",
     token:
@@ -57,6 +64,13 @@ const TEST_TOKENS = {
     role: "SuperAdmin",
     username: "superadmin@example.com",
   },
+  parent: {
+    label: "Parent (Toddler 2)",
+    token:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6InBhcmVudF90b2RkbGVyMl8xMjMiLCJ1c2VyRmlyc3ROYW1lIjoiTGlzYSIsInVzZXJMYXN0TmFtZSI6IkpvaG5zb24iLCJ1c2VybmFtZSI6Imxpc2Euam9obnNvbkBwYXJlbnQuY29tIiwicm9sZSI6InBhcmVudCIsImxvY2F0aW9ucyI6WyJiZmQxZGMxNC02YzZiLTRmYTMtODkwYi1lNWIwOTZjZDI5ZjQiXSwibG9jYXRpb25OYW1lcyI6WyJNYWluIENhbXB1cyJdLCJyb29tSWQiOiJiZTNlNmE3Ni0xN2NiLTQ0MjEtODI0YS0yNzJlMjRjZjMwMmYiLCJyb29tTmFtZSI6IlRvZGRsZXIgMiIsImNoaWxkUm9vbSI6ImJlM2U2YTc2LTE3Y2ItNDQyMS04MjRhLTI3MmUyNGNmMzAyZiIsImlhdCI6MTc1NTMxMjYxMn0.d5bIcAJRc5L66gRsQLw5XP54EEW-yXcFGq2NFdq8xgY",
+    role: "parent",
+    username: "lisa.johnson@parent.com",
+  },
 };
 
 export function TokenSwitcher() {
@@ -71,12 +85,16 @@ export function TokenSwitcher() {
         return "teacher";
       case "teacher2_123":
         return "teacher2";
+      case "teacher_parent_123":
+        return "teacherWithRoom";
       case "director123":
         return "director";
       case "assistant_director123":
         return "assistant_director";
       case "superadmin123":
         return "superadmin";
+      case "parent_toddler2_123":
+        return "parent";
       case "e5b7f0de-c868-4e40-a0bd-e15937cb3097":
       default:
         return "admin";

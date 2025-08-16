@@ -8,6 +8,7 @@ import {
   validateLocationAccess,
   getUserAuthorizedLocationIds 
 } from "./auth-middleware";
+import { redirectToAuthorizedView, checkViewAccess } from "./middleware/view-access-control";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -176,6 +177,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     next();
   });
+
+  // Apply view access control middleware to check role-based redirects
+  app.use("/", redirectToAuthorizedView);
   
   // Add a route to get current user information
   app.get("/api/user", async (req: AuthenticatedRequest, res) => {
@@ -760,49 +764,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Generate activity using AI
   app.post('/api/activities/generate', async (req: AuthenticatedRequest, res) => {
-    try {
-      const { ageGroupId, ageGroupName, ageRange, category, isQuiet, locationId } = req.body;
+    const { ageGroupId, ageGroupName, ageRange, category, isQuiet, locationId } = req.body;
+    
+    if (!ageGroupName || !category || isQuiet === undefined) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Fetch existing activities to avoid duplicates
+    const existingActivities = await storage.getActivities();
+    const existingActivityInfo = existingActivities.map(activity => ({
+      title: activity.title,
+      description: activity.description
+    }));
+
+    let attempts = 0;
+    const maxAttempts = 2;
+    
+    while (attempts < maxAttempts) {
+      attempts++;
       
-      if (!ageGroupName || !category || isQuiet === undefined) {
-        return res.status(400).json({ error: 'Missing required fields' });
+      try {
+        // Generate activity using Perplexity AI
+        const generatedActivity = await perplexityService.generateActivity({
+          ageGroup: ageGroupName,
+          category,
+          isQuiet,
+          ageRange: ageRange || { start: 2, end: 5 },
+          existingActivities: existingActivityInfo
+        });
+
+        // Check if the generation failed
+        if (generatedActivity.title === "Activity Generation Failed") {
+          console.log(`[Activity Generation] Attempt ${attempts} failed, ${attempts < maxAttempts ? 'retrying...' : 'no more retries'}`);
+          
+          if (attempts < maxAttempts) {
+            // Send a status update to the client that we're retrying
+            continue; // Try again
+          } else {
+            // All attempts failed
+            return res.status(503).json({ 
+              error: 'Activity generation temporarily unavailable. Please try again later or create the activity manually.',
+              retryable: false 
+            });
+          }
+        }
+
+        // Transform the AI response to match our activity form structure
+        const transformedActivity = {
+          title: generatedActivity.title,
+          description: generatedActivity.description,
+          duration: generatedActivity.duration,
+          ageRangeStart: ageRange.start,
+          ageRangeEnd: ageRange.end,
+          objectives: generatedActivity.learningObjectives,
+          preparationTime: generatedActivity.setupTime,
+          safetyConsiderations: generatedActivity.safetyConsiderations,
+          category,
+          spaceRequired: generatedActivity.spaceRequired,
+          groupSize: generatedActivity.groupSize,
+          messLevel: generatedActivity.messLevel,
+          instructions: generatedActivity.instructions.map((inst: any, index: number) => ({
+            stepNumber: index + 1,
+            text: inst.text,
+            tip: inst.tip || '',
+            imageUrl: ''
+          })),
+          variations: generatedActivity.variations,
+          imagePrompt: generatedActivity.imagePrompt
+        };
+
+        res.json(transformedActivity);
+        return; // Success, exit the function
+        
+      } catch (error) {
+        console.error(`Activity generation error (attempt ${attempts}/${maxAttempts}):`, error);
+        
+        if (attempts >= maxAttempts) {
+          res.status(500).json({ 
+            error: 'Failed to generate activity after multiple attempts. Please try again later.',
+            retryable: true 
+          });
+          return;
+        }
+        // Continue to next attempt
       }
-
-      // Generate activity using Perplexity AI
-      const generatedActivity = await perplexityService.generateActivity({
-        ageGroup: ageGroupName,
-        category,
-        isQuiet,
-        ageRange: ageRange || { start: 2, end: 5 }
-      });
-
-      // Transform the AI response to match our activity form structure
-      const transformedActivity = {
-        title: generatedActivity.title,
-        description: generatedActivity.description,
-        duration: generatedActivity.duration,
-        ageRangeStart: ageRange.start,
-        ageRangeEnd: ageRange.end,
-        objectives: generatedActivity.learningObjectives,
-        preparationTime: generatedActivity.setupTime,
-        safetyConsiderations: generatedActivity.safetyConsiderations,
-        category,
-        spaceRequired: generatedActivity.spaceRequired,
-        groupSize: generatedActivity.groupSize,
-        messLevel: generatedActivity.messLevel,
-        instructions: generatedActivity.instructions.map((inst: any, index: number) => ({
-          stepNumber: index + 1,
-          text: inst.text,
-          tip: inst.tip || '',
-          imageUrl: ''
-        })),
-        variations: generatedActivity.variations,
-        imagePrompt: generatedActivity.imagePrompt
-      };
-
-      res.json(transformedActivity);
-    } catch (error) {
-      console.error('Activity generation error:', error);
-      res.status(500).json({ error: 'Failed to generate activity. Please try again.' });
     }
   });
 
@@ -2078,6 +2123,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete age group" });
+    }
+  });
+
+  // Parent API Routes
+  app.get("/api/parent/lesson-plans", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId;
+      const userId = req.userId;
+      const { weekStart, roomId } = req.query;
+      
+      if (!tenantId || !userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      
+      // For parent view, we'll need to determine which room(s) to show
+      // For now, we'll fetch all approved lesson plans for all rooms in authorized locations
+      const authorizedLocationIds = await getUserAuthorizedLocationIds(req);
+      
+      // Get lesson plans that are approved
+      const allLessonPlans = await storage.getLessonPlansForReview();
+      
+      // Filter to only approved plans in authorized locations
+      let filteredPlans = allLessonPlans.filter((plan: any) => 
+        plan.status === 'approved' && authorizedLocationIds.includes(plan.locationId)
+      );
+      
+      // If roomId is provided, filter to only that room
+      if (roomId) {
+        filteredPlans = filteredPlans.filter((plan: any) => 
+          plan.roomId === roomId
+        );
+      }
+      
+      // If weekStart is provided, filter to only that week
+      if (weekStart) {
+        filteredPlans = filteredPlans.filter((plan: any) => 
+          plan.weekStart === weekStart || plan.weekStart.startsWith(weekStart as string)
+        );
+      }
+      
+      // Enrich with activities and related data
+      const enrichedPlans = await Promise.all(filteredPlans.map(async (plan: any) => {
+        // Get scheduled activities for this lesson plan
+        const scheduledActivities = await storage.getScheduledActivities(plan.id);
+        
+        // Get room and location details (already included in getLessonPlansForReview response)
+        const room = plan.room || await storage.getRoom(plan.roomId);
+        const location = plan.location || await storage.getLocation(plan.locationId);
+        
+        // Enrich activities with related data
+        const enrichedActivities = await Promise.all(scheduledActivities.map(async (scheduledActivity: any) => {
+          const activity = await storage.getActivity(scheduledActivity.activityId);
+          const activityRecords = await storage.getActivityRecords(scheduledActivity.id);
+          
+          // Get milestones and materials from the activity (not scheduled activity)
+          const milestones = activity?.milestoneIds && activity.milestoneIds.length > 0
+            ? await Promise.all(activity.milestoneIds.map((id: string) => storage.getMilestone(id)))
+            : [];
+          
+          const materials = activity?.materialIds && activity.materialIds.length > 0
+            ? await Promise.all(activity.materialIds.map((id: string) => storage.getMaterial(id)))
+            : [];
+          
+          // Get activity steps from the enriched activity data (instructions field)
+          const steps = (activity as any)?.steps || activity?.instructions || [];
+          
+          // Check if activity is completed (has any records)
+          const isCompleted = activityRecords && activityRecords.length > 0;
+          const avgRating = isCompleted && activityRecords.length > 0
+            ? activityRecords.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / activityRecords.length
+            : undefined;
+          
+          // Get category details - activity.category contains category name, need to find by name
+          let category = null;
+          if (activity?.category) {
+            try {
+              // First try to get by ID (in case it's an ID)
+              category = await storage.getCategory(activity.category);
+              
+              // If that fails, try to find by name
+              if (!category) {
+                const categories = await storage.getCategories();
+                category = categories.find((c: any) => c.name === activity.category);
+              }
+            } catch (error) {
+              console.log(`Failed to fetch category for ${activity.category}:`, error);
+            }
+          }
+          
+          // Get duration from activity (activities have duration field)
+          const duration = activity?.duration || null;
+
+          return {
+            id: scheduledActivity.id,
+            title: activity?.title || 'Untitled Activity',
+            description: activity?.description,
+            imageUrl: activity?.imageUrl,
+            categoryId: activity?.category,
+            category: category ? {
+              id: category.id,
+              name: category.name,
+              color: category.color || '#2BABE2'
+            } : null,
+            dayOfWeek: scheduledActivity.dayOfWeek,
+            position: scheduledActivity.timeSlot, // Use timeSlot as position
+            startTime: null, // Position-based schedule doesn't have specific times
+            endTime: null,
+            duration: duration,
+            completed: isCompleted,
+            rating: avgRating ? Math.round(avgRating) : undefined,
+            milestones: milestones.filter(m => m).map(m => ({
+              id: m!.id,
+              name: m!.title, // Map database 'title' field to 'name' for frontend
+              description: m!.description
+            })),
+            materials: materials.filter(m => m).map(m => ({
+              id: m!.id,
+              name: m!.name,
+              photoUrl: m!.photoUrl
+            })),
+            steps: Array.isArray(steps) ? steps.map((s: any, index: number) => ({
+              orderIndex: s.orderIndex !== undefined ? s.orderIndex : index,
+              instruction: s.instruction || s
+            })) : []
+          };
+        }));
+        
+        return {
+          id: plan.id,
+          weekStart: plan.weekStart,
+          status: plan.status,
+          approvedAt: plan.approvedAt,
+          scheduleType: plan.scheduleType,
+          activities: enrichedActivities,
+          room: room ? { id: room.id, name: room.name } : undefined,
+          location: location ? { id: location.id, name: location.name } : undefined
+        };
+      }));
+      
+      res.json(enrichedPlans);
+    } catch (error) {
+      console.error("Parent lesson plans fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch lesson plans" });
     }
   });
 

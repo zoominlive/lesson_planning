@@ -52,6 +52,7 @@ export const PERMISSION_RESOURCES = {
   SETTINGS: 'settings',
   LOCATION: 'location',
   ROOM: 'room',
+  VIEW: 'view', // For controlling access to different application views
 } as const;
 
 export const PERMISSION_ACTIONS = {
@@ -63,6 +64,9 @@ export const PERMISSION_ACTIONS = {
   APPROVE: 'approve',
   REJECT: 'reject',
   MANAGE: 'manage', // Full control
+  ACCESS_MAIN: 'access_main', // Access to main lesson planner view
+  ACCESS_TABLET: 'access_tablet', // Access to tablet view
+  ACCESS_PARENT: 'access_parent', // Access to parent view
 } as const;
 
 export type PermissionResource = typeof PERMISSION_RESOURCES[keyof typeof PERMISSION_RESOURCES];
