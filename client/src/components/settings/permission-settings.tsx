@@ -31,6 +31,7 @@ const PERMISSION_GROUPS = {
   'Lesson Plans': [
     { name: 'lesson_plan.submit', description: 'Submit lesson plans for review' },
     { name: 'lesson_plan.approve', description: 'Review lesson plans (approve/reject)', isReviewPermission: true },
+    { name: 'lesson_plan.copy', description: 'Copy lesson plans to other rooms' },
   ],
   'Activities': [
     { name: 'activity.create', description: 'Create new activities' },

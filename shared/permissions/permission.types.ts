@@ -63,6 +63,7 @@ export const PERMISSION_ACTIONS = {
   SUBMIT: 'submit',
   APPROVE: 'approve',
   REJECT: 'reject',
+  COPY: 'copy', // Copy lesson plans to other rooms
   MANAGE: 'manage', // Full control
   ACCESS_MAIN: 'access_main', // Access to main lesson planner view
   ACCESS_TABLET: 'access_tablet', // Access to tablet view

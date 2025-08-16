@@ -1555,6 +1555,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Copy lesson plan to other rooms
+  app.post("/api/lesson-plans/copy", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { sourceLessonPlanId, targetRoomIds, targetWeekStart } = req.body;
+      
+      if (!sourceLessonPlanId || !targetRoomIds || !targetWeekStart) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      // Check if user has permission to copy lesson plans
+      // This would be enhanced with proper permission checking based on tenant overrides
+      const role = req.role?.toLowerCase();
+      const copyAllowedRoles = ['teacher', 'assistant_director', 'director', 'admin', 'superadmin'];
+      
+      if (!role || !copyAllowedRoles.includes(role)) {
+        return res.status(403).json({ error: "Insufficient permissions to copy lesson plans" });
+      }
+      
+      // Get source lesson plan
+      const sourceLessonPlan = await storage.getLessonPlan(sourceLessonPlanId);
+      if (!sourceLessonPlan) {
+        return res.status(404).json({ error: "Source lesson plan not found" });
+      }
+      
+      // Check if source lesson plan is approved
+      if (sourceLessonPlan.status !== 'approved') {
+        return res.status(400).json({ error: "Only approved lesson plans can be copied" });
+      }
+      
+      // Validate location access for source
+      const sourceAccessCheck = await validateLocationAccess(req, sourceLessonPlan.locationId);
+      if (!sourceAccessCheck.allowed) {
+        return res.status(403).json({ error: sourceAccessCheck.message });
+      }
+      
+      // Get all scheduled activities for source lesson plan
+      const sourceActivities = await storage.getScheduledActivities(
+        sourceLessonPlanId,
+        sourceLessonPlan.locationId,
+        sourceLessonPlan.roomId
+      );
+      
+      const copiedPlans = [];
+      
+      // Copy to each target room
+      for (const targetRoomId of targetRoomIds) {
+        // Get room to ensure it exists and is in the same location
+        const room = await storage.getRoom(targetRoomId);
+        if (!room) {
+          console.warn(`Room ${targetRoomId} not found, skipping`);
+          continue;
+        }
+        
+        if (room.locationId !== sourceLessonPlan.locationId) {
+          console.warn(`Room ${targetRoomId} is in a different location, skipping`);
+          continue;
+        }
+        
+        // Check if a lesson plan already exists for this room and week
+        const existingPlans = await storage.getLessonPlans();
+        const existingPlan = existingPlans.find(lp => {
+          const lpWeekStart = new Date(lp.weekStart);
+          const targetWeek = new Date(targetWeekStart);
+          lpWeekStart.setHours(0, 0, 0, 0);
+          targetWeek.setHours(0, 0, 0, 0);
+          
+          return lpWeekStart.getTime() === targetWeek.getTime() &&
+                 lp.locationId === sourceLessonPlan.locationId &&
+                 lp.roomId === targetRoomId &&
+                 lp.scheduleType === sourceLessonPlan.scheduleType;
+        });
+        
+        if (existingPlan) {
+          console.warn(`Lesson plan already exists for room ${room.name} for the target week, skipping`);
+          continue;
+        }
+        
+        // Create new lesson plan
+        const newLessonPlan = await storage.createLessonPlan({
+          tenantId: req.tenantId!,
+          locationId: sourceLessonPlan.locationId,
+          roomId: targetRoomId,
+          teacherId: req.userId || sourceLessonPlan.teacherId,
+          weekStart: targetWeekStart,
+          scheduleType: sourceLessonPlan.scheduleType,
+          status: 'draft'
+        });
+        
+        // Copy all scheduled activities
+        for (const activity of sourceActivities) {
+          await storage.createScheduledActivity({
+            tenantId: req.tenantId!,
+            lessonPlanId: newLessonPlan.id,
+            activityId: activity.activityId,
+            locationId: sourceLessonPlan.locationId,
+            roomId: targetRoomId,
+            dayOfWeek: activity.dayOfWeek,
+            startTime: activity.startTime,
+            endTime: activity.endTime,
+            position: activity.position,
+            duration: activity.duration
+          });
+        }
+        
+        copiedPlans.push({
+          lessonPlanId: newLessonPlan.id,
+          roomId: targetRoomId,
+          roomName: room.name
+        });
+      }
+      
+      res.json({
+        success: true,
+        copiedCount: copiedPlans.length,
+        copiedPlans
+      });
+      
+    } catch (error) {
+      console.error('Error copying lesson plan:', error);
+      res.status(500).json({ error: "Failed to copy lesson plan" });
+    }
+  });
+  
   // Withdraw lesson plan from review
   app.post("/api/lesson-plans/:id/withdraw", async (req: AuthenticatedRequest, res) => {
     try {

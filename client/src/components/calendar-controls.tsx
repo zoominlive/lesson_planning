@@ -25,9 +25,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ChevronLeft, ChevronRight, Send, MapPin, Calendar, CheckCircle, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Send, MapPin, Calendar, CheckCircle, RotateCcw, Copy } from "lucide-react";
 import { getUserAuthorizedLocations } from "@/lib/auth";
-import { requiresLessonPlanApproval } from "@/lib/permission-utils";
+import { requiresLessonPlanApproval, hasPermission } from "@/lib/permission-utils";
 import { DayPicker } from "react-day-picker";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -43,6 +43,7 @@ interface CalendarControlsProps {
   selectedLocation?: string;
   currentLessonPlan?: any;
   onWithdrawFromReview?: () => void;
+  onCopyLessonPlan?: () => void;
 }
 
 export function CalendarControls({
@@ -55,6 +56,7 @@ export function CalendarControls({
   selectedLocation,
   currentLessonPlan,
   onWithdrawFromReview,
+  onCopyLessonPlan,
 }: CalendarControlsProps) {
   // Remove internal state and use prop directly
   const currentLocation = selectedLocation || "";
@@ -246,6 +248,19 @@ export function CalendarControls({
               </SelectContent>
             </Select>
 
+            {/* Copy Button for Approved Plans */}
+            {currentLessonPlan?.status === 'approved' && hasPermission('lesson_plan.copy') && (
+              <Button
+                onClick={onCopyLessonPlan}
+                variant="outline"
+                className="border-turquoise text-turquoise hover:bg-turquoise/10"
+                data-testid="button-copy-lesson-plan"
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Copy Plan
+              </Button>
+            )}
+            
             {/* Submit/Withdraw Button */}
             {currentLessonPlan?.status === 'submitted' ? (
               <AlertDialog>
