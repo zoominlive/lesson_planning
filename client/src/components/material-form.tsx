@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -356,34 +358,53 @@ export default function MaterialForm({
         <p className="text-sm text-gray-600 mb-2">
           Organize this material into collections for easier browsing
         </p>
-        <div className="flex flex-wrap gap-2 p-3 border rounded-md min-h-[40px]">
-          {Array.isArray(collections) &&
-            collections.map((collection: any) => {
-              const isSelected = selectedCollections.includes(collection.id);
-              return (
-                <Badge
-                  key={collection.id}
-                  variant={isSelected ? "default" : "outline"}
-                  className={`cursor-pointer hover:scale-105 transition-transform ${
-                    isSelected ? "bg-purple-600 text-white" : "hover:bg-gray-100"
-                  }`}
-                  onClick={() => handleCollectionToggle(collection.id)}
-                  data-testid={`badge-collection-${collection.id}`}
-                >
-                  {collection.name}
-                  {isSelected && <X className="w-3 h-3 ml-1" />}
-                </Badge>
-              );
-            })}
-          {collections.length === 0 && (
-            <span className="text-gray-500 text-sm">
-              No collections available yet
-            </span>
+        <div className="border rounded-md">
+          {collections.length === 0 ? (
+            <div className="p-3 text-center">
+              <span className="text-gray-500 text-sm">
+                No collections available yet
+              </span>
+            </div>
+          ) : (
+            <ScrollArea className="h-[200px] p-3">
+              <div className="space-y-2">
+                {collections.map((collection: any) => {
+                  const isSelected = selectedCollections.includes(collection.id);
+                  return (
+                    <div
+                      key={collection.id}
+                      className="flex items-start space-x-2 py-2 px-2 rounded hover:bg-gray-50"
+                    >
+                      <Checkbox
+                        id={`collection-${collection.id}`}
+                        checked={isSelected}
+                        onCheckedChange={() => handleCollectionToggle(collection.id)}
+                        className="mt-0.5"
+                        data-testid={`checkbox-collection-${collection.id}`}
+                      />
+                      <label
+                        htmlFor={`collection-${collection.id}`}
+                        className="flex-1 cursor-pointer"
+                      >
+                        <div className="font-medium text-sm">{collection.name}</div>
+                        {collection.description && (
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {collection.description}
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
           )}
-          {collections.length > 0 && selectedCollections.length === 0 && (
-            <span className="text-gray-500 text-sm">
-              Click collections to add this material
-            </span>
+          {collections.length > 0 && (
+            <div className="border-t px-3 py-2 bg-gray-50">
+              <span className="text-xs text-gray-600">
+                {selectedCollections.length} collection{selectedCollections.length !== 1 ? 's' : ''} selected
+              </span>
+            </div>
           )}
         </div>
       </div>
