@@ -132,6 +132,9 @@ export function getUserInfo(): UserInfo | null {
             superAdminLocations = locations;
             localStorage.setItem('allLocationNames', JSON.stringify(locations));
             locationsFetchPromise = null;
+          }).catch(error => {
+            console.warn('Failed to fetch SuperAdmin locations in background:', error);
+            locationsFetchPromise = null;
           });
         }
       }

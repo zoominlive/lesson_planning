@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, Clock, Users, BookOpen, Target, Package, ChevronDown, ChevronUp, Star, CheckCircle } from 'lucide-react';
 import { format, startOfWeek, addDays, parseISO } from 'date-fns';
 import { apiRequest } from '@/lib/queryClient';
-import { getUserInfo } from '@/lib/auth';
+import { getUserInfo, getAuthToken } from '@/lib/auth';
 
 interface Activity {
   id: string;
@@ -53,18 +53,25 @@ export default function ParentView() {
   const testWeek = '2025-08-18';
 
   // Fetch approved lesson plans based on room from token
-  const { data: lessonPlans, isLoading } = useQuery<LessonPlan[]>({
+  const { data: lessonPlans, isLoading, error } = useQuery<LessonPlan[]>({
     queryKey: ['/api/parent/lesson-plans', testWeek, roomId],
     queryFn: async () => {
-      // Use roomId from token if available, otherwise fall back to test data
-      const queryParams = new URLSearchParams({ weekStart: testWeek });
-      if (roomId) {
-        queryParams.append('roomId', roomId);
+      try {
+        // Use roomId from token if available, otherwise fall back to test data
+        const queryParams = new URLSearchParams({ weekStart: testWeek });
+        if (roomId) {
+          queryParams.append('roomId', roomId);
+        }
+        const response = await apiRequest('GET', `/api/parent/lesson-plans?${queryParams.toString()}`);
+        return response;
+      } catch (error) {
+        console.warn('Failed to fetch parent lesson plans:', error);
+        throw error;
       }
-      const response = await apiRequest(`/api/parent/lesson-plans?${queryParams.toString()}`, 'GET');
-      return response;
     },
-    enabled: !!userInfo // Only fetch if we have user info
+    enabled: !!userInfo && !!getAuthToken(), // Only fetch if we have user info and auth token
+    retry: false, // Don't retry on failure to avoid repeated errors
+    refetchOnWindowFocus: false // Don't refetch when window gains focus
   });
 
   // Group activities by day
