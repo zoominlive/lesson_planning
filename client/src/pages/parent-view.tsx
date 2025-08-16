@@ -7,7 +7,6 @@ import { Calendar, Clock, Users, BookOpen, Target, Package, ChevronDown, Chevron
 import { format, startOfWeek, addDays, parseISO } from 'date-fns';
 import { apiRequest } from '@/lib/queryClient';
 import { getUserInfo, getAuthToken } from '@/lib/auth';
-import { TokenSwitcher } from '@/components/token-switcher';
 
 interface Activity {
   id: string;
@@ -108,18 +107,13 @@ export default function ParentView() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-green-50">
       {/* Mobile Header */}
       <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
-        <div className="px-4 py-3 flex justify-between items-start">
-          <div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-[#2BABE2] to-[#297AB1] bg-clip-text text-transparent">
-              Weekly Lesson Plans
-            </h1>
-            <p className="text-sm text-gray-600 mt-1">
-              {roomName ? `${roomName} Room - ` : ''}See what your child is learning
-            </p>
-          </div>
-          <div className="flex-shrink-0 ml-4">
-            <TokenSwitcher />
-          </div>
+        <div className="px-4 py-3">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-[#2BABE2] to-[#297AB1] bg-clip-text text-transparent">
+            Weekly Lesson Plans
+          </h1>
+          <p className="text-sm text-gray-600 mt-1">
+            {roomName ? `${roomName} Room - ` : ''}See what your child is learning
+          </p>
         </div>
       </div>
 
