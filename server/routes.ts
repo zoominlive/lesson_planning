@@ -2367,11 +2367,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const category = await storage.createCategory(validatedData);
       console.log('[POST /api/categories] Category created successfully:', category);
       res.status(201).json(category);
-    } catch (error) {
+    } catch (error: any) {
       console.error('[POST /api/categories] Error creating category:', error);
       if (error instanceof Error) {
         console.error('[POST /api/categories] Error message:', error.message);
         console.error('[POST /api/categories] Error stack:', error.stack);
+      }
+      if (error?.issues) {
+        console.error('[POST /api/categories] Validation issues:', JSON.stringify(error.issues, null, 2));
+        error.issues.forEach((issue: any) => {
+          console.error(`[POST /api/categories] Field '${issue.path.join('.')}' - ${issue.message}`);
+        });
       }
       res.status(400).json({ error: "Invalid category data" });
     }
