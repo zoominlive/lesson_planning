@@ -23,6 +23,14 @@ import {
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface ActivityFormProps {
   activity?: Activity;
@@ -74,6 +82,15 @@ export default function ActivityForm({
   const [activityVideoUrl, setActivityVideoUrl] = useState(
     activity?.videoUrl || "",
   );
+
+  // Quick Add dialog state
+  const [quickAddDialogOpen, setQuickAddDialogOpen] = useState(false);
+  const [currentQuickAddMaterial, setCurrentQuickAddMaterial] = useState<any>(null);
+  const [storageLocation, setStorageLocation] = useState("");
+  const [processingQuickAdd, setProcessingQuickAdd] = useState(false);
+  const [remainingMaterials, setRemainingMaterials] = useState<any[]>([]);
+  const [activityCollectionId, setActivityCollectionId] = useState<string | null>(null);
+  const [batchProcessMode, setBatchProcessMode] = useState(false);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -332,6 +349,123 @@ export default function ActivityForm({
     },
   });
 
+  // Quick Add functions
+  const handleQuickAdd = (material: any, allMaterials: any[]) => {
+    setCurrentQuickAddMaterial(material);
+    setRemainingMaterials(allMaterials.filter((m) => m !== material));
+    setQuickAddDialogOpen(true);
+    setStorageLocation("");
+    setBatchProcessMode(false);
+  };
+
+  const createMaterialFromSuggestion = async (material: any, storageLocation: string) => {
+    const activityTitle = watch("title") || initialData?.title || "Activity";
+    
+    // Get appropriate age groups based on the activity's age range
+    const activityAgeStart = initialData?.ageRangeStart || 3;
+    const activityAgeEnd = initialData?.ageRangeEnd || 5;
+    
+    // Map activity age range to age group IDs
+    const materialAgeGroups = ageGroups
+      .filter((ag: any) => {
+        return (ag.ageRangeStart <= activityAgeEnd && ag.ageRangeEnd >= activityAgeStart);
+      })
+      .map((ag: any) => ag.id);
+
+    // Create or get collection for this activity
+    let collectionId = activityCollectionId;
+    if (!collectionId) {
+      // Create collection with activity name
+      const collectionResponse = await apiRequest("POST", "/api/material-collections", {
+        name: activityTitle,
+        description: `Materials for ${activityTitle} activity`
+      });
+      collectionId = collectionResponse.id;
+      setActivityCollectionId(collectionId);
+    }
+
+    // Get all user locations
+    const userLocations = await queryClient.fetchQuery({
+      queryKey: ["/api/locations"],
+    }) as any[];
+    const locationIds = userLocations.map((loc: any) => loc.id);
+
+    // Create the material
+    const materialData = {
+      name: material.name,
+      description: material.description || `${material.quantity} - Required for: ${activityTitle}`,
+      category: material.category || "General Supplies",
+      quantity: material.quantity || "As needed",
+      safetyNotes: material.safetyNotes || "",
+      location: storageLocation,
+      locationIds: locationIds, // All user locations
+      ageGroups: materialAgeGroups,
+      photoUrl: `/api/materials/images/${material.name.toLowerCase().replace(/\s+/g, '_')}.png`
+    };
+
+    const createdMaterial = await apiRequest("POST", "/api/materials", materialData);
+
+    // Add material to collection
+    await apiRequest("POST", `/api/material-collections/${collectionId}/materials`, {
+      materialIds: [createdMaterial.id]
+    });
+
+    // Add material to selected materials for this activity
+    setSelectedMaterials((prev) => [...prev, createdMaterial.id]);
+
+    return createdMaterial;
+  };
+
+  const handleQuickAddSubmit = async () => {
+    if (!storageLocation.trim()) {
+      toast({
+        title: "Storage location required",
+        description: "Please enter where this material will be stored",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setProcessingQuickAdd(true);
+    try {
+      await createMaterialFromSuggestion(currentQuickAddMaterial, storageLocation);
+      
+      toast({
+        title: "Material added",
+        description: `${currentQuickAddMaterial.name} has been added to your materials library`,
+      });
+
+      // If there are remaining materials, ask about batch processing
+      if (remainingMaterials.length > 0 && !batchProcessMode) {
+        setBatchProcessMode(true);
+        setCurrentQuickAddMaterial(remainingMaterials[0]);
+        setStorageLocation("");
+      } else if (batchProcessMode && remainingMaterials.length > 1) {
+        // Continue batch processing
+        const nextMaterials = remainingMaterials.slice(1);
+        setRemainingMaterials(nextMaterials);
+        setCurrentQuickAddMaterial(remainingMaterials[0]);
+        setStorageLocation("");
+      } else {
+        // All done
+        setQuickAddDialogOpen(false);
+        queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
+        toast({
+          title: "All materials added",
+          description: `Materials have been added to the "${watch("title") || "Activity"}" collection`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to add material",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingQuickAdd(false);
+    }
+  };
+
   const onSubmit = (data: any) => {
     console.log("[ActivityForm] Submitting activity with raw data:", data);
 
@@ -419,7 +553,7 @@ export default function ActivityForm({
   });
 
   // Get unique categories from materials
-  const materialCategories = Array.from(
+  const materialCategories: string[] = Array.from(
     new Set(materials.map((m: any) => m.category).filter(Boolean)),
   );
 
@@ -436,7 +570,7 @@ export default function ActivityForm({
   });
 
   // Get unique categories from milestones
-  const milestoneCategories = Array.from(
+  const milestoneCategories: string[] = Array.from(
     new Set(milestones.map((m: any) => m.category).filter(Boolean)),
   );
 
@@ -943,13 +1077,7 @@ export default function ActivityForm({
                         size="sm"
                         variant="outline"
                         className="ml-2"
-                        onClick={() => {
-                          // TODO: Add material to database
-                          toast({
-                            title: "Coming Soon",
-                            description: "Quick add to materials library will be available soon",
-                          });
-                        }}
+                        onClick={() => handleQuickAdd(material, initialData.suggestedMaterials)}
                       >
                         <Plus className="h-3 w-3 mr-1" />
                         Quick Add
@@ -1253,6 +1381,93 @@ export default function ActivityForm({
           {activity ? "Update Activity" : "Create Activity"}
         </Button>
       </div>
+
+      {/* Quick Add Dialog */}
+      <Dialog open={quickAddDialogOpen} onOpenChange={setQuickAddDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              {batchProcessMode && remainingMaterials.length > 0
+                ? `Add All Remaining Materials (${remainingMaterials.length + 1} total)`
+                : "Quick Add Material"}
+            </DialogTitle>
+            <DialogDescription>
+              {batchProcessMode && remainingMaterials.length > 0
+                ? "Would you like to add all remaining materials to the same collection? You'll need to specify storage location for each."
+                : "This will create a new material and add it to your library."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {currentQuickAddMaterial && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-3 rounded-md space-y-2">
+                <p className="font-medium text-sm">{currentQuickAddMaterial.name}</p>
+                {currentQuickAddMaterial.description && (
+                  <p className="text-xs text-gray-600">{currentQuickAddMaterial.description}</p>
+                )}
+                <div className="flex gap-2 text-xs">
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                    {currentQuickAddMaterial.category || "General Supplies"}
+                  </span>
+                  {currentQuickAddMaterial.quantity && (
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full">
+                      Qty: {currentQuickAddMaterial.quantity}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="storage-location">Storage Location</Label>
+                <Input
+                  id="storage-location"
+                  placeholder="e.g., Art Cabinet A, Supply Closet 2, etc."
+                  value={storageLocation}
+                  onChange={(e) => setStorageLocation(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && storageLocation.trim()) {
+                      handleQuickAddSubmit();
+                    }
+                  }}
+                />
+                <p className="text-xs text-gray-500">
+                  Where will this material be stored in your facility?
+                </p>
+              </div>
+
+              {batchProcessMode && remainingMaterials.length > 0 && (
+                <div className="bg-blue-50 p-3 rounded-md">
+                  <p className="text-sm text-blue-800">
+                    {remainingMaterials.length} more material{remainingMaterials.length !== 1 ? 's' : ''} remaining after this one
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setQuickAddDialogOpen(false);
+                setBatchProcessMode(false);
+                setRemainingMaterials([]);
+              }}
+              disabled={processingQuickAdd}
+            >
+              {batchProcessMode ? "Skip Remaining" : "Cancel"}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleQuickAddSubmit}
+              disabled={processingQuickAdd || !storageLocation.trim()}
+            >
+              {processingQuickAdd ? "Adding..." : batchProcessMode ? "Add & Continue" : "Add Material"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }
