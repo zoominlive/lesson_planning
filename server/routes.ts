@@ -1694,16 +1694,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('[COPY] Creating new lesson plan for room:', targetRoomId, 'week:', targetWeekStart);
           console.log('[COPY] Source lesson plan status:', sourceLessonPlan.status);
           console.log('[COPY] Source submittedBy:', sourceLessonPlan.submittedBy);
+          console.log('[COPY] Current user ID (req.userId):', req.userId);
+          
+          // Look up the actual user ID (UUID) from the user_id since foreign keys reference users.id
+          const currentUser = await storage.getUserByUserId(req.userId);
+          const actualUserId = currentUser ? currentUser.id : req.userId;
+          console.log('[COPY] Actual user UUID:', actualUserId);
           
           const newLessonPlan = await storage.createLessonPlan({
             tenantId: req.tenantId!,
             locationId: sourceLessonPlan.locationId,
             roomId: targetRoomId,
-            teacherId: req.userId || sourceLessonPlan.teacherId,
+            teacherId: actualUserId || sourceLessonPlan.teacherId,
             weekStart: targetWeekStart,
             scheduleType: sourceLessonPlan.scheduleType,
             status: sourceLessonPlan.status, // Preserve the approval status
-            submittedBy: sourceLessonPlan.submittedBy || req.userId // Use current user if source has NULL
+            submittedBy: actualUserId // Always use current user UUID as submittedBy for copied plans
           });
           
           console.log('[COPY] Created lesson plan:', newLessonPlan.id, 'with status:', newLessonPlan.status);
@@ -1713,9 +1719,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log('[COPY] Updating approval fields for:', newLessonPlan.id);
             const updateResult = await storage.updateLessonPlanApprovalFields(newLessonPlan.id, {
               submittedAt: sourceLessonPlan.submittedAt || new Date(),
-              submittedBy: sourceLessonPlan.submittedBy || req.userId,
+              submittedBy: actualUserId, // Always use current user UUID as submittedBy for copied plans
               approvedAt: sourceLessonPlan.approvedAt,
-              approvedBy: sourceLessonPlan.approvedBy || (sourceLessonPlan.status === 'approved' ? req.userId : null),
+              approvedBy: sourceLessonPlan.approvedBy || (sourceLessonPlan.status === 'approved' ? actualUserId : null),
               reviewNotes: sourceLessonPlan.reviewNotes ? `Copied from approved plan: ${sourceLessonPlan.reviewNotes}` : 'Copied from approved plan'
             });
             console.log('[COPY] Update result:', updateResult);

@@ -286,6 +286,15 @@ export function CopyLessonPlanModal({
                       className="rounded-md border"
                       initialFocus
                     />
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => setDatePickerOpen(false)}
+                      >
+                        Done
+                      </Button>
+                    </div>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -335,17 +344,6 @@ export function CopyLessonPlanModal({
                 </div>
               )}
             </div>
-
-            {selectedRooms.length > 0 && selectedWeeks.length > 0 && (
-              <Alert>
-                <AlertDescription>
-                  This will copy the lesson plan to {selectedRooms.length}{" "}
-                  room(s) for {selectedWeeks.length} week(s). Total:{" "}
-                  {selectedRooms.length * selectedWeeks.length} lesson plan(s)
-                  will be created.
-                </AlertDescription>
-              </Alert>
-            )}
           </div>
 
           <DialogFooter>
