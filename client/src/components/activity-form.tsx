@@ -94,6 +94,7 @@ export default function ActivityForm({
     string | null
   >(null);
   const [batchProcessMode, setBatchProcessMode] = useState(false);
+  const [addedMaterials, setAddedMaterials] = useState<Set<string>>(new Set()); // Track which materials have been added
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -129,22 +130,15 @@ export default function ActivityForm({
       tenantId: "", // Will be set by backend
       ageGroupIds: activity?.ageGroupIds || [],
       // Additional fields from AI generation (stored as extended data)
-      ...(initialData && {
-        objectives: initialData.objectives,
-        preparationTime: initialData.preparationTime,
-        safetyConsiderations: initialData.safetyConsiderations,
-        spaceRequired: initialData.spaceRequired,
-        groupSize: initialData.groupSize,
-        minChildren: initialData.minChildren || activity?.minChildren || 1,
-        maxChildren: initialData.maxChildren || activity?.maxChildren || 10,
-        messLevel: initialData.messLevel,
-        variations: initialData.variations,
-      }),
-      // Include min/max children even when not from AI data
-      ...(!initialData && {
-        minChildren: activity?.minChildren || 1,
-        maxChildren: activity?.maxChildren || 10,
-      }),
+      objectives: initialData?.objectives || activity?.objectives || [],
+      preparationTime: initialData?.preparationTime || activity?.preparationTime || null,
+      safetyConsiderations: initialData?.safetyConsiderations || activity?.safetyConsiderations || [],
+      spaceRequired: initialData?.spaceRequired || activity?.spaceRequired || null,
+      groupSize: initialData?.groupSize || activity?.groupSize || null,
+      minChildren: initialData?.minChildren || activity?.minChildren || 1,
+      maxChildren: initialData?.maxChildren || activity?.maxChildren || 10,
+      messLevel: initialData?.messLevel || activity?.messLevel || null,
+      variations: initialData?.variations || activity?.variations || [],
     },
   });
 
@@ -361,6 +355,16 @@ export default function ActivityForm({
 
   // Quick Add functions
   const handleQuickAdd = (material: any, allMaterials: any[]) => {
+    // Check if this material was already added
+    const materialKey = `${material.name}-${material.category}`;
+    if (addedMaterials.has(materialKey)) {
+      toast({
+        title: "Material already added",
+        description: `${material.name} has already been added to your library`,
+      });
+      return;
+    }
+    
     setCurrentQuickAddMaterial(material);
     setRemainingMaterials(allMaterials.filter((m) => m !== material));
     setQuickAddDialogOpen(true);
@@ -424,25 +428,15 @@ export default function ActivityForm({
       photoUrl: `/api/materials/images/${material.name.toLowerCase().replace(/\s+/g, "_")}.png`,
     };
 
-    console.log("[QuickAdd] Creating material with data:", materialData);
-    console.log("[QuickAdd] Material name:", material.name);
-    console.log("[QuickAdd] Storage location:", storageLocation);
-    console.log("[QuickAdd] Location IDs:", locationIds);
-    console.log("[QuickAdd] Age groups:", materialAgeGroups);
+
 
     const createdMaterial = await apiRequest(
       "POST",
       "/api/materials",
       materialData,
     );
-    console.log(
-      "[QuickAdd] Created material:",
-      createdMaterial.id,
-      createdMaterial.name,
-    );
 
     // Add material to collection
-    console.log("[QuickAdd] Adding material to collection:", collectionId);
     await apiRequest(
       "POST",
       `/api/material-collections/${collectionId}/materials`,
@@ -450,10 +444,13 @@ export default function ActivityForm({
         materialIds: [createdMaterial.id],
       },
     );
-    console.log("[QuickAdd] Successfully added material to collection");
 
     // Add material to selected materials for this activity
     setSelectedMaterials((prev) => [...prev, createdMaterial.id]);
+    
+    // Track that this material has been added
+    const materialKey = `${material.name}-${material.category || "General"}`;
+    setAddedMaterials((prev) => new Set(Array.from(prev).concat(materialKey)));
 
     return { material: createdMaterial, collectionId };
   };
@@ -479,7 +476,7 @@ export default function ActivityForm({
         const result = await createMaterialFromSuggestion(
           material,
           storageLocation,
-          collectionId,
+          collectionId || undefined,
         );
         addedMaterials.push(result.material);
         // Use the collection ID from the first material for all subsequent ones
@@ -525,7 +522,7 @@ export default function ActivityForm({
       const result = await createMaterialFromSuggestion(
         currentQuickAddMaterial,
         storageLocation,
-        activityCollectionId,
+        activityCollectionId || undefined,
       );
 
       // Update the collection ID if it was created for the first material
@@ -573,8 +570,6 @@ export default function ActivityForm({
   };
 
   const onSubmit = (data: any) => {
-    console.log("[ActivityForm] Submitting activity with raw data:", data);
-
     // Remove only the imagePrompt field as it's not stored in the database
     const { imagePrompt, ...dataWithoutPrompt } = data;
 
@@ -598,8 +593,6 @@ export default function ActivityForm({
       messLevel: dataWithoutPrompt.messLevel || null,
       variations: dataWithoutPrompt.variations || [],
     };
-
-    console.log("[ActivityForm] Final form data being sent:", formData);
 
     if (activity) {
       updateMutation.mutate(formData);
@@ -705,7 +698,7 @@ export default function ActivityForm({
               <Textarea
                 id="description"
                 {...register("description")}
-                rows={3}
+                className="min-h-[120px] resize-y"
                 data-testid="textarea-activity-description"
               />
               {errors.description && (
@@ -1136,15 +1129,6 @@ export default function ActivityForm({
           </div>
 
           {/* AI Suggested Materials Section */}
-          {console.log("[ActivityForm] initialData:", initialData)}
-          {console.log(
-            "[ActivityForm] suggestedMaterials:",
-            initialData?.suggestedMaterials,
-          )}
-          {console.log(
-            "[ActivityForm] suggestedMaterials length:",
-            initialData?.suggestedMaterials?.length,
-          )}
           {initialData?.suggestedMaterials &&
             initialData.suggestedMaterials.length > 0 && (
               <div className="border-2 border-dashed border-turquoise/50 rounded-lg p-4 bg-gradient-to-br from-turquoise/5 to-coral-red/5">
@@ -1171,56 +1155,74 @@ export default function ActivityForm({
                 </div>
                 <div className="space-y-2">
                   {initialData.suggestedMaterials.map(
-                    (material: any, index: number) => (
-                      <div
-                        key={index}
-                        className="bg-white rounded-lg p-3 border border-gray-200"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-sm">
-                                {material.name}
-                              </span>
-                              <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
-                                {material.category || "General"}
-                              </span>
-                              {material.quantity && (
-                                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
-                                  Qty: {material.quantity}
+                    (material: any, index: number) => {
+                      const materialKey = `${material.name}-${material.category || "General"}`;
+                      const isAdded = addedMaterials.has(materialKey);
+                      
+                      return (
+                        <div
+                          key={index}
+                          className={`bg-white rounded-lg p-3 border ${isAdded ? 'border-green-400 bg-green-50' : 'border-gray-200'}`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-sm">
+                                  {material.name}
                                 </span>
+                                <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
+                                  {material.category || "General"}
+                                </span>
+                                {material.quantity && (
+                                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                                    Qty: {material.quantity}
+                                  </span>
+                                )}
+                                {isAdded && (
+                                  <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
+                                    ✓ Added
+                                  </span>
+                                )}
+                              </div>
+                              {material.description && (
+                                <p className="text-xs text-gray-600">
+                                  {material.description}
+                                </p>
+                              )}
+                              {material.safetyNotes && (
+                                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                                  <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
+                                  Safety: {material.safetyNotes}
+                                </p>
                               )}
                             </div>
-                            {material.description && (
-                              <p className="text-xs text-gray-600">
-                                {material.description}
-                              </p>
-                            )}
-                            {material.safetyNotes && (
-                              <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                                <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
-                                Safety: {material.safetyNotes}
-                              </p>
+                            {!isAdded ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="ml-2"
+                                onClick={() =>
+                                  handleQuickAdd(
+                                    material,
+                                    initialData.suggestedMaterials,
+                                  )
+                                }
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                Quick Add
+                              </Button>
+                            ) : (
+                              <div className="ml-2 text-green-600">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </div>
                             )}
                           </div>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="ml-2"
-                            onClick={() =>
-                              handleQuickAdd(
-                                material,
-                                initialData.suggestedMaterials,
-                              )
-                            }
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Quick Add
-                          </Button>
                         </div>
-                      </div>
-                    ),
+                      );
+                    }
                   )}
                 </div>
                 <div className="mt-3 p-2 bg-amber-50 rounded-md">

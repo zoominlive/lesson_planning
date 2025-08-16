@@ -9,6 +9,12 @@ This project is a comprehensive lesson planning application for early childhood 
   - Database schema: Added `material_collections` and `material_collection_items` tables
   - Backend API: Full CRUD operations for collections and material-collection associations  
   - UI enhancements: Collection selection in material forms and filtering in materials library
+- **AI Activity Generation Improvements**:
+  - Fixed description textarea to auto-expand for better visibility of AI-generated content
+  - Ensured all AI-generated fields (objectives, safety considerations, etc.) are properly saved to database
+  - Improved Quick Add materials visual feedback to show when materials have been added
+  - Cleaned up console.log statements from production code
+  - Fixed TypeScript issues with Set iteration and null/undefined type handling
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
