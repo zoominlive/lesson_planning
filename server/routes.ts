@@ -2333,28 +2333,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/categories", async (req: AuthenticatedRequest, res) => {
     try {
-      // Parse the request body without tenantId
-      const bodyData = req.body;
+      console.log('[POST /api/categories] Request body:', req.body);
+      console.log('[POST /api/categories] Request tenantId:', req.tenantId);
+      console.log('[POST /api/categories] Request userId:', req.userId);
       
-      // Add tenantId from authenticated context
-      const data = {
-        ...bodyData,
-        tenantId: req.user!.tenantId
+      if (!req.tenantId) {
+        console.error('[POST /api/categories] No tenantId in authenticated request!');
+        return res.status(401).json({ error: "Tenant context required" });
+      }
+      
+      // Don't accept tenantId from body, use it from the authenticated request
+      const { tenantId: bodyTenantId, ...bodyWithoutTenant } = req.body;
+      
+      // Add the tenantId from the authenticated request
+      const dataWithTenant = {
+        ...bodyWithoutTenant,
+        tenantId: req.tenantId // Use the authenticated tenant ID
       };
       
+      console.log('[POST /api/categories] Data with tenant:', dataWithTenant);
+      
       // Validate the complete data with tenantId
-      const validatedData = insertCategorySchema.parse(data);
+      const validatedData = insertCategorySchema.parse(dataWithTenant);
+      console.log('[POST /api/categories] Validated data:', validatedData);
       
       // Validate location access
       const accessCheck = await validateLocationAccess(req, validatedData.locationId);
       if (!accessCheck.allowed) {
+        console.log('[POST /api/categories] Location access denied:', accessCheck.message);
         return res.status(403).json({ error: accessCheck.message });
       }
       
       const category = await storage.createCategory(validatedData);
+      console.log('[POST /api/categories] Category created successfully:', category);
       res.status(201).json(category);
     } catch (error) {
-      console.error("Category creation error:", error);
+      console.error('[POST /api/categories] Error creating category:', error);
+      if (error instanceof Error) {
+        console.error('[POST /api/categories] Error message:', error.message);
+        console.error('[POST /api/categories] Error stack:', error.stack);
+      }
       res.status(400).json({ error: "Invalid category data" });
     }
   });
