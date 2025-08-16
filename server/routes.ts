@@ -2333,15 +2333,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/categories", async (req: AuthenticatedRequest, res) => {
     try {
-      const data = insertCategorySchema.parse(req.body);
+      // Parse the request body without tenantId
+      const bodyData = req.body;
+      
+      // Add tenantId from authenticated context
+      const data = {
+        ...bodyData,
+        tenantId: req.user!.tenantId
+      };
+      
+      // Validate the complete data with tenantId
+      const validatedData = insertCategorySchema.parse(data);
       
       // Validate location access
-      const accessCheck = await validateLocationAccess(req, data.locationId);
+      const accessCheck = await validateLocationAccess(req, validatedData.locationId);
       if (!accessCheck.allowed) {
         return res.status(403).json({ error: accessCheck.message });
       }
       
-      const category = await storage.createCategory(data);
+      const category = await storage.createCategory(validatedData);
       res.status(201).json(category);
     } catch (error) {
       console.error("Category creation error:", error);
