@@ -698,7 +698,7 @@ export default function ActivityForm({
               <Textarea
                 id="description"
                 {...register("description")}
-                className="min-h-[120px] resize-y"
+                className="min-h-[200px] resize-y"
                 data-testid="textarea-activity-description"
               />
               {errors.description && (
