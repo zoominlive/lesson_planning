@@ -1345,13 +1345,14 @@ export default function ActivityForm({
                   {index + 1}
                 </span>
                 <div className="flex-1 space-y-2">
-                  <Input
+                  <Textarea
                     value={instruction.text}
                     onChange={(e) =>
                       updateInstructionText(index, e.target.value)
                     }
                     placeholder="Enter instruction step..."
                     data-testid={`input-instruction-${index}`}
+                    className="min-h-[80px] resize-y"
                   />
 
                   {/* Instruction Image Upload */}
