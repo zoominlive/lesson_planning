@@ -85,11 +85,14 @@ export default function ActivityForm({
 
   // Quick Add dialog state
   const [quickAddDialogOpen, setQuickAddDialogOpen] = useState(false);
-  const [currentQuickAddMaterial, setCurrentQuickAddMaterial] = useState<any>(null);
+  const [currentQuickAddMaterial, setCurrentQuickAddMaterial] =
+    useState<any>(null);
   const [storageLocation, setStorageLocation] = useState("");
   const [processingQuickAdd, setProcessingQuickAdd] = useState(false);
   const [remainingMaterials, setRemainingMaterials] = useState<any[]>([]);
-  const [activityCollectionId, setActivityCollectionId] = useState<string | null>(null);
+  const [activityCollectionId, setActivityCollectionId] = useState<
+    string | null
+  >(null);
   const [batchProcessMode, setBatchProcessMode] = useState(false);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -144,6 +147,13 @@ export default function ActivityForm({
       }),
     },
   });
+
+  // Fetch locations to get the current location name
+  const { data: locations = [] } = useQuery({
+    queryKey: ["/api/locations"],
+  });
+
+  const currentLocation = locations.find((loc: any) => loc.id === selectedLocationId);
 
   // Fetch age groups for the selected location
   const { data: ageGroups = [] } = useQuery({
@@ -358,17 +368,24 @@ export default function ActivityForm({
     setBatchProcessMode(false);
   };
 
-  const createMaterialFromSuggestion = async (material: any, storageLocation: string, existingCollectionId?: string) => {
+  const createMaterialFromSuggestion = async (
+    material: any,
+    storageLocation: string,
+    existingCollectionId?: string,
+  ) => {
     const activityTitle = watch("title") || initialData?.title || "Activity";
-    
+
     // Get appropriate age groups based on the activity's age range
     const activityAgeStart = initialData?.ageRangeStart || 3;
     const activityAgeEnd = initialData?.ageRangeEnd || 5;
-    
+
     // Map activity age range to age group IDs
     const materialAgeGroups = ageGroups
       .filter((ag: any) => {
-        return (ag.ageRangeStart <= activityAgeEnd && ag.ageRangeEnd >= activityAgeStart);
+        return (
+          ag.ageRangeStart <= activityAgeEnd &&
+          ag.ageRangeEnd >= activityAgeStart
+        );
       })
       .map((ag: any) => ag.id);
 
@@ -376,28 +393,35 @@ export default function ActivityForm({
     let collectionId = existingCollectionId || activityCollectionId;
     if (!collectionId) {
       // Create collection with activity name
-      const collectionResponse = await apiRequest("POST", "/api/material-collections", {
-        name: activityTitle,
-        description: `Materials for ${activityTitle} activity`
-      });
+      const collectionResponse = await apiRequest(
+        "POST",
+        "/api/material-collections",
+        {
+          name: activityTitle,
+          description: `Materials for ${activityTitle} activity`,
+        },
+      );
       collectionId = collectionResponse.id;
       setActivityCollectionId(collectionId);
     }
 
-    // Get all user locations
-    const userLocations = await queryClient.fetchQuery({
-      queryKey: ["/api/locations"],
-    }) as any[];
-    const locationIds = userLocations.map((loc: any) => loc.id);
+    // Use the selected location from the activity form
+    const locationIds = selectedLocationId ? [selectedLocationId] : [];
+    
+    if (locationIds.length === 0) {
+      throw new Error("No location selected for this activity");
+    }
 
     // Create the material - only include fields that exist in the materials table
     const materialData = {
       name: material.name,
-      description: material.description || `${material.quantity || "As needed"} - Required for: ${activityTitle}`,
+      description:
+        material.description ||
+        `${material.quantity || "As needed"} - Required for: ${activityTitle}`,
       location: storageLocation,
-      locationIds: locationIds, // All user locations
+      locationIds: locationIds, // Only the selected location
       ageGroups: materialAgeGroups, // Note: it's ageGroups not ageGroupIds in the schema
-      photoUrl: `/api/materials/images/${material.name.toLowerCase().replace(/\s+/g, '_')}.png`
+      photoUrl: `/api/materials/images/${material.name.toLowerCase().replace(/\s+/g, "_")}.png`,
     };
 
     console.log("[QuickAdd] Creating material with data:", materialData);
@@ -406,14 +430,26 @@ export default function ActivityForm({
     console.log("[QuickAdd] Location IDs:", locationIds);
     console.log("[QuickAdd] Age groups:", materialAgeGroups);
 
-    const createdMaterial = await apiRequest("POST", "/api/materials", materialData);
-    console.log("[QuickAdd] Created material:", createdMaterial.id, createdMaterial.name);
+    const createdMaterial = await apiRequest(
+      "POST",
+      "/api/materials",
+      materialData,
+    );
+    console.log(
+      "[QuickAdd] Created material:",
+      createdMaterial.id,
+      createdMaterial.name,
+    );
 
     // Add material to collection
     console.log("[QuickAdd] Adding material to collection:", collectionId);
-    await apiRequest("POST", `/api/material-collections/${collectionId}/materials`, {
-      materialIds: [createdMaterial.id]
-    });
+    await apiRequest(
+      "POST",
+      `/api/material-collections/${collectionId}/materials`,
+      {
+        materialIds: [createdMaterial.id],
+      },
+    );
     console.log("[QuickAdd] Successfully added material to collection");
 
     // Add material to selected materials for this activity
@@ -426,7 +462,8 @@ export default function ActivityForm({
     if (!storageLocation.trim()) {
       toast({
         title: "Storage location required",
-        description: "Please enter a default storage location for all materials",
+        description:
+          "Please enter a default storage location for all materials",
         variant: "destructive",
       });
       return;
@@ -437,9 +474,13 @@ export default function ActivityForm({
       // Add all remaining materials with the same storage location
       const addedMaterials = [];
       let collectionId = activityCollectionId;
-      
+
       for (const material of remainingMaterials) {
-        const result = await createMaterialFromSuggestion(material, storageLocation, collectionId);
+        const result = await createMaterialFromSuggestion(
+          material,
+          storageLocation,
+          collectionId,
+        );
         addedMaterials.push(result.material);
         // Use the collection ID from the first material for all subsequent ones
         if (!collectionId) {
@@ -454,8 +495,11 @@ export default function ActivityForm({
 
       setQuickAddDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/material-collections"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/material-collections"],
+      });
     } catch (error) {
+      console.error("[QuickAdd] Error adding materials:", error);
       toast({
         title: "Failed to add materials",
         description: error instanceof Error ? error.message : "Unknown error",
@@ -478,13 +522,17 @@ export default function ActivityForm({
 
     setProcessingQuickAdd(true);
     try {
-      const result = await createMaterialFromSuggestion(currentQuickAddMaterial, storageLocation, activityCollectionId);
-      
+      const result = await createMaterialFromSuggestion(
+        currentQuickAddMaterial,
+        storageLocation,
+        activityCollectionId,
+      );
+
       // Update the collection ID if it was created for the first material
       if (!activityCollectionId && result.collectionId) {
         setActivityCollectionId(result.collectionId);
       }
-      
+
       toast({
         title: "Material added",
         description: `${currentQuickAddMaterial.name} has been added to your materials library`,
@@ -505,7 +553,9 @@ export default function ActivityForm({
         // All done
         setQuickAddDialogOpen(false);
         queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/material-collections"] });
+        queryClient.invalidateQueries({
+          queryKey: ["/api/material-collections"],
+        });
         toast({
           title: "All materials added",
           description: `Materials have been added to the "${watch("title") || "Activity"}" collection`,
@@ -1086,70 +1136,102 @@ export default function ActivityForm({
           </div>
 
           {/* AI Suggested Materials Section */}
-          {console.log('[ActivityForm] initialData:', initialData)}
-          {console.log('[ActivityForm] suggestedMaterials:', initialData?.suggestedMaterials)}
-          {console.log('[ActivityForm] suggestedMaterials length:', initialData?.suggestedMaterials?.length)}
-          {initialData?.suggestedMaterials && initialData.suggestedMaterials.length > 0 && (
-            <div className="border-2 border-dashed border-turquoise/50 rounded-lg p-4 bg-gradient-to-br from-turquoise/5 to-coral-red/5">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-coral-red to-turquoise flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <h4 className="font-semibold text-sm">AI Suggested Materials</h4>
-                <span className="text-xs text-gray-500">
-                  Ready to add to your materials library
-                </span>
-              </div>
-              <div className="space-y-2">
-                {initialData.suggestedMaterials.map((material: any, index: number) => (
-                  <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm">{material.name}</span>
-                          <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
-                            {material.category || "General"}
-                          </span>
-                          {material.quantity && (
-                            <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
-                              Qty: {material.quantity}
-                            </span>
-                          )}
-                        </div>
-                        {material.description && (
-                          <p className="text-xs text-gray-600">{material.description}</p>
-                        )}
-                        {material.safetyNotes && (
-                          <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                            <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
-                            Safety: {material.safetyNotes}
-                          </p>
-                        )}
-                      </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="ml-2"
-                        onClick={() => handleQuickAdd(material, initialData.suggestedMaterials)}
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Quick Add
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 p-2 bg-amber-50 rounded-md">
-                <p className="text-xs text-amber-800">
-                  💡 <strong>Tip:</strong> Use "Quick Add" to instantly save these materials to your library, 
-                  or manually select from existing materials below.
-                </p>
-              </div>
-            </div>
+          {console.log("[ActivityForm] initialData:", initialData)}
+          {console.log(
+            "[ActivityForm] suggestedMaterials:",
+            initialData?.suggestedMaterials,
           )}
+          {console.log(
+            "[ActivityForm] suggestedMaterials length:",
+            initialData?.suggestedMaterials?.length,
+          )}
+          {initialData?.suggestedMaterials &&
+            initialData.suggestedMaterials.length > 0 && (
+              <div className="border-2 border-dashed border-turquoise/50 rounded-lg p-4 bg-gradient-to-br from-turquoise/5 to-coral-red/5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-coral-red to-turquoise flex items-center justify-center">
+                    <svg
+                      className="w-5 h-5 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  </div>
+                  <h4 className="font-semibold text-sm">Suggested Materials</h4>
+                  <span className="text-xs text-gray-500">
+                    Ready to add to your materials library
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {initialData.suggestedMaterials.map(
+                    (material: any, index: number) => (
+                      <div
+                        key={index}
+                        className="bg-white rounded-lg p-3 border border-gray-200"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-sm">
+                                {material.name}
+                              </span>
+                              <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
+                                {material.category || "General"}
+                              </span>
+                              {material.quantity && (
+                                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                                  Qty: {material.quantity}
+                                </span>
+                              )}
+                            </div>
+                            {material.description && (
+                              <p className="text-xs text-gray-600">
+                                {material.description}
+                              </p>
+                            )}
+                            {material.safetyNotes && (
+                              <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                                <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
+                                Safety: {material.safetyNotes}
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="ml-2"
+                            onClick={() =>
+                              handleQuickAdd(
+                                material,
+                                initialData.suggestedMaterials,
+                              )
+                            }
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Quick Add
+                          </Button>
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+                <div className="mt-3 p-2 bg-amber-50 rounded-md">
+                  <p className="text-xs text-amber-800">
+                    💡 <strong>Tip:</strong> Use "Quick Add" to instantly save
+                    these materials to your library, or manually select from
+                    existing materials below.
+                  </p>
+                </div>
+              </div>
+            )}
 
           {/* Materials Filters */}
           <div className="flex gap-3 items-center">
@@ -1451,76 +1533,94 @@ export default function ActivityForm({
             <DialogDescription>
               {batchProcessMode && remainingMaterials.length > 0
                 ? "Choose how you'd like to add the remaining materials"
-                : "This will create a new material and add it to your library."}
+                : `This will create a new material and add it to your library${currentLocation ? ` at ${currentLocation.name}` : ""}.`}
             </DialogDescription>
           </DialogHeader>
 
           {/* Batch mode choice after first material */}
-          {batchProcessMode && remainingMaterials.length > 0 && !currentQuickAddMaterial && (
-            <div className="space-y-4">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-sm font-medium mb-2">You've successfully added the first material!</p>
-                <p className="text-sm text-gray-600">
-                  {remainingMaterials.length} material{remainingMaterials.length !== 1 ? 's' : ''} remaining. 
-                  How would you like to proceed?
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="batch-storage-location">Default Storage Location (for all materials)</Label>
-                <Input
-                  id="batch-storage-location"
-                  placeholder="e.g., Art Cabinet A, Supply Closet 2, etc."
-                  value={storageLocation}
-                  onChange={(e) => setStorageLocation(e.target.value)}
-                />
-              </div>
+          {batchProcessMode &&
+            remainingMaterials.length > 0 &&
+            !currentQuickAddMaterial && (
+              <div className="space-y-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-sm font-medium mb-2">
+                    You've successfully added the first material!
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {remainingMaterials.length} material
+                    {remainingMaterials.length !== 1 ? "s" : ""} remaining. How
+                    would you like to proceed?
+                  </p>
+                  {currentLocation && (
+                    <p className="text-xs text-blue-700 mt-2">
+                      Materials will be added to: {currentLocation.name}
+                    </p>
+                  )}
+                </div>
 
-              <div className="flex flex-col gap-2">
-                <Button
-                  type="button"
-                  onClick={handleBatchAddAll}
-                  disabled={processingQuickAdd || !storageLocation.trim()}
-                  className="w-full"
-                >
-                  {processingQuickAdd ? "Adding All..." : `Add All ${remainingMaterials.length} Materials`}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setCurrentQuickAddMaterial(remainingMaterials[0]);
-                    setStorageLocation("");
-                  }}
-                  disabled={processingQuickAdd}
-                  className="w-full"
-                >
-                  Add One by One
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => {
-                    setQuickAddDialogOpen(false);
-                    setBatchProcessMode(false);
-                    setRemainingMaterials([]);
-                  }}
-                  disabled={processingQuickAdd}
-                  className="w-full"
-                >
-                  Skip Remaining
-                </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="batch-storage-location">
+                    Default Storage Location (for all materials)
+                  </Label>
+                  <Input
+                    id="batch-storage-location"
+                    placeholder="e.g., Art Cabinet A, Supply Closet 2, etc."
+                    value={storageLocation}
+                    onChange={(e) => setStorageLocation(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleBatchAddAll}
+                    disabled={processingQuickAdd || !storageLocation.trim()}
+                    className="w-full"
+                  >
+                    {processingQuickAdd
+                      ? "Adding All..."
+                      : `Add All ${remainingMaterials.length} Materials`}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setCurrentQuickAddMaterial(remainingMaterials[0]);
+                      setStorageLocation("");
+                    }}
+                    disabled={processingQuickAdd}
+                    className="w-full"
+                  >
+                    Add One by One
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setQuickAddDialogOpen(false);
+                      setBatchProcessMode(false);
+                      setRemainingMaterials([]);
+                    }}
+                    disabled={processingQuickAdd}
+                    className="w-full"
+                  >
+                    Skip Remaining
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Individual material add */}
           {currentQuickAddMaterial && (
             <div className="space-y-4">
               <div className="bg-gray-50 p-3 rounded-md space-y-2">
-                <p className="font-medium text-sm">{currentQuickAddMaterial.name}</p>
+                <p className="font-medium text-sm">
+                  {currentQuickAddMaterial.name}
+                </p>
                 {currentQuickAddMaterial.description && (
-                  <p className="text-xs text-gray-600">{currentQuickAddMaterial.description}</p>
+                  <p className="text-xs text-gray-600">
+                    {currentQuickAddMaterial.description}
+                  </p>
                 )}
                 <div className="flex gap-2 text-xs">
                   <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
@@ -1548,14 +1648,16 @@ export default function ActivityForm({
                   }}
                 />
                 <p className="text-xs text-gray-500">
-                  Where will this material be stored in your facility?
+                  Where will this material be stored {currentLocation ? `at ${currentLocation.name}` : "in your facility"}?
                 </p>
               </div>
 
               {batchProcessMode && remainingMaterials.length > 1 && (
                 <div className="bg-blue-50 p-3 rounded-md">
                   <p className="text-sm text-blue-800">
-                    {remainingMaterials.length - 1} more material{remainingMaterials.length - 1 !== 1 ? 's' : ''} after this one
+                    {remainingMaterials.length - 1} more material
+                    {remainingMaterials.length - 1 !== 1 ? "s" : ""} after this
+                    one
                   </p>
                 </div>
               )}
