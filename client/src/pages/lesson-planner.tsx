@@ -105,6 +105,23 @@ export default function LessonPlanner() {
     enabled: !!selectedLocation && !!selectedRoom,
   });
   
+  // Log fetched lesson plans for debugging
+  useEffect(() => {
+    if (lessonPlans && lessonPlans.length > 0) {
+      console.log('[LESSON PLANNER] Fetched lesson plans:', lessonPlans.length, 'plans');
+      lessonPlans.forEach((lp: any) => {
+        console.log('[LESSON PLAN]', {
+          id: lp.id,
+          roomId: lp.roomId,
+          weekStart: lp.weekStart,
+          status: lp.status,
+          teacherId: lp.teacherId,
+          submittedBy: lp.submittedBy
+        });
+      });
+    }
+  }, [lessonPlans]);
+  
 
 
   // Fetch location settings to get schedule type
@@ -114,6 +131,14 @@ export default function LessonPlanner() {
   });
 
   // Find current lesson plan
+  console.log('[LESSON PLANNER] Looking for lesson plan with:', {
+    selectedRoom,
+    selectedLocation,
+    currentWeek: currentWeekDate.toISOString(),
+    scheduleType: locationSettings?.scheduleType || 'position-based',
+    totalLessonPlans: lessonPlans.length
+  });
+
   const currentLessonPlan = lessonPlans.find((lp: any) => {
     // The lesson plan weekStart is already at the start of the week (Monday at midnight UTC)
     // The currentWeekDate is also already at the start of the week
@@ -130,8 +155,35 @@ export default function LessonPlanner() {
            lp.roomId === selectedRoom &&
            lp.scheduleType === (locationSettings?.scheduleType || 'position-based');
     
+    // Log detailed matching for debugging
+    if (lp.roomId === selectedRoom || lpDate.getTime() === currentDate.getTime()) {
+      console.log('[LESSON PLAN MATCH CHECK]', {
+        lpId: lp.id,
+        lpRoom: lp.roomId,
+        selectedRoom: selectedRoom,
+        roomMatch: lp.roomId === selectedRoom,
+        lpLocation: lp.locationId,
+        selectedLocation: selectedLocation,
+        locationMatch: lp.locationId === selectedLocation,
+        lpScheduleType: lp.scheduleType,
+        expectedScheduleType: locationSettings?.scheduleType || 'position-based',
+        scheduleTypeMatch: lp.scheduleType === (locationSettings?.scheduleType || 'position-based'),
+        lpWeek: lp.weekStart,
+        currentWeek: currentWeekDate.toISOString(),
+        weekMatch: lpDate.getTime() === currentDate.getTime(),
+        status: lp.status,
+        overallMatch: matches
+      });
+    }
+    
     return matches;
   });
+  
+  if (currentLessonPlan) {
+    console.log('[LESSON PLANNER] Found current lesson plan:', currentLessonPlan.id, 'status:', currentLessonPlan.status);
+  } else {
+    console.log('[LESSON PLANNER] No lesson plan found for current selection');
+  }
   
 
 

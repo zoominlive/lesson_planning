@@ -1691,6 +1691,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Create new lesson plan with basic fields
+          console.log('[COPY] Creating new lesson plan for room:', targetRoomId, 'week:', targetWeekStart);
+          console.log('[COPY] Source lesson plan status:', sourceLessonPlan.status);
+          console.log('[COPY] Source submittedBy:', sourceLessonPlan.submittedBy);
+          
           const newLessonPlan = await storage.createLessonPlan({
             tenantId: req.tenantId!,
             locationId: sourceLessonPlan.locationId,
@@ -1698,18 +1702,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             teacherId: req.userId || sourceLessonPlan.teacherId,
             weekStart: targetWeekStart,
             scheduleType: sourceLessonPlan.scheduleType,
-            status: sourceLessonPlan.status // Preserve the approval status
+            status: sourceLessonPlan.status, // Preserve the approval status
+            submittedBy: sourceLessonPlan.submittedBy || req.userId // Use current user if source has NULL
           });
           
-          // Update the lesson plan with approval fields if source was approved
-          if (sourceLessonPlan.status === 'approved') {
-            await storage.updateLessonPlanApprovalFields(newLessonPlan.id, {
-              submittedAt: sourceLessonPlan.submittedAt,
-              submittedBy: sourceLessonPlan.submittedBy,
+          console.log('[COPY] Created lesson plan:', newLessonPlan.id, 'with status:', newLessonPlan.status);
+          
+          // Update the lesson plan with approval fields if source was approved or submitted
+          if (sourceLessonPlan.status === 'approved' || sourceLessonPlan.status === 'submitted') {
+            console.log('[COPY] Updating approval fields for:', newLessonPlan.id);
+            const updateResult = await storage.updateLessonPlanApprovalFields(newLessonPlan.id, {
+              submittedAt: sourceLessonPlan.submittedAt || new Date(),
+              submittedBy: sourceLessonPlan.submittedBy || req.userId,
               approvedAt: sourceLessonPlan.approvedAt,
-              approvedBy: sourceLessonPlan.approvedBy,
+              approvedBy: sourceLessonPlan.approvedBy || (sourceLessonPlan.status === 'approved' ? req.userId : null),
               reviewNotes: sourceLessonPlan.reviewNotes ? `Copied from approved plan: ${sourceLessonPlan.reviewNotes}` : 'Copied from approved plan'
             });
+            console.log('[COPY] Update result:', updateResult);
           }
           
           // Copy all scheduled activities
