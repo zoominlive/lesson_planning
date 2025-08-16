@@ -1697,8 +1697,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('[COPY] Current user ID (req.userId):', req.userId);
           
           // Look up the actual user ID (UUID) from the user_id since foreign keys reference users.id
-          const allUsers = await storage.getUsers();
-          const currentUser = allUsers.find(u => u.userId === req.userId);
+          const currentUser = await storage.getUserByUserId(req.userId);
           const actualUserId = currentUser ? currentUser.id : req.userId;
           console.log('[COPY] Actual user UUID:', actualUserId);
           
