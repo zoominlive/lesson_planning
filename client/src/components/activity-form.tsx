@@ -896,6 +896,9 @@ export default function ActivityForm({
           </div>
 
           {/* AI Suggested Materials Section */}
+          {console.log('[ActivityForm] initialData:', initialData)}
+          {console.log('[ActivityForm] suggestedMaterials:', initialData?.suggestedMaterials)}
+          {console.log('[ActivityForm] suggestedMaterials length:', initialData?.suggestedMaterials?.length)}
           {initialData?.suggestedMaterials && initialData.suggestedMaterials.length > 0 && (
             <div className="border-2 border-dashed border-turquoise/50 rounded-lg p-4 bg-gradient-to-br from-turquoise/5 to-coral-red/5">
               <div className="flex items-center gap-2 mb-3">

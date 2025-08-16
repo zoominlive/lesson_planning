@@ -109,11 +109,18 @@ export default function AiActivityGenerator({
       
       // Pass the generated activity data to the parent component
       // Include the selected category and age group from the wizard
-      onGenerated({
+      console.log('[AIActivityGenerator] Generated activity result:', result);
+      console.log('[AIActivityGenerator] Suggested materials in result:', result.suggestedMaterials);
+      
+      const activityData = {
         ...result,
         category: selectedCategory,
-        selectedAgeGroupId: selectedAgeGroup
-      });
+        selectedAgeGroupId: selectedAgeGroup,
+        suggestedMaterials: result.suggestedMaterials || []
+      };
+      
+      console.log('[AIActivityGenerator] Passing to onGenerated:', activityData);
+      onGenerated(activityData);
       
       // Reset the dialog
       setStep(1);
