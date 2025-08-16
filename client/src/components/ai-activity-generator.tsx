@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Wand2, Loader2, Sparkles, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -30,6 +31,7 @@ export default function AiActivityGenerator({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationMessage, setGenerationMessage] = useState("");
   const [retryCount, setRetryCount] = useState(0);
+  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
 
   const handleGenerate = async () => {
     if (!selectedAgeGroup || !selectedCategory || isQuiet === null) {
@@ -183,18 +185,53 @@ export default function AiActivityGenerator({
     }
   };
 
+  const handleClose = () => {
+    if (step > 1 || selectedAgeGroup || selectedCategory || isQuiet !== null) {
+      setShowExitConfirmation(true);
+    } else {
+      onOpenChange(false);
+    }
+  };
+
+  const resetAndClose = () => {
+    setStep(1);
+    setSelectedAgeGroup("");
+    setSelectedCategory("");
+    setIsQuiet(null);
+    setGenerationMessage("");
+    onOpenChange(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-yellow-500" />
-            AI Activity Generator
-          </DialogTitle>
-          <DialogDescription>
-            Answer a few quick questions and let AI create a comprehensive activity for you.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog 
+        open={open} 
+        onOpenChange={(open) => {
+          if (!open) {
+            handleClose();
+          } else {
+            onOpenChange(true);
+          }
+        }}
+      >
+        <DialogContent 
+          className="max-w-2xl"
+          onInteractOutside={(e) => {
+            if (step > 1 || selectedAgeGroup || selectedCategory || isQuiet !== null) {
+              e.preventDefault();
+              setShowExitConfirmation(true);
+            }
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-yellow-500" />
+              AI Activity Generator
+            </DialogTitle>
+            <DialogDescription>
+              Answer a few quick questions and let AI create a comprehensive activity for you.
+            </DialogDescription>
+          </DialogHeader>
 
         <div className="mt-6">
           {/* Progress indicators */}
@@ -324,7 +361,7 @@ export default function AiActivityGenerator({
           <div className="flex justify-between mt-8">
             <Button
               variant="outline"
-              onClick={step === 1 ? () => onOpenChange(false) : handleBack}
+              onClick={step === 1 ? handleClose : handleBack}
               disabled={isGenerating}
             >
               {step === 1 ? 'Cancel' : 'Back'}
@@ -353,7 +390,34 @@ export default function AiActivityGenerator({
             </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* Exit Confirmation Dialog */}
+      <AlertDialog open={showExitConfirmation} onOpenChange={setShowExitConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Activity Generation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel? Your progress will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowExitConfirmation(false)}>
+              Continue
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                resetAndClose();
+                setShowExitConfirmation(false);
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Cancel Generation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

@@ -26,6 +26,8 @@ export default function ActivityLibrary() {
   const [aiGeneratedData, setAiGeneratedData] = useState<any>(null);
   const [selectedLocationId, setSelectedLocationId] = useState("");
   const [activityToDelete, setActivityToDelete] = useState<Activity | null>(null);
+  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
+  const [pendingCloseAction, setPendingCloseAction] = useState<() => void>(() => {});
 
   const { data: activities = [], isLoading } = useQuery<Activity[]>({
     queryKey: ["/api/activities", selectedLocationId],
@@ -221,8 +223,37 @@ export default function ActivityLibrary() {
             />
 
             {/* Activity Form Dialog */}
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <Dialog 
+              open={isCreateDialogOpen} 
+              onOpenChange={(open) => {
+                if (!open && aiGeneratedData) {
+                  // Show confirmation if trying to close with AI-generated data
+                  setShowExitConfirmation(true);
+                  setPendingCloseAction(() => () => {
+                    setIsCreateDialogOpen(false);
+                    setAiGeneratedData(null);
+                  });
+                } else {
+                  setIsCreateDialogOpen(open);
+                  if (!open) {
+                    setAiGeneratedData(null);
+                  }
+                }
+              }}
+            >
+              <DialogContent 
+                className="max-w-4xl max-h-[90vh] overflow-y-auto"
+                onInteractOutside={(e) => {
+                  if (aiGeneratedData) {
+                    e.preventDefault();
+                    setShowExitConfirmation(true);
+                    setPendingCloseAction(() => () => {
+                      setIsCreateDialogOpen(false);
+                      setAiGeneratedData(null);
+                    });
+                  }
+                }}
+              >
                 <DialogHeader>
                   <DialogTitle>
                     {aiGeneratedData ? 'Review and Customize AI-Generated Activity' : 'Create New Activity'}
@@ -234,8 +265,16 @@ export default function ActivityLibrary() {
                     setAiGeneratedData(null);
                   }}
                   onCancel={() => {
-                    setIsCreateDialogOpen(false);
-                    setAiGeneratedData(null);
+                    if (aiGeneratedData) {
+                      setShowExitConfirmation(true);
+                      setPendingCloseAction(() => () => {
+                        setIsCreateDialogOpen(false);
+                        setAiGeneratedData(null);
+                      });
+                    } else {
+                      setIsCreateDialogOpen(false);
+                      setAiGeneratedData(null);
+                    }
                   }}
                   selectedLocationId={selectedLocationId}
                   initialData={aiGeneratedData}
@@ -499,6 +538,32 @@ export default function ActivityLibrary() {
               className="bg-red-600 hover:bg-red-700"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Exit Confirmation Dialog */}
+      <AlertDialog open={showExitConfirmation} onOpenChange={setShowExitConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard Activity?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have an AI-generated activity that hasn't been saved. Are you sure you want to discard it? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowExitConfirmation(false)}>
+              Continue Editing
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                pendingCloseAction();
+                setShowExitConfirmation(false);
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Discard Activity
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
