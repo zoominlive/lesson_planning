@@ -8,7 +8,7 @@ import { setPermissionOverrides } from "./lib/permission-utils";
 import LessonPlanner from "@/pages/lesson-planner";
 import TabletPlanner from "@/pages/tablet-planner";
 import { Settings } from "@/pages/Settings";
-import ParentView from "@/pages/parent-view";
+import ParentView from "@/components/mobile/parent-view";
 import NotFound from "@/pages/not-found";
 import { TokenSwitcher } from "@/components/token-switcher";
 import { RoleBasedRouteGuard } from "@/components/role-based-route-guard";
