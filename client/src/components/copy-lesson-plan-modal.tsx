@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { startOfWeek, format, addWeeks } from 'date-fns';
-import { Copy, AlertCircle } from 'lucide-react';
+import { startOfWeek, format, isAfter, isSameWeek } from 'date-fns';
+import { Copy, AlertCircle, CalendarIcon, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface CopyLessonPlanModalProps {
   isOpen: boolean;
@@ -27,7 +30,11 @@ export function CopyLessonPlanModal({
 }: CopyLessonPlanModalProps) {
   const { toast } = useToast();
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
-  const [targetWeek, setTargetWeek] = useState<string>('');
+  const [selectedWeeks, setSelectedWeeks] = useState<Date[]>([]);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [showOverwriteDialog, setShowOverwriteDialog] = useState(false);
+  const [existingPlans, setExistingPlans] = useState<any[]>([]);
+  const [pendingCopy, setPendingCopy] = useState<any>(null);
   
   // Fetch rooms for the current location
   const { data: allRooms = [] } = useQuery<any[]>({
@@ -40,37 +47,58 @@ export function CopyLessonPlanModal({
     room => room.locationId === currentLocation && room.id !== currentRoom
   );
   
-  // Generate available weeks (next 4 weeks)
-  const availableWeeks = Array.from({ length: 4 }, (_, i) => {
-    const weekDate = addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), i + 1);
-    return {
-      value: format(weekDate, 'yyyy-MM-dd'),
-      label: format(weekDate, 'MMM dd, yyyy'),
-    };
-  });
+  // Check for existing lesson plans
+  const checkExistingPlans = async () => {
+    if (!selectedRooms.length || !selectedWeeks.length) return;
+    
+    try {
+      const results = await apiRequest('POST', '/api/lesson-plans/check-existing', {
+        roomIds: selectedRooms,
+        weekStarts: selectedWeeks.map(week => format(week, 'yyyy-MM-dd')),
+      });
+      
+      if (results.existingPlans && results.existingPlans.length > 0) {
+        setExistingPlans(results.existingPlans);
+        setPendingCopy({ 
+          sourceLessonPlanId: lessonPlan.id,
+          targetRoomIds: selectedRooms,
+          targetWeekStarts: selectedWeeks.map(week => format(week, 'yyyy-MM-dd')),
+          overwrite: true
+        });
+        setShowOverwriteDialog(true);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error checking existing plans:', error);
+      return true; // Proceed if check fails
+    }
+  };
   
   // Copy mutation
   const copyMutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedRooms.length || !targetWeek) {
-        throw new Error('Please select at least one room and a week');
-      }
-      
-      return apiRequest('POST', '/api/lesson-plans/copy', {
+    mutationFn: async (params?: any) => {
+      const copyParams = params || {
         sourceLessonPlanId: lessonPlan.id,
         targetRoomIds: selectedRooms,
-        targetWeekStart: targetWeek,
-      });
+        targetWeekStarts: selectedWeeks.map(week => format(week, 'yyyy-MM-dd')),
+        overwrite: false
+      };
+      
+      if (!copyParams.targetRoomIds.length || !copyParams.targetWeekStarts.length) {
+        throw new Error('Please select at least one room and one week');
+      }
+      
+      return apiRequest('POST', '/api/lesson-plans/copy', copyParams);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      const totalCopied = selectedRooms.length * selectedWeeks.length;
       toast({
         title: 'Success',
-        description: `Lesson plan copied to ${selectedRooms.length} room(s)`,
+        description: `Lesson plan copied to ${totalCopied} location(s)`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/lesson-plans'] });
-      onClose();
-      setSelectedRooms([]);
-      setTargetWeek('');
+      handleClose();
     },
     onError: (error: any) => {
       toast({
@@ -97,33 +125,117 @@ export function CopyLessonPlanModal({
     }
   };
   
+  const handleWeekSelect = (date: Date | undefined) => {
+    if (!date) return;
+    
+    const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+    const isSelected = selectedWeeks.some(week => 
+      isSameWeek(week, weekStart, { weekStartsOn: 1 })
+    );
+    
+    if (isSelected) {
+      setSelectedWeeks(prev => 
+        prev.filter(week => !isSameWeek(week, weekStart, { weekStartsOn: 1 }))
+      );
+    } else {
+      setSelectedWeeks(prev => [...prev, weekStart]);
+    }
+  };
+  
+  const handleCopy = async () => {
+    const canProceed = await checkExistingPlans();
+    if (canProceed) {
+      copyMutation.mutate(undefined);
+    }
+  };
+  
+  const handleOverwriteConfirm = () => {
+    setShowOverwriteDialog(false);
+    if (pendingCopy) {
+      copyMutation.mutate(pendingCopy);
+    }
+  };
+  
+  const handleClose = () => {
+    setSelectedRooms([]);
+    setSelectedWeeks([]);
+    setExistingPlans([]);
+    setPendingCopy(null);
+    onClose();
+  };
+  
+  const isDateDisabled = (date: Date) => {
+    const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+    const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+    return !isAfter(weekStart, currentWeekStart);
+  };
+  
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Copy className="h-5 w-5" />
-            Copy Lesson Plan
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-4 py-4">
-          {/* Week Selection */}
-          <div className="space-y-2">
-            <Label>Select Week</Label>
-            <Select value={targetWeek} onValueChange={setTargetWeek}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose target week" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableWeeks.map(week => (
-                  <SelectItem key={week.value} value={week.value}>
-                    Week of {week.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+    <>
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Copy className="h-5 w-5" />
+              Copy Lesson Plan
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Week Selection */}
+            <div className="space-y-2">
+              <Label>Select Weeks (Click to select multiple)</Label>
+              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedWeeks.length && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedWeeks.length > 0
+                      ? `${selectedWeeks.length} week(s) selected`
+                      : "Select weeks to copy to"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={undefined}
+                    onSelect={handleWeekSelect}
+                    disabled={isDateDisabled}
+                    modifiers={{
+                      selected: selectedWeeks,
+                    }}
+                    modifiersStyles={{
+                      selected: { 
+                        backgroundColor: 'hsl(var(--primary))',
+                        color: 'hsl(var(--primary-foreground))'
+                      }
+                    }}
+                    initialFocus
+                  />
+                  <div className="p-3 border-t">
+                    <div className="text-xs text-muted-foreground mb-2">
+                      Selected weeks:
+                    </div>
+                    <div className="space-y-1 max-h-24 overflow-y-auto">
+                      {selectedWeeks.length === 0 ? (
+                        <div className="text-xs text-muted-foreground">None selected</div>
+                      ) : (
+                        selectedWeeks.map((week, idx) => (
+                          <div key={idx} className="text-xs">
+                            Week of {format(week, 'MMM dd, yyyy')}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           
           {/* Room Selection */}
           <div className="space-y-2">
@@ -168,28 +280,68 @@ export function CopyLessonPlanModal({
             )}
           </div>
           
-          {selectedRooms.length > 0 && targetWeek && (
-            <Alert>
-              <AlertDescription>
-                This will copy the lesson plan to {selectedRooms.length} room(s) for the week of{' '}
-                {availableWeeks.find(w => w.value === targetWeek)?.label}
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
-        
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={() => copyMutation.mutate()}
-            disabled={!selectedRooms.length || !targetWeek || copyMutation.isPending}
-          >
-            {copyMutation.isPending ? 'Copying...' : 'Copy Lesson Plan'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            {selectedRooms.length > 0 && selectedWeeks.length > 0 && (
+              <Alert>
+                <AlertDescription>
+                  This will copy the lesson plan to {selectedRooms.length} room(s) for {selectedWeeks.length} week(s).
+                  Total: {selectedRooms.length * selectedWeeks.length} lesson plan(s) will be created.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCopy}
+              disabled={!selectedRooms.length || !selectedWeeks.length || copyMutation.isPending}
+            >
+              {copyMutation.isPending ? 'Copying...' : 'Copy Lesson Plan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Overwrite Confirmation Dialog */}
+      <AlertDialog open={showOverwriteDialog} onOpenChange={setShowOverwriteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Overwrite Existing Lesson Plans?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              The following lesson plans already exist and will be permanently overwritten:
+              <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                {existingPlans.map((plan, idx) => (
+                  <div key={idx} className="text-sm">
+                    • {plan.roomName} - Week of {format(new Date(plan.weekStart), 'MMM dd, yyyy')}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 font-semibold">
+                This action cannot be undone. Are you sure you want to continue?
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowOverwriteDialog(false);
+              setPendingCopy(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleOverwriteConfirm}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              Overwrite Existing Plans
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

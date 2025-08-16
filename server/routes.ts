@@ -1555,12 +1555,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check for existing lesson plans before copying
+  app.post("/api/lesson-plans/check-existing", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { roomIds, weekStarts } = req.body;
+      
+      if (!roomIds || !weekStarts || !roomIds.length || !weekStarts.length) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      const existingPlans = [];
+      
+      for (const roomId of roomIds) {
+        for (const weekStart of weekStarts) {
+          const existingPlan = await storage.getLessonPlanByRoomAndWeek(
+            roomId,
+            weekStart
+          );
+          
+          if (existingPlan) {
+            // Get room name
+            const room = await storage.getRoom(roomId);
+            existingPlans.push({
+              lessonPlanId: existingPlan.id,
+              roomId: roomId,
+              roomName: room?.name || 'Unknown Room',
+              weekStart: weekStart,
+              status: existingPlan.status
+            });
+          }
+        }
+      }
+      
+      res.json({ existingPlans });
+    } catch (error) {
+      console.error('Error checking existing lesson plans:', error);
+      res.status(500).json({ error: "Failed to check existing lesson plans" });
+    }
+  });
+  
   // Copy lesson plan to other rooms
   app.post("/api/lesson-plans/copy", async (req: AuthenticatedRequest, res) => {
     try {
-      const { sourceLessonPlanId, targetRoomIds, targetWeekStart } = req.body;
+      const { sourceLessonPlanId, targetRoomIds, targetWeekStarts, overwrite } = req.body;
       
-      if (!sourceLessonPlanId || !targetRoomIds || !targetWeekStart) {
+      if (!sourceLessonPlanId || !targetRoomIds || !targetWeekStarts || 
+          !targetRoomIds.length || !targetWeekStarts.length) {
         return res.status(400).json({ error: "Missing required fields" });
       }
       
@@ -1599,7 +1639,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const copiedPlans = [];
       
-      // Copy to each target room
+      // Copy to each target room and week combination
+      const skippedPlans = [];
+      
       for (const targetRoomId of targetRoomIds) {
         // Get room to ensure it exists and is in the same location
         const room = await storage.getRoom(targetRoomId);
@@ -1613,63 +1655,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
         
-        // Check if a lesson plan already exists for this room and week
-        const existingPlans = await storage.getLessonPlans();
-        const existingPlan = existingPlans.find(lp => {
-          const lpWeekStart = new Date(lp.weekStart);
-          const targetWeek = new Date(targetWeekStart);
-          lpWeekStart.setHours(0, 0, 0, 0);
-          targetWeek.setHours(0, 0, 0, 0);
+        for (const targetWeekStart of targetWeekStarts) {
+          // Check if a lesson plan already exists for this room and week
+          const existingPlans = await storage.getLessonPlans();
+          const existingPlan = existingPlans.find(lp => {
+            const lpWeekStart = new Date(lp.weekStart);
+            const targetWeek = new Date(targetWeekStart);
+            lpWeekStart.setHours(0, 0, 0, 0);
+            targetWeek.setHours(0, 0, 0, 0);
+            
+            return lpWeekStart.getTime() === targetWeek.getTime() &&
+                   lp.locationId === sourceLessonPlan.locationId &&
+                   lp.roomId === targetRoomId &&
+                   lp.scheduleType === sourceLessonPlan.scheduleType;
+          });
           
-          return lpWeekStart.getTime() === targetWeek.getTime() &&
-                 lp.locationId === sourceLessonPlan.locationId &&
-                 lp.roomId === targetRoomId &&
-                 lp.scheduleType === sourceLessonPlan.scheduleType;
-        });
-        
-        if (existingPlan) {
-          console.warn(`Lesson plan already exists for room ${room.name} for the target week, skipping`);
-          continue;
-        }
-        
-        // Create new lesson plan
-        const newLessonPlan = await storage.createLessonPlan({
-          tenantId: req.tenantId!,
-          locationId: sourceLessonPlan.locationId,
-          roomId: targetRoomId,
-          teacherId: req.userId || sourceLessonPlan.teacherId,
-          weekStart: targetWeekStart,
-          scheduleType: sourceLessonPlan.scheduleType,
-          status: 'draft'
-        });
-        
-        // Copy all scheduled activities
-        for (const activity of sourceActivities) {
-          await storage.createScheduledActivity({
+          if (existingPlan && !overwrite) {
+            skippedPlans.push({
+              roomId: targetRoomId,
+              roomName: room.name,
+              weekStart: targetWeekStart
+            });
+            continue;
+          }
+          
+          // If overwriting, delete the existing plan and its activities first
+          if (existingPlan && overwrite) {
+            // Delete scheduled activities for the existing plan
+            const existingActivities = await storage.getScheduledActivities(existingPlan.id);
+            for (const activity of existingActivities) {
+              await storage.deleteScheduledActivity(activity.id);
+            }
+            // Delete the existing lesson plan
+            await storage.deleteLessonPlan(existingPlan.id);
+          }
+          
+          // Create new lesson plan
+          const newLessonPlan = await storage.createLessonPlan({
             tenantId: req.tenantId!,
-            lessonPlanId: newLessonPlan.id,
-            activityId: activity.activityId,
             locationId: sourceLessonPlan.locationId,
             roomId: targetRoomId,
-            dayOfWeek: activity.dayOfWeek,
-            startTime: activity.startTime,
-            endTime: activity.endTime,
-            position: activity.position,
-            duration: activity.duration
+            teacherId: req.userId || sourceLessonPlan.teacherId,
+            weekStart: targetWeekStart,
+            scheduleType: sourceLessonPlan.scheduleType,
+            status: 'draft'
+          });
+          
+          // Copy all scheduled activities
+          for (const activity of sourceActivities) {
+            await storage.createScheduledActivity({
+              tenantId: req.tenantId!,
+              lessonPlanId: newLessonPlan.id,
+              activityId: activity.activityId,
+              locationId: sourceLessonPlan.locationId,
+              roomId: targetRoomId,
+              dayOfWeek: activity.dayOfWeek,
+              timeSlot: activity.timeSlot,
+              notes: activity.notes
+            });
+          }
+          
+          copiedPlans.push({
+            lessonPlanId: newLessonPlan.id,
+            roomId: targetRoomId,
+            roomName: room.name,
+            weekStart: targetWeekStart
           });
         }
-        
-        copiedPlans.push({
-          lessonPlanId: newLessonPlan.id,
-          roomId: targetRoomId,
-          roomName: room.name
-        });
       }
       
       res.json({
         success: true,
         copiedCount: copiedPlans.length,
-        copiedPlans
+        skippedCount: skippedPlans.length,
+        copiedPlans,
+        skippedPlans
       });
       
     } catch (error) {
