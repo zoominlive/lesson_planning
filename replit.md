@@ -19,9 +19,10 @@ This project is a comprehensive lesson planning application for early childhood 
     - Added prompt validation service using Perplexity AI to ensure all user inputs are appropriate for early childhood education
     - Validates activity types and focus materials before generation
     - Blocks explicitly inappropriate content (violence, adult themes, etc.)
-    - Continues service availability if validation API is down (graceful degradation)
+    - **Strict safety mode**: Blocks activity generation if validation service is unavailable
     - Returns sanitized versions of inputs when minor corrections are needed
     - Clear error messages when content is rejected for safety reasons
+    - Users can remove activity type/focus material fields if validation service is down
 - **OpenAI Integration Refactoring** (January 2025):
   - Extracted OpenAI image generation logic from perplexityService.ts into dedicated openAiService.ts module
   - Enhanced DALL-E 3 prompts to generate clean, educational illustrations with minimalist style

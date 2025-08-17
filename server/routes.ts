@@ -963,10 +963,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log('[AI Generation] Validation passed, using sanitized inputs');
       } catch (validationError) {
-        // If validation service fails (e.g., Perplexity API is down), log but continue
+        // If validation service fails, block the request for safety
         console.error('[AI Generation] Validation service error:', validationError);
-        console.log('[AI Generation] Continuing with original inputs due to validation service error');
-        // Continue with original values - the main AI generation already has safety constraints
+        return res.status(503).json({ 
+          error: 'Content validation service is temporarily unavailable. Please try again later or create the activity manually.',
+          reason: 'Unable to verify content safety at this time.'
+        });
       }
     }
 

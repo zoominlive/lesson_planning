@@ -101,6 +101,13 @@ export default function AiActivityGenerator({
             description: result.reason || result.error || "The requested content is not appropriate for early childhood education.",
             variant: "destructive"
           });
+        } else if (response.status === 503 && result.reason && result.reason.includes('validation')) {
+          // Validation service unavailable
+          toast({
+            title: "Safety Check Unavailable",
+            description: "Unable to verify content safety at this time. Please try again later or remove the activity type and focus material fields.",
+            variant: "destructive"
+          });
         } else {
           // Other errors
           toast({
