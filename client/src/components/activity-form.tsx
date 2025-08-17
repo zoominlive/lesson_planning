@@ -21,7 +21,7 @@ import {
   type InstructionStep,
 } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -102,9 +102,12 @@ export default function ActivityForm({
   const [addedMaterials, setAddedMaterials] = useState<Set<string>>(new Set()); // Track which materials have been added
   const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null); // For image expansion dialog
   const [expandedImageTitle, setExpandedImageTitle] = useState<string>("Activity Image"); // Title for expanded image
+  const [showVideoModal, setShowVideoModal] = useState(false); // For video modal
+  const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null); // For video thumbnail
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const instructionImageRefs = useRef<{
     [key: number]: HTMLInputElement | null;
   }>({});
@@ -201,6 +204,46 @@ export default function ActivityForm({
     enabled: !!selectedLocationId,
   });
 
+  // Generate thumbnail for existing video
+  useEffect(() => {
+    if (activityVideoUrl && !videoThumbnail) {
+      // Try to generate thumbnail from existing video
+      const generateThumbnailFromUrl = async () => {
+        try {
+          const video = document.createElement('video');
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          
+          video.src = activityVideoUrl;
+          video.crossOrigin = 'anonymous';
+          video.currentTime = 0.5;
+          
+          await new Promise<void>((resolve, reject) => {
+            video.onloadeddata = () => {
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              if (context) {
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+                setVideoThumbnail(thumbnail);
+              }
+              resolve();
+            };
+            video.onerror = () => {
+              // If we can't generate thumbnail from URL, that's okay
+              resolve();
+            };
+          });
+        } catch (error) {
+          // Silently fail - thumbnail is optional
+          console.log("Could not generate video thumbnail from URL");
+        }
+      };
+      
+      generateThumbnailFromUrl();
+    }
+  }, [activityVideoUrl]);
+
   // Fetch materials for the selected location
   const { data: materials = [] } = useQuery({
     queryKey: ["/api/materials", selectedLocationId],
@@ -280,15 +323,46 @@ export default function ActivityForm({
 
     setUploadingVideo(true);
     try {
+      // Upload the video first
       const result = await uploadImageMutation.mutateAsync({
         file,
         type: "video",
       });
       setActivityVideoUrl(result.url);
       setValue("videoUrl", result.url);
+      
+      // Create a video element to extract thumbnail
+      const video = document.createElement('video');
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      
+      video.src = URL.createObjectURL(file);
+      video.currentTime = 0.5; // Capture frame at 0.5 seconds
+      
+      await new Promise<void>((resolve) => {
+        video.onloadeddata = () => {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          if (context) {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+            setVideoThumbnail(thumbnail);
+          }
+          URL.revokeObjectURL(video.src);
+          resolve();
+        };
+      });
+      
       toast({
         title: "Video uploaded",
         description: "The activity video has been uploaded successfully.",
+      });
+    } catch (error) {
+      console.error("Video upload error:", error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload video. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setUploadingVideo(false);
@@ -1241,18 +1315,46 @@ export default function ActivityForm({
                 <Label>Activity Video</Label>
                 <div className="border-2 border-dashed rounded-lg p-4 text-center min-h-[200px] flex flex-col justify-center">
                   {activityVideoUrl ? (
-                    <div>
-                      <VideoIcon className="mx-auto h-12 w-12 text-green-600" />
-                      <p className="text-sm text-gray-600 mt-2 mb-2">Video uploaded</p>
+                    <div className="relative">
+                      {videoThumbnail ? (
+                        <div 
+                          className="relative cursor-pointer group"
+                          onClick={() => setShowVideoModal(true)}
+                        >
+                          <img 
+                            src={videoThumbnail} 
+                            alt="Video thumbnail" 
+                            className="w-full h-48 object-cover rounded-lg"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 rounded-lg group-hover:bg-opacity-50 transition-all">
+                            <div className="bg-white rounded-full p-3">
+                              <svg className="w-8 h-8 text-gray-800" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div 
+                          className="cursor-pointer"
+                          onClick={() => setShowVideoModal(true)}
+                        >
+                          <VideoIcon className="mx-auto h-12 w-12 text-green-600" />
+                          <p className="text-sm text-gray-600 mt-2">Click to play video</p>
+                        </div>
+                      )}
                       {!readOnly && (
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
                           className="mt-2"
-                          onClick={() => videoInputRef.current?.click()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            videoInputRef.current?.click();
+                          }}
                         >
-                          Upload
+                          Change Video
                         </Button>
                       )}
                     </div>
@@ -2138,6 +2240,41 @@ export default function ActivityForm({
           </div>
           <DialogFooter className="p-4 pt-2">
             <Button onClick={() => setExpandedImageUrl(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Modal */}
+      <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
+        <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0">
+          <DialogHeader className="p-4 pb-2">
+            <DialogTitle>Activity Video</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto p-4 pt-0 flex items-center justify-center bg-black">
+            {activityVideoUrl && (
+              <video
+                ref={videoRef}
+                src={activityVideoUrl}
+                controls
+                autoPlay
+                className="max-w-full max-h-full"
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              >
+                Your browser does not support the video tag.
+              </video>
+            )}
+          </div>
+          <DialogFooter className="p-4 pt-2">
+            <Button 
+              onClick={() => {
+                setShowVideoModal(false);
+                if (videoRef.current) {
+                  videoRef.current.pause();
+                }
+              }}
+            >
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
