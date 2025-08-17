@@ -1021,7 +1021,7 @@ export default function ActivityForm({
                             size="sm"
                             onClick={handleGenerateImage}
                             disabled={generatingImage}
-                            className="bg-gradient-to-r from-coral-red to-turquoise text-white hover:opacity-90 border-none"
+                            className="bg-gradient-to-r from-coral-red to-turquoise hover:opacity-90 border-none text-[#0d0d0c]"
                           >
                             {generatingImage ? (
                               <>
@@ -1057,7 +1057,7 @@ export default function ActivityForm({
                             variant="outline"
                             onClick={handleGenerateImage}
                             disabled={uploadingImage || generatingImage}
-                            className="bg-gradient-to-r from-coral-red to-turquoise text-white hover:opacity-90 border-none"
+                            className="bg-gradient-to-r from-coral-red to-turquoise hover:opacity-90 border-none text-[#0d0d0c]"
                           >
                             {generatingImage ? (
                               <>
@@ -1931,6 +1931,24 @@ export default function ActivityForm({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Full-screen loader overlay for image generation */}
+      {generatingImage && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-white rounded-lg p-8 shadow-xl max-w-sm w-full mx-4">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-coral-red to-turquoise animate-pulse" />
+                <Loader2 className="absolute inset-0 m-auto h-8 w-8 text-white animate-spin" />
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="text-lg font-semibold text-gray-900">Generating Image with AI</h3>
+                <p className="text-sm text-gray-600">Creating a beautiful educational illustration...</p>
+                <p className="text-xs text-gray-500">This may take up to 15 seconds</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

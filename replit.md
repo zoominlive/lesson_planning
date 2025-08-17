@@ -22,6 +22,12 @@ This project is a comprehensive lesson planning application for early childhood 
   - Updated client-server communication to pass both activity title and description for better image context
   - Fixed image storage path to save AI-generated images in `public/activity-images/images/` subdirectory for proper serving
   - Note: OpenAI account requires billing credits ($5 minimum) for image generation to work
+  - **UI Improvements** (August 17, 2025):
+    - Changed AI generation button icon from wand to star for better visual appeal
+    - Fixed button contrast issues with dark text (#0d0d0c) on gradient background for readability
+    - Added full-screen loader overlay during AI image generation to prevent user interactions
+    - Enhanced OpenAI prompts to match clean, minimalist Scandinavian-style illustrations
+    - Switched DALL-E style from 'vivid' to 'natural' for more subtle, educational aesthetics
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

@@ -39,23 +39,26 @@ export class OpenAIService {
     }
 
     try {
-      // Create a prompt that generates clean, educational illustrations similar to Perplexity's style
-      // Perplexity images tend to be: vector-style, clean, bright, minimalist, educational, safe
-      const imagePrompt = `Create a clean, vector-style educational illustration for a children's activity called "${activityTitle}". 
-The illustration should show: ${activityDescription}
+      // Create a prompt that generates clean, minimalist educational illustrations
+      // Matching the high-quality, simple style of previous generations
+      const imagePrompt = `Create a minimalist, flat design educational illustration for young children. Activity: "${activityTitle}"
 
-Style requirements:
-- Clean, minimalist vector art style
-- Bright, cheerful pastel colors
-- Simple, rounded shapes and forms
-- Educational and child-friendly
-- Professional early childhood education material quality
-- Flat design with subtle shadows
-- Clear, uncluttered composition
-- Safe, inclusive representation of diverse children
-- Similar to modern educational textbook illustrations
-- No realistic photography style, only illustration
-- Soft edges and friendly appearance`;
+STYLE REQUIREMENTS (IMPORTANT - FOLLOW EXACTLY):
+- Flat design with solid colors, NO gradients or shadows
+- Simple geometric shapes and clean lines only
+- Soft, muted pastel palette: coral (#FF6B6B), turquoise (#4ECDC4), light yellow (#FFE66D), soft purple (#C8B6E2), mint green (#95E1D3)
+- Pure white or very light gray background (#F8F9FA)
+- Absolutely NO 3D effects, shadows, or depth
+- NO text, letters, numbers, or words anywhere in the image
+- Minimalist composition with 60% white space
+- If showing people: use simple circles for heads, basic shapes for bodies, dots for eyes
+- Use icons and symbols rather than realistic details
+- Think "modern Scandinavian children's book illustration"
+- Similar to Miffy or Japanese minimalist design
+
+CONTENT TO ILLUSTRATE: ${activityDescription}
+
+Remember: EXTREMELY SIMPLE, CLEAN, MINIMAL. Less is more. Think of it as icons rather than scenes.`;
 
       console.log(`[OpenAI] Generating image with prompt: ${imagePrompt.substring(0, 200)}...`);
 
@@ -70,7 +73,7 @@ Style requirements:
           prompt: imagePrompt,
           size: '1024x1024',
           quality: 'standard',
-          style: 'vivid', // 'vivid' produces more colorful, illustration-like images
+          style: 'natural', // 'natural' produces more subtle, minimalist images
           n: 1
         }),
       });
