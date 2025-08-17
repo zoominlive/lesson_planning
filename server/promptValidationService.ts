@@ -3,8 +3,6 @@ import fetch from 'node-fetch';
 interface ValidationResult {
   isValid: boolean;
   reason?: string;
-  sanitizedActivityType?: string;
-  sanitizedMaterial?: string;
 }
 
 class PromptValidationService {
@@ -22,14 +20,9 @@ class PromptValidationService {
     activityType?: string,
     focusMaterial?: string
   ): Promise<ValidationResult> {
-    // If no API key, skip validation and allow the request
+    // If no API key, validation cannot be performed
     if (!this.apiKey) {
-      console.log('[PromptValidation] Skipping validation - no API key');
-      return {
-        isValid: true,
-        sanitizedActivityType: activityType,
-        sanitizedMaterial: focusMaterial
-      };
+      throw new Error('Validation service not configured');
     }
 
     // If both inputs are empty, it's valid (user didn't specify preferences)
@@ -59,9 +52,7 @@ Your job is to validate that user inputs are appropriate for generating educatio
 Respond ONLY with a JSON object in this exact format:
 {
   "isValid": boolean,
-  "reason": "string (only if invalid)",
-  "sanitizedActivityType": "string (cleaned version if valid)",
-  "sanitizedMaterial": "string (cleaned version if valid)"
+  "reason": "string (only if invalid)"
 }
 
 Rules for validation:
@@ -73,7 +64,7 @@ Rules for validation:
 6. ACCEPT common classroom materials (blocks, paint, playdough, water, books, toys, etc.)
 7. If the input is borderline, err on the side of caution and reject it
 
-For sanitized versions, clean up spelling/grammar but keep the educational intent.`
+Do NOT modify or sanitize the inputs. Only validate them exactly as provided.`
             },
             {
               role: 'user',
@@ -87,12 +78,8 @@ For sanitized versions, clean up spelling/grammar but keep the educational inten
 
       if (!response.ok) {
         console.error('[PromptValidation] API request failed:', response.status);
-        // On API failure, be conservative and allow the request
-        return {
-          isValid: true,
-          sanitizedActivityType: activityType,
-          sanitizedMaterial: focusMaterial
-        };
+        // On API failure, throw error to block the request
+        throw new Error(`Validation API request failed with status ${response.status}`);
       }
 
       const data = await response.json() as any;
@@ -100,11 +87,7 @@ For sanitized versions, clean up spelling/grammar but keep the educational inten
       
       if (!content) {
         console.error('[PromptValidation] No content in response');
-        return {
-          isValid: true,
-          sanitizedActivityType: activityType,
-          sanitizedMaterial: focusMaterial
-        };
+        throw new Error('Validation API returned no content');
       }
 
       // Parse the JSON response
@@ -114,22 +97,14 @@ For sanitized versions, clean up spelling/grammar but keep the educational inten
         return result;
       } catch (parseError) {
         console.error('[PromptValidation] Failed to parse response:', content);
-        // If we can't parse, be conservative and allow
-        return {
-          isValid: true,
-          sanitizedActivityType: activityType,
-          sanitizedMaterial: focusMaterial
-        };
+        // If we can't parse, throw error to block the request
+        throw new Error('Failed to parse validation response');
       }
 
     } catch (error) {
       console.error('[PromptValidation] Validation error:', error);
-      // On any error, be conservative and allow the request
-      return {
-        isValid: true,
-        sanitizedActivityType: activityType,
-        sanitizedMaterial: focusMaterial
-      };
+      // On any error, throw to block the request for safety
+      throw error;
     }
   }
 

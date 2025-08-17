@@ -932,9 +932,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     // Validate user inputs for safety and appropriateness
-    let validatedActivityType = activityType;
-    let validatedFocusMaterial = focusMaterial;
-    
     if (activityType || focusMaterial) {
       console.log('[AI Generation] Validating user inputs:', { activityType, focusMaterial });
       
@@ -944,8 +941,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           focusMaterial
         );
         
-        // Only block if validation explicitly returns false (inappropriate content detected)
-        if (validationResult.isValid === false) {
+        // Block if validation returns false (inappropriate content detected)
+        if (!validationResult.isValid) {
           console.log('[AI Generation] Validation failed:', validationResult.reason);
           return res.status(400).json({ 
             error: 'The requested activity type or material is not appropriate for early childhood education.',
@@ -953,20 +950,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        // Use sanitized values if available
-        if (validationResult.sanitizedActivityType) {
-          validatedActivityType = validationResult.sanitizedActivityType;
-        }
-        if (validationResult.sanitizedMaterial) {
-          validatedFocusMaterial = validationResult.sanitizedMaterial;
-        }
-        
-        console.log('[AI Generation] Validation passed, using sanitized inputs');
+        console.log('[AI Generation] Validation passed');
       } catch (validationError) {
         // If validation service fails, block the request for safety
         console.error('[AI Generation] Validation service error:', validationError);
         return res.status(503).json({ 
-          error: 'Content validation service is temporarily unavailable. Please try again later or create the activity manually.',
+          error: 'Content validation service is temporarily unavailable. Please try again later or remove the activity type and focus material fields.',
           reason: 'Unable to verify content safety at this time.'
         });
       }
@@ -986,7 +975,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       attempts++;
       
       try {
-        // Generate activity using Perplexity AI with validated inputs
+        // Generate activity using Perplexity AI
         const generatedActivity = await perplexityService.generateActivity({
           ageGroup: ageGroupName,
           category,
@@ -994,8 +983,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isIndoor,
           ageRange: ageRange || { start: 2, end: 5 },
           existingActivities: existingActivityInfo,
-          activityType: validatedActivityType,
-          focusMaterial: validatedFocusMaterial
+          activityType: activityType,
+          focusMaterial: focusMaterial
         });
 
         // Check if the generation failed
