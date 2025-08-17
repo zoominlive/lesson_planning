@@ -71,7 +71,7 @@ export default function AiActivityGenerator({
           isQuiet,
           isIndoor,
           locationId,
-          activityType: activityType || undefined,
+          activityType: (activityType && activityType !== 'none') ? activityType : undefined,
           focusMaterial: focusMaterial || undefined
         })
       });
@@ -449,7 +449,7 @@ export default function AiActivityGenerator({
                         <SelectValue placeholder="Select an activity type (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No preference</SelectItem>
+                        <SelectItem value="none">No preference</SelectItem>
                         <SelectItem value="game">Game</SelectItem>
                         <SelectItem value="song">Song/Music</SelectItem>
                         <SelectItem value="sensory">Sensory Activity</SelectItem>
