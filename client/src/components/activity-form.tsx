@@ -1173,6 +1173,7 @@ export default function ActivityForm({
                             size="sm"
                             onClick={handleGenerateImage}
                             disabled={generatingImage}
+                            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 hover:from-purple-600 hover:to-pink-600"
                           >
                             {generatingImage ? (
                               <>
@@ -1208,6 +1209,7 @@ export default function ActivityForm({
                             variant="outline"
                             onClick={handleGenerateImage}
                             disabled={uploadingImage || generatingImage}
+                            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 hover:from-purple-600 hover:to-pink-600"
                           >
                             {generatingImage ? (
                               <>
