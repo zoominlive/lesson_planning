@@ -47,6 +47,10 @@ This project is a comprehensive lesson planning application for early childhood 
       - Automatically generates outdoor images for outdoor activities
       - Generates indoor classroom images for indoor activities
       - Passes environment context to OpenAI for accurate scene generation
+    - **Consistent Image Generation** - All images (main activity and step images) use the same professional educational style
+      - Same prompt template and style requirements for all generated images
+      - Uses "natural" style parameter in DALL-E 3 for realistic, professional appearance
+      - Any perceived style differences are due to DALL-E's interpretation of content, not different prompts
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
