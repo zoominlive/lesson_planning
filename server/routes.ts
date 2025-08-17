@@ -17,6 +17,7 @@ import { materialStorage } from "./materialStorage";
 import { activityStorage } from "./activityStorage";
 import { perplexityService } from "./perplexityService";
 import { openAIService } from "./openAiService";
+import { promptValidationService } from "./promptValidationService";
 import { milestoneStorage } from "./milestoneStorage";
 import multer from "multer";
 import path from "path";
@@ -924,10 +925,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Generate activity using AI
   app.post('/api/activities/generate', async (req: AuthenticatedRequest, res) => {
-    const { ageGroupId, ageGroupName, ageRange, category, isQuiet, isIndoor, locationId } = req.body;
+    const { ageGroupId, ageGroupName, ageRange, category, isQuiet, isIndoor, locationId, activityType, focusMaterial } = req.body;
     
     if (!ageGroupName || !category || isQuiet === undefined || isIndoor === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Validate user inputs for safety and appropriateness
+    if (activityType || focusMaterial) {
+      console.log('[AI Generation] Validating user inputs:', { activityType, focusMaterial });
+      
+      const validationResult = await promptValidationService.validateActivityInputs(
+        activityType,
+        focusMaterial
+      );
+      
+      if (!validationResult.isValid) {
+        console.log('[AI Generation] Validation failed:', validationResult.reason);
+        return res.status(400).json({ 
+          error: 'The requested activity type or material is not appropriate for early childhood education.',
+          reason: validationResult.reason || 'Content does not meet safety guidelines for children ages 0-5.'
+        });
+      }
+      
+      console.log('[AI Generation] Validation passed, using sanitized inputs');
     }
 
     // Fetch existing activities to avoid duplicates
@@ -951,7 +972,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isQuiet,
           isIndoor,
           ageRange: ageRange || { start: 2, end: 5 },
-          existingActivities: existingActivityInfo
+          existingActivities: existingActivityInfo,
+          activityType,
+          focusMaterial
         });
 
         // Check if the generation failed

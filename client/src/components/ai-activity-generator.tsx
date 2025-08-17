@@ -94,6 +94,13 @@ export default function AiActivityGenerator({
             description: "There was an issue generating the activity. Please try again in a moment.",
             variant: "destructive"
           });
+        } else if (response.status === 400 && result.reason) {
+          // Validation error from content safety check
+          toast({
+            title: "Content Not Appropriate",
+            description: result.reason || result.error || "The requested content is not appropriate for early childhood education.",
+            variant: "destructive"
+          });
         } else {
           // Other errors
           toast({
@@ -136,6 +143,9 @@ export default function AiActivityGenerator({
       setSelectedAgeGroup("");
       setSelectedCategory("");
       setIsQuiet(null);
+      setIsIndoor(null);
+      setActivityType("");
+      setFocusMaterial("");
       setGenerationMessage("");
       onOpenChange(false);
       
