@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, X, Upload, ImageIcon, VideoIcon, Check, Star, Loader2, RefreshCw } from "lucide-react";
+import { Plus, X, Upload, ImageIcon, VideoIcon, Check, Star, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import {
   insertActivitySchema,
   type Activity,
@@ -1147,35 +1147,15 @@ export default function ActivityForm({
                 <div className="border-2 border-dashed rounded-lg p-4 text-center min-h-[200px] flex flex-col justify-center">
                   {activityImageUrl ? (
                     <div className="relative">
-                      <div className="relative inline-block group mx-auto">
-                        <img
-                          src={activityImageUrl}
-                          alt="Activity"
-                          className="max-h-32 rounded cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => {
-                            setExpandedImageUrl(activityImageUrl);
-                            setExpandedImageTitle("Activity Image");
-                          }}
-                        />
-                        {!readOnly && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleGenerateImage();
-                            }}
-                            disabled={generatingImage}
-                            className="absolute top-2 right-2 p-1.5 bg-white/90 hover:bg-white rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Regenerate image"
-                          >
-                            {generatingImage ? (
-                              <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
-                            ) : (
-                              <RefreshCw className="h-4 w-4 text-gray-600 hover:text-gray-900" />
-                            )}
-                          </button>
-                        )}
-                      </div>
+                      <img
+                        src={activityImageUrl}
+                        alt="Activity"
+                        className="max-h-32 rounded cursor-pointer hover:opacity-90 transition-opacity mx-auto"
+                        onClick={() => {
+                          setExpandedImageUrl(activityImageUrl);
+                          setExpandedImageTitle("Activity Image");
+                        }}
+                      />
                       {!readOnly && (
                         <div className="flex gap-2 justify-center mt-2">
                           <Button
@@ -1185,7 +1165,7 @@ export default function ActivityForm({
                             onClick={() => imageInputRef.current?.click()}
                             disabled={uploadingImage}
                           >
-                            {uploadingImage ? "Uploading..." : "Upload Image"}
+                            {uploadingImage ? "Uploading..." : "Upload"}
                           </Button>
                           <Button
                             type="button"
@@ -1193,7 +1173,6 @@ export default function ActivityForm({
                             size="sm"
                             onClick={handleGenerateImage}
                             disabled={generatingImage}
-                            className="bg-gradient-to-r from-coral-red to-turquoise hover:opacity-90 border-none text-[#0d0d0c]"
                           >
                             {generatingImage ? (
                               <>
@@ -1202,8 +1181,8 @@ export default function ActivityForm({
                               </>
                             ) : (
                               <>
-                                <Star className="mr-2 h-4 w-4" />
-                                Generate with AI
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Generate
                               </>
                             )}
                           </Button>
@@ -1222,14 +1201,13 @@ export default function ActivityForm({
                             onClick={() => imageInputRef.current?.click()}
                             disabled={uploadingImage || generatingImage}
                           >
-                            {uploadingImage ? "Uploading..." : "Upload Image"}
+                            {uploadingImage ? "Uploading..." : "Upload"}
                           </Button>
                           <Button
                             type="button"
                             variant="outline"
                             onClick={handleGenerateImage}
                             disabled={uploadingImage || generatingImage}
-                            className="bg-gradient-to-r from-coral-red to-turquoise hover:opacity-90 border-none text-[#0d0d0c]"
                           >
                             {generatingImage ? (
                               <>
@@ -1238,8 +1216,8 @@ export default function ActivityForm({
                               </>
                             ) : (
                               <>
-                                <Star className="mr-2 h-4 w-4" />
-                                Generate with AI
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Generate
                               </>
                             )}
                           </Button>
@@ -1272,7 +1250,7 @@ export default function ActivityForm({
                           className="mt-2"
                           onClick={() => videoInputRef.current?.click()}
                         >
-                          Change Video
+                          Upload
                         </Button>
                       )}
                     </div>
@@ -1854,63 +1832,75 @@ export default function ActivityForm({
                   <div className="flex items-center gap-2">
                     {instruction.imageUrl ? (
                       <div className="flex items-center gap-2">
-                        <div className="relative group">
-                          <img
-                            src={instruction.imageUrl}
-                            alt={`Step ${index + 1}`}
-                            className="h-16 w-16 object-cover rounded cursor-pointer hover:opacity-90 transition-opacity"
-                            onClick={() => {
-                              setExpandedImageUrl(instruction.imageUrl || null);
-                              setExpandedImageTitle(`Step ${index + 1}`);
-                            }}
-                          />
-                          {!readOnly && (
-                            <button
+                        <img
+                          src={instruction.imageUrl}
+                          alt={`Step ${index + 1}`}
+                          className="h-16 w-16 object-cover rounded cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => {
+                            setExpandedImageUrl(instruction.imageUrl || null);
+                            setExpandedImageTitle(`Step ${index + 1}`);
+                          }}
+                        />
+                        {!readOnly && (
+                          <>
+                            <Button
                               type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRegenerateStepImage(index);
-                              }}
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                instructionImageRefs.current[index]?.click()
+                              }
+                            >
+                              Upload
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRegenerateStepImage(index)}
                               disabled={regeneratingStepImage === index}
-                              className="absolute top-1 right-1 p-1 bg-white/90 hover:bg-white rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Regenerate image"
                             >
                               {regeneratingStepImage === index ? (
-                                <Loader2 className="h-3 w-3 animate-spin text-gray-600" />
+                                <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
-                                <RefreshCw className="h-3 w-3 text-gray-600 hover:text-gray-900" />
+                                <Sparkles className="h-4 w-4" />
                               )}
-                            </button>
-                          )}
-                        </div>
-                        {!readOnly && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              instructionImageRefs.current[index]?.click()
-                            }
-                          >
-                            Change Image
-                          </Button>
+                              {regeneratingStepImage === index ? "Generating..." : "Generate"}
+                            </Button>
+                          </>
                         )}
                       </div>
                     ) : !readOnly ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          instructionImageRefs.current[index]?.click()
-                        }
-                        disabled={uploadingInstructionImage === index}
-                      >
-                        <Upload className="h-4 w-4 mr-1" />
-                        {uploadingInstructionImage === index
-                          ? "Uploading..."
-                          : "Add Image"}
-                      </Button>
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            instructionImageRefs.current[index]?.click()
+                          }
+                          disabled={uploadingInstructionImage === index}
+                        >
+                          <Upload className="h-4 w-4 mr-1" />
+                          {uploadingInstructionImage === index
+                            ? "Uploading..."
+                            : "Add Image"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRegenerateStepImage(index)}
+                          disabled={regeneratingStepImage === index || !instruction.text.trim()}
+                        >
+                          {regeneratingStepImage === index ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4" />
+                          )}
+                          {regeneratingStepImage === index ? "Generating..." : "Generate"}
+                        </Button>
+                      </>
                     ) : null}
                     <input
                       ref={(el) => {
