@@ -46,30 +46,30 @@ export class OpenAIService {
     }
 
     try {
-      // Create a prompt that generates realistic 3D animated educational illustrations
-      // High-quality photorealistic animation style with depth and dimension
-      const imagePrompt = `Create a high-quality, photorealistic 3D animated educational illustration for a children's activity called "${activityTitle}"
+      // Create a prompt for completely photorealistic educational photography
+      // Real photography style, not cartoons or animations
+      const imagePrompt = `Create a photorealistic photograph of real children engaged in an educational activity called "${activityTitle}"
 
 STYLE REQUIREMENTS:
-- Photorealistic 3D rendering with realistic textures and materials
-- Natural, realistic proportions for children (not chibi or exaggerated)
-- High-detail textures: fabric on clothing, wood grain on furniture, realistic skin
-- Realistic lighting with accurate shadows, highlights, and reflections
-- Ray-traced global illumination for natural light bouncing
-- Realistic materials: glossy plastic toys, soft fabric mats, metallic surfaces
-- Strong depth and dimension with proper perspective and atmospheric haze
-- Natural poses and expressions that look lifelike
-- Realistic hair with individual strands and natural movement
-- Detailed classroom environment with realistic props and furniture
-- Soft depth of field with natural bokeh in background
-- Realistic color grading with natural saturation levels
-- NO text, letters, numbers, or words in the image
-- Diverse children with realistic features and natural skin tones
-- Professional cinematographic quality like modern animated films
+- Actual photographic image, NOT cartoon, NOT animation, NOT illustration
+- Professional educational photography style like National Geographic or school brochures
+- Real children in a real classroom or educational setting
+- Natural lighting from windows creating soft, warm atmosphere
+- Sharp focus on the main subjects with shallow depth of field
+- Professional DSLR camera quality with high resolution details
+- Natural skin tones and realistic facial expressions
+- Authentic classroom materials and furniture (real wood, plastic, fabric)
+- Documentary-style candid moments capturing genuine engagement
+- Warm, inviting color temperature (slightly warm/golden tones)
+- Professional composition following rule of thirds
+- Natural motion blur if children are moving
+- NO text, labels, or watermarks in the image
+- Diverse group of real children aged 3-5 years
+- Clean, modern educational environment
 
 ACTIVITY TO ILLUSTRATE: ${activityDescription}
 
-Create a photorealistic 3D scene that looks like a high-budget animated film - realistic yet still warm and engaging for children. Think "The Incredibles" or recent Disney films with their realistic rendering style.`;
+Create a genuine photograph that looks like it was taken by a professional educational photographer documenting real children during an actual classroom activity. The image should feel authentic, warm, and engaging - like a high-quality stock photo for educational materials.`;
 
       console.log(
         `[OpenAI] Generating image with prompt: ${imagePrompt.substring(0, 200)}...`,
