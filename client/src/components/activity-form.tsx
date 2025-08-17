@@ -1792,7 +1792,7 @@ export default function ActivityForm({
                     </>
                   ) : (
                     <>
-                      <Star className="h-4 w-4 mr-1" />
+                      <Sparkles className="h-4 w-4 mr-1" />
                       Generate All Step Images
                     </>
                   )}
