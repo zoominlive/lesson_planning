@@ -76,6 +76,7 @@ export default function ActivityForm({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [generatingStepImages, setGeneratingStepImages] = useState(false);
   const [uploadingInstructionImage, setUploadingInstructionImage] = useState<
     number | null
   >(null);
@@ -344,6 +345,85 @@ export default function ActivityForm({
       });
     } finally {
       setGeneratingImage(false);
+    }
+  };
+
+  const handleGenerateAllStepImages = async () => {
+    const activityTitle = watch("title");
+    const stepsWithoutImages = instructions
+      .map((inst, index) => ({ ...inst, index }))
+      .filter(inst => inst.text.trim() && !inst.imageUrl);
+
+    if (stepsWithoutImages.length === 0) {
+      toast({
+        title: "No steps to generate images for",
+        description: "All steps either have images or are empty.",
+        variant: "default",
+      });
+      return;
+    }
+
+    setGeneratingStepImages(true);
+    const token = localStorage.getItem("authToken");
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      for (const step of stepsWithoutImages) {
+        try {
+          const response = await fetch("/api/activities/generate-image", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
+            body: JSON.stringify({ 
+              title: `${activityTitle} - Step ${step.index + 1}`,
+              description: step.text,
+              prompt: `Step ${step.index + 1} of activity "${activityTitle}": ${step.text}`
+            }),
+          });
+
+          if (!response.ok) {
+            failCount++;
+            continue;
+          }
+
+          const result = await response.json();
+          
+          // Update the instruction with the generated image
+          const updated = [...instructions];
+          updated[step.index] = { ...updated[step.index], imageUrl: result.url };
+          setInstructions(updated);
+          
+          successCount++;
+        } catch (error) {
+          console.error(`Failed to generate image for step ${step.index + 1}:`, error);
+          failCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        toast({
+          title: "Images generated successfully",
+          description: `Generated ${successCount} image${successCount > 1 ? 's' : ''} for activity steps.${failCount > 0 ? ` ${failCount} failed.` : ''}`,
+        });
+      } else {
+        toast({
+          title: "Failed to generate images",
+          description: "Could not generate images for the steps. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Bulk image generation failed:", error);
+      toast({
+        title: "Failed to generate images",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingStepImages(false);
     }
   };
 
@@ -1626,15 +1706,37 @@ export default function ActivityForm({
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-lg">Step-by-step Instructions</h3>
             {!readOnly && (
-              <Button
-                type="button"
-                onClick={addInstruction}
-                size="sm"
-                variant="outline"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add Step
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  onClick={handleGenerateAllStepImages}
+                  size="sm"
+                  variant="outline"
+                  disabled={generatingStepImages || instructions.every(inst => !inst.text.trim() || inst.imageUrl)}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 hover:from-purple-600 hover:to-pink-600"
+                >
+                  {generatingStepImages ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Star className="h-4 w-4 mr-1" />
+                      Generate All Step Images
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={addInstruction}
+                  size="sm"
+                  variant="outline"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Step
+                </Button>
+              </div>
             )}
           </div>
 

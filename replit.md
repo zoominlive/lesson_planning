@@ -31,6 +31,12 @@ This project is a comprehensive lesson planning application for early childhood 
     - Professional photography aesthetic like educational textbooks or teacher training materials
     - Documentary-style composition that clearly demonstrates activities
     - Uses 'natural' style parameter for more realistic, professional images
+    - **Bulk Step Image Generation** - Added "Generate All Step Images" button next to "Add Step" that:
+      - Generates images for all instruction steps that don't already have images
+      - Creates contextual images for each step with proper step numbering
+      - Shows progress with animated loading state
+      - Provides feedback on success/failure count
+      - Purple-to-pink gradient button styling for visual distinction
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
