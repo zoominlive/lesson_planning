@@ -429,6 +429,9 @@ export default function ActivityForm({
     let failCount = 0;
 
     try {
+      // Keep track of the updated instructions
+      let updatedInstructions = [...instructions];
+      
       for (const step of stepsWithoutImages) {
         try {
           const response = await fetch("/api/activities/generate-image", {
@@ -451,10 +454,10 @@ export default function ActivityForm({
 
           const result = await response.json();
           
-          // Update the instruction with the generated image
-          const updated = [...instructions];
-          updated[step.index] = { ...updated[step.index], imageUrl: result.url };
-          setInstructions(updated);
+          // Update the instruction with the generated image in our local copy
+          updatedInstructions[step.index] = { ...updatedInstructions[step.index], imageUrl: result.url };
+          // Update the state with the accumulated changes
+          setInstructions([...updatedInstructions]);
           
           successCount++;
         } catch (error) {
