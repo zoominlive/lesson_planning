@@ -114,8 +114,8 @@ Style requirements:
       // Generate a unique filename
       const timestamp = Date.now();
       const uniqueId = crypto.randomUUID().substring(0, 8);
-      const filename = `ai_generated_${timestamp}_${timestamp}_${uniqueId}.png`;
-      const imagePath = path.join(process.cwd(), 'public', 'activity-images', filename);
+      const filename = `ai_generated_${timestamp}_${uniqueId}.png`;
+      const imagePath = path.join(process.cwd(), 'public', 'activity-images', 'images', filename);
       
       // Ensure directory exists
       const dir = path.dirname(imagePath);

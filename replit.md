@@ -20,6 +20,7 @@ This project is a comprehensive lesson planning application for early childhood 
   - Enhanced DALL-E 3 prompts to generate clean, educational illustrations with minimalist style
   - Improved error handling for OpenAI API with specific billing and quota error messages
   - Updated client-server communication to pass both activity title and description for better image context
+  - Fixed image storage path to save AI-generated images in `public/activity-images/images/` subdirectory for proper serving
   - Note: OpenAI account requires billing credits ($5 minimum) for image generation to work
 
 # User Preferences
