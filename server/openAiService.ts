@@ -62,27 +62,40 @@ export class OpenAIService {
         }
       }
       
-      const imagePrompt = `Create a clear, professional educational reference image for teachers showing the activity: "${activityTitle}"
+      const imagePrompt = `PHOTOREALISTIC classroom photograph showing: "${activityTitle}"
 
-STYLE REQUIREMENTS:
-- Professional educational documentation style
-- Clear, realistic depiction suitable for adult educators
-- Focus on showing the activity setup, materials, and process
-- Clean, well-lit educational environment
-- Neutral, professional color palette (not overly bright or childish)
-- Realistic proportions and perspectives
-- Show actual educational materials and classroom setup
-- Documentary-style composition that clearly demonstrates the activity
-- Include children engaged in the activity but with realistic, non-cartoonish appearance
-- Professional photography aesthetic, like educational textbooks or teacher training materials
-- Clear visual hierarchy showing important elements of the activity
-- Practical, implementable setup that teachers can replicate
-- NO cartoon elements, NO exaggerated features, NO childish decorations
-- NO text, labels, or watermarks in the image${environmentSetting}
+CRITICAL REQUIREMENTS - ABSOLUTELY NO TEXT OR WORDS:
+- NO text anywhere in the image
+- NO labels, NO titles, NO captions, NO written words
+- NO signs, NO banners, NO written instructions
+- PHOTOREALISTIC style only - must look like an actual photograph
+- NOT cartoon, NOT illustrated, NOT drawn, NOT animated
+- Real photography aesthetic - like a photo taken with a camera
+- Natural lighting as if taken in a real classroom
+- Realistic proportions and perspectives${environmentSetting}
 
-ACTIVITY DETAILS: ${activityDescription}
+SHOW THIS ACTIVITY:
+${activityDescription}
 
-Create a professional, realistic educational reference image that helps teachers understand exactly how to implement this activity in their classroom. The image should look like it belongs in a teacher's manual or educational resource guide.`;
+VISUAL STYLE:
+- Documentary photography style
+- Professional educational photography
+- Clear focus on the activity materials and setup
+- Natural, realistic colors
+- Clean, organized classroom environment
+- Children or hands demonstrating the activity naturally
+- Practical setup that teachers can replicate
+
+ABSOLUTELY FORBIDDEN:
+- NO text of any kind
+- NO cartoon or illustrated style
+- NO fantasy elements
+- NO exaggerated features
+- NO stylized or artistic interpretations
+- NO labels or written instructions
+- NO speech bubbles or thought bubbles
+
+Create a PHOTOREALISTIC image that looks like an actual photograph taken in a real classroom.`;
 
       console.log(
         `[OpenAI] Generating image with prompt: ${imagePrompt.substring(0, 200)}...`,
