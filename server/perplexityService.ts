@@ -394,6 +394,86 @@ Ensure the activity is:
       { 
         pattern: /\bpuzzles?\b/gi,
         category: 'puzzles'
+      },
+      
+      // Party and play materials
+      { 
+        pattern: /\bballoons?\b/gi,
+        category: 'balloons'
+      },
+      { 
+        pattern: /\bbubbles?\b/gi,
+        category: 'bubbles'
+      },
+      { 
+        pattern: /\bstickers?\b/gi,
+        category: 'stickers'
+      },
+      
+      // Adhesive materials
+      { 
+        pattern: /\b(masking\s+)?tape\b/gi,
+        category: 'tape'
+      },
+      
+      // Sensory materials
+      { 
+        pattern: /\bplay\s*dough\b/gi,
+        category: 'playdough'
+      },
+      { 
+        pattern: /\b(kinetic\s+)?sand\b/gi,
+        category: 'sand'
+      },
+      
+      // Music and movement
+      { 
+        pattern: /\b(musical\s+)?instruments?\b/gi,
+        category: 'instruments'
+      },
+      { 
+        pattern: /\bscarves?\b/gi,
+        category: 'scarves'
+      },
+      { 
+        pattern: /\bribbons?\b/gi,
+        category: 'ribbons'
+      },
+      
+      // Outdoor/movement equipment
+      { 
+        pattern: /\bcones?\b/gi,
+        category: 'cones'
+      },
+      { 
+        pattern: /\bhula\s*hoops?\b/gi,
+        category: 'hoops'
+      },
+      { 
+        pattern: /\bballs?\b/gi,
+        category: 'balls'
+      },
+      { 
+        pattern: /\bropes?\b/gi,
+        category: 'ropes'
+      },
+      
+      // Natural materials
+      { 
+        pattern: /\bleaves\b/gi,
+        category: 'leaves'
+      },
+      { 
+        pattern: /\bsticks?\b/gi,
+        category: 'sticks'
+      },
+      { 
+        pattern: /\brocks?\b/gi,
+        category: 'rocks'
+      },
+      { 
+        pattern: /\bshells?\b/gi,
+        category: 'shells'
       }
     ];
     
@@ -547,6 +627,115 @@ Ensure the activity is:
         name: 'Age-Appropriate Puzzles', 
         category: 'Manipulatives', 
         quantity: '2-3 puzzles'
+      },
+      
+      // Party and play materials
+      'balloons': { 
+        name: 'Balloons', 
+        category: 'Party Supplies', 
+        quantity: 'Pack of 10-20',
+        safety: 'Adult supervision required for inflation'
+      },
+      'bubbles': { 
+        name: 'Bubble Solution', 
+        category: 'Sensory Play', 
+        quantity: '1 bottle',
+        includes: 'wands included'
+      },
+      'stickers': { 
+        name: 'Sticker Sheets', 
+        category: 'Art Supplies', 
+        quantity: 'Multiple sheets'
+      },
+      
+      // Adhesive materials
+      'tape': { 
+        name: 'Tape', 
+        category: 'Art Supplies', 
+        quantity: '1 roll',
+        includes: 'masking or clear tape'
+      },
+      
+      // Sensory materials
+      'playdough': { 
+        name: 'Play Dough', 
+        category: 'Sensory Play', 
+        quantity: 'Multiple colors',
+        safety: 'Non-toxic'
+      },
+      'sand': { 
+        name: 'Sensory Sand', 
+        category: 'Sensory Play', 
+        quantity: '2-3 lbs',
+        includes: 'kinetic or regular play sand'
+      },
+      
+      // Music and movement
+      'instruments': { 
+        name: 'Musical Instruments', 
+        category: 'Music & Movement', 
+        quantity: '1 set',
+        includes: 'shakers, drums, bells'
+      },
+      'scarves': { 
+        name: 'Movement Scarves', 
+        category: 'Music & Movement', 
+        quantity: '1 per child',
+        includes: 'lightweight fabric'
+      },
+      'ribbons': { 
+        name: 'Dance Ribbons', 
+        category: 'Music & Movement', 
+        quantity: '1 per child'
+      },
+      
+      // Outdoor/movement equipment
+      'cones': { 
+        name: 'Activity Cones', 
+        category: 'Physical Activity', 
+        quantity: '4-6 cones'
+      },
+      'hoops': { 
+        name: 'Hula Hoops', 
+        category: 'Physical Activity', 
+        quantity: '1-2 per group'
+      },
+      'balls': { 
+        name: 'Play Balls', 
+        category: 'Physical Activity', 
+        quantity: 'Various sizes',
+        includes: 'soft, child-safe balls'
+      },
+      'ropes': { 
+        name: 'Jump Ropes', 
+        category: 'Physical Activity', 
+        quantity: '1 per child or group'
+      },
+      
+      // Natural materials
+      'leaves': { 
+        name: 'Natural Leaves', 
+        category: 'Nature Materials', 
+        quantity: 'Collection',
+        includes: 'clean, safe varieties'
+      },
+      'sticks': { 
+        name: 'Natural Sticks', 
+        category: 'Nature Materials', 
+        quantity: 'Collection',
+        safety: 'Check for sharp edges'
+      },
+      'rocks': { 
+        name: 'Smooth Rocks', 
+        category: 'Nature Materials', 
+        quantity: 'Collection',
+        safety: 'Clean before use'
+      },
+      'shells': { 
+        name: 'Shells', 
+        category: 'Nature Materials', 
+        quantity: 'Collection',
+        safety: 'Check for sharp edges'
       }
     };
     
