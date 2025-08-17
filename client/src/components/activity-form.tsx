@@ -306,9 +306,6 @@ export default function ActivityForm({
 
     setGeneratingImage(true);
     try {
-      // Create a descriptive prompt based on the activity
-      const prompt = `A child-friendly educational activity image showing: ${activityTitle || ""}. ${activityDescription || ""}. The image should be bright, colorful, safe for children, and show the activity setup or children engaged in the activity.`;
-      
       const token = localStorage.getItem("authToken");
       const response = await fetch("/api/activities/generate-image", {
         method: "POST",
@@ -316,7 +313,12 @@ export default function ActivityForm({
           "Content-Type": "application/json",
           ...(token && { Authorization: `Bearer ${token}` }),
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ 
+          title: activityTitle,
+          description: activityDescription,
+          // Also send prompt for backward compatibility
+          prompt: `${activityTitle || ""}. ${activityDescription || ""}` 
+        }),
       });
 
       if (!response.ok) {

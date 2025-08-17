@@ -15,6 +15,12 @@ This project is a comprehensive lesson planning application for early childhood 
   - Improved Quick Add materials visual feedback to show when materials have been added
   - Cleaned up console.log statements from production code
   - Fixed TypeScript issues with Set iteration and null/undefined type handling
+- **OpenAI Integration Refactoring** (January 2025):
+  - Extracted OpenAI image generation logic from perplexityService.ts into dedicated openAiService.ts module
+  - Enhanced DALL-E 3 prompts to generate clean, educational illustrations with minimalist style
+  - Improved error handling for OpenAI API with specific billing and quota error messages
+  - Updated client-server communication to pass both activity title and description for better image context
+  - Note: OpenAI account requires billing credits ($5 minimum) for image generation to work
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

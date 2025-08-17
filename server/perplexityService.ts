@@ -825,89 +825,10 @@ Ensure the activity is:
     };
   }
 
+  // Image generation has been moved to OpenAIService
+  // This method is kept for backward compatibility but should not be used directly
   async generateActivityImage(prompt: string): Promise<string> {
-    // Using OpenAI API for image generation since Perplexity doesn't support image generation
-    const openaiApiKey = process.env.OPENAI_API_KEY;
-    
-    if (!openaiApiKey) {
-      throw new Error("OpenAI API key not configured. Please set OPENAI_API_KEY environment variable to use image generation.");
-    }
-
-    try {
-      console.log("[Image Generation] Generating image with prompt:", prompt);
-      
-      // Call OpenAI's DALL-E API to generate image
-      const response = await fetch("https://api.openai.com/v1/images/generations", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${openaiApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "dall-e-3",
-          prompt: prompt,
-          size: "1024x1024",
-          quality: "standard",
-          n: 1
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[Image Generation] Generation failed:", errorText);
-        
-        // Parse error message if possible
-        try {
-          const errorData = JSON.parse(errorText);
-          if (errorData.error?.message) {
-            // Check for specific error types
-            if (errorData.error.code === 'billing_hard_limit_reached') {
-              throw new Error('OpenAI account has insufficient credits. Please add credits at https://platform.openai.com/settings/organization/billing');
-            }
-            if (errorData.error.message.includes('quota') || errorData.error.message.includes('limit')) {
-              throw new Error(`OpenAI API limit reached: ${errorData.error.message}. Please check your OpenAI account.`);
-            }
-            throw new Error(errorData.error.message);
-          }
-        } catch (parseError) {
-          // If parsing fails, use generic error
-          if (parseError instanceof Error && !parseError.message.includes('JSON')) {
-            throw parseError;
-          }
-        }
-        
-        throw new Error(`Image generation failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      // The response should contain the image URL
-      if (data.data && data.data[0] && data.data[0].url) {
-        const imageUrl = data.data[0].url;
-        console.log("[Image Generation] Image generated successfully:", imageUrl);
-        
-        // Download the image and save it locally
-        const imageResponse = await fetch(imageUrl);
-        if (!imageResponse.ok) {
-          throw new Error("Failed to download generated image");
-        }
-        
-        const buffer = await imageResponse.arrayBuffer();
-        const filename = `ai-generated-${Date.now()}.png`;
-        
-        // Import the activity storage to save the image
-        const { activityStorage } = await import('./activityStorage');
-        const localUrl = await activityStorage.uploadActivityImage(Buffer.from(buffer), filename);
-        
-        console.log("[Image Generation] Image saved locally:", localUrl);
-        return localUrl;
-      } else {
-        throw new Error("Invalid response format from image generation API");
-      }
-    } catch (error) {
-      console.error("[Image Generation] Error generating image:", error);
-      throw error;
-    }
+    throw new Error('Image generation has been moved to OpenAIService. Please use openAIService.generateActivityImage() instead.');
   }
 }
 

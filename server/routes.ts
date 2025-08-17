@@ -16,6 +16,7 @@ import {
 import { materialStorage } from "./materialStorage";
 import { activityStorage } from "./activityStorage";
 import { perplexityService } from "./perplexityService";
+import { openAIService } from "./openAiService";
 import { milestoneStorage } from "./milestoneStorage";
 import multer from "multer";
 import path from "path";
@@ -889,14 +890,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate activity image using AI
   app.post('/api/activities/generate-image', async (req: AuthenticatedRequest, res) => {
     try {
-      const { prompt } = req.body;
+      const { prompt, title, description } = req.body;
       
-      if (!prompt) {
-        return res.status(400).json({ error: 'Image prompt is required' });
+      if (!prompt && (!title || !description)) {
+        return res.status(400).json({ error: 'Either prompt or both title and description are required' });
       }
 
-      // Generate image using Perplexity AI
-      const imageUrl = await perplexityService.generateActivityImage(prompt);
+      // Check if OpenAI service is available
+      if (!openAIService.isAvailable()) {
+        return res.status(503).json({ 
+          error: 'Image generation service is not available. Please check your OpenAI API key configuration.' 
+        });
+      }
+
+      // Generate image using OpenAI service with the new style
+      const activityTitle = title || prompt?.split('.')[0] || 'Activity';
+      const activityDescription = description || prompt || '';
+      
+      const imageUrl = await openAIService.generateActivityImage(activityTitle, activityDescription);
       
       if (!imageUrl) {
         return res.status(500).json({ error: 'Failed to generate image' });
