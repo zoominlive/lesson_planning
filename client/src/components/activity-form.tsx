@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, X, Upload, ImageIcon, VideoIcon, Check, Star, Loader2 } from "lucide-react";
+import { Plus, X, Upload, ImageIcon, VideoIcon, Check, Star, Loader2, RefreshCw } from "lucide-react";
 import {
   insertActivitySchema,
   type Activity,
@@ -77,6 +77,7 @@ export default function ActivityForm({
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [generatingStepImages, setGeneratingStepImages] = useState(false);
+  const [regeneratingStepImage, setRegeneratingStepImage] = useState<number | null>(null);
   const [uploadingInstructionImage, setUploadingInstructionImage] = useState<
     number | null
   >(null);
@@ -100,6 +101,7 @@ export default function ActivityForm({
   const [batchProcessMode, setBatchProcessMode] = useState(false);
   const [addedMaterials, setAddedMaterials] = useState<Set<string>>(new Set()); // Track which materials have been added
   const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null); // For image expansion dialog
+  const [expandedImageTitle, setExpandedImageTitle] = useState<string>("Activity Image"); // Title for expanded image
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -345,6 +347,64 @@ export default function ActivityForm({
       });
     } finally {
       setGeneratingImage(false);
+    }
+  };
+
+  const handleRegenerateStepImage = async (index: number) => {
+    const activityTitle = watch("title");
+    const instruction = instructions[index];
+    
+    if (!instruction.text.trim()) {
+      toast({
+        title: "Cannot generate image",
+        description: "Please add instruction text before generating an image.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setRegeneratingStepImage(index);
+    const token = localStorage.getItem("authToken");
+
+    try {
+      const response = await fetch("/api/activities/generate-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ 
+          title: `${activityTitle} - Step ${index + 1}`,
+          description: instruction.text,
+          prompt: `Step ${index + 1} of activity "${activityTitle}": ${instruction.text}`
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to generate image");
+      }
+
+      const result = await response.json();
+      
+      // Update the instruction with the new image
+      const updated = [...instructions];
+      updated[index] = { ...updated[index], imageUrl: result.url };
+      setInstructions(updated);
+      
+      toast({
+        title: "Image regenerated successfully",
+        description: `Step ${index + 1} image has been updated.`,
+      });
+    } catch (error) {
+      console.error(`Failed to regenerate image for step ${index + 1}:`, error);
+      toast({
+        title: "Failed to regenerate image",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setRegeneratingStepImage(null);
     }
   };
 
@@ -1078,12 +1138,35 @@ export default function ActivityForm({
                 <div className="border-2 border-dashed rounded-lg p-4 text-center min-h-[200px] flex flex-col justify-center">
                   {activityImageUrl ? (
                     <div className="relative">
-                      <img
-                        src={activityImageUrl}
-                        alt="Activity"
-                        className="max-h-32 mx-auto rounded cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => setExpandedImageUrl(activityImageUrl)}
-                      />
+                      <div className="relative inline-block group mx-auto">
+                        <img
+                          src={activityImageUrl}
+                          alt="Activity"
+                          className="max-h-32 rounded cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => {
+                            setExpandedImageUrl(activityImageUrl);
+                            setExpandedImageTitle("Activity Image");
+                          }}
+                        />
+                        {!readOnly && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleGenerateImage();
+                            }}
+                            disabled={generatingImage}
+                            className="absolute top-2 right-2 p-1.5 bg-white/90 hover:bg-white rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Regenerate image"
+                          >
+                            {generatingImage ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4 text-gray-600 hover:text-gray-900" />
+                            )}
+                          </button>
+                        )}
+                      </div>
                       {!readOnly && (
                         <div className="flex gap-2 justify-center mt-2">
                           <Button
@@ -1762,11 +1845,35 @@ export default function ActivityForm({
                   <div className="flex items-center gap-2">
                     {instruction.imageUrl ? (
                       <div className="flex items-center gap-2">
-                        <img
-                          src={instruction.imageUrl}
-                          alt={`Step ${index + 1}`}
-                          className="h-16 w-16 object-cover rounded"
-                        />
+                        <div className="relative group">
+                          <img
+                            src={instruction.imageUrl}
+                            alt={`Step ${index + 1}`}
+                            className="h-16 w-16 object-cover rounded cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => {
+                              setExpandedImageUrl(instruction.imageUrl || null);
+                              setExpandedImageTitle(`Step ${index + 1}`);
+                            }}
+                          />
+                          {!readOnly && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRegenerateStepImage(index);
+                              }}
+                              disabled={regeneratingStepImage === index}
+                              className="absolute top-1 right-1 p-1 bg-white/90 hover:bg-white rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Regenerate image"
+                            >
+                              {regeneratingStepImage === index ? (
+                                <Loader2 className="h-3 w-3 animate-spin text-gray-600" />
+                              ) : (
+                                <RefreshCw className="h-3 w-3 text-gray-600 hover:text-gray-900" />
+                              )}
+                            </button>
+                          )}
+                        </div>
                         {!readOnly && (
                           <Button
                             type="button"
@@ -2017,7 +2124,7 @@ export default function ActivityForm({
       <Dialog open={!!expandedImageUrl} onOpenChange={(open) => !open && setExpandedImageUrl(null)}>
         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
           <DialogHeader className="p-4 pb-2">
-            <DialogTitle>Activity Image</DialogTitle>
+            <DialogTitle>{expandedImageTitle}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-auto p-4 pt-0 flex items-center justify-center">
             {expandedImageUrl && (
