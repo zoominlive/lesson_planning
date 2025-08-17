@@ -673,92 +673,96 @@ export default function ActivityForm({
         )}
 
         {/* Media */}
-        <Card>
+        <Card className="md:col-span-2">
           <CardContent className="p-4 space-y-4">
             <h3 className="font-semibold text-lg">Media</h3>
 
-            <div>
-              <Label>Activity Image</Label>
-              <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                {activityImageUrl ? (
-                  <div className="relative">
-                    <img
-                      src={activityImageUrl}
-                      alt="Activity"
-                      className="max-h-32 mx-auto rounded"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => imageInputRef.current?.click()}
-                    >
-                      Change Image
-                    </Button>
-                  </div>
-                ) : (
-                  <div>
-                    <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="mt-2"
-                      onClick={() => imageInputRef.current?.click()}
-                      disabled={uploadingImage}
-                    >
-                      {uploadingImage ? "Uploading..." : "Upload Image"}
-                    </Button>
-                  </div>
-                )}
-                <input
-                  ref={imageInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Activity Image</Label>
+                <div className="border-2 border-dashed rounded-lg p-4 text-center min-h-[200px] flex flex-col justify-center">
+                  {activityImageUrl ? (
+                    <div className="relative">
+                      <img
+                        src={activityImageUrl}
+                        alt="Activity"
+                        className="max-h-32 mx-auto rounded"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => imageInputRef.current?.click()}
+                      >
+                        Change Image
+                      </Button>
+                    </div>
+                  ) : (
+                    <div>
+                      <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
+                      <p className="text-sm text-gray-500 mt-2 mb-2">No image uploaded</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="mt-2"
+                        onClick={() => imageInputRef.current?.click()}
+                        disabled={uploadingImage}
+                      >
+                        {uploadingImage ? "Uploading..." : "Upload Image"}
+                      </Button>
+                    </div>
+                  )}
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                </div>
               </div>
-            </div>
 
-            <div>
-              <Label>Activity Video</Label>
-              <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                {activityVideoUrl ? (
-                  <div>
-                    <VideoIcon className="mx-auto h-12 w-12 text-green-600" />
-                    <p className="text-sm text-gray-600 mt-1">Video uploaded</p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => videoInputRef.current?.click()}
-                    >
-                      Change Video
-                    </Button>
-                  </div>
-                ) : (
-                  <div>
-                    <VideoIcon className="mx-auto h-12 w-12 text-gray-400" />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="mt-2"
-                      onClick={() => videoInputRef.current?.click()}
-                      disabled={uploadingVideo}
-                    >
-                      {uploadingVideo ? "Uploading..." : "Upload Video"}
-                    </Button>
-                  </div>
-                )}
-                <input
-                  ref={videoInputRef}
-                  type="file"
-                  accept="video/*"
-                  className="hidden"
-                  onChange={handleVideoUpload}
-                />
+              <div>
+                <Label>Activity Video</Label>
+                <div className="border-2 border-dashed rounded-lg p-4 text-center min-h-[200px] flex flex-col justify-center">
+                  {activityVideoUrl ? (
+                    <div>
+                      <VideoIcon className="mx-auto h-12 w-12 text-green-600" />
+                      <p className="text-sm text-gray-600 mt-2 mb-2">Video uploaded</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => videoInputRef.current?.click()}
+                      >
+                        Change Video
+                      </Button>
+                    </div>
+                  ) : (
+                    <div>
+                      <VideoIcon className="mx-auto h-12 w-12 text-gray-400" />
+                      <p className="text-sm text-gray-500 mt-2 mb-2">No video uploaded</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="mt-2"
+                        onClick={() => videoInputRef.current?.click()}
+                        disabled={uploadingVideo}
+                      >
+                        {uploadingVideo ? "Uploading..." : "Upload Video"}
+                      </Button>
+                    </div>
+                  )}
+                  <input
+                    ref={videoInputRef}
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={handleVideoUpload}
+                  />
+                </div>
               </div>
             </div>
           </CardContent>
