@@ -938,7 +938,7 @@ export default function ActivityForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Activity Image</Label>
-                <div className="border-2 border-dashed rounded-lg p-4 text-center">
+                <div className="border-2 border-dashed rounded-lg p-4 text-center min-h-[200px] flex flex-col justify-center">
                   {activityImageUrl ? (
                     <div className="relative">
                       <img
@@ -961,6 +961,7 @@ export default function ActivityForm({
                   ) : (
                     <div>
                       <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
+                      <p className="text-sm text-gray-500 mt-2 mb-2">No image uploaded</p>
                       {!readOnly && (
                         <Button
                           type="button"
@@ -986,11 +987,11 @@ export default function ActivityForm({
 
               <div>
                 <Label>Activity Video</Label>
-                <div className="border-2 border-dashed rounded-lg p-4 text-center">
+                <div className="border-2 border-dashed rounded-lg p-4 text-center min-h-[200px] flex flex-col justify-center">
                   {activityVideoUrl ? (
                     <div>
                       <VideoIcon className="mx-auto h-12 w-12 text-green-600" />
-                      <p className="text-sm text-gray-600 mt-1">Video uploaded</p>
+                      <p className="text-sm text-gray-600 mt-2 mb-2">Video uploaded</p>
                       {!readOnly && (
                         <Button
                           type="button"
@@ -1006,6 +1007,7 @@ export default function ActivityForm({
                   ) : (
                     <div>
                       <VideoIcon className="mx-auto h-12 w-12 text-gray-400" />
+                      <p className="text-sm text-gray-500 mt-2 mb-2">No video uploaded</p>
                       {!readOnly && (
                         <Button
                           type="button"
