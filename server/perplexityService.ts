@@ -35,12 +35,17 @@ export class PerplexityService {
     ageGroup: string;
     category: string;
     isQuiet: boolean;
+    isIndoor: boolean;
     ageRange: { start: number; end: number };
     existingActivities?: Array<{ title: string; description: string }>;
   }): Promise<any> {
     const quietDescription = params.isQuiet
       ? "This should be a quiet, calm activity suitable for quiet time, nap preparation, or low-energy periods."
       : "This can be an active, engaging activity.";
+    
+    const locationDescription = params.isIndoor
+      ? "This activity should be designed for indoor spaces like classrooms or indoor play areas."
+      : "This activity should be designed for outdoor spaces like playgrounds, gardens, or outdoor areas.";
 
     // Create a list of existing activities to avoid duplicates
     let existingActivitiesContext = "";
@@ -56,7 +61,7 @@ ${activityList}
 Create something unique and different from the above activities. Do not repeat similar concepts, themes, or approaches.`;
     }
 
-    const prompt = `Create a comprehensive educational activity for ${params.ageGroup} children (${params.ageRange.start}-${params.ageRange.end} years old) in the category of ${params.category}. ${quietDescription}${existingActivitiesContext}
+    const prompt = `Create a comprehensive educational activity for ${params.ageGroup} children (${params.ageRange.start}-${params.ageRange.end} years old) in the category of ${params.category}. ${quietDescription} ${locationDescription}${existingActivitiesContext}
 
 Please generate a complete activity with the following structure. Return ONLY valid JSON:
 {
@@ -76,7 +81,7 @@ Please generate a complete activity with the following structure. Return ONLY va
   ],
   "setupTime": [preparation time in minutes, typically 5-15],
   "groupSize": "[e.g., 1-4 children, 2-6 children, or Full class]",
-  "spaceRequired": "[Indoor, Outdoor, or Both]",
+  "spaceRequired": "${params.isIndoor ? 'Indoor' : 'Outdoor'}",
   "messLevel": "[Low, Medium, or High]",
   "variations": [
     "[Creative variation or adaptation 1]",

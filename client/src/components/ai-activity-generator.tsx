@@ -28,13 +28,14 @@ export default function AiActivityGenerator({
   const [selectedAgeGroup, setSelectedAgeGroup] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isQuiet, setIsQuiet] = useState<boolean | null>(null);
+  const [isIndoor, setIsIndoor] = useState<boolean | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationMessage, setGenerationMessage] = useState("");
   const [retryCount, setRetryCount] = useState(0);
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
 
   const handleGenerate = async () => {
-    if (!selectedAgeGroup || !selectedCategory || isQuiet === null) {
+    if (!selectedAgeGroup || !selectedCategory || isQuiet === null || isIndoor === null) {
       toast({
         title: "Missing Information",
         description: "Please answer all questions before generating the activity.",
@@ -65,6 +66,7 @@ export default function AiActivityGenerator({
           },
           category: selectedCategory,
           isQuiet,
+          isIndoor,
           locationId
         })
       });
@@ -171,8 +173,15 @@ export default function AiActivityGenerator({
       });
       return;
     }
+    if (step === 4 && isIndoor === null) {
+      toast({
+        title: "Please select whether this should be an indoor or outdoor activity",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    if (step < 3) {
+    if (step < 4) {
       setStep(step + 1);
     } else {
       handleGenerate();
@@ -186,7 +195,7 @@ export default function AiActivityGenerator({
   };
 
   const handleClose = () => {
-    if (step > 1 || selectedAgeGroup || selectedCategory || isQuiet !== null) {
+    if (step > 1 || selectedAgeGroup || selectedCategory || isQuiet !== null || isIndoor !== null) {
       setShowExitConfirmation(true);
     } else {
       onOpenChange(false);
@@ -198,6 +207,7 @@ export default function AiActivityGenerator({
     setSelectedAgeGroup("");
     setSelectedCategory("");
     setIsQuiet(null);
+    setIsIndoor(null);
     setGenerationMessage("");
     onOpenChange(false);
   };
@@ -236,10 +246,10 @@ export default function AiActivityGenerator({
         <div className="mt-6">
           {/* Progress indicators */}
           <div className="flex justify-between mb-8">
-            {[1, 2, 3].map((num) => (
+            {[1, 2, 3, 4].map((num) => (
               <div
                 key={num}
-                className={`flex items-center ${num < 3 ? 'flex-1' : ''}`}
+                className={`flex items-center ${num < 4 ? 'flex-1' : ''}`}
               >
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
@@ -258,7 +268,7 @@ export default function AiActivityGenerator({
                     num
                   )}
                 </div>
-                {num < 3 && (
+                {num < 4 && (
                   <div
                     className={`flex-1 h-1 mx-2 transition-all ${
                       step > num ? 'bg-gradient-to-r from-coral-red to-turquoise' : 'bg-gray-200'
@@ -355,6 +365,49 @@ export default function AiActivityGenerator({
                 </div>
               </div>
             )}
+
+            {step === 4 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Where will this activity take place?</h3>
+                <p className="text-sm text-gray-600">
+                  Choose whether this activity will be done indoors or outdoors.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <Card
+                    className={`cursor-pointer transition-all ${
+                      isIndoor === true
+                        ? 'ring-2 ring-coral-red shadow-lg'
+                        : 'hover:shadow-md'
+                    }`}
+                    onClick={() => setIsIndoor(true)}
+                  >
+                    <CardContent className="p-6 text-center">
+                      <div className="text-3xl mb-2">🏠</div>
+                      <h4 className="font-semibold">Indoor Activity</h4>
+                      <p className="text-sm text-gray-600 mt-2">
+                        Activities for classroom or indoor spaces
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card
+                    className={`cursor-pointer transition-all ${
+                      isIndoor === false
+                        ? 'ring-2 ring-turquoise shadow-lg'
+                        : 'hover:shadow-md'
+                    }`}
+                    onClick={() => setIsIndoor(false)}
+                  >
+                    <CardContent className="p-6 text-center">
+                      <div className="text-3xl mb-2">🌳</div>
+                      <h4 className="font-semibold">Outdoor Activity</h4>
+                      <p className="text-sm text-gray-600 mt-2">
+                        Activities for playground or outdoor areas
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action buttons */}
@@ -376,7 +429,7 @@ export default function AiActivityGenerator({
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {generationMessage || "Generating..."}
                 </>
-              ) : step === 3 ? (
+              ) : step === 4 ? (
                 <>
                   <Wand2 className="mr-2 h-4 w-4" />
                   Generate Activity

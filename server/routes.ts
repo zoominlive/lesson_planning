@@ -888,9 +888,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Generate activity using AI
   app.post('/api/activities/generate', async (req: AuthenticatedRequest, res) => {
-    const { ageGroupId, ageGroupName, ageRange, category, isQuiet, locationId } = req.body;
+    const { ageGroupId, ageGroupName, ageRange, category, isQuiet, isIndoor, locationId } = req.body;
     
-    if (!ageGroupName || !category || isQuiet === undefined) {
+    if (!ageGroupName || !category || isQuiet === undefined || isIndoor === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -913,6 +913,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ageGroup: ageGroupName,
           category,
           isQuiet,
+          isIndoor,
           ageRange: ageRange || { start: 2, end: 5 },
           existingActivities: existingActivityInfo
         });
