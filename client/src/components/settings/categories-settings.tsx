@@ -20,7 +20,10 @@ const categorySchema = z.object({
   name: z.string().min(1, "Category name is required"),
   description: z.string().optional(),
   locationId: z.string().min(1, "Location is required"),
-  color: z.string().regex(/^#[0-9A-F]{6}$/i, "Please enter a valid hex color").optional(),
+  color: z.union([
+    z.string().regex(/^#[0-9A-F]{6}$/i, "Please enter a valid hex color"),
+    z.literal(""),
+  ]).optional(),
   isActive: z.boolean().default(true),
 });
 
@@ -91,7 +94,7 @@ export function CategoriesSettings() {
   const createMutation = useMutation({
     mutationFn: async (data: CategoryFormData) => {
       const response = await apiRequest("POST", "/api/categories", data);
-      return await response.json();
+      return response; // apiRequest already returns parsed JSON
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories", selectedLocationId] });
@@ -100,7 +103,8 @@ export function CategoriesSettings() {
       setSelectedColor("");
       toast({ title: "Category created successfully" });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Failed to create category:", error);
       toast({ title: "Failed to create category", variant: "destructive" });
     },
   });
@@ -108,7 +112,7 @@ export function CategoriesSettings() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: CategoryFormData }) => {
       const response = await apiRequest("PUT", `/api/categories/${id}?locationId=${selectedLocationId}`, data);
-      return await response.json();
+      return response; // apiRequest already returns parsed JSON
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories", selectedLocationId] });
@@ -118,7 +122,8 @@ export function CategoriesSettings() {
       setSelectedColor("");
       toast({ title: "Category updated successfully" });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Failed to update category:", error);
       toast({ title: "Failed to update category", variant: "destructive" });
     },
   });
@@ -136,18 +141,28 @@ export function CategoriesSettings() {
     },
   });
 
-  const handleSubmit = (data: CategoryFormData) => {
-    console.log("Form submitted with data:", data);
-    const submissionData = { 
-      ...data, 
-      locationId: selectedLocationId,
-      color: selectedColor || data.color 
-    };
-    console.log("Final submission data:", submissionData);
-    if (editingCategory) {
-      updateMutation.mutate({ id: editingCategory.id, data: submissionData });
-    } else {
-      createMutation.mutate(submissionData);
+  const handleSubmit = async (data: CategoryFormData) => {
+    try {
+      console.log("Form submitted with data:", data);
+      const submissionData = { 
+        ...data, 
+        locationId: selectedLocationId,
+        color: selectedColor || data.color 
+      };
+      console.log("Final submission data:", submissionData);
+      
+      if (editingCategory) {
+        updateMutation.mutate({ id: editingCategory.id, data: submissionData });
+      } else {
+        createMutation.mutate(submissionData);
+      }
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      toast({ 
+        title: "An error occurred", 
+        description: "Please check the console for details",
+        variant: "destructive" 
+      });
     }
   };
 
@@ -230,8 +245,16 @@ export function CategoriesSettings() {
           `for ${locations.find(l => l.id === selectedLocationId)?.name}`}
         </h3>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          console.log("[Categories] Dialog open state changed to:", open);
           setIsDialogOpen(open);
-          if (!open) resetForm();
+          if (!open) {
+            console.log("[Categories] Dialog closing, resetting form");
+            resetForm();
+          } else {
+            console.log("[Categories] Dialog opened");
+            console.log("[Categories] Current form state:", form.getValues());
+            console.log("[Categories] Selected location ID:", selectedLocationId);
+          }
         }}>
           <DialogTrigger asChild>
             <Button 
@@ -247,7 +270,13 @@ export function CategoriesSettings() {
               <DialogTitle>{editingCategory ? "Edit Category" : "Add Category"}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <form onSubmit={(e) => {
+                console.log("[Categories] Form submit event triggered");
+                console.log("[Categories] Form is valid:", form.formState.isValid);
+                console.log("[Categories] Form errors:", form.formState.errors);
+                console.log("[Categories] Form values:", form.getValues());
+                form.handleSubmit(handleSubmit)(e);
+              }} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="name"
@@ -325,7 +354,19 @@ export function CategoriesSettings() {
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} data-testid="button-cancel">
                     Cancel
                   </Button>
-                  <Button type="submit" data-testid="button-save-category">
+                  <Button 
+                    type="submit" 
+                    data-testid="button-save-category"
+                    onClick={(e) => {
+                      console.log("[Categories] Create/Update button clicked");
+                      console.log("[Categories] Button event type:", e.type);
+                      console.log("[Categories] Is form submitting:", form.formState.isSubmitting);
+                      console.log("[Categories] Form validation errors:", form.formState.errors);
+                      console.log("[Categories] Form isDirty:", form.formState.isDirty);
+                      console.log("[Categories] Current form values:", form.getValues());
+                      // Don't prevent default - let form submission handle it
+                    }}
+                  >
                     {editingCategory ? "Update" : "Create"}
                   </Button>
                 </div>

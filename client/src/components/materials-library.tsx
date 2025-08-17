@@ -6,18 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Check, Package } from "lucide-react";
+import { Plus, Edit, Check, Package, FolderOpen } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import MaterialForm from "./material-form";
+import CollectionsManager from "./collections-manager";
 import type { Material } from "@shared/schema";
 
 export default function MaterialsLibrary() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
   const [ageGroupFilter, setAgeGroupFilter] = useState("all");
+  const [selectedCollectionId, setSelectedCollectionId] = useState("all");
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCollectionsDialogOpen, setIsCollectionsDialogOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState("");
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
@@ -46,6 +48,11 @@ export default function MaterialsLibrary() {
     enabled: !!selectedLocationId,
   });
 
+  // Fetch material collections for filtering
+  const { data: collections = [] } = useQuery({
+    queryKey: ["/api/material-collections"],
+  });
+
   // Auto-select first authorized location if none selected  
   useEffect(() => {
     if (!selectedLocationId && Array.isArray(locations) && locations.length > 0) {
@@ -61,12 +68,26 @@ export default function MaterialsLibrary() {
     }
   }, [locations, selectedLocationId]);
 
+  // Fetch materials in selected collection if a collection is selected
+  const { data: collectionMaterials = [] } = useQuery({
+    queryKey: [`/api/material-collections/${selectedCollectionId}/materials`],
+    queryFn: async () => {
+      const data = await apiRequest("GET", `/api/material-collections/${selectedCollectionId}/materials`);
+      return data || [];
+    },
+    enabled: selectedCollectionId !== "all" && !!selectedCollectionId,
+  });
+
   const filteredMaterials = materials.filter(material => {
     const matchesSearch = material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          material.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesAgeGroup = ageGroupFilter === "all" || (material.ageGroups && material.ageGroups.includes(ageGroupFilter));
     
-    return matchesSearch && matchesAgeGroup;
+    // If a collection is selected, only show materials in that collection
+    const matchesCollection = selectedCollectionId === "all" || 
+                             collectionMaterials.some((m: any) => m.id === material.id);
+    
+    return matchesSearch && matchesAgeGroup && matchesCollection;
   });
 
   const getAgeGroupNames = (ageGroupIds: string[]) => {
@@ -122,27 +143,48 @@ export default function MaterialsLibrary() {
             <h2 className="text-2xl font-bold text-charcoal" data-testid="materials-title">
               Materials Library
             </h2>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  className="bg-gradient-to-r from-turquoise to-sky-blue text-white hover:shadow-lg transition-all duration-300"
-                  data-testid="button-add-material"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add New Material
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Material</DialogTitle>
-                </DialogHeader>
-                <MaterialForm 
-                  onSuccess={() => setIsCreateDialogOpen(false)}
-                  onCancel={() => setIsCreateDialogOpen(false)}
-                  selectedLocationId={selectedLocationId}
-                />
-              </DialogContent>
-            </Dialog>
+            <div className="flex gap-2">
+              <Dialog open={isCollectionsDialogOpen} onOpenChange={setIsCollectionsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline"
+                    className="border-purple-600 text-purple-600 hover:bg-purple-50"
+                    data-testid="button-manage-collections"
+                  >
+                    <FolderOpen className="mr-2 h-4 w-4" />
+                    Manage Collections
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl">
+                  <DialogHeader>
+                    <DialogTitle>Manage Collections</DialogTitle>
+                  </DialogHeader>
+                  <CollectionsManager />
+                </DialogContent>
+              </Dialog>
+              
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    className="bg-gradient-to-r from-turquoise to-sky-blue text-white hover:shadow-lg transition-all duration-300"
+                    data-testid="button-add-material"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add New Material
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Material</DialogTitle>
+                  </DialogHeader>
+                  <MaterialForm 
+                    onSuccess={() => setIsCreateDialogOpen(false)}
+                    onCancel={() => setIsCreateDialogOpen(false)}
+                    selectedLocationId={selectedLocationId}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
           
           <div className="flex flex-wrap gap-4 items-center">
@@ -173,21 +215,6 @@ export default function MaterialsLibrary() {
               </SelectContent>
             </Select>
             
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-48" data-testid="select-category-filter">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="Art Supplies">Art Supplies</SelectItem>
-                <SelectItem value="Building Materials">Building Materials</SelectItem>
-                <SelectItem value="Books & Reading">Books & Reading</SelectItem>
-                <SelectItem value="Science & Nature">Science & Nature</SelectItem>
-                <SelectItem value="Music & Movement">Music & Movement</SelectItem>
-                <SelectItem value="Dramatic Play">Dramatic Play</SelectItem>
-              </SelectContent>
-            </Select>
-            
             <Select value={ageGroupFilter} onValueChange={setAgeGroupFilter}>
               <SelectTrigger className="w-48" data-testid="select-age-group-filter">
                 <SelectValue placeholder="All Age Groups" />
@@ -202,6 +229,24 @@ export default function MaterialsLibrary() {
                   ))
                 ) : (
                   <SelectItem value="none" disabled>No age groups available</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            
+            <Select value={selectedCollectionId} onValueChange={setSelectedCollectionId}>
+              <SelectTrigger className="w-48" data-testid="select-collection-filter">
+                <SelectValue placeholder="All Collections" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Collections</SelectItem>
+                {Array.isArray(collections) && collections.length > 0 ? (
+                  collections.map((collection: any) => (
+                    <SelectItem key={collection.id} value={collection.id}>
+                      {collection.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="none" disabled>No collections available</SelectItem>
                 )}
               </SelectContent>
             </Select>

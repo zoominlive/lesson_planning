@@ -1,12 +1,14 @@
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -60,6 +62,7 @@ export default function MaterialForm({
   const [selectedLocations, setSelectedLocations] = useState<string[]>(
     material?.locationIds || [selectedLocationId],
   );
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
   const [photoUrl, setPhotoUrl] = useState<string>(material?.photoUrl || "");
 
   const {
@@ -95,16 +98,46 @@ export default function MaterialForm({
     queryKey: ["/api/locations"],
   });
 
+  // Fetch available material collections
+  const { data: collections = [] } = useQuery<any[]>({
+    queryKey: ["/api/material-collections"],
+  });
+
+  // Fetch existing collections for this material if editing
+  const { data: materialCollections = [] } = useQuery<any[]>({
+    queryKey: [`/api/materials/${material?.id}/collections`],
+    enabled: !!material?.id,
+  });
+
+  // Set selected collections when editing
+  useEffect(() => {
+    if (materialCollections.length > 0) {
+      setSelectedCollections(materialCollections.map((c: any) => c.id));
+    }
+  }, [materialCollections]);
+
   const createMutation = useMutation({
-    mutationFn: (data: any) =>
-      apiRequest("POST", "/api/materials", {
+    mutationFn: async (data: any) => {
+      // First create the material
+      const material = await apiRequest("POST", "/api/materials", {
         ...data,
         ageGroups: selectedAgeGroups,
         locationIds: selectedLocations,
         photoUrl,
-      }),
+      });
+      
+      // Then update its collections
+      if (selectedCollections.length > 0) {
+        await apiRequest("PUT", `/api/materials/${material.id}/collections`, {
+          collectionIds: selectedCollections,
+        });
+      }
+      
+      return material;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/material-collections"] });
       onSuccess();
       toast({ title: "Material created successfully" });
     },
@@ -114,15 +147,25 @@ export default function MaterialForm({
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: any) =>
-      apiRequest("PUT", `/api/materials/${material!.id}`, {
+    mutationFn: async (data: any) => {
+      // First update the material
+      const updatedMaterial = await apiRequest("PUT", `/api/materials/${material!.id}`, {
         ...data,
         ageGroups: selectedAgeGroups,
         locationIds: selectedLocations,
         photoUrl,
-      }),
+      });
+      
+      // Then update its collections
+      await apiRequest("PUT", `/api/materials/${material!.id}/collections`, {
+        collectionIds: selectedCollections,
+      });
+      
+      return updatedMaterial;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/material-collections"] });
       onSuccess();
       toast({ title: "Material updated successfully" });
     },
@@ -183,6 +226,14 @@ export default function MaterialForm({
       prev.includes(locationId)
         ? prev.filter((id) => id !== locationId)
         : [...prev, locationId],
+    );
+  };
+
+  const handleCollectionToggle = (collectionId: string) => {
+    setSelectedCollections((prev) =>
+      prev.includes(collectionId)
+        ? prev.filter((id) => id !== collectionId)
+        : [...prev, collectionId],
     );
   };
 
@@ -300,6 +351,62 @@ export default function MaterialForm({
             At least one age group is required for safety
           </p>
         )}
+      </div>
+
+      <div>
+        <Label>Collections</Label>
+        <p className="text-sm text-gray-600 mb-2">
+          Organize this material into collections for easier browsing
+        </p>
+        <div className="border rounded-md">
+          {collections.length === 0 ? (
+            <div className="p-3 text-center">
+              <span className="text-gray-500 text-sm">
+                No collections available yet
+              </span>
+            </div>
+          ) : (
+            <ScrollArea className={collections.length > 5 ? "h-[200px]" : ""}>
+              <div className="space-y-2 p-3">
+                {collections.map((collection: any) => {
+                  const isSelected = selectedCollections.includes(collection.id);
+                  return (
+                    <div
+                      key={collection.id}
+                      className="flex items-start space-x-2 py-2 px-2 rounded hover:bg-gray-50"
+                    >
+                      <Checkbox
+                        id={`collection-${collection.id}`}
+                        checked={isSelected}
+                        onCheckedChange={() => handleCollectionToggle(collection.id)}
+                        className="mt-0.5"
+                        data-testid={`checkbox-collection-${collection.id}`}
+                      />
+                      <label
+                        htmlFor={`collection-${collection.id}`}
+                        className="flex-1 cursor-pointer"
+                      >
+                        <div className="font-medium text-sm">{collection.name}</div>
+                        {collection.description && (
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {collection.description}
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          )}
+          {collections.length > 0 && (
+            <div className="border-t px-3 py-2 bg-gray-50">
+              <span className="text-xs text-gray-600">
+                {selectedCollections.length} collection{selectedCollections.length !== 1 ? 's' : ''} selected
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div>

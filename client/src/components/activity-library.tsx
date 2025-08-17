@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, List, Trash2, Play, Package, Clock, Users } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Sparkles, Edit, List, Trash2, Play, Package, Clock, Users } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import ActivityForm from "./activity-form";
@@ -19,11 +20,15 @@ export default function ActivityLibrary() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [ageFilter, setAgeFilter] = useState("all");
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
+  const [viewingActivity, setViewingActivity] = useState<Activity | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [showCreationChoice, setShowCreationChoice] = useState(false);
   const [showAiGenerator, setShowAiGenerator] = useState(false);
   const [aiGeneratedData, setAiGeneratedData] = useState<any>(null);
   const [selectedLocationId, setSelectedLocationId] = useState("");
+  const [activityToDelete, setActivityToDelete] = useState<Activity | null>(null);
+  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
+  const [pendingCloseAction, setPendingCloseAction] = useState<() => void>(() => {});
 
   const { data: activities = [], isLoading } = useQuery<Activity[]>({
     queryKey: ["/api/activities", selectedLocationId],
@@ -155,9 +160,14 @@ export default function ActivityLibrary() {
     setEditingActivity(activity);
   };
 
-  const handleDelete = async (activity: Activity) => {
-    if (confirm(`Are you sure you want to delete "${activity.title}"? This action cannot be undone.`)) {
-      await deleteMutation.mutateAsync(activity.id);
+  const handleDelete = (activity: Activity) => {
+    setActivityToDelete(activity);
+  };
+
+  const confirmDelete = async () => {
+    if (activityToDelete) {
+      await deleteMutation.mutateAsync(activityToDelete.id);
+      setActivityToDelete(null);
     }
   };
 
@@ -180,7 +190,7 @@ export default function ActivityLibrary() {
               data-testid="button-create-activity"
               onClick={() => setShowCreationChoice(true)}
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Sparkles className="mr-2 h-4 w-4" />
               Create New Activity
             </Button>
 
@@ -214,8 +224,37 @@ export default function ActivityLibrary() {
             />
 
             {/* Activity Form Dialog */}
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <Dialog 
+              open={isCreateDialogOpen} 
+              onOpenChange={(open) => {
+                if (!open && aiGeneratedData) {
+                  // Show confirmation if trying to close with AI-generated data
+                  setShowExitConfirmation(true);
+                  setPendingCloseAction(() => () => {
+                    setIsCreateDialogOpen(false);
+                    setAiGeneratedData(null);
+                  });
+                } else {
+                  setIsCreateDialogOpen(open);
+                  if (!open) {
+                    setAiGeneratedData(null);
+                  }
+                }
+              }}
+            >
+              <DialogContent 
+                className="max-w-4xl max-h-[90vh] overflow-y-auto"
+                onInteractOutside={(e) => {
+                  if (aiGeneratedData) {
+                    e.preventDefault();
+                    setShowExitConfirmation(true);
+                    setPendingCloseAction(() => () => {
+                      setIsCreateDialogOpen(false);
+                      setAiGeneratedData(null);
+                    });
+                  }
+                }}
+              >
                 <DialogHeader>
                   <DialogTitle>
                     {aiGeneratedData ? 'Review and Customize AI-Generated Activity' : 'Create New Activity'}
@@ -227,8 +266,16 @@ export default function ActivityLibrary() {
                     setAiGeneratedData(null);
                   }}
                   onCancel={() => {
-                    setIsCreateDialogOpen(false);
-                    setAiGeneratedData(null);
+                    if (aiGeneratedData) {
+                      setShowExitConfirmation(true);
+                      setPendingCloseAction(() => () => {
+                        setIsCreateDialogOpen(false);
+                        setAiGeneratedData(null);
+                      });
+                    } else {
+                      setIsCreateDialogOpen(false);
+                      setAiGeneratedData(null);
+                    }
                   }}
                   selectedLocationId={selectedLocationId}
                   initialData={aiGeneratedData}
@@ -313,7 +360,17 @@ export default function ActivityLibrary() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredActivities.map((activity) => (
-            <Card key={activity.id} className="material-shadow overflow-hidden material-shadow-hover">
+            <Card 
+              key={activity.id} 
+              className="material-shadow overflow-hidden material-shadow-hover flex flex-col h-full cursor-pointer"
+              onClick={(e) => {
+                // Only open view dialog if not clicking on edit/delete buttons
+                const target = e.target as HTMLElement;
+                if (!target.closest('button')) {
+                  setViewingActivity(activity);
+                }
+              }}
+            >
               {/* Activity Image/Video Thumbnail */}
               <div className="relative h-48 bg-gradient-to-br from-coral-red to-turquoise">
                 {activity.imageUrl ? (
@@ -340,25 +397,26 @@ export default function ActivityLibrary() {
                 </div>
               </div>
               
-              <CardContent className="p-6">
-                <h3 className="text-xl font-bold text-charcoal mb-2" data-testid={`activity-title-${activity.id}`}>
-                  {activity.title}
-                </h3>
-                <p className="text-gray-600 text-sm mb-4" data-testid={`activity-description-${activity.id}`}>
-                  {activity.description}
-                </p>
+              <CardContent className="p-6 flex flex-col flex-grow">
+                <div className="flex-grow">
+                  <h3 className="text-xl font-bold text-charcoal mb-2 line-clamp-2" data-testid={`activity-title-${activity.id}`}>
+                    {activity.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-3" data-testid={`activity-description-${activity.id}`}>
+                    {activity.description}
+                  </p>
                 
                 <div className="space-y-3 mb-4">
                   <div>
                     <h4 className="font-semibold text-sm text-charcoal mb-1">Milestones:</h4>
                     <ul className="text-xs text-gray-600 space-y-1">
                       {activity.milestoneIds && activity.milestoneIds.length > 0 ? (
-                        activity.milestoneIds.slice(0, 3).map((milestoneId) => {
+                        activity.milestoneIds.slice(0, 2).map((milestoneId) => {
                           const milestone = milestones.find((m: any) => m.id === milestoneId);
                           return (
                             <li key={milestoneId} className="flex items-start">
                               <span className="mr-1">•</span>
-                              <span className="flex-1">
+                              <span className="flex-1 line-clamp-1">
                                 {milestone ? milestone.title : "Unknown milestone"}
                               </span>
                             </li>
@@ -367,8 +425,8 @@ export default function ActivityLibrary() {
                       ) : (
                         <li className="text-gray-400">• No milestones linked</li>
                       )}
-                      {activity.milestoneIds && activity.milestoneIds.length > 3 && (
-                        <li className="text-gray-500 italic">• ...and {activity.milestoneIds.length - 3} more</li>
+                      {activity.milestoneIds && activity.milestoneIds.length > 2 && (
+                        <li className="text-gray-500 italic">• ...and {activity.milestoneIds.length - 2} more</li>
                       )}
                     </ul>
                   </div>
@@ -377,7 +435,7 @@ export default function ActivityLibrary() {
                     <h4 className="font-semibold text-sm text-charcoal mb-1">Materials Needed:</h4>
                     <div className="flex flex-wrap gap-1">
                       {activity.materialIds && activity.materialIds.length > 0 ? (
-                        activity.materialIds.slice(0, 4).map((materialId) => {
+                        activity.materialIds.slice(0, 3).map((materialId) => {
                           const material = materials.find((m: any) => m.id === materialId);
                           return (
                             <Badge key={materialId} variant="secondary" className="text-xs">
@@ -388,9 +446,9 @@ export default function ActivityLibrary() {
                       ) : (
                         <span className="text-xs text-gray-500">No materials specified</span>
                       )}
-                      {activity.materialIds && activity.materialIds.length > 4 && (
+                      {activity.materialIds && activity.materialIds.length > 3 && (
                         <Badge variant="outline" className="text-xs">
-                          +{activity.materialIds.length - 4} more
+                          +{activity.materialIds.length - 3} more
                         </Badge>
                       )}
                     </div>
@@ -430,8 +488,9 @@ export default function ActivityLibrary() {
                     )}
                   </span>
                 </div>
+                </div>
                 
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 mt-4">
                   <Button 
                     variant="outline"
                     size="sm"
@@ -459,6 +518,24 @@ export default function ActivityLibrary() {
         </div>
       )}
 
+      {/* View Activity Dialog (Read-only) */}
+      {viewingActivity && (
+        <Dialog open={!!viewingActivity} onOpenChange={() => setViewingActivity(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>View Activity Details</DialogTitle>
+            </DialogHeader>
+            <ActivityForm 
+              activity={viewingActivity}
+              onSuccess={() => setViewingActivity(null)}
+              onCancel={() => setViewingActivity(null)}
+              selectedLocationId={selectedLocationId}
+              readOnly={true}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Edit Activity Dialog */}
       {editingActivity && (
         <Dialog open={!!editingActivity} onOpenChange={() => setEditingActivity(null)}>
@@ -475,6 +552,53 @@ export default function ActivityLibrary() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Delete Activity Confirmation Dialog */}
+      <AlertDialog open={!!activityToDelete} onOpenChange={() => setActivityToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Activity</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{activityToDelete?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Exit Confirmation Dialog */}
+      <AlertDialog open={showExitConfirmation} onOpenChange={setShowExitConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard Activity?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have an AI-generated activity that hasn't been saved. Are you sure you want to discard it? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowExitConfirmation(false)}>
+              Continue Editing
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                pendingCloseAction();
+                setShowExitConfirmation(false);
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Discard Activity
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

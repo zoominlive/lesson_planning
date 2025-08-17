@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Wand2, Loader2, Sparkles, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -30,6 +31,7 @@ export default function AiActivityGenerator({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationMessage, setGenerationMessage] = useState("");
   const [retryCount, setRetryCount] = useState(0);
+  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
 
   const handleGenerate = async () => {
     if (!selectedAgeGroup || !selectedCategory || isQuiet === null) {
@@ -109,11 +111,18 @@ export default function AiActivityGenerator({
       
       // Pass the generated activity data to the parent component
       // Include the selected category and age group from the wizard
-      onGenerated({
+      console.log('[AIActivityGenerator] Generated activity result:', result);
+      console.log('[AIActivityGenerator] Suggested materials in result:', result.suggestedMaterials);
+      
+      const activityData = {
         ...result,
         category: selectedCategory,
-        selectedAgeGroupId: selectedAgeGroup
-      });
+        selectedAgeGroupId: selectedAgeGroup,
+        suggestedMaterials: result.suggestedMaterials || []
+      };
+      
+      console.log('[AIActivityGenerator] Passing to onGenerated:', activityData);
+      onGenerated(activityData);
       
       // Reset the dialog
       setStep(1);
@@ -176,18 +185,53 @@ export default function AiActivityGenerator({
     }
   };
 
+  const handleClose = () => {
+    if (step > 1 || selectedAgeGroup || selectedCategory || isQuiet !== null) {
+      setShowExitConfirmation(true);
+    } else {
+      onOpenChange(false);
+    }
+  };
+
+  const resetAndClose = () => {
+    setStep(1);
+    setSelectedAgeGroup("");
+    setSelectedCategory("");
+    setIsQuiet(null);
+    setGenerationMessage("");
+    onOpenChange(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-yellow-500" />
-            AI Activity Generator
-          </DialogTitle>
-          <DialogDescription>
-            Answer a few quick questions and let AI create a comprehensive activity for you.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog 
+        open={open} 
+        onOpenChange={(open) => {
+          if (!open) {
+            handleClose();
+          } else {
+            onOpenChange(true);
+          }
+        }}
+      >
+        <DialogContent 
+          className="max-w-2xl"
+          onInteractOutside={(e) => {
+            if (step > 1 || selectedAgeGroup || selectedCategory || isQuiet !== null) {
+              e.preventDefault();
+              setShowExitConfirmation(true);
+            }
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-yellow-500" />
+              AI Activity Generator
+            </DialogTitle>
+            <DialogDescription>
+              Answer a few quick questions and let AI create a comprehensive activity for you.
+            </DialogDescription>
+          </DialogHeader>
 
         <div className="mt-6">
           {/* Progress indicators */}
@@ -198,13 +242,21 @@ export default function AiActivityGenerator({
                 className={`flex items-center ${num < 3 ? 'flex-1' : ''}`}
               >
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-                    step >= num
-                      ? 'bg-gradient-to-r from-coral-red to-turquoise text-white'
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                    step === num
+                      ? 'bg-gradient-to-r from-coral-red to-turquoise text-gray-900 shadow-lg ring-2 ring-coral-red/50'
+                      : step > num
+                      ? 'bg-gradient-to-r from-coral-red to-turquoise text-gray-900 opacity-60'
                       : 'bg-gray-200 text-gray-500'
                   }`}
                 >
-                  {num}
+                  {step > num ? (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    num
+                  )}
                 </div>
                 {num < 3 && (
                   <div
@@ -309,7 +361,7 @@ export default function AiActivityGenerator({
           <div className="flex justify-between mt-8">
             <Button
               variant="outline"
-              onClick={step === 1 ? () => onOpenChange(false) : handleBack}
+              onClick={step === 1 ? handleClose : handleBack}
               disabled={isGenerating}
             >
               {step === 1 ? 'Cancel' : 'Back'}
@@ -338,7 +390,34 @@ export default function AiActivityGenerator({
             </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* Exit Confirmation Dialog */}
+      <AlertDialog open={showExitConfirmation} onOpenChange={setShowExitConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Activity Generation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel? Your progress will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowExitConfirmation(false)}>
+              Continue
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                resetAndClose();
+                setShowExitConfirmation(false);
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Cancel Generation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

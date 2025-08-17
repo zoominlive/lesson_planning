@@ -110,6 +110,25 @@ export const materials = pgTable("materials", {
   photoUrl: text("photo_url"), // URL to uploaded photo
 });
 
+// Material Collections - for organizing materials into groups
+export const materialCollections = pgTable("material_collections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id),
+  locationIds: json("location_ids").$type<string[]>().notNull().default([]), // Multi-select locations
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Junction table for many-to-many relationship between materials and collections
+export const materialCollectionItems = pgTable("material_collection_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  materialId: varchar("material_id").notNull().references(() => materials.id, { onDelete: "cascade" }),
+  collectionId: varchar("collection_id").notNull().references(() => materialCollections.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Instruction step type with optional image
 export interface InstructionStep {
   text: string;
@@ -278,6 +297,17 @@ export const insertMilestoneSchema = createInsertSchema(milestones).omit({
 
 export const insertMaterialSchema = createInsertSchema(materials).omit({
   id: true,
+});
+
+export const insertMaterialCollectionSchema = createInsertSchema(materialCollections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMaterialCollectionItemSchema = createInsertSchema(materialCollectionItems).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertActivitySchema = createInsertSchema(activities).omit({
@@ -461,6 +491,12 @@ export type InsertMilestone = z.infer<typeof insertMilestoneSchema>;
 
 export type Material = typeof materials.$inferSelect;
 export type InsertMaterial = z.infer<typeof insertMaterialSchema>;
+
+export type MaterialCollection = typeof materialCollections.$inferSelect;
+export type InsertMaterialCollection = z.infer<typeof insertMaterialCollectionSchema>;
+
+export type MaterialCollectionItem = typeof materialCollectionItems.$inferSelect;
+export type InsertMaterialCollectionItem = z.infer<typeof insertMaterialCollectionItemSchema>;
 
 export type Activity = typeof activities.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;

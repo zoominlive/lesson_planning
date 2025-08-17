@@ -388,7 +388,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/materials", async (req: AuthenticatedRequest, res) => {
     try {
-      const data = insertMaterialSchema.parse(req.body);
+      console.log('[POST /api/materials] Request body:', req.body);
+      console.log('[POST /api/materials] Request tenantId:', req.tenantId);
+      
+      // Don't accept tenantId from body, use it from the authenticated request
+      const { tenantId: bodyTenantId, ...bodyWithoutTenant } = req.body;
+      
+      // Add the tenantId from the authenticated request
+      const materialDataWithTenant = {
+        ...bodyWithoutTenant,
+        tenantId: req.tenantId // Use the authenticated tenant ID
+      };
+      
+      console.log('[POST /api/materials] Data with tenant:', materialDataWithTenant);
+      
+      const data = insertMaterialSchema.parse(materialDataWithTenant);
+      console.log('[POST /api/materials] Parsed data:', data);
       
       // Validate that user has access to ALL locations they're assigning the material to
       if (data.locationIds && data.locationIds.length > 0) {
@@ -403,6 +418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const material = await storage.createMaterial(data);
       res.status(201).json(material);
     } catch (error) {
+      console.error('[POST /api/materials] Error:', error);
       res.status(400).json({ error: "Invalid material data" });
     }
   });
@@ -414,7 +430,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const { id } = req.params;
-      const data = insertMaterialSchema.partial().parse(req.body);
+      // Don't accept tenantId from body, use it from the authenticated request
+      const { tenantId: bodyTenantId, ...bodyWithoutTenant } = req.body;
+      
+      // Add the tenantId from the authenticated request for partial updates
+      const materialDataWithTenant = {
+        ...bodyWithoutTenant,
+        tenantId: req.tenantId // Use the authenticated tenant ID
+      };
+      
+      const data = insertMaterialSchema.partial().parse(materialDataWithTenant);
       console.log('[PUT /api/materials] Parsed data:', data);
       
       // Get existing material to check location access
@@ -542,6 +567,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating material photo:', error);
       res.status(500).json({ error: 'Failed to update material photo' });
+    }
+  });
+
+  // Material Collections endpoints
+  app.get("/api/material-collections", async (req: AuthenticatedRequest, res) => {
+    try {
+      const collections = await storage.getMaterialCollections();
+      res.json(collections);
+    } catch (error) {
+      console.error('[GET /api/material-collections] Error:', error);
+      res.status(500).json({ error: "Failed to fetch material collections" });
+    }
+  });
+
+  app.post("/api/material-collections", async (req: AuthenticatedRequest, res) => {
+    try {
+      const data = req.body;
+      const collection = await storage.createMaterialCollection(data);
+      res.json(collection);
+    } catch (error) {
+      console.error('[POST /api/material-collections] Error:', error);
+      res.status(400).json({ 
+        error: "Invalid collection data",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.put("/api/material-collections/:id", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const data = req.body;
+      const collection = await storage.updateMaterialCollection(id, data);
+      if (!collection) {
+        return res.status(404).json({ error: "Collection not found" });
+      }
+      res.json(collection);
+    } catch (error) {
+      console.error('[PUT /api/material-collections] Error:', error);
+      res.status(400).json({ 
+        error: "Invalid collection data",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.delete("/api/material-collections/:id", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteMaterialCollection(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Collection not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error('[DELETE /api/material-collections] Error:', error);
+      res.status(500).json({ error: "Failed to delete collection" });
+    }
+  });
+
+  // Get materials by collection
+  app.get("/api/material-collections/:id/materials", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const materials = await storage.getMaterialsByCollection(id);
+      res.json(materials);
+    } catch (error) {
+      console.error('[GET /api/material-collections/:id/materials] Error:', error);
+      res.status(500).json({ error: "Failed to fetch materials for collection" });
+    }
+  });
+
+  // Get collections for a material
+  app.get("/api/materials/:id/collections", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const collections = await storage.getCollectionsByMaterial(id);
+      res.json(collections);
+    } catch (error) {
+      console.error('[GET /api/materials/:id/collections] Error:', error);
+      res.status(500).json({ error: "Failed to fetch collections for material" });
+    }
+  });
+
+  // Update material collections
+  app.put("/api/materials/:id/collections", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { collectionIds } = req.body;
+      
+      if (!Array.isArray(collectionIds)) {
+        return res.status(400).json({ error: "collectionIds must be an array" });
+      }
+      
+      await storage.updateMaterialCollections(id, collectionIds);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('[PUT /api/materials/:id/collections] Error:', error);
+      res.status(500).json({ error: "Failed to update material collections" });
     }
   });
 
@@ -809,6 +933,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
+        // Validate suggested materials against existing database
+        let validatedMaterials = [];
+        if (generatedActivity.suggestedMaterials && generatedActivity.suggestedMaterials.length > 0) {
+          // Fetch all existing materials
+          const existingMaterials = await storage.getMaterials();
+          
+          // Create a map for quick lookups - normalize names for comparison
+          const materialMap = new Map();
+          existingMaterials.forEach(mat => {
+            const normalizedName = mat.name.toLowerCase().trim();
+            materialMap.set(normalizedName, mat);
+            // Also check for partial matches (e.g., "Drawing Paper" vs "Paper")
+            const simplifiedName = normalizedName.replace(/\s+(paper|supplies|materials|set|kit)$/i, '').trim();
+            if (simplifiedName !== normalizedName) {
+              materialMap.set(simplifiedName, mat);
+            }
+          });
+          
+          // Check each suggested material
+          validatedMaterials = generatedActivity.suggestedMaterials.map((suggestedMat: any) => {
+            const normalizedSuggestedName = suggestedMat.name.toLowerCase().trim();
+            const simplifiedSuggestedName = normalizedSuggestedName.replace(/\s+(paper|supplies|materials|set|kit)$/i, '').trim();
+            
+            // Check for exact match or simplified match
+            const existingMaterial = materialMap.get(normalizedSuggestedName) || 
+                                     materialMap.get(simplifiedSuggestedName) ||
+                                     // Also check for very similar names (e.g., "Balloon" vs "Balloons")
+                                     existingMaterials.find(m => {
+                                       const mName = m.name.toLowerCase();
+                                       const sName = suggestedMat.name.toLowerCase();
+                                       // Check singular/plural variations
+                                       return mName === sName || 
+                                              mName === sName + 's' || 
+                                              mName + 's' === sName ||
+                                              // Check for very similar names (drawing paper vs paper)
+                                              (sName.includes('paper') && mName.includes('paper')) ||
+                                              (sName.includes('balloon') && mName.includes('balloon')) ||
+                                              (sName.includes('tape') && mName.includes('tape'));
+                                     });
+            
+            if (existingMaterial) {
+              // Material exists - return the existing material info
+              return {
+                ...suggestedMat,
+                existingMaterialId: existingMaterial.id,
+                existingMaterialName: existingMaterial.name,
+                existingMaterialCategory: existingMaterial.category,
+                isExisting: true
+              };
+            } else {
+              // Material doesn't exist - mark as new
+              return {
+                ...suggestedMat,
+                isExisting: false
+              };
+            }
+          });
+          
+          console.log('[Activity Generation] Validated materials:', validatedMaterials.map((m: any) => ({
+            name: m.name,
+            isExisting: m.isExisting,
+            existingName: m.existingMaterialName
+          })));
+        }
+
         // Transform the AI response to match our activity form structure
         const transformedActivity = {
           title: generatedActivity.title,
@@ -830,7 +1019,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             imageUrl: ''
           })),
           variations: generatedActivity.variations,
-          imagePrompt: generatedActivity.imagePrompt
+          imagePrompt: generatedActivity.imagePrompt,
+          suggestedMaterials: validatedMaterials.length > 0 ? validatedMaterials : (generatedActivity.suggestedMaterials || [])
         };
 
         res.json(transformedActivity);
@@ -1697,7 +1887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('[COPY] Current user ID (req.userId):', req.userId);
           
           // Look up the actual user ID (UUID) from the user_id since foreign keys reference users.id
-          const currentUser = await storage.getUserByUserId(req.userId);
+          const currentUser = req.userId ? await storage.getUserByUserId(req.userId) : undefined;
           const actualUserId = currentUser ? currentUser.id : req.userId;
           console.log('[COPY] Actual user UUID:', actualUserId);
           
@@ -2208,18 +2398,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/categories", async (req: AuthenticatedRequest, res) => {
     try {
-      const data = insertCategorySchema.parse(req.body);
+      console.log('[POST /api/categories] Request body:', req.body);
+      console.log('[POST /api/categories] Request tenantId:', req.tenantId);
+      console.log('[POST /api/categories] Request userId:', req.userId);
+      
+      if (!req.tenantId) {
+        console.error('[POST /api/categories] No tenantId in authenticated request!');
+        return res.status(401).json({ error: "Tenant context required" });
+      }
+      
+      // Don't accept tenantId from body, use it from the authenticated request
+      const { tenantId: bodyTenantId, ...bodyWithoutTenant } = req.body;
+      
+      // Add the tenantId from the authenticated request
+      const dataWithTenant = {
+        ...bodyWithoutTenant,
+        tenantId: req.tenantId // Use the authenticated tenant ID
+      };
+      
+      console.log('[POST /api/categories] Data with tenant:', dataWithTenant);
+      
+      // Validate the complete data with tenantId
+      const validatedData = insertCategorySchema.parse(dataWithTenant);
+      console.log('[POST /api/categories] Validated data:', validatedData);
       
       // Validate location access
-      const accessCheck = await validateLocationAccess(req, data.locationId);
+      const accessCheck = await validateLocationAccess(req, validatedData.locationId);
       if (!accessCheck.allowed) {
+        console.log('[POST /api/categories] Location access denied:', accessCheck.message);
         return res.status(403).json({ error: accessCheck.message });
       }
       
-      const category = await storage.createCategory(data);
+      const category = await storage.createCategory(validatedData);
+      console.log('[POST /api/categories] Category created successfully:', category);
       res.status(201).json(category);
-    } catch (error) {
-      console.error("Category creation error:", error);
+    } catch (error: any) {
+      console.error('[POST /api/categories] Error creating category:', error);
+      if (error instanceof Error) {
+        console.error('[POST /api/categories] Error message:', error.message);
+        console.error('[POST /api/categories] Error stack:', error.stack);
+      }
+      if (error?.issues) {
+        console.error('[POST /api/categories] Validation issues:', JSON.stringify(error.issues, null, 2));
+        error.issues.forEach((issue: any) => {
+          console.error(`[POST /api/categories] Field '${issue.path.join('.')}' - ${issue.message}`);
+        });
+      }
       res.status(400).json({ error: "Invalid category data" });
     }
   });
