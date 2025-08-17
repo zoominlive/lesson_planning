@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Edit, List, Trash2, Play, Package, Clock, Users } from "lucide-react";
+import { Sparkles, Edit, List, Trash2, Play, Package, Clock, Users } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import ActivityForm from "./activity-form";
@@ -190,7 +190,7 @@ export default function ActivityLibrary() {
               data-testid="button-create-activity"
               onClick={() => setShowCreationChoice(true)}
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Sparkles className="mr-2 h-4 w-4" />
               Create New Activity
             </Button>
 
