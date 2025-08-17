@@ -860,10 +860,20 @@ Ensure the activity is:
         try {
           const errorData = JSON.parse(errorText);
           if (errorData.error?.message) {
+            // Check for specific error types
+            if (errorData.error.code === 'billing_hard_limit_reached') {
+              throw new Error('OpenAI account has insufficient credits. Please add credits at https://platform.openai.com/settings/organization/billing');
+            }
+            if (errorData.error.message.includes('quota') || errorData.error.message.includes('limit')) {
+              throw new Error(`OpenAI API limit reached: ${errorData.error.message}. Please check your OpenAI account.`);
+            }
             throw new Error(errorData.error.message);
           }
-        } catch {
+        } catch (parseError) {
           // If parsing fails, use generic error
+          if (parseError instanceof Error && !parseError.message.includes('JSON')) {
+            throw parseError;
+          }
         }
         
         throw new Error(`Image generation failed: ${response.status}`);
