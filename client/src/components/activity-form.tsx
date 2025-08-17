@@ -98,6 +98,7 @@ export default function ActivityForm({
   >(null);
   const [batchProcessMode, setBatchProcessMode] = useState(false);
   const [addedMaterials, setAddedMaterials] = useState<Set<string>>(new Set()); // Track which materials have been added
+  const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null); // For image expansion dialog
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -1000,18 +1001,45 @@ export default function ActivityForm({
                       <img
                         src={activityImageUrl}
                         alt="Activity"
-                        className="max-h-32 mx-auto rounded"
+                        className="max-h-32 mx-auto rounded cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => setExpandedImageUrl(activityImageUrl)}
                       />
                       {!readOnly && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="mt-2"
-                          onClick={() => imageInputRef.current?.click()}
-                        >
-                          Change Image
-                        </Button>
+                        <div className="flex gap-2 justify-center mt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => imageInputRef.current?.click()}
+                            disabled={uploadingImage}
+                          >
+                            {uploadingImage ? "Uploading..." : "Upload Image"}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleGenerateImage}
+                            disabled={generatingImage}
+                            className="border-gradient-to-r from-coral-red to-turquoise"
+                          >
+                            {generatingImage ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin text-turquoise" />
+                                <span className="bg-gradient-to-r from-coral-red to-turquoise bg-clip-text text-transparent">
+                                  Generating...
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Wand2 className="mr-2 h-4 w-4 text-turquoise" />
+                                <span className="bg-gradient-to-r from-coral-red to-turquoise bg-clip-text text-transparent">
+                                  Generate with AI
+                                </span>
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       )}
                     </div>
                   ) : (
@@ -1033,17 +1061,21 @@ export default function ActivityForm({
                             variant="outline"
                             onClick={handleGenerateImage}
                             disabled={uploadingImage || generatingImage}
-                            className="bg-gradient-to-r from-coral-red to-turquoise text-white hover:opacity-90"
+                            className="border-gradient-to-r from-coral-red to-turquoise"
                           >
                             {generatingImage ? (
                               <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Generating...
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin text-turquoise" />
+                                <span className="bg-gradient-to-r from-coral-red to-turquoise bg-clip-text text-transparent">
+                                  Generating...
+                                </span>
                               </>
                             ) : (
                               <>
-                                <Wand2 className="mr-2 h-4 w-4" />
-                                Generate with AI
+                                <Wand2 className="mr-2 h-4 w-4 text-turquoise" />
+                                <span className="bg-gradient-to-r from-coral-red to-turquoise bg-clip-text text-transparent">
+                                  Generate with AI
+                                </span>
                               </>
                             )}
                           </Button>
@@ -1884,6 +1916,27 @@ export default function ActivityForm({
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Expansion Dialog */}
+      <Dialog open={!!expandedImageUrl} onOpenChange={(open) => !open && setExpandedImageUrl(null)}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-4 pb-2">
+            <DialogTitle>Activity Image</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto p-4 pt-0 flex items-center justify-center">
+            {expandedImageUrl && (
+              <img
+                src={expandedImageUrl}
+                alt="Activity"
+                className="max-w-full max-h-full object-contain"
+              />
+            )}
+          </div>
+          <DialogFooter className="p-4 pt-2">
+            <Button onClick={() => setExpandedImageUrl(null)}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </form>
