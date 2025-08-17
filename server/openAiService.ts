@@ -46,30 +46,29 @@ export class OpenAIService {
     }
 
     try {
-      // Create a prompt for completely photorealistic educational photography
-      // Real photography style, not cartoons or animations
-      const imagePrompt = `Create a photorealistic photograph of real children engaged in an educational activity called "${activityTitle}"
+      // Create a prompt for bright, colorful 3D cartoon educational illustrations
+      // Modern children's educational media style like Pixar/DreamWorks
+      const imagePrompt = `Create a bright, colorful 3D cartoon illustration for a children's activity called "${activityTitle}"
 
 STYLE REQUIREMENTS:
-- Actual photographic image, NOT cartoon, NOT animation, NOT illustration
-- Professional educational photography style like National Geographic or school brochures
-- Real children in a real classroom or educational setting
-- Natural lighting from windows creating soft, warm atmosphere
-- Sharp focus on the main subjects with shallow depth of field
-- Professional DSLR camera quality with high resolution details
-- Natural skin tones and realistic facial expressions
-- Authentic classroom materials and furniture (real wood, plastic, fabric)
-- Documentary-style candid moments capturing genuine engagement
-- Warm, inviting color temperature (slightly warm/golden tones)
-- Professional composition following rule of thirds
-- Natural motion blur if children are moving
-- NO text, labels, or watermarks in the image
-- Diverse group of real children aged 3-5 years
-- Clean, modern educational environment
+- Modern children's educational media style like Pixar or DreamWorks animation
+- Soft rounded characters with large expressive eyes
+- Smooth skin textures and slightly oversized heads for cute, approachable look
+- Vivid and saturated colors with rainbow-like palette
+- Soft shading and lighting, not harsh shadows
+- Cheerful and clean environment with simple geometric shapes
+- Child-friendly props and toys with rounded edges
+- Warm natural lighting coming from large windows
+- Fun, safe, and imaginative atmosphere
+- Playful and friendly scene composition
+- Characters should be diverse children aged 3-5 years
+- NO text, letters, numbers, or words in the image
+- Clean, minimalist background to keep focus on the activity
+- Appeal to both young children and parents
 
 ACTIVITY TO ILLUSTRATE: ${activityDescription}
 
-Create a genuine photograph that looks like it was taken by a professional educational photographer documenting real children during an actual classroom activity. The image should feel authentic, warm, and engaging - like a high-quality stock photo for educational materials.`;
+Create a bright, colorful 3D cartoon illustration in the style of modern children's educational media. The scene should be playful and friendly, designed to appeal to young children and parents alike.`;
 
       console.log(
         `[OpenAI] Generating image with prompt: ${imagePrompt.substring(0, 200)}...`,
@@ -88,7 +87,7 @@ Create a genuine photograph that looks like it was taken by a professional educa
             prompt: imagePrompt,
             size: "1024x1024",
             quality: "standard",
-            style: "natural", // 'natural' produces more photorealistic images
+            style: "vivid", // 'vivid' produces more colorful, vibrant illustrations
             n: 1,
           }),
         },

@@ -26,10 +26,11 @@ This project is a comprehensive lesson planning application for early childhood 
     - Changed AI generation button icon from wand to star for better visual appeal
     - Fixed button contrast issues with dark text (#0d0d0c) on gradient background for readability
     - Removed full-screen overlay during image generation, keeping only button animation for cleaner UX
-    - Updated OpenAI prompts to generate photorealistic photographs (not cartoons or animations)
-    - Images now look like professional educational photography taken with DSLR cameras
-    - Documentary-style candid moments with real children in authentic classroom settings
-    - Natural lighting, shallow depth of field, and warm color temperature for engaging visuals
+    - Updated OpenAI prompts to generate bright, colorful 3D cartoon illustrations
+    - Modern children's educational media style like Pixar/DreamWorks animation
+    - Soft rounded characters with large expressive eyes and slightly oversized heads
+    - Vivid saturated colors with rainbow-like palette and soft shading
+    - Uses 'vivid' style parameter for more colorful, vibrant illustrations
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
