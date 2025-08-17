@@ -88,7 +88,7 @@ Create a genuine photograph that looks like it was taken by a professional educa
             prompt: imagePrompt,
             size: "1024x1024",
             quality: "standard",
-            style: "vivid", // 'vivid' produces more colorful, warm illustrations
+            style: "natural", // 'natural' produces more photorealistic images
             n: 1,
           }),
         },
