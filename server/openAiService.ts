@@ -46,29 +46,29 @@ export class OpenAIService {
     }
 
     try {
-      // Create a prompt for bright, colorful 3D cartoon educational illustrations
-      // Modern children's educational media style like Pixar/DreamWorks
-      const imagePrompt = `Create a bright, colorful 3D cartoon illustration for a children's activity called "${activityTitle}"
+      // Create a prompt for professional educational reference images for teachers
+      // Clear, realistic depictions that help adult educators understand activities
+      const imagePrompt = `Create a clear, professional educational reference image for teachers showing the activity: "${activityTitle}"
 
 STYLE REQUIREMENTS:
-- Modern children's educational media style like Pixar or DreamWorks animation
-- Soft rounded characters with large expressive eyes
-- Smooth skin textures and slightly oversized heads for cute, approachable look
-- Vivid and saturated colors with rainbow-like palette
-- Soft shading and lighting, not harsh shadows
-- Cheerful and clean environment with simple geometric shapes
-- Child-friendly props and toys with rounded edges
-- Warm natural lighting coming from large windows
-- Fun, safe, and imaginative atmosphere
-- Playful and friendly scene composition
-- Characters should be diverse children aged 3-5 years
-- NO text, letters, numbers, or words in the image
-- Clean, minimalist background to keep focus on the activity
-- Appeal to both young children and parents
+- Professional educational documentation style
+- Clear, realistic depiction suitable for adult educators
+- Focus on showing the activity setup, materials, and process
+- Clean, well-lit educational environment
+- Neutral, professional color palette (not overly bright or childish)
+- Realistic proportions and perspectives
+- Show actual educational materials and classroom setup
+- Documentary-style composition that clearly demonstrates the activity
+- Include children engaged in the activity but with realistic, non-cartoonish appearance
+- Professional photography aesthetic, like educational textbooks or teacher training materials
+- Clear visual hierarchy showing important elements of the activity
+- Practical, implementable setup that teachers can replicate
+- NO cartoon elements, NO exaggerated features, NO childish decorations
+- NO text, labels, or watermarks in the image
 
-ACTIVITY TO ILLUSTRATE: ${activityDescription}
+ACTIVITY DETAILS: ${activityDescription}
 
-Create a bright, colorful 3D cartoon illustration in the style of modern children's educational media. The scene should be playful and friendly, designed to appeal to young children and parents alike.`;
+Create a professional, realistic educational reference image that helps teachers understand exactly how to implement this activity in their classroom. The image should look like it belongs in a teacher's manual or educational resource guide.`;
 
       console.log(
         `[OpenAI] Generating image with prompt: ${imagePrompt.substring(0, 200)}...`,
@@ -87,7 +87,7 @@ Create a bright, colorful 3D cartoon illustration in the style of modern childre
             prompt: imagePrompt,
             size: "1024x1024",
             quality: "standard",
-            style: "vivid", // 'vivid' produces more colorful, vibrant illustrations
+            style: "natural", // 'natural' produces more realistic, professional images
             n: 1,
           }),
         },
