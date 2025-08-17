@@ -20,6 +20,7 @@ export default function ActivityLibrary() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [ageFilter, setAgeFilter] = useState("all");
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
+  const [viewingActivity, setViewingActivity] = useState<Activity | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [showCreationChoice, setShowCreationChoice] = useState(false);
   const [showAiGenerator, setShowAiGenerator] = useState(false);
@@ -359,7 +360,17 @@ export default function ActivityLibrary() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredActivities.map((activity) => (
-            <Card key={activity.id} className="material-shadow overflow-hidden material-shadow-hover flex flex-col h-full">
+            <Card 
+              key={activity.id} 
+              className="material-shadow overflow-hidden material-shadow-hover flex flex-col h-full cursor-pointer"
+              onClick={(e) => {
+                // Only open view dialog if not clicking on edit/delete buttons
+                const target = e.target as HTMLElement;
+                if (!target.closest('button')) {
+                  setViewingActivity(activity);
+                }
+              }}
+            >
               {/* Activity Image/Video Thumbnail */}
               <div className="relative h-48 bg-gradient-to-br from-coral-red to-turquoise">
                 {activity.imageUrl ? (
@@ -505,6 +516,24 @@ export default function ActivityLibrary() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* View Activity Dialog (Read-only) */}
+      {viewingActivity && (
+        <Dialog open={!!viewingActivity} onOpenChange={() => setViewingActivity(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>View Activity Details</DialogTitle>
+            </DialogHeader>
+            <ActivityForm 
+              activity={viewingActivity}
+              onSuccess={() => setViewingActivity(null)}
+              onCancel={() => setViewingActivity(null)}
+              selectedLocationId={selectedLocationId}
+              readOnly={true}
+            />
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* Edit Activity Dialog */}

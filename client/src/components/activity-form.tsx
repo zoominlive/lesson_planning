@@ -38,6 +38,7 @@ interface ActivityFormProps {
   onCancel: () => void;
   selectedLocationId?: string;
   initialData?: any; // AI-generated data
+  readOnly?: boolean;
 }
 
 export default function ActivityForm({
@@ -46,6 +47,7 @@ export default function ActivityForm({
   onCancel,
   selectedLocationId,
   initialData,
+  readOnly = false,
 }: ActivityFormProps) {
   const { toast } = useToast();
 
@@ -682,26 +684,28 @@ export default function ActivityForm({
             <h3 className="font-semibold text-lg">Basic Information</h3>
 
             <div>
-              <Label htmlFor="title">Activity Title *</Label>
+              <Label htmlFor="title">Activity Title {!readOnly && "*"}</Label>
               <Input
                 id="title"
                 {...register("title")}
                 data-testid="input-activity-title"
+                disabled={readOnly}
               />
-              {errors.title && (
+              {errors.title && !readOnly && (
                 <p className="text-red-500 text-sm">{errors.title.message}</p>
               )}
             </div>
 
             <div>
-              <Label htmlFor="description">Description *</Label>
+              <Label htmlFor="description">Description {!readOnly && "*"}</Label>
               <Textarea
                 id="description"
                 {...register("description")}
                 className="min-h-[200px] resize-y"
                 data-testid="textarea-activity-description"
+                disabled={readOnly}
               />
-              {errors.description && (
+              {errors.description && !readOnly && (
                 <p className="text-red-500 text-sm">
                   {errors.description.message}
                 </p>
@@ -709,12 +713,13 @@ export default function ActivityForm({
             </div>
 
             <div>
-              <Label htmlFor="category">Category *</Label>
+              <Label htmlFor="category">Category {!readOnly && "*"}</Label>
               <Select
                 onValueChange={(value) => setValue("category", value)}
                 defaultValue={initialData?.category || activity?.category}
+                disabled={readOnly}
               >
-                <SelectTrigger data-testid="select-activity-category">
+                <SelectTrigger data-testid="select-activity-category" disabled={readOnly}>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -733,7 +738,7 @@ export default function ActivityForm({
             </div>
 
             <div>
-              <Label>Age Groups *</Label>
+              <Label>Age Groups {!readOnly && "*"}</Label>
               <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
                 {ageGroups.map((group: any) => (
                   <div key={group.id} className="flex items-center space-x-2">
@@ -742,6 +747,7 @@ export default function ActivityForm({
                       checked={selectedAgeGroups.includes(group.id)}
                       onCheckedChange={() => toggleAgeGroup(group.id)}
                       data-testid={`checkbox-age-group-${group.id}`}
+                      disabled={readOnly}
                     />
                     <label
                       htmlFor={`age-group-${group.id}`}
@@ -761,12 +767,13 @@ export default function ActivityForm({
             </div>
 
             <div>
-              <Label htmlFor="duration">Duration (minutes) *</Label>
+              <Label htmlFor="duration">Duration (minutes) {!readOnly && "*"}</Label>
               <Input
                 id="duration"
                 type="number"
                 {...register("duration", { valueAsNumber: true })}
                 data-testid="input-activity-duration"
+                disabled={readOnly}
               />
               {errors.duration && (
                 <p className="text-red-500 text-sm">
@@ -777,15 +784,16 @@ export default function ActivityForm({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="minChildren">Min Children Recomended</Label>
+                <Label htmlFor="minChildren">Min Children Recommended</Label>
                 <Input
                   id="minChildren"
                   type="number"
                   min="1"
                   {...register("minChildren", { valueAsNumber: true })}
                   data-testid="input-min-children"
+                  disabled={readOnly}
                 />
-                {errors.minChildren && (
+                {errors.minChildren && !readOnly && (
                   <p className="text-red-500 text-sm">
                     {errors.minChildren.message}
                   </p>
@@ -793,13 +801,14 @@ export default function ActivityForm({
               </div>
 
               <div>
-                <Label htmlFor="maxChildren">Max Children Recomended</Label>
+                <Label htmlFor="maxChildren">Max Children Recommended</Label>
                 <Input
                   id="maxChildren"
                   type="number"
                   min="1"
                   {...register("maxChildren", { valueAsNumber: true })}
                   data-testid="input-max-children"
+                  disabled={readOnly}
                 />
                 {errors.maxChildren && (
                   <p className="text-red-500 text-sm">
@@ -934,28 +943,32 @@ export default function ActivityForm({
                       alt="Activity"
                       className="max-h-32 mx-auto rounded"
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => imageInputRef.current?.click()}
-                    >
-                      Change Image
-                    </Button>
+                    {!readOnly && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => imageInputRef.current?.click()}
+                      >
+                        Change Image
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div>
                     <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="mt-2"
-                      onClick={() => imageInputRef.current?.click()}
-                      disabled={uploadingImage}
-                    >
-                      {uploadingImage ? "Uploading..." : "Upload Image"}
-                    </Button>
+                    {!readOnly && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="mt-2"
+                        onClick={() => imageInputRef.current?.click()}
+                        disabled={uploadingImage}
+                      >
+                        {uploadingImage ? "Uploading..." : "Upload Image"}
+                      </Button>
+                    )}
                   </div>
                 )}
                 <input
@@ -975,28 +988,32 @@ export default function ActivityForm({
                   <div>
                     <VideoIcon className="mx-auto h-12 w-12 text-green-600" />
                     <p className="text-sm text-gray-600 mt-1">Video uploaded</p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => videoInputRef.current?.click()}
-                    >
-                      Change Video
-                    </Button>
+                    {!readOnly && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => videoInputRef.current?.click()}
+                      >
+                        Change Video
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div>
                     <VideoIcon className="mx-auto h-12 w-12 text-gray-400" />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="mt-2"
-                      onClick={() => videoInputRef.current?.click()}
-                      disabled={uploadingVideo}
-                    >
-                      {uploadingVideo ? "Uploading..." : "Upload Video"}
-                    </Button>
+                    {!readOnly && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="mt-2"
+                        onClick={() => videoInputRef.current?.click()}
+                        disabled={uploadingVideo}
+                      >
+                        {uploadingVideo ? "Uploading..." : "Upload Video"}
+                      </Button>
+                    )}
                   </div>
                 )}
                 <input
@@ -1023,10 +1040,12 @@ export default function ActivityForm({
               <Select
                 value={milestoneCategoryFilter}
                 onValueChange={setMilestoneCategoryFilter}
+                disabled={readOnly}
               >
                 <SelectTrigger
                   className="h-8 text-sm"
                   data-testid="filter-milestone-category"
+                  disabled={readOnly}
                 >
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
@@ -1044,10 +1063,12 @@ export default function ActivityForm({
               <Select
                 value={milestoneAgeGroupFilter}
                 onValueChange={setMilestoneAgeGroupFilter}
+                disabled={readOnly}
               >
                 <SelectTrigger
                   className="h-8 text-sm"
                   data-testid="filter-milestone-age-group"
+                  disabled={readOnly}
                 >
                   <SelectValue placeholder="Filter by age group" />
                 </SelectTrigger>
@@ -1062,7 +1083,7 @@ export default function ActivityForm({
               </Select>
             </div>
             {(milestoneCategoryFilter !== "all" ||
-              milestoneAgeGroupFilter !== "all") && (
+              milestoneAgeGroupFilter !== "all") && !readOnly && (
               <Button
                 type="button"
                 variant="ghost"
@@ -1088,6 +1109,7 @@ export default function ActivityForm({
                     onCheckedChange={() => toggleMilestone(milestone.id)}
                     data-testid={`checkbox-milestone-${milestone.id}`}
                     className="mt-1"
+                    disabled={readOnly}
                   />
                   <label
                     htmlFor={`milestone-${milestone.id}`}
@@ -1210,7 +1232,7 @@ export default function ActivityForm({
                                 </p>
                               )}
                             </div>
-                            {!isAdded ? (
+                            {!isAdded && !readOnly ? (
                               <Button
                                 type="button"
                                 size="sm"
@@ -1226,13 +1248,13 @@ export default function ActivityForm({
                                 <Plus className="h-3 w-3 mr-1" />
                                 Quick Add
                               </Button>
-                            ) : (
+                            ) : isAdded ? (
                               <div className="ml-2 text-green-600">
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                               </div>
-                            )}
+                            ) : null}
                           </div>
                         </div>
                       );
@@ -1255,10 +1277,12 @@ export default function ActivityForm({
               <Select
                 value={materialCategoryFilter}
                 onValueChange={setMaterialCategoryFilter}
+                disabled={readOnly}
               >
                 <SelectTrigger
                   className="h-8 text-sm"
                   data-testid="filter-material-category"
+                  disabled={readOnly}
                 >
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
@@ -1276,10 +1300,12 @@ export default function ActivityForm({
               <Select
                 value={materialAgeGroupFilter}
                 onValueChange={setMaterialAgeGroupFilter}
+                disabled={readOnly}
               >
                 <SelectTrigger
                   className="h-8 text-sm"
                   data-testid="filter-material-age-group"
+                  disabled={readOnly}
                 >
                   <SelectValue placeholder="Filter by age group" />
                 </SelectTrigger>
@@ -1294,7 +1320,7 @@ export default function ActivityForm({
               </Select>
             </div>
             {(materialCategoryFilter !== "all" ||
-              materialAgeGroupFilter !== "all") && (
+              materialAgeGroupFilter !== "all") && !readOnly && (
               <Button
                 type="button"
                 variant="ghost"
@@ -1322,6 +1348,7 @@ export default function ActivityForm({
                     onCheckedChange={() => toggleMaterial(material.id)}
                     data-testid={`checkbox-material-${material.id}`}
                     className="mt-1"
+                    disabled={readOnly}
                   />
                   <div className="flex-1 min-w-0">
                     <label
@@ -1425,15 +1452,17 @@ export default function ActivityForm({
         <CardContent className="p-4 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-lg">Step-by-step Instructions</h3>
-            <Button
-              type="button"
-              onClick={addInstruction}
-              size="sm"
-              variant="outline"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Add Step
-            </Button>
+            {!readOnly && (
+              <Button
+                type="button"
+                onClick={addInstruction}
+                size="sm"
+                variant="outline"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Step
+              </Button>
+            )}
           </div>
 
           {instructions.map((instruction, index) => (
@@ -1451,6 +1480,7 @@ export default function ActivityForm({
                     placeholder="Enter instruction step..."
                     data-testid={`input-instruction-${index}`}
                     className="min-h-[80px] resize-y"
+                    disabled={readOnly}
                   />
 
                   {/* Instruction Image Upload */}
@@ -1462,18 +1492,20 @@ export default function ActivityForm({
                           alt={`Step ${index + 1}`}
                           className="h-16 w-16 object-cover rounded"
                         />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            instructionImageRefs.current[index]?.click()
-                          }
-                        >
-                          Change Image
-                        </Button>
+                        {!readOnly && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              instructionImageRefs.current[index]?.click()
+                            }
+                          >
+                            Change Image
+                          </Button>
+                        )}
                       </div>
-                    ) : (
+                    ) : !readOnly ? (
                       <Button
                         type="button"
                         variant="outline"
@@ -1488,7 +1520,7 @@ export default function ActivityForm({
                           ? "Uploading..."
                           : "Add Image"}
                       </Button>
-                    )}
+                    ) : null}
                     <input
                       ref={(el) => {
                         instructionImageRefs.current[index] = el;
@@ -1500,7 +1532,7 @@ export default function ActivityForm({
                     />
                   </div>
                 </div>
-                {instructions.length > 1 && (
+                {instructions.length > 1 && !readOnly && (
                   <Button
                     type="button"
                     onClick={() => removeInstruction(index)}
@@ -1518,24 +1550,26 @@ export default function ActivityForm({
       </Card>
 
       {/* Form Actions */}
-      <div className="flex justify-end space-x-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          data-testid="button-cancel"
-        >
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          className="bg-gradient-to-r from-coral-red to-turquoise text-white"
-          disabled={createMutation.isPending || updateMutation.isPending}
-          data-testid="button-save-activity"
-        >
-          {activity ? "Update Activity" : "Create Activity"}
-        </Button>
-      </div>
+      {!readOnly && (
+        <div className="flex justify-end space-x-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            data-testid="button-cancel"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            className="bg-gradient-to-r from-coral-red to-turquoise text-white"
+            disabled={createMutation.isPending || updateMutation.isPending}
+            data-testid="button-save-activity"
+          >
+            {activity ? "Update Activity" : "Create Activity"}
+          </Button>
+        </div>
+      )}
 
       {/* Quick Add Dialog */}
       <Dialog open={quickAddDialogOpen} onOpenChange={setQuickAddDialogOpen}>
