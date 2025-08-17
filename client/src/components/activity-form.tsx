@@ -1221,15 +1221,35 @@ export default function ActivityForm({
                 <div className="border-2 border-dashed rounded-lg p-4 text-center min-h-[200px] flex flex-col justify-center">
                   {activityImageUrl ? (
                     <div className="relative">
-                      <img
-                        src={activityImageUrl}
-                        alt="Activity"
-                        className="max-h-32 rounded cursor-pointer hover:opacity-90 transition-opacity mx-auto"
-                        onClick={() => {
-                          setExpandedImageUrl(activityImageUrl);
-                          setExpandedImageTitle("Activity Image");
-                        }}
-                      />
+                      <div className="relative group inline-block">
+                        <img
+                          src={activityImageUrl}
+                          alt="Activity"
+                          className="max-h-32 rounded cursor-pointer hover:opacity-90 transition-opacity mx-auto"
+                          onClick={() => {
+                            setExpandedImageUrl(activityImageUrl);
+                            setExpandedImageTitle("Activity Image");
+                          }}
+                        />
+                        {!readOnly && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleGenerateImage();
+                            }}
+                            disabled={generatingImage}
+                            className="absolute top-1 right-1 bg-white/90 hover:bg-white rounded-full p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Regenerate image"
+                          >
+                            {generatingImage ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4 text-purple-600" />
+                            )}
+                          </button>
+                        )}
+                      </div>
                       {!readOnly && (
                         <div className="flex gap-2 justify-center mt-2">
                           <Button
@@ -1239,7 +1259,7 @@ export default function ActivityForm({
                             onClick={() => imageInputRef.current?.click()}
                             disabled={uploadingImage}
                           >
-                            {uploadingImage ? "Uploading..." : "Upload"}
+                            {uploadingImage ? "Uploading..." : "Change Image"}
                           </Button>
                           <Button
                             type="button"
@@ -1257,7 +1277,7 @@ export default function ActivityForm({
                             ) : (
                               <>
                                 <Sparkles className="mr-2 h-4 w-4" />
-                                Generate
+                                Generate New
                               </>
                             )}
                           </Button>
@@ -1344,18 +1364,19 @@ export default function ActivityForm({
                         </div>
                       )}
                       {!readOnly && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="mt-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            videoInputRef.current?.click();
-                          }}
-                        >
-                          Change Video
-                        </Button>
+                        <div className="flex justify-center mt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              videoInputRef.current?.click();
+                            }}
+                          >
+                            Change Video
+                          </Button>
+                        </div>
                       )}
                     </div>
                   ) : (
