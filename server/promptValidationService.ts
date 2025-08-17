@@ -13,6 +13,8 @@ class PromptValidationService {
     this.apiKey = process.env.PERPLEXITY_API_KEY || '';
     if (!this.apiKey) {
       console.warn('[PromptValidation] Perplexity API key not found - validation will be skipped');
+    } else {
+      console.log('[PromptValidation] Service initialized with API key (length:', this.apiKey.length, ')');
     }
   }
 
@@ -35,6 +37,8 @@ class PromptValidationService {
     try {
       const validationPrompt = this.buildValidationPrompt(activityType, focusMaterial);
       
+      console.log('[PromptValidation] Sending validation request for:', { activityType, focusMaterial });
+      
       const response = await fetch(this.apiUrl, {
         method: 'POST',
         headers: {
@@ -42,7 +46,7 @@ class PromptValidationService {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'llama-3.1-sonar-small-128k-online',
+          model: 'sonar',
           messages: [
             {
               role: 'system',
@@ -77,9 +81,10 @@ Do NOT modify or sanitize the inputs. Only validate them exactly as provided.`
       });
 
       if (!response.ok) {
-        console.error('[PromptValidation] API request failed:', response.status);
+        const errorText = await response.text();
+        console.error('[PromptValidation] API request failed:', response.status, errorText);
         // On API failure, throw error to block the request
-        throw new Error(`Validation API request failed with status ${response.status}`);
+        throw new Error(`Validation API request failed with status ${response.status}: ${errorText}`);
       }
 
       const data = await response.json() as any;
@@ -140,7 +145,7 @@ Do NOT modify or sanitize the inputs. Only validate them exactly as provided.`
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'llama-3.1-sonar-small-128k-online',
+          model: 'sonar',
           messages: [
             {
               role: 'system',
