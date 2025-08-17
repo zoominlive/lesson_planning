@@ -39,27 +39,29 @@ export class OpenAIService {
     }
 
     try {
-      // Create a prompt that generates warm, friendly educational illustrations
-      // Matching the cheerful classroom activity style
-      const imagePrompt = `Create a warm, friendly educational illustration for a children's activity called "${activityTitle}"
+      // Create a prompt that generates 3D Pixar-style educational illustrations
+      // Matching the adorable animated character style
+      const imagePrompt = `Create a 3D animated style educational illustration for a children's activity called "${activityTitle}"
 
 STYLE REQUIREMENTS:
-- Warm, inviting cartoon illustration style with soft shadows and depth
-- Gentle, rounded character designs with expressive faces
-- Rich but soft color palette: warm peach/coral tones, soft greens, cheerful yellows, sky blues
-- Indoor classroom or outdoor learning environment setting
-- Include gentle shadows and lighting for depth and dimension
-- Show children actively engaged in the activity
-- Friendly, approachable art style similar to modern children's book illustrations
-- Include relevant educational materials and props in the scene
-- Perspective and depth to create an immersive scene
-- Soft, hand-drawn quality with clean lines
-- NO text, letters, numbers, or words in the image
-- Child-safe, inclusive representation with diverse children
+- 3D rendered Pixar/Disney animation style with soft lighting
+- Adorable chibi-style characters with large expressive eyes and round features
+- Smooth, polished 3D surfaces with subtle ambient occlusion
+- Bright, vibrant color palette with soft pastels and bold primaries
+- Modern preschool classroom setting with large windows and natural light
+- Soft, diffused lighting creating gentle shadows and highlights
+- Characters should have exaggerated cute proportions (large heads, small bodies)
+- Include colorful foam blocks, tunnels, mats, and educational toys
+- Clean, minimalist classroom with organized storage cubbies
+- Depth of field effect with background slightly blurred
+- Characters wearing simple, colorful clothing
+- NO text, letters, numbers, or words anywhere in the image
+- Diverse children with different hair colors and skin tones
+- Joyful, playful atmosphere with characters mid-action
 
 ACTIVITY TO ILLUSTRATE: ${activityDescription}
 
-Create a scene showing children happily participating in this activity, with appropriate props and setting. The style should be warm, engaging, and perfect for early childhood education materials.`;
+Create a dynamic 3D scene showing adorable animated children actively engaged in the activity, similar to a frame from a Pixar movie. The style should be polished, professional, and irresistibly cute.`;
 
       console.log(`[OpenAI] Generating image with prompt: ${imagePrompt.substring(0, 200)}...`);
 

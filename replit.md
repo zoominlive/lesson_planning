@@ -26,9 +26,10 @@ This project is a comprehensive lesson planning application for early childhood 
     - Changed AI generation button icon from wand to star for better visual appeal
     - Fixed button contrast issues with dark text (#0d0d0c) on gradient background for readability
     - Added full-screen loader overlay during AI image generation to prevent user interactions
-    - Updated OpenAI prompts to match warm, friendly classroom illustration style with soft shadows and depth
-    - Switched back to 'vivid' style for more colorful, engaging educational illustrations
-    - Removed flat design requirements to allow for dimensional, inviting scenes with perspective
+    - Updated OpenAI prompts to generate 3D Pixar/Disney animation style illustrations
+    - Characters now have adorable chibi proportions with large expressive eyes
+    - Images feature polished 3D rendering with soft lighting and depth of field
+    - Switched to 'vivid' style for vibrant, colorful educational scenes
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
