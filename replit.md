@@ -25,7 +25,7 @@ This project is a comprehensive lesson planning application for early childhood 
   - **UI Improvements** (August 17, 2025):
     - Changed AI generation button icon from wand to star for better visual appeal
     - Fixed button contrast issues with dark text (#0d0d0c) on gradient background for readability
-    - Added full-screen loader overlay during AI image generation to prevent user interactions
+    - Removed full-screen overlay during image generation, keeping only button animation for cleaner UX
     - Updated OpenAI prompts to generate photorealistic 3D animated illustrations
     - Characters now have natural, realistic proportions (not flat or chibi-style)
     - Images feature high-detail textures, realistic materials, and ray-traced lighting
