@@ -690,6 +690,7 @@ export default function ActivityForm({
                 {...register("title")}
                 data-testid="input-activity-title"
                 disabled={readOnly}
+                className={readOnly ? "disabled:opacity-100 disabled:cursor-default" : ""}
               />
               {errors.title && !readOnly && (
                 <p className="text-red-500 text-sm">{errors.title.message}</p>
@@ -701,7 +702,7 @@ export default function ActivityForm({
               <Textarea
                 id="description"
                 {...register("description")}
-                className="min-h-[200px] resize-y"
+                className={`min-h-[200px] resize-y ${readOnly ? "disabled:opacity-100 disabled:cursor-default" : ""}`}
                 data-testid="textarea-activity-description"
                 disabled={readOnly}
               />
@@ -809,6 +810,7 @@ export default function ActivityForm({
                   {...register("maxChildren", { valueAsNumber: true })}
                   data-testid="input-max-children"
                   disabled={readOnly}
+                  className={readOnly ? "disabled:opacity-100 disabled:cursor-default" : ""}
                 />
                 {errors.maxChildren && (
                   <p className="text-red-500 text-sm">
@@ -1479,7 +1481,7 @@ export default function ActivityForm({
                     }
                     placeholder="Enter instruction step..."
                     data-testid={`input-instruction-${index}`}
-                    className="min-h-[80px] resize-y"
+                    className={`min-h-[80px] resize-y ${readOnly ? "disabled:opacity-100 disabled:cursor-default" : ""}`}
                     disabled={readOnly}
                   />
 
