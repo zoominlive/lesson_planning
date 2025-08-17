@@ -932,23 +932,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     // Validate user inputs for safety and appropriateness
+    let validatedActivityType = activityType;
+    let validatedFocusMaterial = focusMaterial;
+    
     if (activityType || focusMaterial) {
       console.log('[AI Generation] Validating user inputs:', { activityType, focusMaterial });
       
-      const validationResult = await promptValidationService.validateActivityInputs(
-        activityType,
-        focusMaterial
-      );
-      
-      if (!validationResult.isValid) {
-        console.log('[AI Generation] Validation failed:', validationResult.reason);
-        return res.status(400).json({ 
-          error: 'The requested activity type or material is not appropriate for early childhood education.',
-          reason: validationResult.reason || 'Content does not meet safety guidelines for children ages 0-5.'
-        });
+      try {
+        const validationResult = await promptValidationService.validateActivityInputs(
+          activityType,
+          focusMaterial
+        );
+        
+        // Only block if validation explicitly returns false (inappropriate content detected)
+        if (validationResult.isValid === false) {
+          console.log('[AI Generation] Validation failed:', validationResult.reason);
+          return res.status(400).json({ 
+            error: 'The requested activity type or material is not appropriate for early childhood education.',
+            reason: validationResult.reason || 'Content does not meet safety guidelines for children ages 0-5.'
+          });
+        }
+        
+        // Use sanitized values if available
+        if (validationResult.sanitizedActivityType) {
+          validatedActivityType = validationResult.sanitizedActivityType;
+        }
+        if (validationResult.sanitizedMaterial) {
+          validatedFocusMaterial = validationResult.sanitizedMaterial;
+        }
+        
+        console.log('[AI Generation] Validation passed, using sanitized inputs');
+      } catch (validationError) {
+        // If validation service fails (e.g., Perplexity API is down), log but continue
+        console.error('[AI Generation] Validation service error:', validationError);
+        console.log('[AI Generation] Continuing with original inputs due to validation service error');
+        // Continue with original values - the main AI generation already has safety constraints
       }
-      
-      console.log('[AI Generation] Validation passed, using sanitized inputs');
     }
 
     // Fetch existing activities to avoid duplicates
@@ -965,7 +984,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       attempts++;
       
       try {
-        // Generate activity using Perplexity AI
+        // Generate activity using Perplexity AI with validated inputs
         const generatedActivity = await perplexityService.generateActivity({
           ageGroup: ageGroupName,
           category,
@@ -973,8 +992,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isIndoor,
           ageRange: ageRange || { start: 2, end: 5 },
           existingActivities: existingActivityInfo,
-          activityType,
-          focusMaterial
+          activityType: validatedActivityType,
+          focusMaterial: validatedFocusMaterial
         });
 
         // Check if the generation failed

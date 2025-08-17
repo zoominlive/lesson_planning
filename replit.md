@@ -15,6 +15,13 @@ This project is a comprehensive lesson planning application for early childhood 
   - Improved Quick Add materials visual feedback to show when materials have been added
   - Cleaned up console.log statements from production code
   - Fixed TypeScript issues with Set iteration and null/undefined type handling
+  - **Content Safety Validation** (January 18, 2025):
+    - Added prompt validation service using Perplexity AI to ensure all user inputs are appropriate for early childhood education
+    - Validates activity types and focus materials before generation
+    - Blocks explicitly inappropriate content (violence, adult themes, etc.)
+    - Continues service availability if validation API is down (graceful degradation)
+    - Returns sanitized versions of inputs when minor corrections are needed
+    - Clear error messages when content is rejected for safety reasons
 - **OpenAI Integration Refactoring** (January 2025):
   - Extracted OpenAI image generation logic from perplexityService.ts into dedicated openAiService.ts module
   - Enhanced DALL-E 3 prompts to generate clean, educational illustrations with minimalist style
