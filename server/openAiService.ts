@@ -39,26 +39,27 @@ export class OpenAIService {
     }
 
     try {
-      // Create a prompt that generates clean, minimalist educational illustrations
-      // Matching the high-quality, simple style of previous generations
-      const imagePrompt = `Create a minimalist, flat design educational illustration for young children. Activity: "${activityTitle}"
+      // Create a prompt that generates warm, friendly educational illustrations
+      // Matching the cheerful classroom activity style
+      const imagePrompt = `Create a warm, friendly educational illustration for a children's activity called "${activityTitle}"
 
-STYLE REQUIREMENTS (IMPORTANT - FOLLOW EXACTLY):
-- Flat design with solid colors, NO gradients or shadows
-- Simple geometric shapes and clean lines only
-- Soft, muted pastel palette: coral (#FF6B6B), turquoise (#4ECDC4), light yellow (#FFE66D), soft purple (#C8B6E2), mint green (#95E1D3)
-- Pure white or very light gray background (#F8F9FA)
-- Absolutely NO 3D effects, shadows, or depth
-- NO text, letters, numbers, or words anywhere in the image
-- Minimalist composition with 60% white space
-- If showing people: use simple circles for heads, basic shapes for bodies, dots for eyes
-- Use icons and symbols rather than realistic details
-- Think "modern Scandinavian children's book illustration"
-- Similar to Miffy or Japanese minimalist design
+STYLE REQUIREMENTS:
+- Warm, inviting cartoon illustration style with soft shadows and depth
+- Gentle, rounded character designs with expressive faces
+- Rich but soft color palette: warm peach/coral tones, soft greens, cheerful yellows, sky blues
+- Indoor classroom or outdoor learning environment setting
+- Include gentle shadows and lighting for depth and dimension
+- Show children actively engaged in the activity
+- Friendly, approachable art style similar to modern children's book illustrations
+- Include relevant educational materials and props in the scene
+- Perspective and depth to create an immersive scene
+- Soft, hand-drawn quality with clean lines
+- NO text, letters, numbers, or words in the image
+- Child-safe, inclusive representation with diverse children
 
-CONTENT TO ILLUSTRATE: ${activityDescription}
+ACTIVITY TO ILLUSTRATE: ${activityDescription}
 
-Remember: EXTREMELY SIMPLE, CLEAN, MINIMAL. Less is more. Think of it as icons rather than scenes.`;
+Create a scene showing children happily participating in this activity, with appropriate props and setting. The style should be warm, engaging, and perfect for early childhood education materials.`;
 
       console.log(`[OpenAI] Generating image with prompt: ${imagePrompt.substring(0, 200)}...`);
 
@@ -73,7 +74,7 @@ Remember: EXTREMELY SIMPLE, CLEAN, MINIMAL. Less is more. Think of it as icons r
           prompt: imagePrompt,
           size: '1024x1024',
           quality: 'standard',
-          style: 'natural', // 'natural' produces more subtle, minimalist images
+          style: 'vivid', // 'vivid' produces more colorful, warm illustrations
           n: 1
         }),
       });

@@ -26,8 +26,9 @@ This project is a comprehensive lesson planning application for early childhood 
     - Changed AI generation button icon from wand to star for better visual appeal
     - Fixed button contrast issues with dark text (#0d0d0c) on gradient background for readability
     - Added full-screen loader overlay during AI image generation to prevent user interactions
-    - Enhanced OpenAI prompts to match clean, minimalist Scandinavian-style illustrations
-    - Switched DALL-E style from 'vivid' to 'natural' for more subtle, educational aesthetics
+    - Updated OpenAI prompts to match warm, friendly classroom illustration style with soft shadows and depth
+    - Switched back to 'vivid' style for more colorful, engaging educational illustrations
+    - Removed flat design requirements to allow for dimensional, inviting scenes with perspective
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
