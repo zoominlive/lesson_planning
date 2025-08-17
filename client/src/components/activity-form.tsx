@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, X, Upload, ImageIcon, VideoIcon, Check, Wand2, Loader2 } from "lucide-react";
+import { Plus, X, Upload, ImageIcon, VideoIcon, Check, Star, Loader2 } from "lucide-react";
 import {
   insertActivitySchema,
   type Activity,
@@ -1021,21 +1021,17 @@ export default function ActivityForm({
                             size="sm"
                             onClick={handleGenerateImage}
                             disabled={generatingImage}
-                            className="border-gradient-to-r from-coral-red to-turquoise"
+                            className="bg-gradient-to-r from-coral-red to-turquoise text-white hover:opacity-90 border-none"
                           >
                             {generatingImage ? (
                               <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin text-turquoise" />
-                                <span className="bg-gradient-to-r from-coral-red to-turquoise bg-clip-text text-transparent">
-                                  Generating...
-                                </span>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Generating...
                               </>
                             ) : (
                               <>
-                                <Wand2 className="mr-2 h-4 w-4 text-turquoise" />
-                                <span className="bg-gradient-to-r from-coral-red to-turquoise bg-clip-text text-transparent">
-                                  Generate with AI
-                                </span>
+                                <Star className="mr-2 h-4 w-4" />
+                                Generate with AI
                               </>
                             )}
                           </Button>
@@ -1061,21 +1057,17 @@ export default function ActivityForm({
                             variant="outline"
                             onClick={handleGenerateImage}
                             disabled={uploadingImage || generatingImage}
-                            className="border-gradient-to-r from-coral-red to-turquoise"
+                            className="bg-gradient-to-r from-coral-red to-turquoise text-white hover:opacity-90 border-none"
                           >
                             {generatingImage ? (
                               <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin text-turquoise" />
-                                <span className="bg-gradient-to-r from-coral-red to-turquoise bg-clip-text text-transparent">
-                                  Generating...
-                                </span>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Generating...
                               </>
                             ) : (
                               <>
-                                <Wand2 className="mr-2 h-4 w-4 text-turquoise" />
-                                <span className="bg-gradient-to-r from-coral-red to-turquoise bg-clip-text text-transparent">
-                                  Generate with AI
-                                </span>
+                                <Star className="mr-2 h-4 w-4" />
+                                Generate with AI
                               </>
                             )}
                           </Button>
