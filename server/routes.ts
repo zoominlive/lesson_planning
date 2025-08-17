@@ -890,7 +890,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate activity image using AI
   app.post('/api/activities/generate-image', async (req: AuthenticatedRequest, res) => {
     try {
-      const { prompt, title, description } = req.body;
+      const { prompt, title, description, spaceRequired } = req.body;
       
       if (!prompt && (!title || !description)) {
         return res.status(400).json({ error: 'Either prompt or both title and description are required' });
@@ -907,7 +907,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const activityTitle = title || prompt?.split('.')[0] || 'Activity';
       const activityDescription = description || prompt || '';
       
-      const imageUrl = await openAIService.generateActivityImage(activityTitle, activityDescription);
+      const imageUrl = await openAIService.generateActivityImage(activityTitle, activityDescription, spaceRequired);
       
       if (!imageUrl) {
         return res.status(500).json({ error: 'Failed to generate image' });

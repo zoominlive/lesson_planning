@@ -298,6 +298,7 @@ export default function ActivityForm({
   const handleGenerateImage = async () => {
     const activityTitle = watch("title");
     const activityDescription = watch("description");
+    const spaceRequired = watch("spaceRequired");
     
     if (!activityTitle && !activityDescription) {
       toast({
@@ -320,6 +321,7 @@ export default function ActivityForm({
         body: JSON.stringify({ 
           title: activityTitle,
           description: activityDescription,
+          spaceRequired: spaceRequired || initialData?.spaceRequired || activity?.spaceRequired,
           // Also send prompt for backward compatibility
           prompt: `${activityTitle || ""}. ${activityDescription || ""}` 
         }),
@@ -352,6 +354,7 @@ export default function ActivityForm({
 
   const handleRegenerateStepImage = async (index: number) => {
     const activityTitle = watch("title");
+    const spaceRequired = watch("spaceRequired");
     const instruction = instructions[index];
     
     if (!instruction.text.trim()) {
@@ -376,6 +379,7 @@ export default function ActivityForm({
         body: JSON.stringify({ 
           title: `${activityTitle} - Step ${index + 1}`,
           description: instruction.text,
+          spaceRequired: spaceRequired || initialData?.spaceRequired || activity?.spaceRequired,
           prompt: `Step ${index + 1} of activity "${activityTitle}": ${instruction.text}`
         }),
       });
@@ -410,6 +414,7 @@ export default function ActivityForm({
 
   const handleGenerateAllStepImages = async () => {
     const activityTitle = watch("title");
+    const spaceRequired = watch("spaceRequired");
     const stepsWithoutImages = instructions
       .map((inst, index) => ({ ...inst, index }))
       .filter(inst => inst.text.trim() && !inst.imageUrl);
@@ -443,6 +448,7 @@ export default function ActivityForm({
             body: JSON.stringify({ 
               title: `${activityTitle} - Step ${step.index + 1}`,
               description: step.text,
+              spaceRequired: spaceRequired || initialData?.spaceRequired || activity?.spaceRequired,
               prompt: `Step ${step.index + 1} of activity "${activityTitle}": ${step.text}`
             }),
           });

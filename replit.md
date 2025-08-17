@@ -37,6 +37,16 @@ This project is a comprehensive lesson planning application for early childhood 
       - Shows progress with animated loading state
       - Provides feedback on success/failure count
       - Purple-to-pink gradient button styling for visual distinction
+    - **Click-to-Enlarge Images** - All activity and step images now clickable to view in full-screen modal
+      - Dialog title dynamically shows "Activity Image" or "Step X" based on which image was clicked
+    - **Image Regeneration** - Added refresh button overlay on hover for individual image regeneration
+      - Works for both main activity image and individual step images
+      - Shows loading spinner during regeneration
+      - Toast notifications for success/error
+    - **Indoor/Outdoor Context** - Image generation now respects activity's spaceRequired setting
+      - Automatically generates outdoor images for outdoor activities
+      - Generates indoor classroom images for indoor activities
+      - Passes environment context to OpenAI for accurate scene generation
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

@@ -38,6 +38,7 @@ export class OpenAIService {
   async generateActivityImage(
     activityTitle: string,
     activityDescription: string,
+    spaceRequired?: string,
   ): Promise<string> {
     if (!this.initialized || !this.openai) {
       throw new Error(
@@ -48,6 +49,19 @@ export class OpenAIService {
     try {
       // Create a prompt for professional educational reference images for teachers
       // Clear, realistic depictions that help adult educators understand activities
+      
+      // Determine the environment setting based on spaceRequired
+      let environmentSetting = "";
+      if (spaceRequired) {
+        if (spaceRequired.toLowerCase() === "outdoor" || spaceRequired.toLowerCase() === "outdoors") {
+          environmentSetting = "\nENVIRONMENT: This is an OUTDOOR activity. Show it taking place outside in a natural setting like a playground, garden, park, or outdoor play area with appropriate outdoor elements like grass, trees, sunshine, or outdoor equipment.";
+        } else if (spaceRequired.toLowerCase() === "indoor" || spaceRequired.toLowerCase() === "indoors") {
+          environmentSetting = "\nENVIRONMENT: This is an INDOOR activity. Show it taking place inside a classroom, playroom, or indoor educational space with appropriate indoor elements like walls, windows, indoor flooring, and classroom furniture.";
+        } else if (spaceRequired.toLowerCase() === "both") {
+          environmentSetting = "\nENVIRONMENT: This activity can be done either indoors or outdoors. Choose the most appropriate setting based on the activity description.";
+        }
+      }
+      
       const imagePrompt = `Create a clear, professional educational reference image for teachers showing the activity: "${activityTitle}"
 
 STYLE REQUIREMENTS:
@@ -64,7 +78,7 @@ STYLE REQUIREMENTS:
 - Clear visual hierarchy showing important elements of the activity
 - Practical, implementable setup that teachers can replicate
 - NO cartoon elements, NO exaggerated features, NO childish decorations
-- NO text, labels, or watermarks in the image
+- NO text, labels, or watermarks in the image${environmentSetting}
 
 ACTIVITY DETAILS: ${activityDescription}
 
