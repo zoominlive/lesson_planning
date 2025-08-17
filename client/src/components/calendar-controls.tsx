@@ -266,7 +266,7 @@ export function CalendarControls({
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
-                    className="bg-slate-600 hover:bg-slate-700 text-white hover:shadow-lg transition-all duration-300"
+                    className="bg-purple-500 hover:bg-purple-600 text-white hover:shadow-lg transition-all duration-300"
                     data-testid="button-withdraw-approved"
                   >
                     <RotateCcw className="mr-2 h-4 w-4" />
@@ -285,7 +285,7 @@ export function CalendarControls({
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={onWithdrawFromReview}
-                      className="bg-slate-600 hover:bg-slate-700"
+                      className="bg-purple-500 hover:bg-purple-600"
                     >
                       Withdraw to Draft
                     </AlertDialogAction>
