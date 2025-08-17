@@ -933,6 +933,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
+        // Validate suggested materials against existing database
+        let validatedMaterials = [];
+        if (generatedActivity.suggestedMaterials && generatedActivity.suggestedMaterials.length > 0) {
+          // Fetch all existing materials
+          const existingMaterials = await storage.getMaterials();
+          
+          // Create a map for quick lookups - normalize names for comparison
+          const materialMap = new Map();
+          existingMaterials.forEach(mat => {
+            const normalizedName = mat.name.toLowerCase().trim();
+            materialMap.set(normalizedName, mat);
+            // Also check for partial matches (e.g., "Drawing Paper" vs "Paper")
+            const simplifiedName = normalizedName.replace(/\s+(paper|supplies|materials|set|kit)$/i, '').trim();
+            if (simplifiedName !== normalizedName) {
+              materialMap.set(simplifiedName, mat);
+            }
+          });
+          
+          // Check each suggested material
+          validatedMaterials = generatedActivity.suggestedMaterials.map((suggestedMat: any) => {
+            const normalizedSuggestedName = suggestedMat.name.toLowerCase().trim();
+            const simplifiedSuggestedName = normalizedSuggestedName.replace(/\s+(paper|supplies|materials|set|kit)$/i, '').trim();
+            
+            // Check for exact match or simplified match
+            const existingMaterial = materialMap.get(normalizedSuggestedName) || 
+                                     materialMap.get(simplifiedSuggestedName) ||
+                                     // Also check for very similar names (e.g., "Balloon" vs "Balloons")
+                                     existingMaterials.find(m => {
+                                       const mName = m.name.toLowerCase();
+                                       const sName = suggestedMat.name.toLowerCase();
+                                       // Check singular/plural variations
+                                       return mName === sName || 
+                                              mName === sName + 's' || 
+                                              mName + 's' === sName ||
+                                              // Check for very similar names (drawing paper vs paper)
+                                              (sName.includes('paper') && mName.includes('paper')) ||
+                                              (sName.includes('balloon') && mName.includes('balloon')) ||
+                                              (sName.includes('tape') && mName.includes('tape'));
+                                     });
+            
+            if (existingMaterial) {
+              // Material exists - return the existing material info
+              return {
+                ...suggestedMat,
+                existingMaterialId: existingMaterial.id,
+                existingMaterialName: existingMaterial.name,
+                existingMaterialCategory: existingMaterial.category,
+                isExisting: true
+              };
+            } else {
+              // Material doesn't exist - mark as new
+              return {
+                ...suggestedMat,
+                isExisting: false
+              };
+            }
+          });
+          
+          console.log('[Activity Generation] Validated materials:', validatedMaterials.map((m: any) => ({
+            name: m.name,
+            isExisting: m.isExisting,
+            existingName: m.existingMaterialName
+          })));
+        }
+
         // Transform the AI response to match our activity form structure
         const transformedActivity = {
           title: generatedActivity.title,
@@ -955,7 +1020,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })),
           variations: generatedActivity.variations,
           imagePrompt: generatedActivity.imagePrompt,
-          suggestedMaterials: generatedActivity.suggestedMaterials || []
+          suggestedMaterials: validatedMaterials.length > 0 ? validatedMaterials : (generatedActivity.suggestedMaterials || [])
         };
 
         res.json(transformedActivity);
@@ -1822,7 +1887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('[COPY] Current user ID (req.userId):', req.userId);
           
           // Look up the actual user ID (UUID) from the user_id since foreign keys reference users.id
-          const currentUser = await storage.getUserByUserId(req.userId);
+          const currentUser = req.userId ? await storage.getUserByUserId(req.userId) : undefined;
           const actualUserId = currentUser ? currentUser.id : req.userId;
           console.log('[COPY] Actual user UUID:', actualUserId);
           

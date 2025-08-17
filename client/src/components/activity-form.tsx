@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, X, Upload, ImageIcon, VideoIcon } from "lucide-react";
+import { Plus, X, Upload, ImageIcon, VideoIcon, Check } from "lucide-react";
 import {
   insertActivitySchema,
   type Activity,
@@ -1186,9 +1186,9 @@ export default function ActivityForm({
                       />
                     </svg>
                   </div>
-                  <h4 className="font-semibold text-sm">Suggested Materials</h4>
+                  <h4 className="font-semibold text-sm">AI Suggested Materials</h4>
                   <span className="text-xs text-gray-500">
-                    Ready to add to your materials library
+                    Materials needed for this activity
                   </span>
                 </div>
                 <div className="space-y-2">
@@ -1196,29 +1196,45 @@ export default function ActivityForm({
                     (material: any, index: number) => {
                       const materialKey = `${material.name}-${material.category || "General"}`;
                       const isAdded = addedMaterials.has(materialKey);
+                      const isExisting = material.isExisting;
+                      const isSelected = isExisting && selectedMaterials.includes(material.existingMaterialId);
                       
                       return (
                         <div
                           key={index}
-                          className={`bg-white rounded-lg p-3 border ${isAdded ? 'border-green-400 bg-green-50' : 'border-gray-200'}`}
+                          className={`bg-white rounded-lg p-3 border ${
+                            isSelected ? 'border-turquoise bg-turquoise/5' : 
+                            isAdded ? 'border-green-400 bg-green-50' : 
+                            isExisting ? 'border-blue-300' : 'border-gray-200'
+                          }`}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="font-medium text-sm">
-                                  {material.name}
+                                  {isExisting ? material.existingMaterialName : material.name}
                                 </span>
                                 <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
-                                  {material.category || "General"}
+                                  {isExisting ? material.existingMaterialCategory : (material.category || "General")}
                                 </span>
                                 {material.quantity && (
                                   <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
                                     Qty: {material.quantity}
                                   </span>
                                 )}
-                                {isAdded && (
+                                {isExisting && (
+                                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                                    ✓ Already in library
+                                  </span>
+                                )}
+                                {isSelected && (
+                                  <span className="text-xs px-2 py-0.5 bg-turquoise text-white rounded-full">
+                                    ✓ Selected
+                                  </span>
+                                )}
+                                {isAdded && !isExisting && (
                                   <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
-                                    ✓ Added
+                                    ✓ Added to library
                                   </span>
                                 )}
                               </div>
@@ -1234,29 +1250,55 @@ export default function ActivityForm({
                                 </p>
                               )}
                             </div>
-                            {!isAdded && !readOnly ? (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                className="ml-2"
-                                onClick={() =>
-                                  handleQuickAdd(
-                                    material,
-                                    initialData.suggestedMaterials,
-                                  )
-                                }
-                              >
-                                <Plus className="h-3 w-3 mr-1" />
-                                Quick Add
-                              </Button>
-                            ) : isAdded ? (
-                              <div className="ml-2 text-green-600">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              </div>
-                            ) : null}
+                            {!readOnly && (
+                              <>
+                                {isExisting && !isSelected ? (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="ml-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                                    onClick={() => {
+                                      // Add to selected materials
+                                      const newSelection = [...selectedMaterials, material.existingMaterialId];
+                                      setSelectedMaterials(newSelection);
+                                      setValue("materialIds", newSelection);
+                                    }}
+                                  >
+                                    <Check className="h-3 w-3 mr-1" />
+                                    Select
+                                  </Button>
+                                ) : isExisting && isSelected ? (
+                                  <div className="ml-2 text-turquoise">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                  </div>
+                                ) : !isAdded ? (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="ml-2"
+                                    onClick={() =>
+                                      handleQuickAdd(
+                                        material,
+                                        initialData.suggestedMaterials,
+                                      )
+                                    }
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    Quick Add
+                                  </Button>
+                                ) : (
+                                  <div className="ml-2 text-green-600">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </>
+                            )}
                           </div>
                         </div>
                       );
@@ -1265,9 +1307,8 @@ export default function ActivityForm({
                 </div>
                 <div className="mt-3 p-2 bg-amber-50 rounded-md">
                   <p className="text-xs text-amber-800">
-                    💡 <strong>Tip:</strong> Use "Quick Add" to instantly save
-                    these materials to your library, or manually select from
-                    existing materials below.
+                    💡 <strong>Tip:</strong> Materials already in your library are marked and can be selected directly. 
+                    New materials can be added using "Quick Add" to save them to your library.
                   </p>
                 </div>
               </div>
