@@ -886,6 +886,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate activity image using AI
+  app.post('/api/activities/generate-image', async (req: AuthenticatedRequest, res) => {
+    try {
+      const { prompt } = req.body;
+      
+      if (!prompt) {
+        return res.status(400).json({ error: 'Image prompt is required' });
+      }
+
+      // Generate image using Perplexity AI
+      const imageUrl = await perplexityService.generateActivityImage(prompt);
+      
+      if (!imageUrl) {
+        return res.status(500).json({ error: 'Failed to generate image' });
+      }
+      
+      res.json({ url: imageUrl });
+    } catch (error) {
+      console.error('Activity image generation error:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to generate image. Please try again later.' 
+      });
+    }
+  });
+
   // Generate activity using AI
   app.post('/api/activities/generate', async (req: AuthenticatedRequest, res) => {
     const { ageGroupId, ageGroupName, ageRange, category, isQuiet, isIndoor, locationId } = req.body;

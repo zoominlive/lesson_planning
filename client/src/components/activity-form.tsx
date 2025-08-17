@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, X, Upload, ImageIcon, VideoIcon, Check } from "lucide-react";
+import { Plus, X, Upload, ImageIcon, VideoIcon, Check, Wand2, Loader2 } from "lucide-react";
 import {
   insertActivitySchema,
   type Activity,
@@ -75,6 +75,7 @@ export default function ActivityForm({
     useState<string>("all");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
   const [uploadingInstructionImage, setUploadingInstructionImage] = useState<
     number | null
   >(null);
@@ -287,6 +288,59 @@ export default function ActivityForm({
       });
     } finally {
       setUploadingVideo(false);
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    const activityTitle = watch("title");
+    const activityDescription = watch("description");
+    
+    if (!activityTitle && !activityDescription) {
+      toast({
+        title: "Please provide activity details",
+        description: "Add a title or description for the activity before generating an image.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingImage(true);
+    try {
+      // Create a descriptive prompt based on the activity
+      const prompt = `A child-friendly educational activity image showing: ${activityTitle || ""}. ${activityDescription || ""}. The image should be bright, colorful, safe for children, and show the activity setup or children engaged in the activity.`;
+      
+      const token = localStorage.getItem("authToken");
+      const response = await fetch("/api/activities/generate-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to generate image");
+      }
+
+      const result = await response.json();
+      setActivityImageUrl(result.url);
+      setValue("imageUrl", result.url);
+      
+      toast({
+        title: "Image generated successfully",
+        description: "An AI-generated image has been created for your activity.",
+      });
+    } catch (error) {
+      console.error("Image generation failed:", error);
+      toast({
+        title: "Failed to generate image",
+        description: error instanceof Error ? error.message : "Please try again or upload an image manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingImage(false);
     }
   };
 
@@ -963,15 +1017,35 @@ export default function ActivityForm({
                       <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
                       <p className="text-sm text-gray-500 mt-2 mb-2">No image uploaded</p>
                       {!readOnly && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="mt-2"
-                          onClick={() => imageInputRef.current?.click()}
-                          disabled={uploadingImage}
-                        >
-                          {uploadingImage ? "Uploading..." : "Upload Image"}
-                        </Button>
+                        <div className="flex gap-2 justify-center">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => imageInputRef.current?.click()}
+                            disabled={uploadingImage || generatingImage}
+                          >
+                            {uploadingImage ? "Uploading..." : "Upload Image"}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleGenerateImage}
+                            disabled={uploadingImage || generatingImage}
+                            className="bg-gradient-to-r from-coral-red to-turquoise text-white hover:opacity-90"
+                          >
+                            {generatingImage ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <Wand2 className="mr-2 h-4 w-4" />
+                                Generate with AI
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       )}
                     </div>
                   )}

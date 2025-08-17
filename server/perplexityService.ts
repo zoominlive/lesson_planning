@@ -824,6 +824,67 @@ Ensure the activity is:
       suggestedMaterials: suggestedMaterials.slice(0, 8) // Limit to 8 most important materials
     };
   }
+
+  async generateActivityImage(prompt: string): Promise<string> {
+    if (!this.apiKey) {
+      throw new Error("Perplexity API key not configured. Please set PERPLEXITY_API_KEY environment variable.");
+    }
+
+    try {
+      console.log("[PerplexityService] Generating image with prompt:", prompt);
+      
+      // Call Perplexity API to generate image using GPT Image 1 model
+      const response = await fetch("https://api.perplexity.ai/generate-image", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-image-1",
+          prompt: prompt,
+          size: "1024x1024",
+          quality: "standard",
+          n: 1
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[PerplexityService] Image generation failed:", errorText);
+        throw new Error(`Image generation failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // The response should contain the image URL
+      if (data.data && data.data[0] && data.data[0].url) {
+        const imageUrl = data.data[0].url;
+        console.log("[PerplexityService] Image generated successfully:", imageUrl);
+        
+        // Download the image and save it locally
+        const imageResponse = await fetch(imageUrl);
+        if (!imageResponse.ok) {
+          throw new Error("Failed to download generated image");
+        }
+        
+        const buffer = await imageResponse.arrayBuffer();
+        const filename = `ai-generated-${Date.now()}.png`;
+        
+        // Import the activity storage to save the image
+        const { activityStorage } = await import('./activityStorage');
+        const localUrl = await activityStorage.uploadActivityImage(Buffer.from(buffer), filename);
+        
+        console.log("[PerplexityService] Image saved locally:", localUrl);
+        return localUrl;
+      } else {
+        throw new Error("Invalid response format from image generation API");
+      }
+    } catch (error) {
+      console.error("[PerplexityService] Error generating image:", error);
+      throw error;
+    }
+  }
 }
 
 export const perplexityService = new PerplexityService();
