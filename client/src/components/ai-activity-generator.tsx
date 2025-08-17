@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -29,6 +30,8 @@ export default function AiActivityGenerator({
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isQuiet, setIsQuiet] = useState<boolean | null>(null);
   const [isIndoor, setIsIndoor] = useState<boolean | null>(null);
+  const [activityType, setActivityType] = useState<string>("");
+  const [focusMaterial, setFocusMaterial] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationMessage, setGenerationMessage] = useState("");
   const [retryCount, setRetryCount] = useState(0);
@@ -67,7 +70,9 @@ export default function AiActivityGenerator({
           category: selectedCategory,
           isQuiet,
           isIndoor,
-          locationId
+          locationId,
+          activityType: activityType || undefined,
+          focusMaterial: focusMaterial || undefined
         })
       });
 
@@ -180,8 +185,9 @@ export default function AiActivityGenerator({
       });
       return;
     }
+    // Step 5 is optional, so no validation needed
     
-    if (step < 4) {
+    if (step < 5) {
       setStep(step + 1);
     } else {
       handleGenerate();
@@ -208,6 +214,8 @@ export default function AiActivityGenerator({
     setSelectedCategory("");
     setIsQuiet(null);
     setIsIndoor(null);
+    setActivityType("");
+    setFocusMaterial("");
     setGenerationMessage("");
     onOpenChange(false);
   };
@@ -246,10 +254,10 @@ export default function AiActivityGenerator({
         <div className="mt-6">
           {/* Progress indicators */}
           <div className="flex justify-between mb-8">
-            {[1, 2, 3, 4].map((num) => (
+            {[1, 2, 3, 4, 5].map((num) => (
               <div
                 key={num}
-                className={`flex items-center ${num < 4 ? 'flex-1' : ''}`}
+                className={`flex items-center ${num < 5 ? 'flex-1' : ''}`}
               >
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
@@ -268,7 +276,7 @@ export default function AiActivityGenerator({
                     num
                   )}
                 </div>
-                {num < 4 && (
+                {num < 5 && (
                   <div
                     className={`flex-1 h-1 mx-2 transition-all ${
                       step > num ? 'bg-gradient-to-r from-coral-red to-turquoise' : 'bg-gray-200'
@@ -408,6 +416,50 @@ export default function AiActivityGenerator({
                 </div>
               </div>
             )}
+
+            {step === 5 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Any specific preferences? (Optional)</h3>
+                <p className="text-sm text-gray-600">
+                  Help us create a more targeted activity by specifying a type or material focus.
+                </p>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Activity Type</label>
+                    <Select value={activityType} onValueChange={setActivityType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select an activity type (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No preference</SelectItem>
+                        <SelectItem value="game">Game</SelectItem>
+                        <SelectItem value="song">Song/Music</SelectItem>
+                        <SelectItem value="sensory">Sensory Activity</SelectItem>
+                        <SelectItem value="seated">Seated/Table Activity</SelectItem>
+                        <SelectItem value="art">Art & Craft</SelectItem>
+                        <SelectItem value="story">Story/Drama</SelectItem>
+                        <SelectItem value="movement">Movement/Dance</SelectItem>
+                        <SelectItem value="science">Science/Discovery</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Focus Material</label>
+                    <Input
+                      type="text"
+                      placeholder="e.g., blocks, paint, playdough, water (optional)"
+                      value={focusMaterial}
+                      onChange={(e) => setFocusMaterial(e.target.value)}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Specify a material you'd like the activity to use or focus on
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action buttons */}
@@ -429,7 +481,7 @@ export default function AiActivityGenerator({
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {generationMessage || "Generating..."}
                 </>
-              ) : step === 4 ? (
+              ) : step === 5 ? (
                 <>
                   <Wand2 className="mr-2 h-4 w-4" />
                   Generate Activity
