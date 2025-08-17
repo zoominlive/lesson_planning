@@ -1171,8 +1171,8 @@ export default function ActivityForm({
           </div>
 
           {/* AI Suggested Materials Section */}
-          {initialData?.suggestedMaterials &&
-            initialData.suggestedMaterials.length > 0 && (
+          {initialData?.suggestedMaterials !== undefined ? (
+            initialData.suggestedMaterials.length > 0 ? (
               <div className="border-2 border-dashed border-turquoise/50 rounded-lg p-4 bg-gradient-to-br from-turquoise/5 to-coral-red/5">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-r from-coral-red to-turquoise flex items-center justify-center">
@@ -1316,7 +1316,33 @@ export default function ActivityForm({
                   </p>
                 </div>
               </div>
-            )}
+            ) : (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                    <svg
+                      className="w-5 h-5 text-gray-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                      />
+                    </svg>
+                  </div>
+                  <h4 className="font-semibold text-sm text-gray-700">No Special Materials Suggested</h4>
+                </div>
+                <p className="text-sm text-gray-600">
+                  This activity uses common classroom supplies that are typically available. 
+                  Standard items like paper, crayons, scissors, and glue should suffice.
+                </p>
+              </div>
+            )
+          ) : null}
 
           {/* Materials Filters */}
           <div className="flex gap-3 items-center">
