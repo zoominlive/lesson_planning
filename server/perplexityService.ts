@@ -826,22 +826,25 @@ Ensure the activity is:
   }
 
   async generateActivityImage(prompt: string): Promise<string> {
-    if (!this.apiKey) {
-      throw new Error("Perplexity API key not configured. Please set PERPLEXITY_API_KEY environment variable.");
+    // Using OpenAI API for image generation since Perplexity doesn't support image generation
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    
+    if (!openaiApiKey) {
+      throw new Error("OpenAI API key not configured. Please set OPENAI_API_KEY environment variable to use image generation.");
     }
 
     try {
-      console.log("[PerplexityService] Generating image with prompt:", prompt);
+      console.log("[Image Generation] Generating image with prompt:", prompt);
       
-      // Call Perplexity API to generate image using GPT Image 1 model
-      const response = await fetch("https://api.perplexity.ai/generate-image", {
+      // Call OpenAI's DALL-E API to generate image
+      const response = await fetch("https://api.openai.com/v1/images/generations", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${this.apiKey}`,
+          "Authorization": `Bearer ${openaiApiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-image-1",
+          model: "dall-e-3",
           prompt: prompt,
           size: "1024x1024",
           quality: "standard",
@@ -851,7 +854,18 @@ Ensure the activity is:
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("[PerplexityService] Image generation failed:", errorText);
+        console.error("[Image Generation] Generation failed:", errorText);
+        
+        // Parse error message if possible
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData.error?.message) {
+            throw new Error(errorData.error.message);
+          }
+        } catch {
+          // If parsing fails, use generic error
+        }
+        
         throw new Error(`Image generation failed: ${response.status}`);
       }
 
@@ -860,7 +874,7 @@ Ensure the activity is:
       // The response should contain the image URL
       if (data.data && data.data[0] && data.data[0].url) {
         const imageUrl = data.data[0].url;
-        console.log("[PerplexityService] Image generated successfully:", imageUrl);
+        console.log("[Image Generation] Image generated successfully:", imageUrl);
         
         // Download the image and save it locally
         const imageResponse = await fetch(imageUrl);
@@ -875,13 +889,13 @@ Ensure the activity is:
         const { activityStorage } = await import('./activityStorage');
         const localUrl = await activityStorage.uploadActivityImage(Buffer.from(buffer), filename);
         
-        console.log("[PerplexityService] Image saved locally:", localUrl);
+        console.log("[Image Generation] Image saved locally:", localUrl);
         return localUrl;
       } else {
         throw new Error("Invalid response format from image generation API");
       }
     } catch (error) {
-      console.error("[PerplexityService] Error generating image:", error);
+      console.error("[Image Generation] Error generating image:", error);
       throw error;
     }
   }
