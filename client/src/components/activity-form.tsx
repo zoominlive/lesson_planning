@@ -770,14 +770,19 @@ export default function ActivityForm({
 
     // Add material to collection
     console.log("[QuickAdd] Adding material", createdMaterial.id, "to collection:", collectionId);
-    await apiRequest(
-      "POST",
-      `/api/material-collections/${collectionId}/materials`,
-      {
-        materialIds: [createdMaterial.id],
-      },
-    );
-    console.log("[QuickAdd] Successfully added material to collection:", collectionId);
+    try {
+      const response = await apiRequest(
+        "POST",
+        `/api/material-collections/${collectionId}/materials`,
+        {
+          materialIds: [createdMaterial.id],
+        },
+      );
+      console.log("[QuickAdd] Successfully added material to collection:", collectionId, "Response:", response);
+    } catch (error) {
+      console.error("[QuickAdd] Failed to add material to collection:", error);
+      // Don't throw here, material is already created
+    }
 
     // Add material to selected materials for this activity
     setSelectedMaterials((prev) => [...prev, createdMaterial.id]);
@@ -802,26 +807,94 @@ export default function ActivityForm({
 
     setProcessingQuickAdd(true);
     try {
-      // Add all remaining materials with the same storage location
-      const addedMaterials = [];
+      const activityTitle = watch("title") || initialData?.title || "Activity";
+      
+      // Create collection first if not exists
       let collectionId = activityCollectionId;
-
-      for (const material of remainingMaterials) {
-        const result = await createMaterialFromSuggestion(
-          material,
-          storageLocation,
-          collectionId || undefined,
+      if (!collectionId) {
+        console.log("[QuickAdd Batch] Creating new collection for activity:", activityTitle);
+        const collectionResponse = await apiRequest(
+          "POST",
+          "/api/material-collections",
+          {
+            name: activityTitle,
+            description: `Materials for ${activityTitle} activity`,
+          },
         );
-        addedMaterials.push(result.material);
-        // Use the collection ID from the first material for all subsequent ones
-        if (!collectionId) {
-          collectionId = result.collectionId;
+        collectionId = collectionResponse.id;
+        console.log("[QuickAdd Batch] Created collection with ID:", collectionId);
+        setActivityCollectionId(collectionId);
+      }
+
+      // Get appropriate age groups based on the activity's age range
+      const activityAgeStart = initialData?.ageRangeStart || 3;
+      const activityAgeEnd = initialData?.ageRangeEnd || 5;
+      const materialAgeGroups = ageGroups
+        .filter((ag: any) => {
+          return (
+            ag.ageRangeStart <= activityAgeEnd &&
+            ag.ageRangeEnd >= activityAgeStart
+          );
+        })
+        .map((ag: any) => ag.id);
+
+      // Use the selected location from the activity form
+      const locationIds = selectedLocationId ? [selectedLocationId] : [];
+      if (locationIds.length === 0) {
+        throw new Error("No location selected for this activity");
+      }
+
+      // Create all materials first
+      const createdMaterialIds = [];
+      for (const material of remainingMaterials) {
+        const materialData = {
+          name: material.name,
+          description:
+            material.description ||
+            `${material.quantity || "As needed"} - Required for: ${activityTitle}`,
+          location: storageLocation,
+          locationIds: locationIds,
+          ageGroups: materialAgeGroups,
+          category: material.category || "General",
+          tenantId: tenantId,
+        };
+        
+        console.log("[QuickAdd Batch] Creating material:", material.name);
+        const createdMaterial = await apiRequest(
+          "POST",
+          "/api/materials",
+          materialData,
+        );
+        createdMaterialIds.push(createdMaterial.id);
+        
+        // Add to selected materials for this activity
+        setSelectedMaterials((prev) => [...prev, createdMaterial.id]);
+        
+        // Track that this material has been added
+        const materialKey = `${material.name}-${material.category || "General"}`;
+        setAddedMaterials((prev) => new Set(Array.from(prev).concat(materialKey)));
+      }
+
+      // Now add all materials to the collection in one call
+      if (createdMaterialIds.length > 0) {
+        console.log("[QuickAdd Batch] Adding all materials to collection:", collectionId, createdMaterialIds);
+        try {
+          await apiRequest(
+            "POST",
+            `/api/material-collections/${collectionId}/materials`,
+            {
+              materialIds: createdMaterialIds,
+            },
+          );
+          console.log("[QuickAdd Batch] Successfully added all materials to collection");
+        } catch (error) {
+          console.error("[QuickAdd Batch] Failed to add materials to collection:", error);
         }
       }
 
       toast({
         title: `${remainingMaterials.length} materials added`,
-        description: `All materials have been added to the "${watch("title") || "Activity"}" collection`,
+        description: `All materials have been added to the "${activityTitle}" collection`,
       });
 
       setQuickAddDialogOpen(false);
@@ -830,7 +903,7 @@ export default function ActivityForm({
         queryKey: ["/api/material-collections"],
       });
     } catch (error) {
-      console.error("[QuickAdd] Error adding materials:", error);
+      console.error("[QuickAdd Batch] Error adding materials:", error);
       toast({
         title: "Failed to add materials",
         description: error instanceof Error ? error.message : "Unknown error",

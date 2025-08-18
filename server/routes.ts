@@ -642,6 +642,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add materials to a collection
+  app.post("/api/material-collections/:id/materials", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { materialIds } = req.body;
+      
+      console.log('[POST /api/material-collections/:id/materials] Adding materials to collection:', id, materialIds);
+      
+      if (!Array.isArray(materialIds)) {
+        return res.status(400).json({ error: "materialIds must be an array" });
+      }
+      
+      // Add each material to the collection
+      const results = [];
+      for (const materialId of materialIds) {
+        try {
+          const item = await storage.addMaterialToCollection(materialId, id);
+          results.push(item);
+        } catch (error) {
+          // Skip if material is already in collection (duplicate key error)
+          console.log(`Material ${materialId} may already be in collection ${id}:`, error);
+        }
+      }
+      
+      res.json({ success: true, added: results.length });
+    } catch (error) {
+      console.error('[POST /api/material-collections/:id/materials] Error:', error);
+      res.status(500).json({ error: "Failed to add materials to collection" });
+    }
+  });
+
   // Get collections for a material
   app.get("/api/materials/:id/collections", async (req: AuthenticatedRequest, res) => {
     try {

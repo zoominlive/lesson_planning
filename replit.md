@@ -2,6 +2,13 @@
 This project is a comprehensive lesson planning application for early childhood educators, designed to streamline the creation and management of weekly lesson plans. It supports managing activities, materials, and developmental milestones, and facilitates structured weekly schedules aligned with educational objectives. The application features a multi-tenant and multi-location architecture, ensuring data isolation and secure access for various educational organizations and their facilities. Its business vision is to provide a robust, scalable platform that simplifies lesson planning, thereby enhancing educational quality and efficiency in early childhood settings. Key capabilities include a tablet-friendly review workflow, consistent week display, enhanced visual content for educational materials, a persistent notification system for lesson plan feedback, and a mobile-optimized parent view for approved lesson plans. The system also incorporates AI for activity generation with duplicate prevention and robust permission management for lesson plan approvals.
 
 ## Recent Changes (August 2025)
+- **Quick Add Material Improvements** (August 18, 2025):
+  - Added ability to edit material title and quantity in Quick Add modal before saving
+  - Fixed material-to-collection assignment by adding missing POST endpoint `/api/material-collections/:id/materials`
+  - Enhanced error handling for material collection assignment with proper try-catch blocks
+  - Materials are now properly linked to collections via `material_collection_items` table
+  - Added input validation requiring material name before submission
+  - Batch processing now correctly assigns all materials to the same collection
 - **Image Prompt Generation Service** (August 18, 2025): Created dedicated `imagePromptGenerationService` that:
   - Uses Perplexity AI to write detailed, context-aware prompts for image generation
   - Passes enriched prompts to DALL-E 3 for photo-realistic educational images
