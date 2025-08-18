@@ -647,6 +647,8 @@ export default function ActivityForm({
       return;
     }
     
+    // Reset collection ID when starting a new quick add session
+    setActivityCollectionId(null);
     setCurrentQuickAddMaterial(material);
     setRemainingMaterials(allMaterials.filter((m) => m !== material));
     setQuickAddDialogOpen(true);
@@ -677,8 +679,10 @@ export default function ActivityForm({
 
     // Use existing collection ID if provided, otherwise create or get collection for this activity
     let collectionId = existingCollectionId || activityCollectionId;
+    console.log("[QuickAdd] In createMaterialFromSuggestion - existingCollectionId:", existingCollectionId, "activityCollectionId:", activityCollectionId, "collectionId:", collectionId);
     if (!collectionId) {
       // Create collection with activity name
+      console.log("[QuickAdd] Creating new collection for activity:", activityTitle);
       const collectionResponse = await apiRequest(
         "POST",
         "/api/material-collections",
@@ -688,7 +692,10 @@ export default function ActivityForm({
         },
       );
       collectionId = collectionResponse.id;
+      console.log("[QuickAdd] Created collection with ID:", collectionId);
       setActivityCollectionId(collectionId);
+    } else {
+      console.log("[QuickAdd] Using existing collection ID:", collectionId);
     }
 
     // Use the selected location from the activity form
@@ -717,8 +724,10 @@ export default function ActivityForm({
       "/api/materials",
       materialData,
     );
+    console.log("[QuickAdd] Created material with ID:", createdMaterial.id);
 
     // Add material to collection
+    console.log("[QuickAdd] Adding material", createdMaterial.id, "to collection:", collectionId);
     await apiRequest(
       "POST",
       `/api/material-collections/${collectionId}/materials`,
@@ -726,6 +735,7 @@ export default function ActivityForm({
         materialIds: [createdMaterial.id],
       },
     );
+    console.log("[QuickAdd] Successfully added material to collection:", collectionId);
 
     // Add material to selected materials for this activity
     setSelectedMaterials((prev) => [...prev, createdMaterial.id]);
@@ -801,6 +811,7 @@ export default function ActivityForm({
 
     setProcessingQuickAdd(true);
     try {
+      console.log("[QuickAdd] Submitting material with collection ID:", activityCollectionId);
       const result = await createMaterialFromSuggestion(
         currentQuickAddMaterial,
         storageLocation,
@@ -809,6 +820,7 @@ export default function ActivityForm({
 
       // Update the collection ID if it was created for the first material
       if (!activityCollectionId && result.collectionId) {
+        console.log("[QuickAdd] Setting collection ID:", result.collectionId);
         setActivityCollectionId(result.collectionId);
       }
 
@@ -826,7 +838,7 @@ export default function ActivityForm({
         // Continue one-by-one processing
         const nextMaterials = remainingMaterials.slice(1);
         setRemainingMaterials(nextMaterials);
-        setCurrentQuickAddMaterial(remainingMaterials[0]);
+        setCurrentQuickAddMaterial(nextMaterials[0]);
         setStorageLocation("");
       } else {
         // All done
@@ -2078,7 +2090,19 @@ export default function ActivityForm({
       )}
 
       {/* Quick Add Dialog */}
-      <Dialog open={quickAddDialogOpen} onOpenChange={setQuickAddDialogOpen}>
+      <Dialog 
+        open={quickAddDialogOpen} 
+        onOpenChange={(open) => {
+          setQuickAddDialogOpen(open);
+          // Clean up state when dialog is closed (but keep collection ID for the activity)
+          if (!open) {
+            setCurrentQuickAddMaterial(null);
+            setRemainingMaterials([]);
+            setBatchProcessMode(false);
+            setStorageLocation("");
+            // Don't reset activityCollectionId here - it's valid for the whole activity
+          }
+        }}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
