@@ -332,7 +332,7 @@ export default function ParentView() {
                             </p>
                           )}
 
-                          {activity.milestones?.length && (
+                          {activity.milestones && activity.milestones.length > 0 && (
                             <div className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <div className="p-1.5 bg-purple-100 rounded-lg">
@@ -359,7 +359,7 @@ export default function ParentView() {
                             </div>
                           )}
 
-                          {activity.materials?.length && (
+                          {activity.materials && activity.materials.length > 0 && (
                             <div className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <div className="p-1.5 bg-green-100 rounded-lg">
@@ -393,7 +393,7 @@ export default function ParentView() {
                             </div>
                           )}
 
-                          {activity.steps?.length && (
+                          {activity.steps && activity.steps.length > 0 && (
                             <div className="space-y-3">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
