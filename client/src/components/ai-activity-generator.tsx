@@ -284,21 +284,34 @@ export default function AiActivityGenerator({
                 key={num}
                 className={`flex items-center ${num < 5 ? 'flex-1' : ''}`}
               >
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                    step === num
-                      ? 'bg-gradient-to-r from-coral-red to-turquoise text-gray-900 shadow-lg ring-2 ring-coral-red/50'
-                      : step > num
-                      ? 'bg-gradient-to-r from-coral-red to-turquoise text-gray-900 opacity-60'
-                      : 'bg-gray-200 text-gray-500'
-                  }`}
-                >
-                  {step > num ? (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  ) : (
-                    num
+                <div className="relative">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                      step === num
+                        ? 'bg-gradient-to-r from-coral-red to-turquoise text-white shadow-lg ring-2 ring-coral-red/50'
+                        : step > num
+                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
+                        : 'bg-gray-200 text-gray-500'
+                    }`}
+                  >
+                    {num}
+                  </div>
+                  
+                  {/* Show checkmark badge for completed steps */}
+                  {step > num && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                      <svg 
+                        className="w-3 h-3 text-white" 
+                        fill="currentColor" 
+                        viewBox="0 0 20 20"
+                      >
+                        <path 
+                          fillRule="evenodd" 
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
+                          clipRule="evenodd" 
+                        />
+                      </svg>
+                    </div>
                   )}
                 </div>
                 {num < 5 && (
