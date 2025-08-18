@@ -340,7 +340,7 @@ export default function AiActivityGenerator({
                   <SelectContent>
                     {ageGroups.map((ageGroup) => (
                       <SelectItem key={ageGroup.id} value={ageGroup.id}>
-                        {ageGroup.name} ({ageGroup.ageRangeStart}-{ageGroup.ageRangeEnd} years)
+                        {ageGroup.name} ({ageGroup.description})
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -1046,8 +1046,7 @@ export default function ActivityForm({
                       htmlFor={`age-group-${group.id}`}
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
-                      {group.name} ({group.ageRangeStart}-{group.ageRangeEnd}{" "}
-                      months)
+                      {group.name} ({group.description})
                     </label>
                   </div>
                 ))}
