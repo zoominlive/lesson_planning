@@ -17,6 +17,7 @@ import { materialStorage } from "./materialStorage";
 import { activityStorage } from "./activityStorage";
 import { perplexityService } from "./perplexityService";
 import { openAIService } from "./openAiService";
+import { imagePromptGenerationService } from "./imagePromptGenerationService";
 import { promptValidationService } from "./promptValidationService";
 import { milestoneStorage } from "./milestoneStorage";
 import multer from "multer";
@@ -888,33 +889,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate activity image using AI
-  app.post('/api/activities/generate-image', async (req: AuthenticatedRequest, res) => {
+  // Generate step image using AI
+  app.post('/api/activities/generate-step-image', async (req: AuthenticatedRequest, res) => {
     try {
-      const { prompt, title, description, spaceRequired } = req.body;
+      const { activityTitle, activityDescription, stepNumber, stepText, ageGroup, category, spaceRequired } = req.body;
       
-      if (!prompt && (!title || !description)) {
-        return res.status(400).json({ error: 'Either prompt or both title and description are required' });
+      if (!stepText || !stepNumber) {
+        return res.status(400).json({ error: 'Step text and number are required' });
       }
 
-      // Check if OpenAI service is available
-      if (!openAIService.isAvailable()) {
+      // Check if services are available
+      if (!process.env.OPENAI_API_KEY) {
         return res.status(503).json({ 
           error: 'Image generation service is not available. Please check your OpenAI API key configuration.' 
         });
       }
 
-      // Generate image using OpenAI service with the new style
+      // Use the new imagePromptGenerationService for step images
+      const result = await imagePromptGenerationService.generateActivityImage({
+        type: 'step',
+        activityTitle: activityTitle || 'Activity',
+        activityDescription: activityDescription || '',
+        stepNumber,
+        stepText,
+        ageGroup,
+        category,
+        spaceRequired
+      });
+      
+      if (!result.url) {
+        return res.status(500).json({ error: 'Failed to generate step image' });
+      }
+      
+      // Save the generated image locally
+      const imageResponse = await fetch(result.url);
+      const buffer = await imageResponse.arrayBuffer();
+      
+      // Generate a unique filename
+      const timestamp = Date.now();
+      const uniqueId = crypto.randomUUID().substring(0, 8);
+      const filename = `ai_generated_${timestamp}_${uniqueId}.png`;
+      const imagePath = path.join(
+        process.cwd(),
+        "public",
+        "activity-images",
+        "images",
+        filename
+      );
+      
+      // Ensure directory exists
+      const dir = path.dirname(imagePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      // Save the image
+      fs.writeFileSync(imagePath, Buffer.from(buffer));
+      
+      const localUrl = `/api/activities/images/${filename}`;
+      console.log("[ImagePromptGeneration] Step image saved locally:", localUrl);
+      
+      res.json({ url: localUrl, prompt: result.prompt });
+    } catch (error) {
+      console.error('Step image generation error:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to generate step image. Please try again later.' 
+      });
+    }
+  });
+
+  // Generate activity image using AI
+  app.post('/api/activities/generate-image', async (req: AuthenticatedRequest, res) => {
+    try {
+      const { prompt, title, description, spaceRequired, ageGroup, category } = req.body;
+      
+      if (!prompt && (!title || !description)) {
+        return res.status(400).json({ error: 'Either prompt or both title and description are required' });
+      }
+
+      // Check if services are available
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(503).json({ 
+          error: 'Image generation service is not available. Please check your OpenAI API key configuration.' 
+        });
+      }
+
+      // Use the new imagePromptGenerationService
       const activityTitle = title || prompt?.split('.')[0] || 'Activity';
       const activityDescription = description || prompt || '';
       
-      const imageUrl = await openAIService.generateActivityImage(activityTitle, activityDescription, spaceRequired);
+      const result = await imagePromptGenerationService.generateActivityImage({
+        type: 'activity',
+        activityTitle,
+        activityDescription,
+        ageGroup,
+        category,
+        spaceRequired
+      });
       
-      if (!imageUrl) {
+      if (!result.url) {
         return res.status(500).json({ error: 'Failed to generate image' });
       }
       
-      res.json({ url: imageUrl });
+      // Save the generated image locally
+      const imageResponse = await fetch(result.url);
+      const buffer = await imageResponse.arrayBuffer();
+      
+      // Generate a unique filename
+      const timestamp = Date.now();
+      const uniqueId = crypto.randomUUID().substring(0, 8);
+      const filename = `ai_generated_${timestamp}_${uniqueId}.png`;
+      const imagePath = path.join(
+        process.cwd(),
+        "public",
+        "activity-images",
+        "images",
+        filename
+      );
+      
+      // Ensure directory exists
+      const dir = path.dirname(imagePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      // Save the image
+      fs.writeFileSync(imagePath, Buffer.from(buffer));
+      
+      const localUrl = `/api/activities/images/${filename}`;
+      console.log("[ImagePromptGeneration] Image saved locally:", localUrl);
+      
+      res.json({ url: localUrl, prompt: result.prompt });
     } catch (error) {
       console.error('Activity image generation error:', error);
       res.status(500).json({ 

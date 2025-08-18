@@ -373,6 +373,7 @@ export default function ActivityForm({
     const activityTitle = watch("title");
     const activityDescription = watch("description");
     const spaceRequired = watch("spaceRequired");
+    const category = watch("category");
     
     if (!activityTitle && !activityDescription) {
       toast({
@@ -382,6 +383,14 @@ export default function ActivityForm({
       });
       return;
     }
+
+    // Get selected age group details
+    const selectedAgeGroupDetails = selectedAgeGroups.length > 0 
+      ? ageGroups.find((g: any) => g.id === selectedAgeGroups[0]) 
+      : null;
+    const ageGroupDesc = selectedAgeGroupDetails 
+      ? `${selectedAgeGroupDetails.name} (${selectedAgeGroupDetails.description})`
+      : null;
 
     setGeneratingImage(true);
     try {
@@ -396,6 +405,8 @@ export default function ActivityForm({
           title: activityTitle,
           description: activityDescription,
           spaceRequired: spaceRequired || initialData?.spaceRequired || activity?.spaceRequired,
+          ageGroup: ageGroupDesc,
+          category: category || initialData?.category || activity?.category,
           // Also send prompt for backward compatibility
           prompt: `${activityTitle || ""}. ${activityDescription || ""}` 
         }),
@@ -428,7 +439,9 @@ export default function ActivityForm({
 
   const handleRegenerateStepImage = async (index: number) => {
     const activityTitle = watch("title");
+    const activityDescription = watch("description");
     const spaceRequired = watch("spaceRequired");
+    const category = watch("category");
     const instruction = instructions[index];
     
     if (!instruction.text.trim()) {
@@ -440,21 +453,32 @@ export default function ActivityForm({
       return;
     }
 
+    // Get selected age group details
+    const selectedAgeGroupDetails = selectedAgeGroups.length > 0 
+      ? ageGroups.find((g: any) => g.id === selectedAgeGroups[0]) 
+      : null;
+    const ageGroupDesc = selectedAgeGroupDetails 
+      ? `${selectedAgeGroupDetails.name} (${selectedAgeGroupDetails.description})`
+      : null;
+
     setRegeneratingStepImage(index);
     const token = localStorage.getItem("authToken");
 
     try {
-      const response = await fetch("/api/activities/generate-image", {
+      const response = await fetch("/api/activities/generate-step-image", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify({ 
-          title: `${activityTitle} - Step ${index + 1}`,
-          description: instruction.text,
+          activityTitle: activityTitle || 'Activity',
+          activityDescription: activityDescription || '',
+          stepNumber: index + 1,
+          stepText: instruction.text,
           spaceRequired: spaceRequired || initialData?.spaceRequired || activity?.spaceRequired,
-          prompt: `Step ${index + 1} of activity "${activityTitle}": ${instruction.text}`
+          ageGroup: ageGroupDesc,
+          category: category || initialData?.category || activity?.category
         }),
       });
 
@@ -488,7 +512,9 @@ export default function ActivityForm({
 
   const handleGenerateAllStepImages = async () => {
     const activityTitle = watch("title");
+    const activityDescription = watch("description");
     const spaceRequired = watch("spaceRequired");
+    const category = watch("category");
     const stepsWithoutImages = instructions
       .map((inst, index) => ({ ...inst, index }))
       .filter(inst => inst.text.trim() && !inst.imageUrl);
@@ -502,6 +528,14 @@ export default function ActivityForm({
       return;
     }
 
+    // Get selected age group details
+    const selectedAgeGroupDetails = selectedAgeGroups.length > 0 
+      ? ageGroups.find((g: any) => g.id === selectedAgeGroups[0]) 
+      : null;
+    const ageGroupDesc = selectedAgeGroupDetails 
+      ? `${selectedAgeGroupDetails.name} (${selectedAgeGroupDetails.description})`
+      : null;
+
     setGeneratingStepImages(true);
     const token = localStorage.getItem("authToken");
     let successCount = 0;
@@ -513,17 +547,20 @@ export default function ActivityForm({
       
       for (const step of stepsWithoutImages) {
         try {
-          const response = await fetch("/api/activities/generate-image", {
+          const response = await fetch("/api/activities/generate-step-image", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               ...(token && { Authorization: `Bearer ${token}` }),
             },
             body: JSON.stringify({ 
-              title: `${activityTitle} - Step ${step.index + 1}`,
-              description: step.text,
+              activityTitle: activityTitle || 'Activity',
+              activityDescription: activityDescription || '',
+              stepNumber: step.index + 1,
+              stepText: step.text,
               spaceRequired: spaceRequired || initialData?.spaceRequired || activity?.spaceRequired,
-              prompt: `Step ${step.index + 1} of activity "${activityTitle}": ${step.text}`
+              ageGroup: ageGroupDesc,
+              category: category || initialData?.category || activity?.category
             }),
           });
 

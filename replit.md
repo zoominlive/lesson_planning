@@ -2,6 +2,15 @@
 This project is a comprehensive lesson planning application for early childhood educators, designed to streamline the creation and management of weekly lesson plans. It supports managing activities, materials, and developmental milestones, and facilitates structured weekly schedules aligned with educational objectives. The application features a multi-tenant and multi-location architecture, ensuring data isolation and secure access for various educational organizations and their facilities. Its business vision is to provide a robust, scalable platform that simplifies lesson planning, thereby enhancing educational quality and efficiency in early childhood settings. Key capabilities include a tablet-friendly review workflow, consistent week display, enhanced visual content for educational materials, a persistent notification system for lesson plan feedback, and a mobile-optimized parent view for approved lesson plans. The system also incorporates AI for activity generation with duplicate prevention and robust permission management for lesson plan approvals.
 
 ## Recent Changes (August 2025)
+- **Image Prompt Generation Service** (August 18, 2025): Created dedicated `imagePromptGenerationService` that:
+  - Uses Perplexity AI to write detailed, context-aware prompts for image generation
+  - Passes enriched prompts to DALL-E 3 for photo-realistic educational images
+  - Handles activity and step images separately with different context
+  - All prompts start with "A bright, photo-realistic childcare classroom depicting" for consistency
+  - Includes age group, category, and space requirements in prompt context
+  - Separate endpoints for activity images (`/api/activities/generate-image`) and step images (`/api/activities/generate-step-image`)
+  - Fallback to basic prompts if Perplexity service is unavailable
+  - Client-side updated to pass full context (age group, category) when generating images
 - **Mobile Component Architecture**: Organized parent view components into `/client/src/components/mobile/` directory structure to reflect mobile webview integration purpose
 - **Parent View Enhancements**: Implemented stunning Instagram-like design with collapsible "How it works" sections, full-width material display, and proper developmental milestone naming
 - **Data Display Fixes**: Corrected server-side data mapping for materials, milestones, and categories with proper field name mapping from database to frontend
