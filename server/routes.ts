@@ -73,7 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/materials/images/:filename', async (req, res) => {
     try {
       const filename = req.params.filename;
-      const imagePath = path.join(process.cwd(), 'public', 'materials-images', filename);
+      const imagePath = path.join(process.cwd(), 'public', 'materials', 'images', filename);
       
       // Check if file exists in public directory first
       if (fs.existsSync(imagePath)) {

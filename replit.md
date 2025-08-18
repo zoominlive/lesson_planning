@@ -1,111 +1,15 @@
 # Overview
-This project is a comprehensive lesson planning application for early childhood educators, designed to streamline the creation and management of weekly lesson plans. It supports managing activities, materials, and developmental milestones, and facilitates structured weekly schedules aligned with educational objectives. The application features a multi-tenant and multi-location architecture, ensuring data isolation and secure access for various educational organizations and their facilities. Its business vision is to provide a robust, scalable platform that simplifies lesson planning, thereby enhancing educational quality and efficiency in early childhood settings. Key capabilities include a tablet-friendly review workflow, consistent week display, enhanced visual content for educational materials, a persistent notification system for lesson plan feedback, and a mobile-optimized parent view for approved lesson plans. The system also incorporates AI for activity generation with duplicate prevention and robust permission management for lesson plan approvals.
-
-## Recent Changes (August 2025)
-- **Quick Add Material Improvements** (August 18, 2025):
-  - Added ability to edit material title and quantity in Quick Add modal before saving
-  - Fixed material-to-collection assignment by adding missing POST endpoint `/api/material-collections/:id/materials`
-  - Enhanced error handling for material collection assignment with proper try-catch blocks
-  - Materials are now properly linked to collections via `material_collection_items` table
-  - Added input validation requiring material name before submission
-  - Batch processing now correctly assigns all materials to the same collection
-- **Image Prompt Generation Service** (August 18, 2025): 
-  - **Initial version**: Created dedicated `imagePromptGenerationService` with complex prompt engineering
-  - **Simplified version**: Streamlined to pass simple, direct prompt to Perplexity: "Write me prompt for dall e 3 to make me a picture of the following activity [Activity Name - Activity Description] Be sure to start the prompt you write with 'A bright, photo-realistic childcare classroom/playground depicting'"
-  - Automatically uses "childcare playground" for outdoor activities, "childcare classroom" for indoor
-  - **Critical fix**: Corrected DALL-E 3 API parameters based on official documentation:
-    - Removed `style` parameter (doesn't exist in API, only in ChatGPT interface)
-    - Changed `quality: "standard"` to `quality: "hd"` for best results
-    - Added photo-realistic keywords to prompts: "DSLR photo, ultra-realistic, natural light, shallow depth of field, cinematic detail"
-    - Note: The API only supports `quality` (standard/hd) and doesn't have a `style` parameter
-  - **ChatGPT-Enhanced Prompt Structure**: Adopted professional photography brief format based on ChatGPT suggestions:
-    - Starts with "Ultra-realistic DSLR photograph" instead of "A bright, photo-realistic"
-    - Uses structured format: scene description → technical details → camera settings
-    - Includes professional terminology: "professional color grading", "cinematic lighting"
-  - **Realistic Constraints Added** (January 18, 2025): Fixed unrealistic proportions in generated images:
-    - Limited to exactly 6-10 children per image (prevents unrealistic crowds)
-    - Specifies normal 7-8 foot window heights (prevents cathedral-like spaces)
-    - Defines realistic classroom size (20x30 feet typical dimensions)
-    - Uses 35mm lens perspective instead of wide-angle (avoids distortion)
-    - Emphasizes "cozy, normal-sized classroom" for believable results
-  - Handles activity and step images separately with different context
-  - All prompts start with "A bright, photo-realistic childcare classroom depicting" for consistency
-  - Includes age group, category, and space requirements in prompt context
-  - Separate endpoints for activity images (`/api/activities/generate-image`) and step images (`/api/activities/generate-step-image`)
-  - Fallback to basic prompts if Perplexity service is unavailable
-  - Client-side updated to pass full context (age group, category) when generating images
-- **Mobile Component Architecture**: Organized parent view components into `/client/src/components/mobile/` directory structure to reflect mobile webview integration purpose
-- **Parent View Enhancements**: Implemented stunning Instagram-like design with collapsible "How it works" sections, full-width material display, and proper developmental milestone naming
-- **Data Display Fixes**: Corrected server-side data mapping for materials, milestones, and categories with proper field name mapping from database to frontend
-- **Material Collections System**: Implemented complete material collections feature with many-to-many relationships, allowing materials to be organized into collections for easier browsing and filtering
-  - Database schema: Added `material_collections` and `material_collection_items` tables
-  - Backend API: Full CRUD operations for collections and material-collection associations  
-  - UI enhancements: Collection selection in material forms and filtering in materials library
-- **AI Activity Generation Improvements**:
-  - Fixed description textarea to auto-expand for better visibility of AI-generated content
-  - Ensured all AI-generated fields (objectives, safety considerations, etc.) are properly saved to database
-  - Improved Quick Add materials visual feedback to show when materials have been added
-  - Cleaned up console.log statements from production code
-  - Fixed TypeScript issues with Set iteration and null/undefined type handling
-  - **Content Safety Validation** (January 18, 2025):
-    - Added prompt validation service using Perplexity AI to ensure all user inputs are appropriate for early childhood education
-    - Validates activity types and focus materials before generation
-    - Blocks explicitly inappropriate content (violence, adult themes, etc.)
-    - **Strict validation-only mode**: Only validates without sanitizing inputs - rejects if content doesn't pass exactly as entered
-    - **Safety-first approach**: Blocks activity generation if validation service is unavailable (throws errors on API failures)
-    - Clear error messages when content is rejected for safety reasons
-    - Users can remove activity type/focus material fields if validation service is down
-    - No input modification: validation service validates appropriateness without altering user input
-    - **API Model Update** (January 19, 2025): Updated Perplexity API model from deprecated 'llama-3.1-sonar-small-128k-online' to 'sonar' for validation service
-    - **Error Display Enhancement** (January 19, 2025): Changed validation error display from disappearing snackbar to modal dialog that users must click to close, ensuring they have time to read error messages
-    - **Validation Error Recovery** (January 19, 2025): When content validation fails (e.g., choking hazards), wizard now returns to step 5 where users can edit activity type and focus material instead of forcing them to restart the entire process
-- **OpenAI Integration Refactoring** (January 2025):
-  - Extracted OpenAI image generation logic from perplexityService.ts into dedicated openAiService.ts module
-  - Enhanced DALL-E 3 prompts to generate clean, educational illustrations with minimalist style
-  - Improved error handling for OpenAI API with specific billing and quota error messages
-  - Updated client-server communication to pass both activity title and description for better image context
-  - Fixed image storage path to save AI-generated images in `public/activity-images/images/` subdirectory for proper serving
-  - Note: OpenAI account requires billing credits ($5 minimum) for image generation to work
-  - **UI Improvements** (August 17, 2025):
-    - Changed AI generation button icon from wand to star for better visual appeal
-    - Fixed button contrast issues with dark text (#0d0d0c) on gradient background for readability
-    - Removed full-screen overlay during image generation, keeping only button animation for cleaner UX
-    - Updated OpenAI prompts to generate professional educational reference images for teachers
-    - Clear, realistic depictions suitable for adult educators (not cartoons)
-    - Professional photography aesthetic like educational textbooks or teacher training materials
-    - Documentary-style composition that clearly demonstrates activities
-    - Uses 'natural' style parameter for more realistic, professional images
-    - **Bulk Step Image Generation** - Added "Generate All Step Images" button next to "Add Step" that:
-      - Generates images for all instruction steps that don't already have images
-      - Creates contextual images for each step with proper step numbering
-      - Shows progress with animated loading state
-      - Provides feedback on success/failure count
-      - Purple-to-pink gradient button styling for visual distinction
-    - **Click-to-Enlarge Images** - All activity and step images now clickable to view in full-screen modal
-      - Dialog title dynamically shows "Activity Image" or "Step X" based on which image was clicked
-    - **Image Regeneration** - Added refresh button overlay on hover for individual image regeneration
-      - Works for both main activity image and individual step images
-      - Shows loading spinner during regeneration
-      - Toast notifications for success/error
-    - **Indoor/Outdoor Context** - Image generation now respects activity's spaceRequired setting
-      - Automatically generates outdoor images for outdoor activities
-      - Generates indoor classroom images for indoor activities
-      - Passes environment context to OpenAI for accurate scene generation
-    - **Consistent Image Generation** - All images (main activity and step images) use the same professional educational style
-      - Step images now explicitly emphasize consistency with main activity image
-      - Special prompts for step images that maintain "visual continuity with activity series"
-      - Both main and step images use exact same camera settings, room dimensions, and photography style
-      - Step prompts specifically state "part of the same photo shoot as the main activity image"
+This project is a comprehensive lesson planning application for early childhood educators. Its primary purpose is to streamline the creation and management of weekly lesson plans, supporting activities, materials, and developmental milestones, and facilitating structured weekly schedules aligned with educational objectives. The application features a multi-tenant and multi-location architecture, ensuring data isolation and secure access for various educational organizations. The business vision is to provide a robust, scalable platform that simplifies lesson planning, thereby enhancing educational quality and efficiency in early childhood settings. Key capabilities include a tablet-friendly review workflow, consistent week display, enhanced visual content, a persistent notification system for lesson plan feedback, and a mobile-optimized parent view for approved lesson plans. The system also incorporates AI for activity generation with duplicate prevention and robust permission management for lesson plan approvals.
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
 
 # System Architecture
 ## Frontend Architecture
-The frontend is built with React 18 and TypeScript, using a component-based architecture. Styling is handled with Tailwind CSS, leveraging a custom childcare-themed design system, and Shadcn/ui for components (built on Radix UI). TanStack Query manages server state, Wouter is used for routing, and React Hook Form with Zod handles form management and validation. Vite is employed for development and optimized builds. The UI/UX prioritizes a cohesive design system with a custom color palette, consistent typography, and accessible components.
+The frontend is built with React 18 and TypeScript, utilizing a component-based architecture. Styling is managed with Tailwind CSS, a custom childcare-themed design system, and Shadcn/ui for components (built on Radix UI). TanStack Query handles server state, Wouter is used for routing, and React Hook Form with Zod manages forms and validation. Vite is employed for development and optimized builds. The UI/UX prioritizes a cohesive design system with a custom color palette, consistent typography, and accessible components.
 
 ## Backend Architecture
-The backend follows a RESTful API pattern built with Node.js and Express.js. It utilizes Drizzle ORM with PostgreSQL for type-safe database operations and Zod schemas for consistent data validation. An abstract storage interface provides flexibility for data persistence. The API design emphasizes standard CRUD operations, centralized error handling, and structured logging.
+The backend follows a RESTful API pattern built with Node.js and Express.js. It uses Drizzle ORM with PostgreSQL for type-safe database operations and Zod schemas for data validation. An abstract storage interface provides flexibility for data persistence. The API design emphasizes standard CRUD operations, centralized error handling, and structured logging.
 
 ## Data Storage Solutions
 A PostgreSQL database, specifically Neon Database, serves as the primary data store. Drizzle ORM facilitates database interactions and schema management. The architecture supports multi-tenancy and multi-location data isolation using UUID primary keys and `tenantId`/`locationId` foreign keys across relevant tables. All lesson plan entities require both `tenantId` and `locationId` for proper data isolation, with API endpoints filtering data based on authenticated tenant and authorized locations. Core data models include Users, Milestones, Materials, Activities, Lesson Plans, Scheduled Activities, and Settings (Locations, Rooms, Categories, Age Groups). Lesson plans are shared across all teachers for the same tenant, location, room, schedule type, and week.
@@ -123,6 +27,10 @@ Vite is used for frontend development (HMR, TypeScript checking) and optimizatio
 ## Database Services
 - **Neon Database**: Serverless PostgreSQL hosting.
 - **Drizzle ORM**: Type-safe database operations.
+
+## AI and Image Generation Services
+- **Perplexity AI**: Used for prompt generation service and content safety validation.
+- **OpenAI DALL-E 3**: Used for AI image generation.
 
 ## UI and Component Libraries
 - **React**: Frontend UI library.
