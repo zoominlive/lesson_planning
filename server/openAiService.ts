@@ -38,6 +38,7 @@ export class OpenAIService {
 
   async analyzeReferenceImage(imagePath: string): Promise<string> {
     if (!this.initialized || !this.openai) {
+      console.error("[OpenAI] Service not initialized for analyzeReferenceImage");
       throw new Error(
         "OpenAI service is not initialized. Please check your API key.",
       );
@@ -47,6 +48,8 @@ export class OpenAIService {
       // Read the image file and convert to base64
       const imageBuffer = fs.readFileSync(imagePath);
       const base64Image = imageBuffer.toString('base64');
+      
+      console.log(`[OpenAI] Analyzing reference image: ${imagePath}, size: ${imageBuffer.length} bytes`);
       
       // Use GPT-4 Vision to analyze the image style
       const response = await this.openai.chat.completions.create({
@@ -81,12 +84,31 @@ export class OpenAIService {
       // Store the style description for use in future generations
       this.referenceStyleDescription = styleDescription;
       
-      console.log("[OpenAI] Reference image style analyzed:", styleDescription);
+      console.log("[OpenAI] Reference image style analyzed successfully");
+      console.log("[OpenAI] Style description:", styleDescription?.substring(0, 200) + "...");
       
       return styleDescription || "Unable to analyze image style";
     } catch (error: any) {
       console.error("[OpenAI] Failed to analyze reference image:", error);
-      throw new Error(`Failed to analyze reference image: ${error.message}`);
+      console.error("[OpenAI] Error details:", {
+        message: error.message,
+        status: error.status,
+        type: error.type,
+        code: error.code
+      });
+      
+      // Provide more specific error messages
+      if (error.status === 401) {
+        throw new Error("Invalid OpenAI API key. Please check your API key configuration.");
+      } else if (error.status === 429) {
+        throw new Error("OpenAI rate limit exceeded. Please try again later.");
+      } else if (error.status === 402 || error.message?.includes("billing")) {
+        throw new Error("OpenAI billing issue. Please check your account has sufficient credits.");
+      } else if (error.code === 'model_not_found') {
+        throw new Error("GPT-4 Vision model not available. Please check your OpenAI subscription.");
+      } else {
+        throw new Error(`Failed to analyze reference image: ${error.message}`);
+      }
     }
   }
 

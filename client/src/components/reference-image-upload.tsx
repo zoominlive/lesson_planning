@@ -75,10 +75,23 @@ export default function ReferenceImageUpload({ onStyleSet, className }: Referenc
         }
       } catch (error: any) {
         console.error('Error analyzing reference image:', error);
+        
+        let errorMessage = "Failed to analyze the reference image.";
+        if (error.message?.includes("billing")) {
+          errorMessage = "OpenAI billing limit reached. Please check your OpenAI account credits.";
+        } else if (error.message?.includes("API key")) {
+          errorMessage = "OpenAI API key not configured. Please check your API key.";
+        } else if (error.message?.includes("model")) {
+          errorMessage = "Image analysis model not available. Please try again later.";
+        } else {
+          errorMessage = error.message || errorMessage;
+        }
+        
         toast({
           title: "Analysis Failed",
-          description: error.message || "Failed to analyze the reference image. Please try again.",
-          variant: "destructive"
+          description: errorMessage,
+          variant: "destructive",
+          duration: 7000
         });
         setPreviewUrl(null);
       } finally {
