@@ -990,6 +990,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate activity image using AI
+  // Reference image upload and analysis endpoint
+  app.post('/api/activities/analyze-reference-image', async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.body.imageData) {
+        return res.status(400).json({ error: 'Image data is required' });
+      }
+
+      // Check if OpenAI service is available
+      if (!openAIService.isAvailable()) {
+        return res.status(503).json({ 
+          error: 'Image analysis service is not available. Please check your OpenAI API key configuration.' 
+        });
+      }
+
+      // Save the base64 image data to a temporary file
+      const imageData = req.body.imageData.replace(/^data:image\/\w+;base64,/, '');
+      const imageBuffer = Buffer.from(imageData, 'base64');
+      
+      // Generate a temporary filename
+      const tempFileName = `temp_reference_${Date.now()}.jpg`;
+      const tempFilePath = path.join(process.cwd(), 'public', 'activity-images', 'temp', tempFileName);
+      
+      // Ensure temp directory exists
+      const tempDir = path.dirname(tempFilePath);
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+      
+      // Save the image temporarily
+      fs.writeFileSync(tempFilePath, imageBuffer);
+      
+      try {
+        // Analyze the image using OpenAI service
+        const styleDescription = await openAIService.analyzeReferenceImage(tempFilePath);
+        
+        // Clean up the temp file
+        fs.unlinkSync(tempFilePath);
+        
+        console.log('[Reference Image] Style analyzed successfully');
+        res.json({ 
+          success: true,
+          styleDescription,
+          message: 'Reference style has been set and will be used for all future image generations.' 
+        });
+      } catch (error) {
+        // Clean up the temp file on error
+        if (fs.existsSync(tempFilePath)) {
+          fs.unlinkSync(tempFilePath);
+        }
+        throw error;
+      }
+    } catch (error: any) {
+      console.error('[Reference Image] Error analyzing:', error);
+      res.status(500).json({ 
+        error: `Failed to analyze reference image: ${error.message}` 
+      });
+    }
+  });
+
+  // Clear reference style endpoint
+  app.post('/api/activities/clear-reference-style', async (req: AuthenticatedRequest, res) => {
+    try {
+      openAIService.setReferenceStyle(null);
+      console.log('[Reference Image] Style cleared');
+      res.json({ 
+        success: true,
+        message: 'Reference style has been cleared.' 
+      });
+    } catch (error: any) {
+      console.error('[Reference Image] Error clearing style:', error);
+      res.status(500).json({ 
+        error: `Failed to clear reference style: ${error.message}` 
+      });
+    }
+  });
+
+  // Get current reference style endpoint
+  app.get('/api/activities/reference-style', async (req: AuthenticatedRequest, res) => {
+    try {
+      const styleDescription = openAIService.getReferenceStyle();
+      res.json({ 
+        hasStyle: !!styleDescription,
+        styleDescription 
+      });
+    } catch (error: any) {
+      console.error('[Reference Image] Error getting style:', error);
+      res.status(500).json({ 
+        error: `Failed to get reference style: ${error.message}` 
+      });
+    }
+  });
+
   app.post('/api/activities/generate-image', async (req: AuthenticatedRequest, res) => {
     try {
       const { prompt, title, description, spaceRequired, ageGroup, category } = req.body;
