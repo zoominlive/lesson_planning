@@ -21,8 +21,13 @@ This project is a comprehensive lesson planning application for early childhood 
   - **ChatGPT-Enhanced Prompt Structure**: Adopted professional photography brief format based on ChatGPT suggestions:
     - Starts with "Ultra-realistic DSLR photograph" instead of "A bright, photo-realistic"
     - Uses structured format: scene description → technical details → camera settings
-    - Includes professional terminology: "professional color grading", "wide-angle lens", "cinematic lighting"
-    - Tested and confirmed to produce more photo-realistic results than previous approach
+    - Includes professional terminology: "professional color grading", "cinematic lighting"
+  - **Realistic Constraints Added** (January 18, 2025): Fixed unrealistic proportions in generated images:
+    - Limited to exactly 6-10 children per image (prevents unrealistic crowds)
+    - Specifies normal 7-8 foot window heights (prevents cathedral-like spaces)
+    - Defines realistic classroom size (20x30 feet typical dimensions)
+    - Uses 35mm lens perspective instead of wide-angle (avoids distortion)
+    - Emphasizes "cozy, normal-sized classroom" for believable results
   - Handles activity and step images separately with different context
   - All prompts start with "A bright, photo-realistic childcare classroom depicting" for consistency
   - Includes age group, category, and space requirements in prompt context

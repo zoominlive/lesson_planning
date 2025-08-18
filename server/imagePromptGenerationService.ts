@@ -41,21 +41,27 @@ class ImagePromptGenerationService {
       const isOutdoor = context.spaceRequired?.toLowerCase().includes('outdoor');
       const setting = isOutdoor ? 'childcare playground' : 'childcare classroom';
       
-      // Build enhanced prompt request for Perplexity using ChatGPT's structure
+      // Build enhanced prompt request for Perplexity using realistic constraints
       const perplexityPrompt = `Write me a prompt for DALL-E 3 to create a professional photograph of the following activity:
 
 ${context.activityTitle} - ${context.activityDescription}
 
-Use this exact structure for your prompt:
-1. Start with "Ultra-realistic DSLR photograph of a bright ${setting}."
-2. Then describe the scene: what children are doing
-3. Add these technical photography elements in order:
-   - "Sharp realistic textures, cinematic lighting, professional color grading."
-   - "Shallow depth of field with focus on [main subject], while the background softly blurs."
-   - "High-resolution, photorealistic detail, captured as if by a professional photographer with a wide-angle lens."
-4. Include natural light and joyful expressions
+IMPORTANT REALISTIC CONSTRAINTS:
+- Show exactly 6-10 children (not more)
+- Normal-sized classroom with standard 7-8 foot tall windows
+- Realistic classroom proportions (about 20x30 feet room size)
+- Age-appropriate furniture and equipment
 
-Make it sound like a professional photography brief, not a casual description.`;
+Use this exact structure for your prompt:
+1. Start with "Ultra-realistic DSLR photograph of a cozy, normal-sized ${setting}."
+2. Specify "showing 6-10 children" in the scene description
+3. Add these technical photography elements:
+   - "Standard classroom with normal-height windows, realistic proportions."
+   - "Sharp realistic textures, natural lighting, professional color grading."
+   - "Shallow depth of field with focus on [main subject], background softly blurred."
+   - "Shot with 35mm lens for natural perspective, not wide-angle distortion."
+
+Make it realistic and believable, like a photo from an actual childcare center.`;
       
       console.log('[ImagePromptGeneration] Requesting prompt from Perplexity for:', context.type);
       
@@ -171,8 +177,8 @@ Make it sound like a professional photography brief, not a casual description.`;
     const isOutdoor = context.spaceRequired?.toLowerCase().includes('outdoor');
     const setting = isOutdoor ? 'childcare playground' : 'childcare classroom';
     
-    // Enhanced fallback prompt using ChatGPT's professional photography structure
-    const prompt = `Ultra-realistic DSLR photograph of a bright ${setting}. ${context.activityDescription}. Sharp realistic textures, cinematic lighting, professional color grading. Shallow depth of field with focus on children's activities and materials, while the background softly blurs. Joyful expressions and dynamic movement in a vibrant environment. High-resolution, photorealistic detail, captured as if by a professional photographer with a wide-angle lens.`;
+    // Enhanced fallback prompt with realistic constraints
+    const prompt = `Ultra-realistic DSLR photograph of a cozy, normal-sized ${setting}. Shows exactly 6-10 children engaged in: ${context.activityDescription}. Standard classroom with normal-height windows (7-8 feet tall), realistic proportions (20x30 feet room). Sharp realistic textures, natural lighting, professional color grading. Shallow depth of field with focus on children's activities, background softly blurred. Joyful but realistic expressions. Shot with 35mm lens for natural perspective, avoiding wide-angle distortion. Photorealistic detail like an actual childcare center photo.`;
 
     return {
       prompt,
