@@ -9,9 +9,10 @@ This project is a comprehensive lesson planning application for early childhood 
   - Materials are now properly linked to collections via `material_collection_items` table
   - Added input validation requiring material name before submission
   - Batch processing now correctly assigns all materials to the same collection
-- **Image Prompt Generation Service** (August 18, 2025): Created dedicated `imagePromptGenerationService` that:
-  - Uses Perplexity AI to write detailed, context-aware prompts for image generation
-  - Passes enriched prompts to DALL-E 3 for photo-realistic educational images
+- **Image Prompt Generation Service** (August 18, 2025): 
+  - **Initial version**: Created dedicated `imagePromptGenerationService` with complex prompt engineering
+  - **Simplified version**: Streamlined to pass simple, direct prompt to Perplexity: "Write me prompt for dall e 3 to make me a picture of the following activity [Activity Name - Activity Description] Be sure to start the prompt you write with 'A bright, photo-realistic childcare classroom/playground depicting'"
+  - Automatically uses "childcare playground" for outdoor activities, "childcare classroom" for indoor
   - Handles activity and step images separately with different context
   - All prompts start with "A bright, photo-realistic childcare classroom depicting" for consistency
   - Includes age group, category, and space requirements in prompt context

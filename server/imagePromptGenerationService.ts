@@ -37,8 +37,16 @@ class ImagePromptGenerationService {
         throw new Error('PERPLEXITY_API_KEY is not configured');
       }
 
-      // Build the request to Perplexity based on context type
-      const perplexityPrompt = this.buildPerplexityPrompt(context);
+      // Determine indoor/outdoor setting
+      const isOutdoor = context.spaceRequired?.toLowerCase().includes('outdoor');
+      const setting = isOutdoor ? 'childcare playground' : 'childcare classroom';
+      
+      // Build simple prompt for Perplexity
+      const perplexityPrompt = `Write me prompt for dall e 3 to make me a picture of the following activity
+
+${context.activityTitle} - ${context.activityDescription}
+
+Be sure to start the prompt you write with "A bright, photo-realistic ${setting} depicting"`;
       
       console.log('[ImagePromptGeneration] Requesting prompt from Perplexity for:', context.type);
       
@@ -51,10 +59,6 @@ class ImagePromptGenerationService {
         body: JSON.stringify({
           model: 'sonar',
           messages: [
-            {
-              role: 'system',
-              content: 'You are an expert at writing detailed, vivid image generation prompts for educational childcare activities. Create prompts that result in bright, safe, professional photography-style images suitable for teacher reference materials.'
-            },
             {
               role: 'user',
               content: perplexityPrompt
@@ -91,49 +95,7 @@ class ImagePromptGenerationService {
     }
   }
 
-  /**
-   * Build the request prompt for Perplexity based on context
-   */
-  private buildPerplexityPrompt(context: ImagePromptContext): string {
-    if (context.type === 'activity') {
-      return `Create a detailed image generation prompt for this childcare activity. 
-        The prompt should start with: "A bright, photo-realistic childcare classroom depicting"
-        Then describe this activity: "${context.activityDescription}"
-        
-        Additional context:
-        - Activity title: ${context.activityTitle}
-        - Age group: ${context.ageGroup || 'early childhood'}
-        - Category: ${context.category || 'general'}
-        - Space: ${context.spaceRequired || 'indoor classroom'}
-        
-        The image should show:
-        - Professional, educational setting
-        - Clear demonstration of the activity
-        - Age-appropriate materials and setup
-        - Bright, welcoming environment
-        - Safety-conscious arrangement
-        
-        Write a single, cohesive prompt that captures all these elements naturally.`;
-    } else {
-      // Step image prompt
-      return `Create a detailed image generation prompt for step ${context.stepNumber} of a childcare activity.
-        The prompt should start with: "A bright, photo-realistic childcare classroom showing"
-        Then describe this specific step: "${context.stepText}"
-        
-        Context from the main activity:
-        - Activity: ${context.activityTitle}
-        - Description: ${context.activityDescription}
-        - This is step ${context.stepNumber} of the instructions
-        
-        The image should:
-        - Clearly demonstrate this specific step
-        - Show professional educational setting
-        - Include relevant materials and setup
-        - Be consistent with a childcare classroom environment
-        
-        Write a single, focused prompt for this step.`;
-    }
-  }
+
 
   /**
    * Generate the actual image using OpenAI DALL-E 3
@@ -197,13 +159,12 @@ class ImagePromptGenerationService {
    * Fallback prompt generation if Perplexity is unavailable
    */
   private getFallbackPrompt(context: ImagePromptContext): GeneratedPrompt {
-    let prompt = '';
+    // Determine indoor/outdoor setting
+    const isOutdoor = context.spaceRequired?.toLowerCase().includes('outdoor');
+    const setting = isOutdoor ? 'childcare playground' : 'childcare classroom';
     
-    if (context.type === 'activity') {
-      prompt = `A bright, photo-realistic childcare classroom depicting ${context.activityDescription}. Professional educational setting with age-appropriate materials, bright lighting, and safe environment.`;
-    } else {
-      prompt = `A bright, photo-realistic childcare classroom showing step ${context.stepNumber}: ${context.stepText}. Clear demonstration of this instruction step in a professional educational setting.`;
-    }
+    // Simple fallback prompt following the same pattern
+    const prompt = `A bright, photo-realistic ${setting} depicting ${context.activityTitle} - ${context.activityDescription}`;
 
     return {
       prompt,
