@@ -21,7 +21,7 @@ import {
 import WeeklyCalendar from "@/components/weekly-calendar";
 import { NotificationCarousel } from "@/components/notification-carousel";
 import { CopyLessonPlanModal } from "@/components/copy-lesson-plan-modal";
-import { Settings, AlertTriangle, Eye, Edit, Copy } from "lucide-react";
+import { Settings, AlertTriangle, Eye, Edit, Copy, Sparkles, Stars, Zap } from "lucide-react";
 import { useLocation } from "wouter";
 import { getUserInfo } from "@/lib/auth";
 import { hasPermission, requiresLessonPlanApproval } from "@/lib/permission-utils";
@@ -363,15 +363,34 @@ export default function LessonPlanner() {
         <CardContent className="p-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1
-                className="text-3xl font-bold text-charcoal mb-2"
+              <div 
+                className="flex items-center gap-3 mb-2"
                 data-testid="app-title"
               >
-                Lesson Planning Studio
-              </h1>
-              <p className="text-gray-600" data-testid="app-subtitle">
-                Create engaging weekly lesson plans for your classrooms
-              </p>
+                <Stars className="h-8 w-8 text-yellow-500 animate-sparkle" />
+                <h1 className="relative animate-glow">
+                  <span className="text-4xl font-black bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 bg-clip-text text-transparent">
+                    Lesson Planning
+                  </span>
+                  <span className="text-4xl font-black bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 bg-clip-text text-transparent ml-3">
+                    Studio
+                  </span>
+                  <div className="absolute -top-2 -right-12 flex items-center gap-1 animate-float">
+                    <Sparkles className="h-5 w-5 text-yellow-400 animate-spin" style={{ animationDuration: '3s' }} />
+                    <span className="text-xs font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-0.5 rounded-full shadow-lg">
+                      AI
+                    </span>
+                    <Zap className="h-4 w-4 text-yellow-500 animate-pulse" />
+                  </div>
+                </h1>
+                <Stars className="h-8 w-8 text-yellow-500 animate-sparkle" style={{ animationDelay: '1s' }} />
+              </div>
+              <div className="flex items-center gap-2">
+                <p className="text-gray-600" data-testid="app-subtitle">
+                  Create engaging weekly lesson plans powered by AI
+                </p>
+                <Sparkles className="h-4 w-4 text-purple-500" />
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right">
