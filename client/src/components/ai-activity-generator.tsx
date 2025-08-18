@@ -36,6 +36,11 @@ export default function AiActivityGenerator({
   const [generationMessage, setGenerationMessage] = useState("");
   const [retryCount, setRetryCount] = useState(0);
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
+  const [errorModal, setErrorModal] = useState<{open: boolean, title: string, message: string}>({
+    open: false,
+    title: "",
+    message: ""
+  });
 
   const handleGenerate = async () => {
     if (!selectedAgeGroup || !selectedCategory || isQuiet === null || isIndoor === null) {
@@ -79,41 +84,43 @@ export default function AiActivityGenerator({
       const result = await response.json();
 
       if (!response.ok) {
+        setIsGenerating(false);
+        
         // Check if the error is retryable or not
         if (response.status === 503) {
           // Service unavailable - AI failed after retries
-          toast({
+          setErrorModal({
+            open: true,
             title: "AI Service Temporarily Unavailable",
-            description: result.error || "The AI is having trouble generating activities right now. Please try again later or create an activity manually.",
-            variant: "destructive"
+            message: result.error || "The AI is having trouble generating activities right now. Please try again later or create an activity manually."
           });
         } else if (response.status === 500 && result.retryable) {
           // Server error but retryable
-          toast({
+          setErrorModal({
+            open: true,
             title: "Generation Failed",
-            description: "There was an issue generating the activity. Please try again in a moment.",
-            variant: "destructive"
+            message: "There was an issue generating the activity. Please try again in a moment."
           });
         } else if (response.status === 400 && result.reason) {
           // Validation error from content safety check
-          toast({
+          setErrorModal({
+            open: true,
             title: "Content Not Appropriate",
-            description: result.reason || result.error || "The requested content is not appropriate for early childhood education.",
-            variant: "destructive"
+            message: result.reason || result.error || "The requested content is not appropriate for early childhood education."
           });
         } else if (response.status === 503 && result.reason && result.reason.includes('validation')) {
           // Validation service unavailable
-          toast({
+          setErrorModal({
+            open: true,
             title: "Safety Check Unavailable",
-            description: "Unable to verify content safety at this time. Please try again later or remove the activity type and focus material fields.",
-            variant: "destructive"
+            message: "Unable to verify content safety at this time. Please try again later or remove the activity type and focus material fields."
           });
         } else {
           // Other errors
-          toast({
+          setErrorModal({
+            open: true,
             title: "Generation Failed",
-            description: result.error || "Unable to generate activity. Please try again.",
-            variant: "destructive"
+            message: result.error || "Unable to generate activity. Please try again."
           });
         }
         return;
@@ -122,10 +129,11 @@ export default function AiActivityGenerator({
       // Check if the generation succeeded
       if (result.title === "Activity Generation Failed") {
         // This shouldn't happen anymore with backend retry, but just in case
-        toast({
+        setIsGenerating(false);
+        setErrorModal({
+          open: true,
           title: "Generation Issue",
-          description: "The AI couldn't generate a proper activity. Please try again or create one manually.",
-          variant: "destructive"
+          message: "The AI couldn't generate a proper activity. Please try again or create one manually."
         });
         return;
       }
@@ -162,10 +170,10 @@ export default function AiActivityGenerator({
       });
     } catch (error) {
       console.error('Error generating activity:', error);
-      toast({
+      setErrorModal({
+        open: true,
         title: "Connection Error",
-        description: "Unable to connect to the server. Please check your connection and try again.",
-        variant: "destructive"
+        message: "Unable to connect to the server. Please check your connection and try again."
       });
     } finally {
       setIsGenerating(false);
@@ -536,6 +544,26 @@ export default function AiActivityGenerator({
               className="bg-red-600 hover:bg-red-700"
             >
               Cancel Generation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Error Modal */}
+      <AlertDialog open={errorModal.open} onOpenChange={(open) => setErrorModal({...errorModal, open})}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{errorModal.title}</AlertDialogTitle>
+            <AlertDialogDescription className="whitespace-pre-wrap">
+              {errorModal.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction 
+              onClick={() => setErrorModal({...errorModal, open: false})}
+              className="bg-gradient-to-r from-coral-red to-turquoise text-white"
+            >
+              OK
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -25,6 +25,7 @@ This project is a comprehensive lesson planning application for early childhood 
     - Users can remove activity type/focus material fields if validation service is down
     - No input modification: validation service validates appropriateness without altering user input
     - **API Model Update** (January 19, 2025): Updated Perplexity API model from deprecated 'llama-3.1-sonar-small-128k-online' to 'sonar' for validation service
+    - **Error Display Enhancement** (January 19, 2025): Changed validation error display from disappearing snackbar to modal dialog that users must click to close, ensuring they have time to read error messages
 - **OpenAI Integration Refactoring** (January 2025):
   - Extracted OpenAI image generation logic from perplexityService.ts into dedicated openAiService.ts module
   - Enhanced DALL-E 3 prompts to generate clean, educational illustrations with minimalist style
