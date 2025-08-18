@@ -286,13 +286,7 @@ export default function AiActivityGenerator({
               >
                 <div className="relative">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                      step === num
-                        ? 'bg-gradient-to-r from-coral-red to-turquoise text-white shadow-lg ring-2 ring-coral-red/50'
-                        : step > num
-                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                        : 'bg-gray-200 text-gray-500'
-                    }`}
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all bg-gradient-to-r from-coral-red to-turquoise shadow-lg ring-2 ring-coral-red/50 text-[#1c1919]"
                   >
                     {num}
                   </div>
@@ -535,7 +529,6 @@ export default function AiActivityGenerator({
         </div>
         </DialogContent>
       </Dialog>
-
       {/* Exit Confirmation Dialog */}
       <AlertDialog open={showExitConfirmation} onOpenChange={setShowExitConfirmation}>
         <AlertDialogContent>
@@ -561,7 +554,6 @@ export default function AiActivityGenerator({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       {/* Error Modal */}
       <AlertDialog open={errorModal.open} onOpenChange={(open) => setErrorModal({...errorModal, open})}>
         <AlertDialogContent>
