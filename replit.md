@@ -18,6 +18,11 @@ This project is a comprehensive lesson planning application for early childhood 
     - Changed `quality: "standard"` to `quality: "hd"` for best results
     - Added photo-realistic keywords to prompts: "DSLR photo, ultra-realistic, natural light, shallow depth of field, cinematic detail"
     - Note: The API only supports `quality` (standard/hd) and doesn't have a `style` parameter
+  - **ChatGPT-Enhanced Prompt Structure**: Adopted professional photography brief format based on ChatGPT suggestions:
+    - Starts with "Ultra-realistic DSLR photograph" instead of "A bright, photo-realistic"
+    - Uses structured format: scene description → technical details → camera settings
+    - Includes professional terminology: "professional color grading", "wide-angle lens", "cinematic lighting"
+    - Tested and confirmed to produce more photo-realistic results than previous approach
   - Handles activity and step images separately with different context
   - All prompts start with "A bright, photo-realistic childcare classroom depicting" for consistency
   - Includes age group, category, and space requirements in prompt context

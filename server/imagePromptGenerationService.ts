@@ -41,12 +41,21 @@ class ImagePromptGenerationService {
       const isOutdoor = context.spaceRequired?.toLowerCase().includes('outdoor');
       const setting = isOutdoor ? 'childcare playground' : 'childcare classroom';
       
-      // Build simple prompt for Perplexity
-      const perplexityPrompt = `Write me prompt for dall e 3 to make me a picture of the following activity
+      // Build enhanced prompt request for Perplexity using ChatGPT's structure
+      const perplexityPrompt = `Write me a prompt for DALL-E 3 to create a professional photograph of the following activity:
 
 ${context.activityTitle} - ${context.activityDescription}
 
-Be sure to start the prompt you write with "A bright, photo-realistic ${setting} depicting" and include these keywords somewhere in your prompt: DSLR photo, ultra-realistic, natural light, shallow depth of field, cinematic detail`;
+Use this exact structure for your prompt:
+1. Start with "Ultra-realistic DSLR photograph of a bright ${setting}."
+2. Then describe the scene: what children are doing
+3. Add these technical photography elements in order:
+   - "Sharp realistic textures, cinematic lighting, professional color grading."
+   - "Shallow depth of field with focus on [main subject], while the background softly blurs."
+   - "High-resolution, photorealistic detail, captured as if by a professional photographer with a wide-angle lens."
+4. Include natural light and joyful expressions
+
+Make it sound like a professional photography brief, not a casual description.`;
       
       console.log('[ImagePromptGeneration] Requesting prompt from Perplexity for:', context.type);
       
@@ -162,8 +171,8 @@ Be sure to start the prompt you write with "A bright, photo-realistic ${setting}
     const isOutdoor = context.spaceRequired?.toLowerCase().includes('outdoor');
     const setting = isOutdoor ? 'childcare playground' : 'childcare classroom';
     
-    // Simple fallback prompt following the same pattern with photo-realistic keywords
-    const prompt = `A bright, photo-realistic ${setting} depicting ${context.activityTitle} - ${context.activityDescription}. DSLR photo, ultra-realistic, natural light, shallow depth of field, cinematic detail`;
+    // Enhanced fallback prompt using ChatGPT's professional photography structure
+    const prompt = `Ultra-realistic DSLR photograph of a bright ${setting}. ${context.activityDescription}. Sharp realistic textures, cinematic lighting, professional color grading. Shallow depth of field with focus on children's activities and materials, while the background softly blurs. Joyful expressions and dynamic movement in a vibrant environment. High-resolution, photorealistic detail, captured as if by a professional photographer with a wide-angle lens.`;
 
     return {
       prompt,
