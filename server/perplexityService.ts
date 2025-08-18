@@ -263,8 +263,54 @@ Ensure the activity is:
             const parsedActivity = this.parseMaterialsFromActivity(secondAttempt);
             return parsedActivity;
           } catch (e2) {
-            // If still failing, try one more approach - remove problematic quotes altogether
-            console.log('[PerplexityService] Second parse attempt failed, removing problematic quotes');
+            // If still failing, check if JSON is incomplete and try to fix it
+            console.log('[PerplexityService] Second parse attempt failed, checking for incomplete JSON');
+            
+            // Count opening and closing brackets/braces
+            const openBraces = (cleanedContent.match(/\{/g) || []).length;
+            const closeBraces = (cleanedContent.match(/\}/g) || []).length;
+            const openBrackets = (cleanedContent.match(/\[/g) || []).length;
+            const closeBrackets = (cleanedContent.match(/\]/g) || []).length;
+            
+            // If JSON appears truncated (missing closing brackets/braces), attempt to fix
+            if (openBraces > closeBraces || openBrackets > closeBrackets) {
+              console.log('[PerplexityService] JSON appears truncated, attempting to fix...');
+              
+              // Add missing closing brackets/braces
+              let fixedContent = cleanedContent;
+              
+              // First, ensure any incomplete string is closed
+              const lastQuoteIndex = fixedContent.lastIndexOf('"');
+              const secondLastQuoteIndex = fixedContent.lastIndexOf('"', lastQuoteIndex - 1);
+              if (lastQuoteIndex > secondLastQuoteIndex + 1) {
+                // Likely an unclosed string, close it
+                fixedContent += '"';
+              }
+              
+              // Add missing brackets
+              for (let i = 0; i < openBrackets - closeBrackets; i++) {
+                fixedContent += ']';
+              }
+              
+              // Add missing braces
+              for (let i = 0; i < openBraces - closeBraces; i++) {
+                fixedContent += '}';
+              }
+              
+              try {
+                const truncatedAttempt = JSON.parse(fixedContent);
+                console.log('[PerplexityService] Successfully fixed and parsed truncated JSON');
+                
+                // Extract and format materials from the activity
+                const parsedActivity = this.parseMaterialsFromActivity(truncatedAttempt);
+                return parsedActivity;
+              } catch (truncError) {
+                console.log('[PerplexityService] Failed to fix truncated JSON, trying final fallback');
+              }
+            }
+            
+            // Final attempt - remove problematic quotes altogether
+            console.log('[PerplexityService] Trying final approach - removing problematic quotes');
             
             // Replace strings that have quotes at the beginning followed by text
             cleanedContent = cleanedContent.replace(/"'([^:]+)':\s*([^"]*?)"/g, '"$1 - $2"');
