@@ -113,8 +113,7 @@ Create a PHOTOREALISTIC image that looks like an actual photograph taken in a re
             model: "dall-e-3",
             prompt: imagePrompt,
             size: "1024x1024",
-            quality: "standard",
-            style: "vivid", // 'vivid' produces photo-realistic images like ChatGPT
+            quality: "hd", // Use hd quality for best results
             n: 1,
           }),
         },

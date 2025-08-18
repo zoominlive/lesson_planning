@@ -46,7 +46,7 @@ class ImagePromptGenerationService {
 
 ${context.activityTitle} - ${context.activityDescription}
 
-Be sure to start the prompt you write with "A bright, photo-realistic ${setting} depicting"`;
+Be sure to start the prompt you write with "A bright, photo-realistic ${setting} depicting" and include these keywords somewhere in your prompt: DSLR photo, ultra-realistic, natural light, shallow depth of field, cinematic detail`;
       
       console.log('[ImagePromptGeneration] Requesting prompt from Perplexity for:', context.type);
       
@@ -113,8 +113,7 @@ Be sure to start the prompt you write with "A bright, photo-realistic ${setting}
         prompt: prompt,
         n: 1,
         size: "1024x1024",
-        quality: "standard",
-        style: "vivid" // Use vivid style for photo-realistic images like ChatGPT
+        quality: "hd" // Use hd quality for best results
       });
 
       const imageUrl = response.data?.[0]?.url;
@@ -163,8 +162,8 @@ Be sure to start the prompt you write with "A bright, photo-realistic ${setting}
     const isOutdoor = context.spaceRequired?.toLowerCase().includes('outdoor');
     const setting = isOutdoor ? 'childcare playground' : 'childcare classroom';
     
-    // Simple fallback prompt following the same pattern
-    const prompt = `A bright, photo-realistic ${setting} depicting ${context.activityTitle} - ${context.activityDescription}`;
+    // Simple fallback prompt following the same pattern with photo-realistic keywords
+    const prompt = `A bright, photo-realistic ${setting} depicting ${context.activityTitle} - ${context.activityDescription}. DSLR photo, ultra-realistic, natural light, shallow depth of field, cinematic detail`;
 
     return {
       prompt,

@@ -13,7 +13,11 @@ This project is a comprehensive lesson planning application for early childhood 
   - **Initial version**: Created dedicated `imagePromptGenerationService` with complex prompt engineering
   - **Simplified version**: Streamlined to pass simple, direct prompt to Perplexity: "Write me prompt for dall e 3 to make me a picture of the following activity [Activity Name - Activity Description] Be sure to start the prompt you write with 'A bright, photo-realistic childcare classroom/playground depicting'"
   - Automatically uses "childcare playground" for outdoor activities, "childcare classroom" for indoor
-  - **Critical fix**: Changed DALL-E 3 style parameter from "natural" to "vivid" to produce photo-realistic images like ChatGPT (natural produces cartoon-like 3D renders)
+  - **Critical fix**: Corrected DALL-E 3 API parameters based on official documentation:
+    - Removed `style` parameter (doesn't exist in API, only in ChatGPT interface)
+    - Changed `quality: "standard"` to `quality: "hd"` for best results
+    - Added photo-realistic keywords to prompts: "DSLR photo, ultra-realistic, natural light, shallow depth of field, cinematic detail"
+    - Note: The API only supports `quality` (standard/hd) and doesn't have a `style` parameter
   - Handles activity and step images separately with different context
   - All prompts start with "A bright, photo-realistic childcare classroom depicting" for consistency
   - Includes age group, category, and space requirements in prompt context
