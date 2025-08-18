@@ -42,7 +42,29 @@ class ImagePromptGenerationService {
       const setting = isOutdoor ? 'childcare playground' : 'childcare classroom';
       
       // Build enhanced prompt request for Perplexity using realistic constraints
-      const perplexityPrompt = `Write me a prompt for DALL-E 3 to create a professional photograph of the following activity:
+      let perplexityPrompt: string;
+      
+      if (context.type === 'step' && context.stepNumber && context.stepText) {
+        // For step images, emphasize consistency with the main activity image
+        perplexityPrompt = `Write me a prompt for DALL-E 3 to create a CONSISTENT professional photograph showing Step ${context.stepNumber} of an activity.
+
+Activity: ${context.activityTitle} - ${context.activityDescription}
+Step ${context.stepNumber}: ${context.stepText}
+
+CRITICAL CONSISTENCY REQUIREMENTS:
+- This is part of a series of educational images that MUST maintain the exact same visual style
+- Use the EXACT SAME photographic style: Ultra-realistic DSLR photograph
+- Use the EXACT SAME setting: cozy, normal-sized ${setting}
+- Show the EXACT SAME realistic constraints: 6-10 children, normal 7-8 foot windows, 20x30 feet room
+- Use the EXACT SAME camera settings: 35mm lens, shallow depth of field, natural lighting
+
+Your prompt MUST follow this EXACT structure:
+"Ultra-realistic DSLR photograph of a cozy, normal-sized ${setting}. Shows 6-8 children engaged in Step ${context.stepNumber}: [describe the specific step action]. Standard classroom with normal-height windows, realistic proportions. Consistent educational photography style. Sharp realistic textures, natural lighting, professional color grading. Shallow depth of field focusing on the step action. Shot with 35mm lens for natural perspective. Maintains visual continuity with activity series."
+
+Make it look like part of the same photo shoot as the main activity image.`;
+      } else {
+        // For main activity images
+        perplexityPrompt = `Write me a prompt for DALL-E 3 to create a professional photograph of the following activity:
 
 ${context.activityTitle} - ${context.activityDescription}
 
@@ -62,6 +84,7 @@ Use this exact structure for your prompt:
    - "Shot with 35mm lens for natural perspective, not wide-angle distortion."
 
 Make it realistic and believable, like a photo from an actual childcare center.`;
+      }
       
       console.log('[ImagePromptGeneration] Requesting prompt from Perplexity for:', context.type);
       
@@ -177,8 +200,15 @@ Make it realistic and believable, like a photo from an actual childcare center.`
     const isOutdoor = context.spaceRequired?.toLowerCase().includes('outdoor');
     const setting = isOutdoor ? 'childcare playground' : 'childcare classroom';
     
-    // Enhanced fallback prompt with realistic constraints
-    const prompt = `Ultra-realistic DSLR photograph of a cozy, normal-sized ${setting}. Shows exactly 6-10 children engaged in: ${context.activityDescription}. Standard classroom with normal-height windows (7-8 feet tall), realistic proportions (20x30 feet room). Sharp realistic textures, natural lighting, professional color grading. Shallow depth of field with focus on children's activities, background softly blurred. Joyful but realistic expressions. Shot with 35mm lens for natural perspective, avoiding wide-angle distortion. Photorealistic detail like an actual childcare center photo.`;
+    let prompt: string;
+    
+    if (context.type === 'step' && context.stepNumber && context.stepText) {
+      // Step image fallback with consistency emphasis
+      prompt = `Ultra-realistic DSLR photograph of a cozy, normal-sized ${setting}. Shows 6-8 children engaged in Step ${context.stepNumber}: ${context.stepText}. Standard classroom with normal-height windows (7-8 feet tall), realistic proportions (20x30 feet room). Consistent educational photography style maintaining visual continuity with activity series. Sharp realistic textures, natural lighting, professional color grading. Shallow depth of field focusing on the specific step action. Shot with 35mm lens for natural perspective. Photorealistic detail matching the style of the main activity image.`;
+    } else {
+      // Main activity image fallback
+      prompt = `Ultra-realistic DSLR photograph of a cozy, normal-sized ${setting}. Shows exactly 6-10 children engaged in: ${context.activityDescription}. Standard classroom with normal-height windows (7-8 feet tall), realistic proportions (20x30 feet room). Sharp realistic textures, natural lighting, professional color grading. Shallow depth of field with focus on children's activities, background softly blurred. Joyful but realistic expressions. Shot with 35mm lens for natural perspective, avoiding wide-angle distortion. Photorealistic detail like an actual childcare center photo.`;
+    }
 
     return {
       prompt,
