@@ -103,10 +103,14 @@ export default function AiActivityGenerator({
           });
         } else if (response.status === 400 && result.reason) {
           // Validation error from content safety check
-          setErrorModal({
-            open: true,
+          // Go back to step 5 where user can edit activity type and focus material
+          setStep(5);
+          // Show error in a toast so they understand what needs to be changed
+          toast({
             title: "Content Not Appropriate",
-            message: result.reason || result.error || "The requested content is not appropriate for early childhood education."
+            description: result.reason || result.error || "The requested content is not appropriate for early childhood education. Please modify your activity type or focus material.",
+            variant: "destructive",
+            duration: 10000 // Show for 10 seconds so they have time to read it
           });
         } else if (response.status === 503 && result.reason && result.reason.includes('validation')) {
           // Validation service unavailable
