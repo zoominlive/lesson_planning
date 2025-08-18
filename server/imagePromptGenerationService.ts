@@ -114,7 +114,7 @@ Be sure to start the prompt you write with "A bright, photo-realistic ${setting}
         n: 1,
         size: "1024x1024",
         quality: "standard",
-        style: "natural" // Use natural style for photo-realistic images
+        style: "vivid" // Use vivid style for photo-realistic images like ChatGPT
       });
 
       const imageUrl = response.data?.[0]?.url;

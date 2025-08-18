@@ -114,7 +114,7 @@ Create a PHOTOREALISTIC image that looks like an actual photograph taken in a re
             prompt: imagePrompt,
             size: "1024x1024",
             quality: "standard",
-            style: "natural", // 'natural' produces more realistic, professional images
+            style: "vivid", // 'vivid' produces photo-realistic images like ChatGPT
             n: 1,
           }),
         },
