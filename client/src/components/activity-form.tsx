@@ -104,6 +104,8 @@ export default function ActivityForm({
   const [expandedImageTitle, setExpandedImageTitle] = useState<string>("Activity Image"); // Title for expanded image
   const [showVideoModal, setShowVideoModal] = useState(false); // For video modal
   const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null); // For video thumbnail
+  const [editableMaterialName, setEditableMaterialName] = useState<string>(""); // For editing material name in quick add
+  const [editableMaterialQuantity, setEditableMaterialQuantity] = useState<string>(""); // For editing material quantity in quick add
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -691,6 +693,9 @@ export default function ActivityForm({
     setQuickAddDialogOpen(true);
     setStorageLocation("");
     setBatchProcessMode(false);
+    // Set initial values for editable fields
+    setEditableMaterialName(material.name || "");
+    setEditableMaterialQuantity(material.quantity || "");
   };
 
   const createMaterialFromSuggestion = async (
@@ -846,11 +851,27 @@ export default function ActivityForm({
       return;
     }
 
+    if (!editableMaterialName.trim()) {
+      toast({
+        title: "Material name required",
+        description: "Please enter a name for this material",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setProcessingQuickAdd(true);
     try {
+      // Create a modified material object with the edited values
+      const materialToAdd = {
+        ...currentQuickAddMaterial,
+        name: editableMaterialName.trim(),
+        quantity: editableMaterialQuantity.trim() || currentQuickAddMaterial.quantity,
+      };
+
       console.log("[QuickAdd] Submitting material with collection ID:", activityCollectionId);
       const result = await createMaterialFromSuggestion(
-        currentQuickAddMaterial,
+        materialToAdd,
         storageLocation,
         activityCollectionId || undefined,
       );
@@ -863,7 +884,7 @@ export default function ActivityForm({
 
       toast({
         title: "Material added",
-        description: `${currentQuickAddMaterial.name} has been added to your materials library`,
+        description: `${editableMaterialName} has been added to your materials library`,
       });
 
       // After first material, ask if they want to add ALL remaining materials
@@ -877,6 +898,9 @@ export default function ActivityForm({
         setRemainingMaterials(nextMaterials);
         setCurrentQuickAddMaterial(nextMaterials[0]);
         setStorageLocation("");
+        // Reset editable fields for the next material
+        setEditableMaterialName(nextMaterials[0].name || "");
+        setEditableMaterialQuantity(nextMaterials[0].quantity || "");
       } else {
         // All done
         setQuickAddDialogOpen(false);
@@ -2203,6 +2227,9 @@ export default function ActivityForm({
                     onClick={() => {
                       setCurrentQuickAddMaterial(remainingMaterials[0]);
                       setStorageLocation("");
+                      // Set initial values for editable fields
+                      setEditableMaterialName(remainingMaterials[0].name || "");
+                      setEditableMaterialQuantity(remainingMaterials[0].quantity || "");
                     }}
                     disabled={processingQuickAdd}
                     className="w-full"
@@ -2229,24 +2256,43 @@ export default function ActivityForm({
           {/* Individual material add */}
           {currentQuickAddMaterial && (
             <div className="space-y-4">
-              <div className="bg-gray-50 p-3 rounded-md space-y-2">
-                <p className="font-medium text-sm">
-                  {currentQuickAddMaterial.name}
-                </p>
+              <div className="bg-gray-50 p-3 rounded-md space-y-3">
+                {/* Editable Material Name */}
+                <div className="space-y-1">
+                  <Label htmlFor="material-name" className="text-xs font-medium">Material Name</Label>
+                  <Input
+                    id="material-name"
+                    value={editableMaterialName}
+                    onChange={(e) => setEditableMaterialName(e.target.value)}
+                    placeholder="Enter material name"
+                    className="h-8 text-sm"
+                  />
+                </div>
+
+                {/* Editable Quantity */}
+                <div className="space-y-1">
+                  <Label htmlFor="material-quantity" className="text-xs font-medium">Quantity</Label>
+                  <Input
+                    id="material-quantity"
+                    value={editableMaterialQuantity}
+                    onChange={(e) => setEditableMaterialQuantity(e.target.value)}
+                    placeholder="e.g., 10 pieces, 1 box, Multiple cards"
+                    className="h-8 text-sm"
+                  />
+                </div>
+
+                {/* Description if exists */}
                 {currentQuickAddMaterial.description && (
                   <p className="text-xs text-gray-600">
                     {currentQuickAddMaterial.description}
                   </p>
                 )}
+
+                {/* Category badge */}
                 <div className="flex gap-2 text-xs">
                   <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
                     {currentQuickAddMaterial.category || "General Supplies"}
                   </span>
-                  {currentQuickAddMaterial.quantity && (
-                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full">
-                      Qty: {currentQuickAddMaterial.quantity}
-                    </span>
-                  )}
                 </div>
               </div>
 
@@ -2294,7 +2340,7 @@ export default function ActivityForm({
                 <Button
                   type="button"
                   onClick={handleQuickAddSubmit}
-                  disabled={processingQuickAdd || !storageLocation.trim()}
+                  disabled={processingQuickAdd || !storageLocation.trim() || !editableMaterialName.trim()}
                 >
                   {processingQuickAdd ? "Adding..." : "Add Material"}
                 </Button>
