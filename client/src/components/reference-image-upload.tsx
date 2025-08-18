@@ -169,9 +169,14 @@ export default function ReferenceImageUpload({ onStyleSet, className }: Referenc
               
               <div className="flex gap-2">
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
                   disabled={isUploading}
                   className="flex-1"
                 >
@@ -179,9 +184,14 @@ export default function ReferenceImageUpload({ onStyleSet, className }: Referenc
                   Change
                 </Button>
                 <Button
+                  type="button"
                   variant="destructive"
                   size="sm"
-                  onClick={clearStyle}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    clearStyle();
+                  }}
                   disabled={isUploading}
                   className="flex-1"
                 >
@@ -192,8 +202,13 @@ export default function ReferenceImageUpload({ onStyleSet, className }: Referenc
             </div>
           ) : (
             <Button
+              type="button"
               variant="outline"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
               disabled={isUploading}
               className="w-full"
             >
