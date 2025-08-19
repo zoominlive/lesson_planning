@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Check, Package, FolderOpen, Sparkles } from "lucide-react";
+import { Plus, Edit, Trash2, Package, FolderOpen, Sparkles } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import MaterialForm from "./material-form";
@@ -14,6 +15,7 @@ import CollectionsManager from "./collections-manager";
 import type { Material } from "@shared/schema";
 
 export default function MaterialsLibrary() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [ageGroupFilter, setAgeGroupFilter] = useState("all");
   const [selectedCollectionId, setSelectedCollectionId] = useState("all");
@@ -115,9 +117,26 @@ export default function MaterialsLibrary() {
     setEditingMaterial(material);
   };
 
-  const handleUse = (material: Material) => {
-    // TODO: Implement material usage tracking
-    console.log("Use material:", material.name);
+  const handleDelete = async (material: Material) => {
+    if (!confirm(`Are you sure you want to delete "${material.name}"?`)) {
+      return;
+    }
+    
+    try {
+      await apiRequest("DELETE", `/api/materials/${material.id}`);
+      queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
+      toast({
+        title: "Material deleted",
+        description: `"${material.name}" has been deleted successfully.`,
+      });
+    } catch (error) {
+      console.error("Failed to delete material:", error);
+      toast({
+        title: "Failed to delete material",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleImageError = (materialId: string) => {
@@ -279,8 +298,8 @@ export default function MaterialsLibrary() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {filteredMaterials.map((material) => (
-            <Card key={material.id} className="material-shadow overflow-hidden material-shadow-hover">
-              <div className="relative h-40 bg-gradient-to-br from-turquoise to-sky-blue">
+            <Card key={material.id} className="material-shadow overflow-hidden material-shadow-hover flex flex-col">
+              <div className="relative h-40 bg-gradient-to-br from-turquoise to-sky-blue flex-shrink-0">
                 {material.photoUrl && !failedImages.has(material.id) ? (
                   <img 
                     src={material.photoUrl} 
@@ -308,7 +327,7 @@ export default function MaterialsLibrary() {
                 )}
               </div>
               
-              <CardContent className="p-4">
+              <CardContent className="p-4 flex flex-col flex-grow">
                 <h3 className="font-bold text-charcoal mb-2" data-testid={`material-name-${material.id}`}>
                   {material.name}
                 </h3>
@@ -316,7 +335,7 @@ export default function MaterialsLibrary() {
                   {material.description}
                 </p>
                 
-                <div className="space-y-2 mb-3">
+                <div className="space-y-2 mb-3 flex-grow">
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-500">Age Groups:</span>
                     <span className="font-medium text-right" data-testid={`material-age-groups-${material.id}`}>
@@ -337,7 +356,7 @@ export default function MaterialsLibrary() {
                   </div>
                 </div>
                 
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 mt-auto">
                   <Button 
                     variant="outline"
                     size="sm"
@@ -352,11 +371,11 @@ export default function MaterialsLibrary() {
                     variant="outline"
                     size="sm"
                     className="flex-1"
-                    onClick={() => handleUse(material)}
-                    data-testid={`button-use-material-${material.id}`}
+                    onClick={() => handleDelete(material)}
+                    data-testid={`button-delete-material-${material.id}`}
                   >
-                    <Check className="mr-1 h-3 w-3" />
-                    Use
+                    <Trash2 className="mr-1 h-3 w-3" />
+                    Delete
                   </Button>
                 </div>
               </CardContent>

@@ -780,7 +780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const materialDescription = description || prompt || '';
       
       const result = await imagePromptGenerationService.generateActivityImage({
-        type: 'material',
+        type: 'activity',
         activityTitle: materialName,
         activityDescription: `Educational classroom material or supply: ${materialDescription}. Show the actual physical item clearly, suitable for a childcare classroom inventory.`,
         // Don't include age group or category for materials
