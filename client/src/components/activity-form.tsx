@@ -687,10 +687,22 @@ export default function ActivityForm({
       return;
     }
     
+    // Filter out materials that are already in the library
+    const materialsToAdd = allMaterials.filter((m) => {
+      // Skip the current material being handled
+      if (m === material) return false;
+      // Skip materials that are already existing in the library
+      if (m.isExisting) return false;
+      // Skip materials that have already been added
+      const mKey = `${m.name}-${m.category || "General"}`;
+      if (addedMaterials.has(mKey)) return false;
+      return true;
+    });
+    
     // Reset collection ID when starting a new quick add session
     setActivityCollectionId(null);
     setCurrentQuickAddMaterial(material);
-    setRemainingMaterials(allMaterials.filter((m) => m !== material));
+    setRemainingMaterials(materialsToAdd);
     setQuickAddDialogOpen(true);
     setStorageLocation("");
     setBatchProcessMode(false);
@@ -845,9 +857,21 @@ export default function ActivityForm({
         throw new Error("No location selected for this activity");
       }
 
-      // Create all materials first
-      const createdMaterialIds = [];
+      // Separate existing materials from new materials
+      const existingMaterialsToAdd = [];
+      const newMaterialsToCreate = [];
+      
       for (const material of remainingMaterials) {
+        if (material.isExisting && material.existingMaterialId) {
+          existingMaterialsToAdd.push(material.existingMaterialId);
+        } else {
+          newMaterialsToCreate.push(material);
+        }
+      }
+
+      // Create new materials
+      const createdMaterialIds = [];
+      for (const material of newMaterialsToCreate) {
         const materialData = {
           name: material.name,
           description:
@@ -876,15 +900,23 @@ export default function ActivityForm({
         setAddedMaterials((prev) => new Set(Array.from(prev).concat(materialKey)));
       }
 
+      // Add existing materials to selected materials
+      for (const existingId of existingMaterialsToAdd) {
+        setSelectedMaterials((prev) => [...prev, existingId]);
+      }
+
+      // Combine all material IDs to add to collection
+      const allMaterialIds = [...createdMaterialIds, ...existingMaterialsToAdd];
+
       // Now add all materials to the collection in one call
-      if (createdMaterialIds.length > 0) {
-        console.log("[QuickAdd Batch] Adding all materials to collection:", collectionId, createdMaterialIds);
+      if (allMaterialIds.length > 0) {
+        console.log("[QuickAdd Batch] Adding all materials to collection:", collectionId, allMaterialIds);
         try {
           await apiRequest(
             "POST",
             `/api/material-collections/${collectionId}/materials`,
             {
-              materialIds: createdMaterialIds,
+              materialIds: allMaterialIds,
             },
           );
           console.log("[QuickAdd Batch] Successfully added all materials to collection");
@@ -893,9 +925,10 @@ export default function ActivityForm({
         }
       }
 
+      const totalAdded = createdMaterialIds.length + existingMaterialsToAdd.length;
       toast({
-        title: `${remainingMaterials.length} materials added`,
-        description: `All materials have been added to the "${activityTitle}" collection`,
+        title: `${totalAdded} materials processed`,
+        description: `${createdMaterialIds.length} new materials created and ${existingMaterialsToAdd.length} existing materials added to the "${activityTitle}" collection`,
       });
 
       setQuickAddDialogOpen(false);
@@ -916,6 +949,77 @@ export default function ActivityForm({
   };
 
   const handleQuickAddSubmit = async () => {
+    // Check if this is an existing material
+    if (currentQuickAddMaterial.isExisting && currentQuickAddMaterial.existingMaterialId) {
+      // For existing materials, just add to collection and select
+      setProcessingQuickAdd(true);
+      try {
+        const activityTitle = watch("title") || initialData?.title || "Activity";
+        
+        // Create or get collection
+        let collectionId = activityCollectionId;
+        if (!collectionId) {
+          const collectionResponse = await apiRequest(
+            "POST",
+            "/api/material-collections",
+            {
+              name: activityTitle,
+              description: `Materials for ${activityTitle} activity`,
+            },
+          );
+          collectionId = collectionResponse.id;
+          setActivityCollectionId(collectionId);
+        }
+        
+        // Add existing material to collection
+        await apiRequest(
+          "POST",
+          `/api/material-collections/${collectionId}/materials`,
+          {
+            materialIds: [currentQuickAddMaterial.existingMaterialId],
+          },
+        );
+        
+        // Add to selected materials
+        setSelectedMaterials((prev) => [...prev, currentQuickAddMaterial.existingMaterialId]);
+        
+        toast({
+          title: "Material selected",
+          description: `${currentQuickAddMaterial.existingMaterialName} has been added to the activity`,
+        });
+        
+        // Continue with next material if any
+        if (remainingMaterials.length > 0) {
+          if (!batchProcessMode) {
+            setBatchProcessMode(true);
+            setCurrentQuickAddMaterial(null);
+            setStorageLocation("");
+          } else if (remainingMaterials.length > 1) {
+            const nextMaterials = remainingMaterials.slice(1);
+            setRemainingMaterials(nextMaterials);
+            setCurrentQuickAddMaterial(nextMaterials[0]);
+            setStorageLocation("");
+            setEditableMaterialName(nextMaterials[0].name || "");
+            setEditableMaterialQuantity(nextMaterials[0].quantity || "");
+          } else {
+            setQuickAddDialogOpen(false);
+          }
+        } else {
+          setQuickAddDialogOpen(false);
+        }
+      } catch (error) {
+        toast({
+          title: "Failed to add material",
+          description: error instanceof Error ? error.message : "Unknown error",
+          variant: "destructive",
+        });
+      } finally {
+        setProcessingQuickAdd(false);
+      }
+      return;
+    }
+
+    // For new materials, require storage location
     if (!storageLocation.trim()) {
       toast({
         title: "Storage location required",
@@ -2270,9 +2374,11 @@ export default function ActivityForm({
                     You've successfully added the first material!
                   </p>
                   <p className="text-sm text-gray-600">
-                    {remainingMaterials.length} material
-                    {remainingMaterials.length !== 1 ? "s" : ""} remaining. How
-                    would you like to proceed?
+                    {remainingMaterials.filter(m => !m.isExisting).length} new material
+                    {remainingMaterials.filter(m => !m.isExisting).length !== 1 ? "s" : ""} to create
+                    {remainingMaterials.filter(m => m.isExisting).length > 0 && 
+                      ` and ${remainingMaterials.filter(m => m.isExisting).length} existing material${remainingMaterials.filter(m => m.isExisting).length !== 1 ? "s" : ""} to add to collection`
+                    }. How would you like to proceed?
                   </p>
                   {currentLocation && (
                     <p className="text-xs text-blue-700 mt-2">
@@ -2339,63 +2445,91 @@ export default function ActivityForm({
           {/* Individual material add */}
           {currentQuickAddMaterial && (
             <div className="space-y-4">
-              <div className="bg-gray-50 p-3 rounded-md space-y-3">
-                {/* Editable Material Name */}
-                <div className="space-y-1">
-                  <Label htmlFor="material-name" className="text-xs font-medium">Material Name</Label>
-                  <Input
-                    id="material-name"
-                    value={editableMaterialName}
-                    onChange={(e) => setEditableMaterialName(e.target.value)}
-                    placeholder="Enter material name"
-                    className="h-8 text-sm"
-                  />
-                </div>
+              {/* Show different UI for existing materials */}
+              {currentQuickAddMaterial.isExisting ? (
+                <>
+                  <div className="bg-blue-50 p-3 rounded-md space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-blue-900">
+                        {currentQuickAddMaterial.existingMaterialName}
+                      </span>
+                      <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                        Already in library
+                      </span>
+                    </div>
+                    <p className="text-xs text-blue-700">
+                      This material is already in your library. Would you like to select it for this activity and add it to the collection?
+                    </p>
+                    {currentQuickAddMaterial.existingMaterialCategory && (
+                      <div className="flex gap-2 text-xs">
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                          {currentQuickAddMaterial.existingMaterialCategory}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="bg-gray-50 p-3 rounded-md space-y-3">
+                    {/* Editable Material Name */}
+                    <div className="space-y-1">
+                      <Label htmlFor="material-name" className="text-xs font-medium">Material Name</Label>
+                      <Input
+                        id="material-name"
+                        value={editableMaterialName}
+                        onChange={(e) => setEditableMaterialName(e.target.value)}
+                        placeholder="Enter material name"
+                        className="h-8 text-sm"
+                      />
+                    </div>
 
-                {/* Editable Quantity */}
-                <div className="space-y-1">
-                  <Label htmlFor="material-quantity" className="text-xs font-medium">Quantity</Label>
-                  <Input
-                    id="material-quantity"
-                    value={editableMaterialQuantity}
-                    onChange={(e) => setEditableMaterialQuantity(e.target.value)}
-                    placeholder="e.g., 10 pieces, 1 box, Multiple cards"
-                    className="h-8 text-sm"
-                  />
-                </div>
+                    {/* Editable Quantity */}
+                    <div className="space-y-1">
+                      <Label htmlFor="material-quantity" className="text-xs font-medium">Quantity</Label>
+                      <Input
+                        id="material-quantity"
+                        value={editableMaterialQuantity}
+                        onChange={(e) => setEditableMaterialQuantity(e.target.value)}
+                        placeholder="e.g., 10 pieces, 1 box, Multiple cards"
+                        className="h-8 text-sm"
+                      />
+                    </div>
 
-                {/* Description if exists */}
-                {currentQuickAddMaterial.description && (
-                  <p className="text-xs text-gray-600">
-                    {currentQuickAddMaterial.description}
-                  </p>
-                )}
+                    {/* Description if exists */}
+                    {currentQuickAddMaterial.description && (
+                      <p className="text-xs text-gray-600">
+                        {currentQuickAddMaterial.description}
+                      </p>
+                    )}
 
-                {/* Category badge */}
-                <div className="flex gap-2 text-xs">
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-                    {currentQuickAddMaterial.category || "General Supplies"}
-                  </span>
-                </div>
-              </div>
+                    {/* Category badge */}
+                    <div className="flex gap-2 text-xs">
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                        {currentQuickAddMaterial.category || "General Supplies"}
+                      </span>
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="storage-location">Storage Location</Label>
-                <Input
-                  id="storage-location"
-                  placeholder="e.g., Art Cabinet A, Supply Closet 2, etc."
-                  value={storageLocation}
-                  onChange={(e) => setStorageLocation(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && storageLocation.trim()) {
-                      handleQuickAddSubmit();
-                    }
-                  }}
-                />
-                <p className="text-xs text-gray-500">
-                  Where will this material be stored {currentLocation ? `at ${currentLocation.name}` : "in your facility"}?
-                </p>
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="storage-location">Storage Location</Label>
+                    <Input
+                      id="storage-location"
+                      placeholder="e.g., Art Cabinet A, Supply Closet 2, etc."
+                      value={storageLocation}
+                      onChange={(e) => setStorageLocation(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && storageLocation.trim()) {
+                          handleQuickAddSubmit();
+                        }
+                      }}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Where will this material be stored {currentLocation ? `at ${currentLocation.name}` : "in your facility"}?
+                    </p>
+                  </div>
+                </>
+              )}
 
               {batchProcessMode && remainingMaterials.length > 1 && (
                 <div className="bg-blue-50 p-3 rounded-md">
@@ -2423,9 +2557,10 @@ export default function ActivityForm({
                 <Button
                   type="button"
                   onClick={handleQuickAddSubmit}
-                  disabled={processingQuickAdd || !storageLocation.trim() || !editableMaterialName.trim()}
+                  disabled={processingQuickAdd || (!currentQuickAddMaterial.isExisting && (!storageLocation.trim() || !editableMaterialName.trim()))}
                 >
-                  {processingQuickAdd ? "Adding..." : "Add Material"}
+                  {processingQuickAdd ? (currentQuickAddMaterial.isExisting ? "Selecting..." : "Adding...") : 
+                   (currentQuickAddMaterial.isExisting ? "Select Material" : "Add Material")}
                 </Button>
               </DialogFooter>
             </div>
