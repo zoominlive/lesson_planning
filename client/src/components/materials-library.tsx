@@ -289,12 +289,12 @@ export default function MaterialsLibrary() {
                     onError={() => handleImageError(material.id)}
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-white p-4">
-                    <Sparkles className="h-10 w-10 mb-2" />
-                    <p className="text-sm font-medium text-center">
+                  <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-purple-100 to-pink-100">
+                    <Sparkles className="h-10 w-10 mb-2 text-purple-600" />
+                    <p className="text-sm font-medium text-center text-gray-700">
                       No image yet
                     </p>
-                    <p className="text-xs text-white/90 text-center mt-1">
+                    <p className="text-xs text-gray-600 text-center mt-1">
                       Click Edit to add or generate with AI
                     </p>
                   </div>
