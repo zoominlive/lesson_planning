@@ -34,6 +34,7 @@ interface WeeklyCalendarProps {
   currentWeekDate?: Date;
   currentLessonPlan?: any;
   isReviewMode?: boolean;
+  targetLessonPlanId?: string;
 }
 
 // Convert numbers to written words
@@ -96,7 +97,7 @@ const generateWeekDays = (weekStartDate: Date) => {
   return days;
 };
 
-export default function WeeklyCalendar({ selectedLocation, selectedRoom, currentWeekDate, currentLessonPlan, isReviewMode = false }: WeeklyCalendarProps) {
+export default function WeeklyCalendar({ selectedLocation, selectedRoom, currentWeekDate, currentLessonPlan, isReviewMode = false, targetLessonPlanId }: WeeklyCalendarProps) {
   // Ensure we're working with the correct date in local timezone
   const weekStartDate = currentWeekDate ? new Date(currentWeekDate.getFullYear(), currentWeekDate.getMonth(), currentWeekDate.getDate()) : startOfWeek(new Date(), { weekStartsOn: 1 });
   const weekDays = generateWeekDays(weekStartDate);
@@ -169,17 +170,21 @@ export default function WeeklyCalendar({ selectedLocation, selectedRoom, current
 
   // Fetch scheduled activities for the current room and week
   const { data: scheduledActivities = [] } = useQuery<any[]>({
-    queryKey: ["/api/scheduled-activities", selectedRoom, weekStartDate.toISOString(), selectedLocation],
+    queryKey: ["/api/scheduled-activities", selectedRoom, weekStartDate.toISOString(), selectedLocation, targetLessonPlanId],
     queryFn: async () => {
       const token = localStorage.getItem('authToken');
-      const response = await fetch(
-        `/api/scheduled-activities/${selectedRoom}?weekStart=${encodeURIComponent(weekStartDate.toISOString())}&locationId=${encodeURIComponent(selectedLocation)}`,
-        {
-          headers: {
-            ...(token && { 'Authorization': `Bearer ${token}` }),
-          },
-        }
-      );
+      let url = `/api/scheduled-activities/${selectedRoom}?weekStart=${encodeURIComponent(weekStartDate.toISOString())}&locationId=${encodeURIComponent(selectedLocation)}`;
+      
+      // Add targetLessonPlanId to the query if provided (e.g., when revising a rejected plan)
+      if (targetLessonPlanId) {
+        url += `&lessonPlanId=${encodeURIComponent(targetLessonPlanId)}`;
+      }
+      
+      const response = await fetch(url, {
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      });
       if (!response.ok) throw new Error('Failed to fetch scheduled activities');
       return response.json();
     },

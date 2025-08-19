@@ -53,6 +53,7 @@ export default function LessonPlanner() {
   const [selectedLocation, setSelectedLocation] = useState("");
   const [location, setLocation] = useLocation();
   const [showCopyModal, setShowCopyModal] = useState(false);
+  const [targetLessonPlanId, setTargetLessonPlanId] = useState<string | undefined>(undefined);
   const { toast } = useToast();
 
   // Check for tab query parameter
@@ -361,8 +362,17 @@ export default function LessonPlanner() {
     },
   });
 
-  const handleWeekChange = (newDate: Date) => {
+  const handleWeekChange = (newDate: Date, lessonPlanId?: string) => {
     setCurrentWeekDate(newDate);
+    // Set the target lesson plan ID when navigating from a notification
+    setTargetLessonPlanId(lessonPlanId);
+    
+    // Clear the target lesson plan ID after a short delay to allow it to be used
+    if (lessonPlanId) {
+      setTimeout(() => {
+        setTargetLessonPlanId(undefined);
+      }, 1000);
+    }
   };
 
   const handleSubmitToSupervisor = () => {
@@ -421,7 +431,7 @@ export default function LessonPlanner() {
       <div className="mb-6">
         <NotificationCarousel
           currentWeekDate={currentWeekDate}
-          onWeekChange={setCurrentWeekDate}
+          onWeekChange={handleWeekChange}
         />
       </div>
 
@@ -511,6 +521,7 @@ export default function LessonPlanner() {
           selectedRoom={selectedRoom}
           currentWeekDate={currentWeekDate}
           currentLessonPlan={currentLessonPlan}
+          targetLessonPlanId={targetLessonPlanId}
         />
       </NavigationTabs>
 

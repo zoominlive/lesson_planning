@@ -36,7 +36,7 @@ import "react-day-picker/dist/style.css";
 interface CalendarControlsProps {
   currentWeekDate: Date;
   selectedRoom: string;
-  onWeekChange: (date: Date) => void;
+  onWeekChange: (date: Date, lessonPlanId?: string) => void;
   onRoomChange: (room: string) => void;
   onSubmitToSupervisor: () => void;
   onLocationChange?: (locationId: string) => void;

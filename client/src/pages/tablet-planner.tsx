@@ -281,7 +281,10 @@ export default function TabletPlanner() {
         <div className="px-4 py-1 bg-white/50">
           <NotificationCarousel 
             currentWeekDate={currentWeekDate}
-            onWeekChange={setCurrentWeekDate}
+            onWeekChange={(date, lessonPlanId) => {
+              setCurrentWeekDate(date);
+              // Note: If needed, we could also track the lessonPlanId here for tablet view
+            }}
           />
         </div>
       )}

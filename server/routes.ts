@@ -1656,16 +1656,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/scheduled-activities/:roomId", async (req: AuthenticatedRequest, res) => {
     try {
       const { roomId } = req.params;
-      const { weekStart, locationId } = req.query;
+      const { weekStart, locationId, lessonPlanId } = req.query;
       
-      console.log('[GET /api/scheduled-activities] Params:', { roomId, weekStart, locationId });
+      console.log('[GET /api/scheduled-activities] Params:', { roomId, weekStart, locationId, lessonPlanId });
       
       // Get all scheduled activities for this room
       const allScheduledActivities = await storage.getAllScheduledActivities();
       
       // Filter lesson plans by week, location, and room if weekStart is provided
       let lessonPlanIds: string[] = [];
-      if (weekStart && locationId) {
+      
+      // If a specific lessonPlanId is provided (e.g., when revising a rejected plan), use it directly
+      if (lessonPlanId) {
+        lessonPlanIds = [lessonPlanId as string];
+        console.log('[GET /api/scheduled-activities] Using specific lesson plan ID:', lessonPlanId);
+      } else if (weekStart && locationId) {
         // Get tenant settings to determine current schedule type for this location
         const orgSettings = await storage.getTenantSettings();
         let currentScheduleType: 'time-based' | 'position-based' = 'time-based'; // default
