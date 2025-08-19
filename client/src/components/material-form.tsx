@@ -124,6 +124,13 @@ export default function MaterialForm({
     }
   }, [materialCollections]);
 
+  // Reset image error state when photoUrl changes
+  useEffect(() => {
+    if (photoUrl) {
+      setImageLoadError(false);
+    }
+  }, [photoUrl]);
+
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
       // First create the material
@@ -257,10 +264,11 @@ export default function MaterialForm({
       const result = await response.json();
       setPhotoUrl(result.url);
       setValue("photoUrl", result.url);
+      setImageLoadError(false); // Reset error state when new image is generated
       
       toast({
         title: "Image generated successfully",
-        description: "An AI-generated image has been created for your material.",
+        description: "Click 'Update Material' or 'Add Material' to save the image to your material.",
       });
     } catch (error) {
       console.error("Image generation failed:", error);
