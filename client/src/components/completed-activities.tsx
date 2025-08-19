@@ -58,12 +58,12 @@ interface ActivityStats {
 export function CompletedActivities() {
   const { toast } = useToast();
   const [filters, setFilters] = useState({
-    locationId: "",
-    roomId: "",
+    locationId: "all",
+    roomId: "all",
     dateFrom: subDays(new Date(), 30),
     dateTo: new Date(),
-    minRating: "",
-    materialsUsed: "",
+    minRating: "all",
+    materialsUsed: "all",
   });
   const [showFilters, setShowFilters] = useState(false);
 
@@ -75,7 +75,7 @@ export function CompletedActivities() {
   // Fetch rooms based on selected location
   const { data: rooms = [] } = useQuery<any[]>({
     queryKey: ["/api/rooms", filters.locationId],
-    enabled: !!filters.locationId,
+    enabled: !!filters.locationId && filters.locationId !== "all",
   });
 
   // Fetch completed activities
@@ -93,12 +93,12 @@ export function CompletedActivities() {
       const token = getAuthToken();
       const params = new URLSearchParams();
       
-      if (filters.locationId) params.append("locationId", filters.locationId);
-      if (filters.roomId) params.append("roomId", filters.roomId);
+      if (filters.locationId && filters.locationId !== "all") params.append("locationId", filters.locationId);
+      if (filters.roomId && filters.roomId !== "all") params.append("roomId", filters.roomId);
       if (filters.dateFrom) params.append("dateFrom", filters.dateFrom.toISOString());
       if (filters.dateTo) params.append("dateTo", filters.dateTo.toISOString());
-      if (filters.minRating) params.append("minRating", filters.minRating);
-      if (filters.materialsUsed) params.append("materialsUsed", filters.materialsUsed);
+      if (filters.minRating && filters.minRating !== "all") params.append("minRating", filters.minRating);
+      if (filters.materialsUsed && filters.materialsUsed !== "all") params.append("materialsUsed", filters.materialsUsed);
       
       const response = await fetch(`/api/activity-records/completed?${params}`, {
         headers: {
@@ -126,12 +126,12 @@ export function CompletedActivities() {
       const token = getAuthToken();
       const params = new URLSearchParams();
       
-      if (filters.locationId) params.append("locationId", filters.locationId);
-      if (filters.roomId) params.append("roomId", filters.roomId);
+      if (filters.locationId && filters.locationId !== "all") params.append("locationId", filters.locationId);
+      if (filters.roomId && filters.roomId !== "all") params.append("roomId", filters.roomId);
       if (filters.dateFrom) params.append("dateFrom", filters.dateFrom.toISOString());
       if (filters.dateTo) params.append("dateTo", filters.dateTo.toISOString());
-      if (filters.minRating) params.append("minRating", filters.minRating);
-      if (filters.materialsUsed) params.append("materialsUsed", filters.materialsUsed);
+      if (filters.minRating && filters.minRating !== "all") params.append("minRating", filters.minRating);
+      if (filters.materialsUsed && filters.materialsUsed !== "all") params.append("materialsUsed", filters.materialsUsed);
       
       const response = await fetch(`/api/activity-records/export?${params}`, {
         headers: {
@@ -323,13 +323,13 @@ export function CompletedActivities() {
                 <Label>Location</Label>
                 <Select
                   value={filters.locationId}
-                  onValueChange={(value) => setFilters({ ...filters, locationId: value, roomId: "" })}
+                  onValueChange={(value) => setFilters({ ...filters, locationId: value, roomId: "all" })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="All Locations" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Locations</SelectItem>
+                    <SelectItem value="all">All Locations</SelectItem>
                     {locations.map((location: any) => (
                       <SelectItem key={location.id} value={location.id}>
                         {location.name}
@@ -351,7 +351,7 @@ export function CompletedActivities() {
                     <SelectValue placeholder="All Rooms" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Rooms</SelectItem>
+                    <SelectItem value="all">All Rooms</SelectItem>
                     {rooms.map((room: any) => (
                       <SelectItem key={room.id} value={room.id}>
                         {room.name}
@@ -372,7 +372,7 @@ export function CompletedActivities() {
                     <SelectValue placeholder="Any Rating" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Any Rating</SelectItem>
+                    <SelectItem value="all">Any Rating</SelectItem>
                     {[5, 4, 3, 2, 1].map((rating) => (
                       <SelectItem key={rating} value={rating.toString()}>
                         {rating} Star{rating !== 1 ? "s" : ""} & Above
@@ -393,7 +393,7 @@ export function CompletedActivities() {
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
                     <SelectItem value="true">Yes</SelectItem>
                     <SelectItem value="false">No</SelectItem>
                   </SelectContent>
@@ -406,12 +406,12 @@ export function CompletedActivities() {
                 variant="outline"
                 size="sm"
                 onClick={() => setFilters({
-                  locationId: "",
-                  roomId: "",
+                  locationId: "all",
+                  roomId: "all",
                   dateFrom: subDays(new Date(), 30),
                   dateTo: new Date(),
-                  minRating: "",
-                  materialsUsed: "",
+                  minRating: "all",
+                  materialsUsed: "all",
                 })}
               >
                 Clear Filters
