@@ -39,8 +39,13 @@ function SimpleUploadButton({ onFileSelect, children, className }: any) {
     </label>
   );
 }
-import { Camera, X, Sparkles, Loader2 } from "lucide-react";
+import { Camera, X, Sparkles, Loader2, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface MaterialFormProps {
   material?: Material;
@@ -65,6 +70,8 @@ export default function MaterialForm({
   const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
   const [photoUrl, setPhotoUrl] = useState<string>(material?.photoUrl || "");
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [imageLoadError, setImageLoadError] = useState(false);
 
   const {
     register,
@@ -307,7 +314,8 @@ export default function MaterialForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
         <Label htmlFor="name">Material Name *</Label>
         <Input
@@ -481,17 +489,30 @@ export default function MaterialForm({
         <div className="flex items-center gap-4">
           {photoUrl ? (
             <div className="relative">
-              <img
-                src={photoUrl}
-                alt="Material"
-                className="w-20 h-20 object-cover rounded-lg"
-              />
+              {imageLoadError ? (
+                <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
+                     onClick={() => setImageModalOpen(true)}>
+                  <Package className="h-8 w-8 text-gray-400" />
+                </div>
+              ) : (
+                <img
+                  src={photoUrl}
+                  alt="Material"
+                  className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => setImageModalOpen(true)}
+                  onError={() => setImageLoadError(true)}
+                  onLoad={() => setImageLoadError(false)}
+                />
+              )}
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 className="absolute -top-2 -right-2 h-6 w-6 p-0"
-                onClick={() => setPhotoUrl("")}
+                onClick={() => {
+                  setPhotoUrl("");
+                  setImageLoadError(false);
+                }}
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -550,5 +571,28 @@ export default function MaterialForm({
         </Button>
       </div>
     </form>
+
+    {/* Image Expansion Dialog */}
+    <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
+      <DialogContent className="max-w-3xl max-h-[90vh]">
+        <DialogTitle className="sr-only">Material Image</DialogTitle>
+        <div className="flex items-center justify-center p-4">
+          {imageLoadError ? (
+            <div className="w-full h-96 bg-gray-100 rounded-lg flex flex-col items-center justify-center">
+              <Package className="h-16 w-16 text-gray-400 mb-2" />
+              <p className="text-gray-500">Image not available</p>
+            </div>
+          ) : (
+            <img
+              src={photoUrl}
+              alt="Material"
+              className="max-w-full max-h-[70vh] object-contain rounded-lg"
+              onError={() => setImageLoadError(true)}
+            />
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

@@ -24,6 +24,7 @@ export default function MaterialsLibrary() {
   const [isCollectionsDialogOpen, setIsCollectionsDialogOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState("");
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [expandedImage, setExpandedImage] = useState<{url: string, name: string} | null>(null);
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
     queryKey: ["/api/materials", selectedLocationId],
@@ -306,14 +307,15 @@ export default function MaterialsLibrary() {
                   <img 
                     src={material.photoUrl} 
                     alt={material.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
                     onError={() => handleImageError(material.id)}
+                    onClick={() => setExpandedImage({url: material.photoUrl || '', name: material.name})}
                   />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-purple-100 to-pink-100">
-                    <Sparkles className="h-10 w-10 mb-2 text-purple-600" />
+                    <Package className="h-10 w-10 mb-2 text-purple-600" />
                     <p className="text-sm font-medium text-center text-gray-700">
-                      No image yet
+                      No image available
                     </p>
                     <p className="text-xs text-gray-600 text-center mt-1">
                       Click Edit to add or generate with AI
@@ -399,6 +401,24 @@ export default function MaterialsLibrary() {
                 onSuccess={() => setEditingMaterial(null)}
                 onCancel={() => setEditingMaterial(null)}
                 selectedLocationId={selectedLocationId}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Image Expansion Dialog */}
+      {expandedImage && (
+        <Dialog open={!!expandedImage} onOpenChange={() => setExpandedImage(null)}>
+          <DialogContent className="max-w-3xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle>{expandedImage.name}</DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center justify-center p-4">
+              <img
+                src={expandedImage.url}
+                alt={expandedImage.name}
+                className="max-w-full max-h-[70vh] object-contain rounded-lg"
               />
             </div>
           </DialogContent>
