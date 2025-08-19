@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Edit, Trash2, Package, FolderOpen, Sparkles } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getUserAuthorizedLocations } from "@/lib/auth";
@@ -25,6 +25,7 @@ export default function MaterialsLibrary() {
   const [selectedLocationId, setSelectedLocationId] = useState("");
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
   const [expandedImage, setExpandedImage] = useState<{url: string, name: string} | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<Material | null>(null);
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
     queryKey: ["/api/materials", selectedLocationId],
@@ -118,18 +119,21 @@ export default function MaterialsLibrary() {
     setEditingMaterial(material);
   };
 
-  const handleDelete = async (material: Material) => {
-    if (!confirm(`Are you sure you want to delete "${material.name}"?`)) {
-      return;
-    }
+  const handleDelete = (material: Material) => {
+    setDeleteConfirmation(material);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmation) return;
     
     try {
-      await apiRequest("DELETE", `/api/materials/${material.id}`);
+      await apiRequest("DELETE", `/api/materials/${deleteConfirmation.id}`);
       queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
       toast({
         title: "Material deleted",
-        description: `"${material.name}" has been deleted successfully.`,
+        description: `"${deleteConfirmation.name}" has been deleted successfully.`,
       });
+      setDeleteConfirmation(null);
     } catch (error) {
       console.error("Failed to delete material:", error);
       toast({
@@ -424,6 +428,34 @@ export default function MaterialsLibrary() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirmation} onOpenChange={() => setDeleteConfirmation(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Material</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{deleteConfirmation?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteConfirmation(null)}
+              data-testid="button-cancel-delete"
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete}
+              data-testid="button-confirm-delete"
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
