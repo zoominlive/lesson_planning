@@ -767,31 +767,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { name, description, prompt } = req.body;
       
-      // Check if image generation service is initialized
-      if (!imagePromptGenerationService) {
-        console.error('Image generation service not initialized');
+      // Check if OPENAI_API_KEY is available
+      if (!process.env.OPENAI_API_KEY) {
+        console.error('OpenAI API key not configured');
         return res.status(503).json({ 
           error: 'Image generation service is not available. Please ensure OPENAI_API_KEY is configured.' 
         });
       }
       
-      // Use the imagePromptGenerationService to generate material image
+      // For materials, we want simple product shots on white backgrounds
       const materialName = name || prompt?.split('.')[0] || 'Material';
-      const materialDescription = description || prompt || '';
+      const materialDescription = description || '';
       
-      const result = await imagePromptGenerationService.generateActivityImage({
-        type: 'activity',
-        activityTitle: materialName,
-        activityDescription: `Educational classroom material or supply: ${materialDescription}. Show the actual physical item clearly, suitable for a childcare classroom inventory.`,
-        // Don't include age group or category for materials
-      });
+      // Create a simple, direct prompt for clean product photography
+      const imagePrompt = `High-quality product photography of ${materialName}${materialDescription ? `, ${materialDescription}` : ''}. Professional studio lighting, pure white background, crisp and clear, centered composition, no shadows, commercial product shot style. Show only the item itself, no hands or people.`;
       
-      if (!result.url) {
+      console.log('[Material Image Generation] Using direct prompt:', imagePrompt);
+      
+      // Generate image directly with OpenAI API
+      const response = await fetch(
+        "https://api.openai.com/v1/images/generations",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "dall-e-3",
+            prompt: imagePrompt,
+            size: "1024x1024",
+            quality: "hd",
+            n: 1,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[Material Image Generation] Failed:", errorText);
+        throw new Error(`Image generation failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const imageUrl = data.data[0].url;
+      
+      if (!imageUrl) {
         return res.status(500).json({ error: 'Failed to generate image' });
       }
       
       // Save the generated image locally
-      const imageResponse = await fetch(result.url);
+      const imageResponse = await fetch(imageUrl);
       const buffer = await imageResponse.arrayBuffer();
       
       // Generate a unique filename
@@ -816,9 +842,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       fs.writeFileSync(imagePath, Buffer.from(buffer));
       
       const localUrl = `/api/materials/images/${filename}`;
-      console.log("[ImagePromptGeneration] Material image saved locally:", localUrl);
+      console.log("[Material Image Generation] Image saved locally:", localUrl);
       
-      res.json({ url: localUrl, prompt: result.prompt });
+      res.json({ url: localUrl, prompt: imagePrompt });
     } catch (error) {
       console.error('Material image generation error:', error);
       res.status(500).json({ 

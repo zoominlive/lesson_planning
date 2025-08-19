@@ -239,8 +239,6 @@ export default function MaterialForm({
         body: JSON.stringify({ 
           name: materialName,
           description: materialDescription,
-          // Create a detailed prompt for material image generation
-          prompt: `Educational material or supply: ${materialName || ""}. ${materialDescription || ""}. Show the actual physical item clearly, suitable for a childcare classroom inventory.` 
         }),
       });
 
