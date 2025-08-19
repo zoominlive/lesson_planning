@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Check, Package, FolderOpen } from "lucide-react";
+import { Plus, Edit, Check, Package, FolderOpen, Sparkles } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import MaterialForm from "./material-form";
@@ -283,8 +283,14 @@ export default function MaterialsLibrary() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white">
-                    <Package className="h-12 w-12" />
+                  <div className="w-full h-full flex flex-col items-center justify-center text-white p-4">
+                    <Sparkles className="h-10 w-10 mb-2" />
+                    <p className="text-sm font-medium text-center">
+                      No image yet
+                    </p>
+                    <p className="text-xs text-white/90 text-center mt-1">
+                      Click Edit to add or generate with AI
+                    </p>
                   </div>
                 )}
                 {material.photoUrl && (
