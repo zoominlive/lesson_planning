@@ -31,7 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import ReferenceImageUpload from "./reference-image-upload";
+
 
 interface ActivityFormProps {
   activity?: Activity;
@@ -1468,15 +1468,7 @@ export default function ActivityForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Activity Image</Label>
-                {/* Reference Image Upload for style matching */}
-                {!readOnly && (
-                  <ReferenceImageUpload 
-                    className="mb-4"
-                    onStyleSet={(styleDescription) => {
-                      console.log('Reference style set:', styleDescription);
-                    }}
-                  />
-                )}
+
                 <div className="border-2 border-dashed rounded-lg p-4 text-center min-h-[200px] flex flex-col justify-center">
                   {activityImageUrl ? (
                     <div className="relative">

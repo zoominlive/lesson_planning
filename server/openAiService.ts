@@ -6,7 +6,6 @@ import crypto from "crypto";
 export class OpenAIService {
   private openai: OpenAI | null = null;
   private initialized = false;
-  private referenceStyleDescription: string | null = null;
 
   constructor() {
     this.initialize();
@@ -36,94 +35,7 @@ export class OpenAIService {
     }
   }
 
-  async analyzeReferenceImage(imagePath: string): Promise<string> {
-    if (!this.initialized || !this.openai) {
-      console.error("[OpenAI] Service not initialized for analyzeReferenceImage");
-      throw new Error(
-        "OpenAI service is not initialized. Please check your API key.",
-      );
-    }
 
-    try {
-      // Read the image file and convert to base64
-      const imageBuffer = fs.readFileSync(imagePath);
-      const base64Image = imageBuffer.toString('base64');
-      
-      console.log(`[OpenAI] Analyzing reference image: ${imagePath}, size: ${imageBuffer.length} bytes`);
-      
-      // Use GPT-4 Vision to analyze the image style
-      const response = await this.openai.chat.completions.create({
-        model: "gpt-4o", // GPT-4 with vision capabilities
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert at analyzing photographic styles. Describe the visual style of this image in detail, focusing on: lighting quality and direction, color palette and saturation, composition and framing, depth of field, camera angle and perspective, overall mood and atmosphere, and any distinctive photographic techniques. Be specific and technical in your description, as this will be used to replicate the style in other images."
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: "Analyze this image and describe its photographic style in detail. Focus on technical aspects that can be replicated."
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Image}`,
-                  detail: "high"
-                }
-              }
-            ]
-          }
-        ],
-        max_tokens: 500,
-      });
-
-      const styleDescription = response.choices[0].message.content;
-      
-      // Store the style description for use in future generations
-      this.referenceStyleDescription = styleDescription;
-      
-      console.log("[OpenAI] Reference image style analyzed successfully");
-      console.log("[OpenAI] Style description:", styleDescription?.substring(0, 200) + "...");
-      
-      return styleDescription || "Unable to analyze image style";
-    } catch (error: any) {
-      console.error("[OpenAI] Failed to analyze reference image:", error);
-      console.error("[OpenAI] Error details:", {
-        message: error.message,
-        status: error.status,
-        type: error.type,
-        code: error.code
-      });
-      
-      // Provide more specific error messages
-      if (error.status === 401) {
-        throw new Error("Invalid OpenAI API key. Please check your API key configuration.");
-      } else if (error.status === 429) {
-        throw new Error("OpenAI rate limit exceeded. Please try again later.");
-      } else if (error.status === 402 || error.message?.includes("billing")) {
-        throw new Error("OpenAI billing issue. Please check your account has sufficient credits.");
-      } else if (error.code === 'model_not_found') {
-        throw new Error("GPT-4 Vision model not available. Please check your OpenAI subscription.");
-      } else {
-        throw new Error(`Failed to analyze reference image: ${error.message}`);
-      }
-    }
-  }
-
-  setReferenceStyle(styleDescription: string | null) {
-    this.referenceStyleDescription = styleDescription;
-    if (styleDescription) {
-      console.log("[OpenAI] Reference style set:", styleDescription.substring(0, 100) + "...");
-    } else {
-      console.log("[OpenAI] Reference style cleared");
-    }
-  }
-
-  getReferenceStyle(): string | null {
-    return this.referenceStyleDescription;
-  }
 
   async generateActivityImage(
     activityTitle: string,
@@ -152,17 +64,6 @@ export class OpenAIService {
         }
       }
       
-      // Include reference style if available
-      let styleSection = "";
-      if (this.referenceStyleDescription) {
-        styleSection = `
-
-REFERENCE STYLE TO MATCH:
-${this.referenceStyleDescription}
-
-IMPORTANT: Match the photographic style, lighting, color palette, composition, and overall aesthetic of the reference image described above while maintaining the educational content requirements.`;
-      }
-      
       const imagePrompt = `PHOTOREALISTIC classroom photograph showing: "${activityTitle}"
 
 CRITICAL REQUIREMENTS - ABSOLUTELY NO TEXT OR WORDS:
@@ -176,7 +77,7 @@ CRITICAL REQUIREMENTS - ABSOLUTELY NO TEXT OR WORDS:
 - Realistic proportions and perspectives${environmentSetting}
 
 SHOW THIS ACTIVITY:
-${activityDescription}${styleSection}
+${activityDescription}
 
 VISUAL STYLE:
 - Documentary photography style

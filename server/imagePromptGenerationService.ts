@@ -42,12 +42,7 @@ class ImagePromptGenerationService {
       const isOutdoor = context.spaceRequired?.toLowerCase().includes('outdoor');
       const setting = isOutdoor ? 'childcare playground' : 'childcare classroom';
       
-      // Get reference style if available
-      const referenceStyle = openAIService.getReferenceStyle();
-      let styleInstructions = "";
-      if (referenceStyle) {
-        styleInstructions = `\n\nREFERENCE STYLE TO MATCH:\n${referenceStyle}\n\nCRITICAL: The generated image MUST match this photographic style exactly - same lighting, color palette, composition approach, and overall aesthetic.`;
-      }
+
       
       // Build enhanced prompt request for Perplexity using realistic constraints
       let perplexityPrompt: string;
@@ -69,7 +64,7 @@ CRITICAL CONSISTENCY REQUIREMENTS:
 Your prompt MUST follow this EXACT structure:
 "Ultra-realistic DSLR photograph of a cozy, normal-sized ${setting}. Shows 6-8 children engaged in Step ${context.stepNumber}: [describe the specific step action]. Standard classroom with normal-height windows, realistic proportions. Consistent educational photography style. Sharp realistic textures, natural lighting, professional color grading. Shallow depth of field focusing on the step action. Shot with 35mm lens for natural perspective. Maintains visual continuity with activity series."
 
-Make it look like part of the same photo shoot as the main activity image.${styleInstructions}`;
+Make it look like part of the same photo shoot as the main activity image."`;
       } else {
         // For main activity images
         perplexityPrompt = `Write me a prompt for DALL-E 3 to create a professional photograph of the following activity:
@@ -91,7 +86,7 @@ Use this exact structure for your prompt:
    - "Shallow depth of field with focus on [main subject], background softly blurred."
    - "Shot with 35mm lens for natural perspective, not wide-angle distortion."
 
-Make it realistic and believable, like a photo from an actual childcare center.${styleInstructions}`;
+Make it realistic and believable, like a photo from an actual childcare center."`;
       }
       
       console.log('[ImagePromptGeneration] Requesting prompt from Perplexity for:', context.type);
