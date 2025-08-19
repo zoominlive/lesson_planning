@@ -101,18 +101,21 @@ export function CalendarControls({
 
   const handlePreviousWeek = () => {
     const newDate = subWeeks(currentWeekDate, 1);
-    onWeekChange(newDate);
+    // Explicitly pass undefined as second param to clear targetLessonPlanId
+    onWeekChange(newDate, undefined);
   };
 
   const handleNextWeek = () => {
     const newDate = addWeeks(currentWeekDate, 1);
-    onWeekChange(newDate);
+    // Explicitly pass undefined as second param to clear targetLessonPlanId
+    onWeekChange(newDate, undefined);
   };
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       const weekStart = startOfWeek(date, { weekStartsOn: 1 }); // Start on Monday
-      onWeekChange(weekStart);
+      // Explicitly pass undefined as second param to clear targetLessonPlanId
+      onWeekChange(weekStart, undefined);
       setIsDatePickerOpen(false);
     }
   };

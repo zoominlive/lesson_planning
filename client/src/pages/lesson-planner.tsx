@@ -76,6 +76,9 @@ export default function LessonPlanner() {
   // Reset room selection when location changes
   useEffect(() => {
     if (selectedLocation) {
+      // Clear targetLessonPlanId when location changes (user manually changing context)
+      setTargetLessonPlanId(undefined);
+      
       // Don't reset if we're going to auto-select anyway
       const roomsForLocation = allRooms.filter(
         (room: any) => room.locationId === selectedLocation,
@@ -365,14 +368,8 @@ export default function LessonPlanner() {
   const handleWeekChange = (newDate: Date, lessonPlanId?: string) => {
     setCurrentWeekDate(newDate);
     // Set the target lesson plan ID when navigating from a notification
+    // This will persist until the user manually changes week/room/location
     setTargetLessonPlanId(lessonPlanId);
-    
-    // Clear the target lesson plan ID after a short delay to allow it to be used
-    if (lessonPlanId) {
-      setTimeout(() => {
-        setTargetLessonPlanId(undefined);
-      }, 1000);
-    }
   };
 
   const handleSubmitToSupervisor = () => {
