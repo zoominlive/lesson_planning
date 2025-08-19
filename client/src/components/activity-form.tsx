@@ -1888,11 +1888,61 @@ export default function ActivityForm({
                                     size="sm"
                                     variant="outline"
                                     className="ml-2 border-blue-300 text-blue-700 hover:bg-blue-50"
-                                    onClick={() => {
-                                      // Add to selected materials
-                                      const newSelection = [...selectedMaterials, material.existingMaterialId];
-                                      setSelectedMaterials(newSelection);
-                                      setValue("materialIds", newSelection);
+                                    onClick={async () => {
+                                      try {
+                                        // Add to selected materials
+                                        const newSelection = [...selectedMaterials, material.existingMaterialId];
+                                        setSelectedMaterials(newSelection);
+                                        setValue("materialIds", newSelection);
+                                        
+                                        // Create collection if it doesn't exist and add material to it
+                                        const activityTitle = watch("title") || initialData?.title || "Activity";
+                                        let collectionId = activityCollectionId;
+                                        
+                                        if (!collectionId) {
+                                          // Create collection with activity name
+                                          console.log("[Select Material] Creating new collection for activity:", activityTitle);
+                                          const collectionResponse = await apiRequest(
+                                            "POST",
+                                            "/api/material-collections",
+                                            {
+                                              name: activityTitle,
+                                              description: `Materials for ${activityTitle} activity`,
+                                            },
+                                          );
+                                          collectionId = collectionResponse.id;
+                                          console.log("[Select Material] Created collection with ID:", collectionId);
+                                          setActivityCollectionId(collectionId);
+                                        }
+                                        
+                                        // Add material to collection
+                                        console.log("[Select Material] Adding material", material.existingMaterialId, "to collection:", collectionId);
+                                        try {
+                                          await apiRequest(
+                                            "POST",
+                                            `/api/material-collections/${collectionId}/materials`,
+                                            {
+                                              materialIds: [material.existingMaterialId],
+                                            },
+                                          );
+                                          console.log("[Select Material] Successfully added material to collection");
+                                          
+                                          toast({
+                                            title: "Material selected",
+                                            description: `${material.existingName || material.name} has been added to the ${activityTitle} collection`,
+                                          });
+                                        } catch (error) {
+                                          console.error("[Select Material] Failed to add material to collection:", error);
+                                          // Don't show error toast - material is still selected for the activity
+                                        }
+                                      } catch (error) {
+                                        console.error("[Select Material] Error:", error);
+                                        toast({
+                                          title: "Error selecting material",
+                                          description: "Failed to add material to collection. Please try again.",
+                                          variant: "destructive",
+                                        });
+                                      }
                                     }}
                                   >
                                     <Check className="h-3 w-3 mr-1" />
