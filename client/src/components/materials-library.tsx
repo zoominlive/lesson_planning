@@ -353,34 +353,6 @@ export default function MaterialsLibrary() {
         </div>
       )}
 
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="material-shadow text-center">
-          <CardContent className="p-6">
-            <div className="text-3xl font-bold text-coral-red mb-2" data-testid="stat-total-materials">
-              {totalMaterials}
-            </div>
-            <div className="text-gray-600">Total Materials</div>
-          </CardContent>
-        </Card>
-        <Card className="material-shadow text-center">
-          <CardContent className="p-6">
-            <div className="text-3xl font-bold text-mint-green mb-2" data-testid="stat-locations">
-              {locationsCount}
-            </div>
-            <div className="text-gray-600">Locations</div>
-          </CardContent>
-        </Card>
-        <Card className="material-shadow text-center">
-          <CardContent className="p-6">
-            <div className="text-3xl font-bold text-sky-blue mb-2" data-testid="stat-with-photos">
-              {materials.filter(m => m.photoUrl).length}
-            </div>
-            <div className="text-gray-600">With Photos</div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Edit Material Dialog */}
       {editingMaterial && (
         <Dialog open={!!editingMaterial} onOpenChange={() => setEditingMaterial(null)}>
