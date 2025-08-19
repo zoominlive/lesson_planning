@@ -14,7 +14,18 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, X, Upload, ImageIcon, VideoIcon, Check, Star, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import {
+  Plus,
+  X,
+  Upload,
+  ImageIcon,
+  VideoIcon,
+  Check,
+  Star,
+  Loader2,
+  RefreshCw,
+  Sparkles,
+} from "lucide-react";
 import {
   insertActivitySchema,
   type Activity,
@@ -31,7 +42,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 
 interface ActivityFormProps {
   activity?: Activity;
@@ -78,7 +88,9 @@ export default function ActivityForm({
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [generatingStepImages, setGeneratingStepImages] = useState(false);
-  const [regeneratingStepImage, setRegeneratingStepImage] = useState<number | null>(null);
+  const [regeneratingStepImage, setRegeneratingStepImage] = useState<
+    number | null
+  >(null);
   const [uploadingInstructionImage, setUploadingInstructionImage] = useState<
     number | null
   >(null);
@@ -102,11 +114,13 @@ export default function ActivityForm({
   const [batchProcessMode, setBatchProcessMode] = useState(false);
   const [addedMaterials, setAddedMaterials] = useState<Set<string>>(new Set()); // Track which materials have been added
   const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null); // For image expansion dialog
-  const [expandedImageTitle, setExpandedImageTitle] = useState<string>("Activity Image"); // Title for expanded image
+  const [expandedImageTitle, setExpandedImageTitle] =
+    useState<string>("Activity Image"); // Title for expanded image
   const [showVideoModal, setShowVideoModal] = useState(false); // For video modal
   const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null); // For video thumbnail
   const [editableMaterialName, setEditableMaterialName] = useState<string>(""); // For editing material name in quick add
-  const [editableMaterialQuantity, setEditableMaterialQuantity] = useState<string>(""); // For editing material quantity in quick add
+  const [editableMaterialQuantity, setEditableMaterialQuantity] =
+    useState<string>(""); // For editing material quantity in quick add
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -144,9 +158,14 @@ export default function ActivityForm({
       ageGroupIds: activity?.ageGroupIds || [],
       // Additional fields from AI generation (stored as extended data)
       objectives: initialData?.objectives || activity?.objectives || [],
-      preparationTime: initialData?.preparationTime || activity?.preparationTime || null,
-      safetyConsiderations: initialData?.safetyConsiderations || activity?.safetyConsiderations || [],
-      spaceRequired: initialData?.spaceRequired || activity?.spaceRequired || null,
+      preparationTime:
+        initialData?.preparationTime || activity?.preparationTime || null,
+      safetyConsiderations:
+        initialData?.safetyConsiderations ||
+        activity?.safetyConsiderations ||
+        [],
+      spaceRequired:
+        initialData?.spaceRequired || activity?.spaceRequired || null,
       groupSize: initialData?.groupSize || activity?.groupSize || null,
       minChildren: initialData?.minChildren || activity?.minChildren || 1,
       maxChildren: initialData?.maxChildren || activity?.maxChildren || 10,
@@ -160,7 +179,9 @@ export default function ActivityForm({
     queryKey: ["/api/locations"],
   });
 
-  const currentLocation = locations.find((loc: any) => loc.id === selectedLocationId);
+  const currentLocation = locations.find(
+    (loc: any) => loc.id === selectedLocationId,
+  );
 
   // Fetch age groups for the selected location
   const { data: ageGroups = [] } = useQuery({
@@ -213,21 +234,21 @@ export default function ActivityForm({
       // Try to generate thumbnail from existing video
       const generateThumbnailFromUrl = async () => {
         try {
-          const video = document.createElement('video');
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d');
-          
+          const video = document.createElement("video");
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+
           video.src = activityVideoUrl;
-          video.crossOrigin = 'anonymous';
+          video.crossOrigin = "anonymous";
           video.currentTime = 0.5;
-          
+
           await new Promise<void>((resolve, reject) => {
             video.onloadeddata = () => {
               canvas.width = video.videoWidth;
               canvas.height = video.videoHeight;
               if (context) {
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+                const thumbnail = canvas.toDataURL("image/jpeg", 0.8);
                 setVideoThumbnail(thumbnail);
               }
               resolve();
@@ -242,7 +263,7 @@ export default function ActivityForm({
           console.log("Could not generate video thumbnail from URL");
         }
       };
-      
+
       generateThumbnailFromUrl();
     }
   }, [activityVideoUrl]);
@@ -333,29 +354,29 @@ export default function ActivityForm({
       });
       setActivityVideoUrl(result.url);
       setValue("videoUrl", result.url);
-      
+
       // Create a video element to extract thumbnail
-      const video = document.createElement('video');
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      
+      const video = document.createElement("video");
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+
       video.src = URL.createObjectURL(file);
       video.currentTime = 0.5; // Capture frame at 0.5 seconds
-      
+
       await new Promise<void>((resolve) => {
         video.onloadeddata = () => {
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
           if (context) {
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+            const thumbnail = canvas.toDataURL("image/jpeg", 0.8);
             setVideoThumbnail(thumbnail);
           }
           URL.revokeObjectURL(video.src);
           resolve();
         };
       });
-      
+
       toast({
         title: "Video uploaded",
         description: "The activity video has been uploaded successfully.",
@@ -377,21 +398,23 @@ export default function ActivityForm({
     const activityDescription = watch("description");
     const spaceRequired = watch("spaceRequired");
     const category = watch("category");
-    
+
     if (!activityTitle && !activityDescription) {
       toast({
         title: "Please provide activity details",
-        description: "Add a title or description for the activity before generating an image.",
+        description:
+          "Add a title or description for the activity before generating an image.",
         variant: "destructive",
       });
       return;
     }
 
     // Get selected age group details
-    const selectedAgeGroupDetails = selectedAgeGroups.length > 0 
-      ? ageGroups.find((g: any) => g.id === selectedAgeGroups[0]) 
-      : null;
-    const ageGroupDesc = selectedAgeGroupDetails 
+    const selectedAgeGroupDetails =
+      selectedAgeGroups.length > 0
+        ? ageGroups.find((g: any) => g.id === selectedAgeGroups[0])
+        : null;
+    const ageGroupDesc = selectedAgeGroupDetails
       ? `${selectedAgeGroupDetails.name} (${selectedAgeGroupDetails.description})`
       : null;
 
@@ -404,14 +427,17 @@ export default function ActivityForm({
           "Content-Type": "application/json",
           ...(token && { Authorization: `Bearer ${token}` }),
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           title: activityTitle,
           description: activityDescription,
-          spaceRequired: spaceRequired || initialData?.spaceRequired || activity?.spaceRequired,
+          spaceRequired:
+            spaceRequired ||
+            initialData?.spaceRequired ||
+            activity?.spaceRequired,
           ageGroup: ageGroupDesc,
           category: category || initialData?.category || activity?.category,
           // Also send prompt for backward compatibility
-          prompt: `${activityTitle || ""}. ${activityDescription || ""}` 
+          prompt: `${activityTitle || ""}. ${activityDescription || ""}`,
         }),
       });
 
@@ -423,16 +449,20 @@ export default function ActivityForm({
       const result = await response.json();
       setActivityImageUrl(result.url);
       setValue("imageUrl", result.url);
-      
+
       toast({
         title: "Image generated successfully",
-        description: "An AI-generated image has been created for your activity.",
+        description:
+          "An AI-generated image has been created for your activity.",
       });
     } catch (error) {
       console.error("Image generation failed:", error);
       toast({
         title: "Failed to generate image",
-        description: error instanceof Error ? error.message : "Please try again or upload an image manually.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Please try again or upload an image manually.",
         variant: "destructive",
       });
     } finally {
@@ -446,7 +476,7 @@ export default function ActivityForm({
     const spaceRequired = watch("spaceRequired");
     const category = watch("category");
     const instruction = instructions[index];
-    
+
     if (!instruction.text.trim()) {
       toast({
         title: "Cannot generate image",
@@ -457,10 +487,11 @@ export default function ActivityForm({
     }
 
     // Get selected age group details
-    const selectedAgeGroupDetails = selectedAgeGroups.length > 0 
-      ? ageGroups.find((g: any) => g.id === selectedAgeGroups[0]) 
-      : null;
-    const ageGroupDesc = selectedAgeGroupDetails 
+    const selectedAgeGroupDetails =
+      selectedAgeGroups.length > 0
+        ? ageGroups.find((g: any) => g.id === selectedAgeGroups[0])
+        : null;
+    const ageGroupDesc = selectedAgeGroupDetails
       ? `${selectedAgeGroupDetails.name} (${selectedAgeGroupDetails.description})`
       : null;
 
@@ -474,14 +505,17 @@ export default function ActivityForm({
           "Content-Type": "application/json",
           ...(token && { Authorization: `Bearer ${token}` }),
         },
-        body: JSON.stringify({ 
-          activityTitle: activityTitle || 'Activity',
-          activityDescription: activityDescription || '',
+        body: JSON.stringify({
+          activityTitle: activityTitle || "Activity",
+          activityDescription: activityDescription || "",
           stepNumber: index + 1,
           stepText: instruction.text,
-          spaceRequired: spaceRequired || initialData?.spaceRequired || activity?.spaceRequired,
+          spaceRequired:
+            spaceRequired ||
+            initialData?.spaceRequired ||
+            activity?.spaceRequired,
           ageGroup: ageGroupDesc,
-          category: category || initialData?.category || activity?.category
+          category: category || initialData?.category || activity?.category,
         }),
       });
 
@@ -491,12 +525,12 @@ export default function ActivityForm({
       }
 
       const result = await response.json();
-      
+
       // Update the instruction with the new image
       const updated = [...instructions];
       updated[index] = { ...updated[index], imageUrl: result.url };
       setInstructions(updated);
-      
+
       toast({
         title: "Image regenerated successfully",
         description: `Step ${index + 1} image has been updated.`,
@@ -505,7 +539,8 @@ export default function ActivityForm({
       console.error(`Failed to regenerate image for step ${index + 1}:`, error);
       toast({
         title: "Failed to regenerate image",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -520,7 +555,7 @@ export default function ActivityForm({
     const category = watch("category");
     const stepsWithoutImages = instructions
       .map((inst, index) => ({ ...inst, index }))
-      .filter(inst => inst.text.trim() && !inst.imageUrl);
+      .filter((inst) => inst.text.trim() && !inst.imageUrl);
 
     if (stepsWithoutImages.length === 0) {
       toast({
@@ -532,10 +567,11 @@ export default function ActivityForm({
     }
 
     // Get selected age group details
-    const selectedAgeGroupDetails = selectedAgeGroups.length > 0 
-      ? ageGroups.find((g: any) => g.id === selectedAgeGroups[0]) 
-      : null;
-    const ageGroupDesc = selectedAgeGroupDetails 
+    const selectedAgeGroupDetails =
+      selectedAgeGroups.length > 0
+        ? ageGroups.find((g: any) => g.id === selectedAgeGroups[0])
+        : null;
+    const ageGroupDesc = selectedAgeGroupDetails
       ? `${selectedAgeGroupDetails.name} (${selectedAgeGroupDetails.description})`
       : null;
 
@@ -547,7 +583,7 @@ export default function ActivityForm({
     try {
       // Keep track of the updated instructions
       let updatedInstructions = [...instructions];
-      
+
       for (const step of stepsWithoutImages) {
         try {
           const response = await fetch("/api/activities/generate-step-image", {
@@ -556,14 +592,17 @@ export default function ActivityForm({
               "Content-Type": "application/json",
               ...(token && { Authorization: `Bearer ${token}` }),
             },
-            body: JSON.stringify({ 
-              activityTitle: activityTitle || 'Activity',
-              activityDescription: activityDescription || '',
+            body: JSON.stringify({
+              activityTitle: activityTitle || "Activity",
+              activityDescription: activityDescription || "",
               stepNumber: step.index + 1,
               stepText: step.text,
-              spaceRequired: spaceRequired || initialData?.spaceRequired || activity?.spaceRequired,
+              spaceRequired:
+                spaceRequired ||
+                initialData?.spaceRequired ||
+                activity?.spaceRequired,
               ageGroup: ageGroupDesc,
-              category: category || initialData?.category || activity?.category
+              category: category || initialData?.category || activity?.category,
             }),
           });
 
@@ -573,15 +612,21 @@ export default function ActivityForm({
           }
 
           const result = await response.json();
-          
+
           // Update the instruction with the generated image in our local copy
-          updatedInstructions[step.index] = { ...updatedInstructions[step.index], imageUrl: result.url };
+          updatedInstructions[step.index] = {
+            ...updatedInstructions[step.index],
+            imageUrl: result.url,
+          };
           // Update the state with the accumulated changes
           setInstructions([...updatedInstructions]);
-          
+
           successCount++;
         } catch (error) {
-          console.error(`Failed to generate image for step ${step.index + 1}:`, error);
+          console.error(
+            `Failed to generate image for step ${step.index + 1}:`,
+            error,
+          );
           failCount++;
         }
       }
@@ -589,12 +634,13 @@ export default function ActivityForm({
       if (successCount > 0) {
         toast({
           title: "Images generated successfully",
-          description: `Generated ${successCount} image${successCount > 1 ? 's' : ''} for activity steps.${failCount > 0 ? ` ${failCount} failed.` : ''}`,
+          description: `Generated ${successCount} image${successCount > 1 ? "s" : ""} for activity steps.${failCount > 0 ? ` ${failCount} failed.` : ""}`,
         });
       } else {
         toast({
           title: "Failed to generate images",
-          description: "Could not generate images for the steps. Please try again.",
+          description:
+            "Could not generate images for the steps. Please try again.",
           variant: "destructive",
         });
       }
@@ -602,7 +648,8 @@ export default function ActivityForm({
       console.error("Bulk image generation failed:", error);
       toast({
         title: "Failed to generate images",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -686,7 +733,7 @@ export default function ActivityForm({
       });
       return;
     }
-    
+
     // Filter out materials that are already in the library
     const materialsToAdd = allMaterials.filter((m) => {
       // Skip the current material being handled
@@ -698,7 +745,7 @@ export default function ActivityForm({
       if (addedMaterials.has(mKey)) return false;
       return true;
     });
-    
+
     // Reset collection ID when starting a new quick add session
     setActivityCollectionId(null);
     setCurrentQuickAddMaterial(material);
@@ -734,28 +781,60 @@ export default function ActivityForm({
 
     // Use existing collection ID if provided, otherwise create or get collection for this activity
     let collectionId = existingCollectionId || activityCollectionId;
-    console.log("[QuickAdd] In createMaterialFromSuggestion - existingCollectionId:", existingCollectionId, "activityCollectionId:", activityCollectionId, "collectionId:", collectionId);
+    console.log(
+      "[QuickAdd] In createMaterialFromSuggestion - existingCollectionId:",
+      existingCollectionId,
+      "activityCollectionId:",
+      activityCollectionId,
+      "collectionId:",
+      collectionId,
+    );
     if (!collectionId) {
-      // Create collection with activity name
-      console.log("[QuickAdd] Creating new collection for activity:", activityTitle);
-      const collectionResponse = await apiRequest(
-        "POST",
-        "/api/material-collections",
-        {
-          name: activityTitle,
-          description: `Materials for ${activityTitle} activity`,
-        },
+      // First check if a collection with this name already exists
+      console.log(
+        "[QuickAdd] Checking for existing collection:",
+        activityTitle,
       );
-      collectionId = collectionResponse.id;
-      console.log("[QuickAdd] Created collection with ID:", collectionId);
-      setActivityCollectionId(collectionId);
+      const existingCollections = await queryClient.fetchQuery({
+        queryKey: ["/api/material-collections"],
+      });
+      
+      const existingCollection = existingCollections.find(
+        (c: any) => c.name === activityTitle
+      );
+      
+      if (existingCollection) {
+        console.log("[QuickAdd] Found existing collection:", existingCollection.id);
+        collectionId = existingCollection.id;
+        setActivityCollectionId(collectionId);
+      } else {
+        // Create collection with activity name
+        console.log(
+          "[QuickAdd] Creating new collection for activity:",
+          activityTitle,
+        );
+        const collectionResponse = await apiRequest(
+          "POST",
+          "/api/material-collections",
+          {
+            name: activityTitle,
+            description: `Materials for ${activityTitle} activity`,
+          },
+        );
+        collectionId = collectionResponse.id;
+        console.log("[QuickAdd] Created collection with ID:", collectionId);
+        setActivityCollectionId(collectionId);
+        
+        // Invalidate collections cache
+        queryClient.invalidateQueries({ queryKey: ["/api/material-collections"] });
+      }
     } else {
       console.log("[QuickAdd] Using existing collection ID:", collectionId);
     }
 
     // Use the selected location from the activity form
     const locationIds = selectedLocationId ? [selectedLocationId] : [];
-    
+
     if (locationIds.length === 0) {
       throw new Error("No location selected for this activity");
     }
@@ -772,8 +851,6 @@ export default function ActivityForm({
       photoUrl: `/api/materials/images/${material.name.toLowerCase().replace(/\s+/g, "_")}.png`,
     };
 
-
-
     const createdMaterial = await apiRequest(
       "POST",
       "/api/materials",
@@ -782,7 +859,12 @@ export default function ActivityForm({
     console.log("[QuickAdd] Created material with ID:", createdMaterial.id);
 
     // Add material to collection
-    console.log("[QuickAdd] Adding material", createdMaterial.id, "to collection:", collectionId);
+    console.log(
+      "[QuickAdd] Adding material",
+      createdMaterial.id,
+      "to collection:",
+      collectionId,
+    );
     try {
       const response = await apiRequest(
         "POST",
@@ -791,7 +873,12 @@ export default function ActivityForm({
           materialIds: [createdMaterial.id],
         },
       );
-      console.log("[QuickAdd] Successfully added material to collection:", collectionId, "Response:", response);
+      console.log(
+        "[QuickAdd] Successfully added material to collection:",
+        collectionId,
+        "Response:",
+        response,
+      );
     } catch (error) {
       console.error("[QuickAdd] Failed to add material to collection:", error);
       // Don't throw here, material is already created
@@ -799,7 +886,7 @@ export default function ActivityForm({
 
     // Add material to selected materials for this activity
     setSelectedMaterials((prev) => [...prev, createdMaterial.id]);
-    
+
     // Track that this material has been added
     const materialKey = `${material.name}-${material.category || "General"}`;
     setAddedMaterials((prev) => new Set(Array.from(prev).concat(materialKey)));
@@ -821,22 +908,50 @@ export default function ActivityForm({
     setProcessingQuickAdd(true);
     try {
       const activityTitle = watch("title") || initialData?.title || "Activity";
-      
+
       // Create collection first if not exists
       let collectionId = activityCollectionId;
       if (!collectionId) {
-        console.log("[QuickAdd Batch] Creating new collection for activity:", activityTitle);
-        const collectionResponse = await apiRequest(
-          "POST",
-          "/api/material-collections",
-          {
-            name: activityTitle,
-            description: `Materials for ${activityTitle} activity`,
-          },
+        // First check if a collection with this name already exists
+        console.log(
+          "[QuickAdd Batch] Checking for existing collection:",
+          activityTitle,
         );
-        collectionId = collectionResponse.id;
-        console.log("[QuickAdd Batch] Created collection with ID:", collectionId);
-        setActivityCollectionId(collectionId);
+        const existingCollections = await queryClient.fetchQuery({
+          queryKey: ["/api/material-collections"],
+        });
+        
+        const existingCollection = existingCollections.find(
+          (c: any) => c.name === activityTitle
+        );
+        
+        if (existingCollection) {
+          console.log("[QuickAdd Batch] Found existing collection:", existingCollection.id);
+          collectionId = existingCollection.id;
+          setActivityCollectionId(collectionId);
+        } else {
+          console.log(
+            "[QuickAdd Batch] Creating new collection for activity:",
+            activityTitle,
+          );
+          const collectionResponse = await apiRequest(
+            "POST",
+            "/api/material-collections",
+            {
+              name: activityTitle,
+              description: `Materials for ${activityTitle} activity`,
+            },
+          );
+          collectionId = collectionResponse.id;
+          console.log(
+            "[QuickAdd Batch] Created collection with ID:",
+            collectionId,
+          );
+          setActivityCollectionId(collectionId);
+          
+          // Invalidate collections cache
+          queryClient.invalidateQueries({ queryKey: ["/api/material-collections"] });
+        }
       }
 
       // Get appropriate age groups based on the activity's age range
@@ -860,7 +975,7 @@ export default function ActivityForm({
       // Separate existing materials from new materials
       const existingMaterialsToAdd = [];
       const newMaterialsToCreate = [];
-      
+
       for (const material of remainingMaterials) {
         if (material.isExisting && material.existingMaterialId) {
           existingMaterialsToAdd.push(material.existingMaterialId);
@@ -883,7 +998,7 @@ export default function ActivityForm({
           category: material.category || "General",
           tenantId: tenantId,
         };
-        
+
         console.log("[QuickAdd Batch] Creating material:", material.name);
         const createdMaterial = await apiRequest(
           "POST",
@@ -891,13 +1006,15 @@ export default function ActivityForm({
           materialData,
         );
         createdMaterialIds.push(createdMaterial.id);
-        
+
         // Add to selected materials for this activity
         setSelectedMaterials((prev) => [...prev, createdMaterial.id]);
-        
+
         // Track that this material has been added
         const materialKey = `${material.name}-${material.category || "General"}`;
-        setAddedMaterials((prev) => new Set(Array.from(prev).concat(materialKey)));
+        setAddedMaterials(
+          (prev) => new Set(Array.from(prev).concat(materialKey)),
+        );
       }
 
       // Add existing materials to selected materials
@@ -910,7 +1027,11 @@ export default function ActivityForm({
 
       // Now add all materials to the collection in one call
       if (allMaterialIds.length > 0) {
-        console.log("[QuickAdd Batch] Adding all materials to collection:", collectionId, allMaterialIds);
+        console.log(
+          "[QuickAdd Batch] Adding all materials to collection:",
+          collectionId,
+          allMaterialIds,
+        );
         try {
           await apiRequest(
             "POST",
@@ -919,13 +1040,19 @@ export default function ActivityForm({
               materialIds: allMaterialIds,
             },
           );
-          console.log("[QuickAdd Batch] Successfully added all materials to collection");
+          console.log(
+            "[QuickAdd Batch] Successfully added all materials to collection",
+          );
         } catch (error) {
-          console.error("[QuickAdd Batch] Failed to add materials to collection:", error);
+          console.error(
+            "[QuickAdd Batch] Failed to add materials to collection:",
+            error,
+          );
         }
       }
 
-      const totalAdded = createdMaterialIds.length + existingMaterialsToAdd.length;
+      const totalAdded =
+        createdMaterialIds.length + existingMaterialsToAdd.length;
       toast({
         title: `${totalAdded} materials processed`,
         description: `${createdMaterialIds.length} new materials created and ${existingMaterialsToAdd.length} existing materials added to the "${activityTitle}" collection`,
@@ -950,12 +1077,16 @@ export default function ActivityForm({
 
   const handleQuickAddSubmit = async () => {
     // Check if this is an existing material
-    if (currentQuickAddMaterial.isExisting && currentQuickAddMaterial.existingMaterialId) {
+    if (
+      currentQuickAddMaterial.isExisting &&
+      currentQuickAddMaterial.existingMaterialId
+    ) {
       // For existing materials, just add to collection and select
       setProcessingQuickAdd(true);
       try {
-        const activityTitle = watch("title") || initialData?.title || "Activity";
-        
+        const activityTitle =
+          watch("title") || initialData?.title || "Activity";
+
         // Create or get collection
         let collectionId = activityCollectionId;
         if (!collectionId) {
@@ -970,7 +1101,7 @@ export default function ActivityForm({
           collectionId = collectionResponse.id;
           setActivityCollectionId(collectionId);
         }
-        
+
         // Add existing material to collection
         await apiRequest(
           "POST",
@@ -979,15 +1110,18 @@ export default function ActivityForm({
             materialIds: [currentQuickAddMaterial.existingMaterialId],
           },
         );
-        
+
         // Add to selected materials
-        setSelectedMaterials((prev) => [...prev, currentQuickAddMaterial.existingMaterialId]);
-        
+        setSelectedMaterials((prev) => [
+          ...prev,
+          currentQuickAddMaterial.existingMaterialId,
+        ]);
+
         toast({
           title: "Material selected",
           description: `${currentQuickAddMaterial.existingMaterialName} has been added to the activity`,
         });
-        
+
         // Continue with next material if any
         if (remainingMaterials.length > 0) {
           if (!batchProcessMode) {
@@ -1044,10 +1178,14 @@ export default function ActivityForm({
       const materialToAdd = {
         ...currentQuickAddMaterial,
         name: editableMaterialName.trim(),
-        quantity: editableMaterialQuantity.trim() || currentQuickAddMaterial.quantity,
+        quantity:
+          editableMaterialQuantity.trim() || currentQuickAddMaterial.quantity,
       };
 
-      console.log("[QuickAdd] Submitting material with collection ID:", activityCollectionId);
+      console.log(
+        "[QuickAdd] Submitting material with collection ID:",
+        activityCollectionId,
+      );
       const result = await createMaterialFromSuggestion(
         materialToAdd,
         storageLocation,
@@ -1221,7 +1359,9 @@ export default function ActivityForm({
                 {...register("title")}
                 data-testid="input-activity-title"
                 disabled={readOnly}
-                className={readOnly ? "disabled:opacity-100 disabled:cursor-default" : ""}
+                className={
+                  readOnly ? "disabled:opacity-100 disabled:cursor-default" : ""
+                }
               />
               {errors.title && !readOnly && (
                 <p className="text-red-500 text-sm">{errors.title.message}</p>
@@ -1229,7 +1369,9 @@ export default function ActivityForm({
             </div>
 
             <div>
-              <Label htmlFor="description">Description {!readOnly && "*"}</Label>
+              <Label htmlFor="description">
+                Description {!readOnly && "*"}
+              </Label>
               <Textarea
                 id="description"
                 {...register("description")}
@@ -1251,7 +1393,10 @@ export default function ActivityForm({
                 defaultValue={initialData?.category || activity?.category}
                 disabled={readOnly}
               >
-                <SelectTrigger data-testid="select-activity-category" disabled={readOnly}>
+                <SelectTrigger
+                  data-testid="select-activity-category"
+                  disabled={readOnly}
+                >
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1298,7 +1443,9 @@ export default function ActivityForm({
             </div>
 
             <div>
-              <Label htmlFor="duration">Duration (minutes) {!readOnly && "*"}</Label>
+              <Label htmlFor="duration">
+                Duration (minutes) {!readOnly && "*"}
+              </Label>
               <Input
                 id="duration"
                 type="number"
@@ -1340,7 +1487,11 @@ export default function ActivityForm({
                   {...register("maxChildren", { valueAsNumber: true })}
                   data-testid="input-max-children"
                   disabled={readOnly}
-                  className={readOnly ? "disabled:opacity-100 disabled:cursor-default" : ""}
+                  className={
+                    readOnly
+                      ? "disabled:opacity-100 disabled:cursor-default"
+                      : ""
+                  }
                 />
                 {errors.maxChildren && (
                   <p className="text-red-500 text-sm">
@@ -1357,43 +1508,58 @@ export default function ActivityForm({
           <Card>
             <CardContent className="p-4 space-y-4">
               <h3 className="font-semibold text-lg">Additional Details</h3>
-              
+
               {/* Show message if no additional details are available */}
-              {!((initialData?.objectives?.length > 0 || activity?.objectives?.length > 0) ||
-                 (initialData?.preparationTime || activity?.preparationTime) ||
-                 (initialData?.spaceRequired || activity?.spaceRequired) ||
-                 (initialData?.groupSize || activity?.groupSize) ||
-                 (initialData?.messLevel || activity?.messLevel) ||
-                 (initialData?.safetyConsiderations?.length > 0 || activity?.safetyConsiderations?.length > 0) ||
-                 (initialData?.variations?.length > 0 || activity?.variations?.length > 0)) && (
+              {!(
+                initialData?.objectives?.length > 0 ||
+                activity?.objectives?.length > 0 ||
+                initialData?.preparationTime ||
+                activity?.preparationTime ||
+                initialData?.spaceRequired ||
+                activity?.spaceRequired ||
+                initialData?.groupSize ||
+                activity?.groupSize ||
+                initialData?.messLevel ||
+                activity?.messLevel ||
+                initialData?.safetyConsiderations?.length > 0 ||
+                activity?.safetyConsiderations?.length > 0 ||
+                initialData?.variations?.length > 0 ||
+                activity?.variations?.length > 0
+              ) && (
                 <p className="text-sm text-gray-500 italic">
-                  No additional details available. These fields are typically added when generating activities with AI.
+                  No additional details available. These fields are typically
+                  added when generating activities with AI.
                 </p>
               )}
 
-              {(initialData?.objectives || activity?.objectives) && (initialData?.objectives?.length > 0 || activity?.objectives?.length > 0) && (
-                <div>
-                  <Label>Learning Objectives</Label>
-                  <div className="space-y-2">
-                    {(initialData?.objectives || activity?.objectives || []).map(
-                      (objective: string, index: number) => (
+              {(initialData?.objectives || activity?.objectives) &&
+                (initialData?.objectives?.length > 0 ||
+                  activity?.objectives?.length > 0) && (
+                  <div>
+                    <Label>Learning Objectives</Label>
+                    <div className="space-y-2">
+                      {(
+                        initialData?.objectives ||
+                        activity?.objectives ||
+                        []
+                      ).map((objective: string, index: number) => (
                         <div key={index} className="flex items-start gap-2">
                           <span className="text-sm text-gray-500 mt-0.5">
                             •
                           </span>
                           <p className="text-sm">{objective}</p>
                         </div>
-                      ),
-                    )}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {(initialData?.preparationTime || activity?.preparationTime) && (
                 <div>
                   <Label>Preparation Time</Label>
                   <p className="text-sm">
-                    {initialData?.preparationTime || activity?.preparationTime} minutes
+                    {initialData?.preparationTime || activity?.preparationTime}{" "}
+                    minutes
                   </p>
                 </div>
               )}
@@ -1401,58 +1567,69 @@ export default function ActivityForm({
               {(initialData?.spaceRequired || activity?.spaceRequired) && (
                 <div>
                   <Label>Space Required</Label>
-                  <p className="text-sm">{initialData?.spaceRequired || activity?.spaceRequired}</p>
+                  <p className="text-sm">
+                    {initialData?.spaceRequired || activity?.spaceRequired}
+                  </p>
                 </div>
               )}
 
               {(initialData?.groupSize || activity?.groupSize) && (
                 <div>
                   <Label>Group Size</Label>
-                  <p className="text-sm">{initialData?.groupSize || activity?.groupSize}</p>
+                  <p className="text-sm">
+                    {initialData?.groupSize || activity?.groupSize}
+                  </p>
                 </div>
               )}
 
               {(initialData?.messLevel || activity?.messLevel) && (
                 <div>
                   <Label>Mess Level</Label>
-                  <p className="text-sm">{initialData?.messLevel || activity?.messLevel}</p>
+                  <p className="text-sm">
+                    {initialData?.messLevel || activity?.messLevel}
+                  </p>
                 </div>
               )}
 
-              {((initialData?.safetyConsiderations && initialData.safetyConsiderations.length > 0) ||
-                (activity?.safetyConsiderations && activity.safetyConsiderations.length > 0)) && (
-                  <div>
-                    <Label>Safety Considerations</Label>
-                    <div className="space-y-2">
-                      {(initialData?.safetyConsiderations || activity?.safetyConsiderations || []).map(
-                        (safety: string, index: number) => (
-                          <div key={index} className="flex items-start gap-2">
-                            <span className="text-sm text-amber-500 mt-0.5">
-                              ⚠
-                            </span>
-                            <p className="text-sm">{safety}</p>
-                          </div>
-                        ),
-                      )}
-                    </div>
+              {((initialData?.safetyConsiderations &&
+                initialData.safetyConsiderations.length > 0) ||
+                (activity?.safetyConsiderations &&
+                  activity.safetyConsiderations.length > 0)) && (
+                <div>
+                  <Label>Safety Considerations</Label>
+                  <div className="space-y-2">
+                    {(
+                      initialData?.safetyConsiderations ||
+                      activity?.safetyConsiderations ||
+                      []
+                    ).map((safety: string, index: number) => (
+                      <div key={index} className="flex items-start gap-2">
+                        <span className="text-sm text-amber-500 mt-0.5">
+                          ⚠
+                        </span>
+                        <p className="text-sm">{safety}</p>
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
-              {((initialData?.variations && initialData.variations.length > 0) ||
+              {((initialData?.variations &&
+                initialData.variations.length > 0) ||
                 (activity?.variations && activity.variations.length > 0)) && (
                 <div>
                   <Label>Activity Variations</Label>
                   <div className="space-y-2">
-                    {(initialData?.variations || activity?.variations || []).map(
-                      (variation: string, index: number) => (
-                        <div key={index} className="flex items-start gap-2">
-                          <span className="text-sm text-turquoise mt-0.5">
-                            ✦
-                          </span>
-                          <p className="text-sm">{variation}</p>
-                        </div>
-                      ),
-                    )}
+                    {(
+                      initialData?.variations ||
+                      activity?.variations ||
+                      []
+                    ).map((variation: string, index: number) => (
+                      <div key={index} className="flex items-start gap-2">
+                        <span className="text-sm text-turquoise mt-0.5">✦</span>
+                        <p className="text-sm">{variation}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1538,7 +1715,9 @@ export default function ActivityForm({
                   ) : (
                     <div>
                       <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
-                      <p className="text-sm text-gray-500 mt-2 mb-2">No image uploaded</p>
+                      <p className="text-sm text-gray-500 mt-2 mb-2">
+                        No image uploaded
+                      </p>
                       {!readOnly && (
                         <div className="flex gap-2 justify-center">
                           <Button
@@ -1588,30 +1767,36 @@ export default function ActivityForm({
                   {activityVideoUrl ? (
                     <div className="relative">
                       {videoThumbnail ? (
-                        <div 
+                        <div
                           className="relative cursor-pointer group"
                           onClick={() => setShowVideoModal(true)}
                         >
-                          <img 
-                            src={videoThumbnail} 
-                            alt="Video thumbnail" 
+                          <img
+                            src={videoThumbnail}
+                            alt="Video thumbnail"
                             className="w-full h-48 object-cover rounded-lg"
                           />
                           <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 rounded-lg group-hover:bg-opacity-50 transition-all">
                             <div className="bg-white rounded-full p-3">
-                              <svg className="w-8 h-8 text-gray-800" fill="currentColor" viewBox="0 0 20 20">
+                              <svg
+                                className="w-8 h-8 text-gray-800"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
                                 <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
                               </svg>
                             </div>
                           </div>
                         </div>
                       ) : (
-                        <div 
+                        <div
                           className="cursor-pointer"
                           onClick={() => setShowVideoModal(true)}
                         >
                           <VideoIcon className="mx-auto h-12 w-12 text-green-600" />
-                          <p className="text-sm text-gray-600 mt-2">Click to play video</p>
+                          <p className="text-sm text-gray-600 mt-2">
+                            Click to play video
+                          </p>
                         </div>
                       )}
                       {!readOnly && (
@@ -1633,7 +1818,9 @@ export default function ActivityForm({
                   ) : (
                     <div>
                       <VideoIcon className="mx-auto h-12 w-12 text-gray-400" />
-                      <p className="text-sm text-gray-500 mt-2 mb-2">No video uploaded</p>
+                      <p className="text-sm text-gray-500 mt-2 mb-2">
+                        No video uploaded
+                      </p>
                       {!readOnly && (
                         <Button
                           type="button"
@@ -1715,20 +1902,21 @@ export default function ActivityForm({
               </Select>
             </div>
             {(milestoneCategoryFilter !== "all" ||
-              milestoneAgeGroupFilter !== "all") && !readOnly && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setMilestoneCategoryFilter("all");
-                  setMilestoneAgeGroupFilter("all");
-                }}
-                data-testid="button-clear-milestone-filters"
-              >
-                Clear Filters
-              </Button>
-            )}
+              milestoneAgeGroupFilter !== "all") &&
+              !readOnly && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setMilestoneCategoryFilter("all");
+                    setMilestoneAgeGroupFilter("all");
+                  }}
+                  data-testid="button-clear-milestone-filters"
+                >
+                  Clear Filters
+                </Button>
+              )}
           </div>
 
           <div className="space-y-2 max-h-64 overflow-y-auto border rounded-md p-3">
@@ -1816,7 +2004,9 @@ export default function ActivityForm({
                       />
                     </svg>
                   </div>
-                  <h4 className="font-semibold text-sm">AI Suggested Materials</h4>
+                  <h4 className="font-semibold text-sm">
+                    AI Suggested Materials
+                  </h4>
                   <span className="text-xs text-gray-500">
                     Materials needed for this activity
                   </span>
@@ -1827,25 +2017,35 @@ export default function ActivityForm({
                       const materialKey = `${material.name}-${material.category || "General"}`;
                       const isAdded = addedMaterials.has(materialKey);
                       const isExisting = material.isExisting;
-                      const isSelected = isExisting && selectedMaterials.includes(material.existingMaterialId);
-                      
+                      const isSelected =
+                        isExisting &&
+                        selectedMaterials.includes(material.existingMaterialId);
+
                       return (
                         <div
                           key={index}
                           className={`bg-white rounded-lg p-3 border ${
-                            isSelected ? 'border-turquoise bg-turquoise/5' : 
-                            isAdded ? 'border-green-400 bg-green-50' : 
-                            isExisting ? 'border-blue-300' : 'border-gray-200'
+                            isSelected
+                              ? "border-turquoise bg-turquoise/5"
+                              : isAdded
+                                ? "border-green-400 bg-green-50"
+                                : isExisting
+                                  ? "border-blue-300"
+                                  : "border-gray-200"
                           }`}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="font-medium text-sm">
-                                  {isExisting ? material.existingMaterialName : material.name}
+                                  {isExisting
+                                    ? material.existingMaterialName
+                                    : material.name}
                                 </span>
                                 <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
-                                  {isExisting ? material.existingMaterialCategory : (material.category || "General")}
+                                  {isExisting
+                                    ? material.existingMaterialCategory
+                                    : material.category || "General"}
                                 </span>
                                 {material.quantity && (
                                   <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
@@ -1891,55 +2091,109 @@ export default function ActivityForm({
                                     onClick={async () => {
                                       try {
                                         // Add to selected materials
-                                        const newSelection = [...selectedMaterials, material.existingMaterialId];
+                                        const newSelection = [
+                                          ...selectedMaterials,
+                                          material.existingMaterialId,
+                                        ];
                                         setSelectedMaterials(newSelection);
                                         setValue("materialIds", newSelection);
-                                        
+
                                         // Create collection if it doesn't exist and add material to it
-                                        const activityTitle = watch("title") || initialData?.title || "Activity";
+                                        const activityTitle =
+                                          watch("title") ||
+                                          initialData?.title ||
+                                          "Activity";
                                         let collectionId = activityCollectionId;
-                                        
+
                                         if (!collectionId) {
-                                          // Create collection with activity name
-                                          console.log("[Select Material] Creating new collection for activity:", activityTitle);
-                                          const collectionResponse = await apiRequest(
-                                            "POST",
-                                            "/api/material-collections",
-                                            {
-                                              name: activityTitle,
-                                              description: `Materials for ${activityTitle} activity`,
-                                            },
+                                          // First check if a collection with this name already exists
+                                          console.log(
+                                            "[Select Material] Checking for existing collection:",
+                                            activityTitle,
                                           );
-                                          collectionId = collectionResponse.id;
-                                          console.log("[Select Material] Created collection with ID:", collectionId);
-                                          setActivityCollectionId(collectionId);
+                                          const existingCollections = await queryClient.fetchQuery({
+                                            queryKey: ["/api/material-collections"],
+                                          });
+                                          
+                                          const existingCollection = existingCollections.find(
+                                            (c: any) => c.name === activityTitle
+                                          );
+                                          
+                                          if (existingCollection) {
+                                            console.log(
+                                              "[Select Material] Found existing collection:",
+                                              existingCollection.id,
+                                            );
+                                            collectionId = existingCollection.id;
+                                            setActivityCollectionId(collectionId);
+                                          } else {
+                                            // Create collection with activity name
+                                            console.log(
+                                              "[Select Material] Creating new collection for activity:",
+                                              activityTitle,
+                                            );
+                                            const collectionResponse =
+                                              await apiRequest(
+                                                "POST",
+                                                "/api/material-collections",
+                                                {
+                                                  name: activityTitle,
+                                                  description: `Materials for ${activityTitle} activity`,
+                                                },
+                                              );
+                                            collectionId = collectionResponse.id;
+                                            console.log(
+                                              "[Select Material] Created collection with ID:",
+                                              collectionId,
+                                            );
+                                            setActivityCollectionId(collectionId);
+                                            
+                                            // Invalidate collections cache
+                                            queryClient.invalidateQueries({ queryKey: ["/api/material-collections"] });
+                                          }
                                         }
-                                        
+
                                         // Add material to collection
-                                        console.log("[Select Material] Adding material", material.existingMaterialId, "to collection:", collectionId);
+                                        console.log(
+                                          "[Select Material] Adding material",
+                                          material.existingMaterialId,
+                                          "to collection:",
+                                          collectionId,
+                                        );
                                         try {
                                           await apiRequest(
                                             "POST",
                                             `/api/material-collections/${collectionId}/materials`,
                                             {
-                                              materialIds: [material.existingMaterialId],
+                                              materialIds: [
+                                                material.existingMaterialId,
+                                              ],
                                             },
                                           );
-                                          console.log("[Select Material] Successfully added material to collection");
-                                          
+                                          console.log(
+                                            "[Select Material] Successfully added material to collection",
+                                          );
+
                                           toast({
                                             title: "Material selected",
                                             description: `${material.existingName || material.name} has been added to the ${activityTitle} collection`,
                                           });
                                         } catch (error) {
-                                          console.error("[Select Material] Failed to add material to collection:", error);
+                                          console.error(
+                                            "[Select Material] Failed to add material to collection:",
+                                            error,
+                                          );
                                           // Don't show error toast - material is still selected for the activity
                                         }
                                       } catch (error) {
-                                        console.error("[Select Material] Error:", error);
+                                        console.error(
+                                          "[Select Material] Error:",
+                                          error,
+                                        );
                                         toast({
                                           title: "Error selecting material",
-                                          description: "Failed to add material to collection. Please try again.",
+                                          description:
+                                            "Failed to add material to collection. Please try again.",
                                           variant: "destructive",
                                         });
                                       }
@@ -1950,8 +2204,18 @@ export default function ActivityForm({
                                   </Button>
                                 ) : isExisting && isSelected ? (
                                   <div className="ml-2 text-turquoise">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    <svg
+                                      className="w-6 h-6"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                      />
                                     </svg>
                                   </div>
                                 ) : !isAdded ? (
@@ -1972,8 +2236,18 @@ export default function ActivityForm({
                                   </Button>
                                 ) : (
                                   <div className="ml-2 text-green-600">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    <svg
+                                      className="w-6 h-6"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                      />
                                     </svg>
                                   </div>
                                 )}
@@ -1982,13 +2256,14 @@ export default function ActivityForm({
                           </div>
                         </div>
                       );
-                    }
+                    },
                   )}
                 </div>
                 <div className="mt-3 p-2 bg-amber-50 rounded-md">
                   <p className="text-xs text-amber-800">
-                    💡 <strong>Tip:</strong> Materials already in your library are marked and can be selected directly. 
-                    New materials can be added using "Quick Add" to save them to your library.
+                    💡 <strong>Tip:</strong> Materials already in your library
+                    are marked and can be selected directly. New materials can
+                    be added using "Quick Add" to save them to your library.
                   </p>
                 </div>
               </div>
@@ -2010,11 +2285,13 @@ export default function ActivityForm({
                       />
                     </svg>
                   </div>
-                  <h4 className="font-semibold text-sm text-gray-700">No Special Materials Suggested</h4>
+                  <h4 className="font-semibold text-sm text-gray-700">
+                    No Special Materials Suggested
+                  </h4>
                 </div>
                 <p className="text-sm text-gray-600">
-                  This activity uses common classroom supplies that are typically available. 
-                  Standard items like paper, crayons, scissors, and glue should suffice.
+                  This activity uses common classroom supplies that are
+                  typically available.
                 </p>
               </div>
             )
@@ -2069,20 +2346,21 @@ export default function ActivityForm({
               </Select>
             </div>
             {(materialCategoryFilter !== "all" ||
-              materialAgeGroupFilter !== "all") && !readOnly && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setMaterialCategoryFilter("all");
-                  setMaterialAgeGroupFilter("all");
-                }}
-                data-testid="button-clear-filters"
-              >
-                Clear Filters
-              </Button>
-            )}
+              materialAgeGroupFilter !== "all") &&
+              !readOnly && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setMaterialCategoryFilter("all");
+                    setMaterialAgeGroupFilter("all");
+                  }}
+                  data-testid="button-clear-filters"
+                >
+                  Clear Filters
+                </Button>
+              )}
           </div>
           <div className="space-y-3 max-h-64 overflow-y-auto border rounded-md p-3">
             {filteredMaterials.length > 0 ? (
@@ -2208,7 +2486,12 @@ export default function ActivityForm({
                   onClick={handleGenerateAllStepImages}
                   size="sm"
                   variant="outline"
-                  disabled={generatingStepImages || instructions.every(inst => !inst.text.trim() || inst.imageUrl)}
+                  disabled={
+                    generatingStepImages ||
+                    instructions.every(
+                      (inst) => !inst.text.trim() || inst.imageUrl,
+                    )
+                  }
                   className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 hover:from-purple-600 hover:to-pink-600"
                 >
                   {generatingStepImages ? (
@@ -2291,7 +2574,9 @@ export default function ActivityForm({
                               ) : (
                                 <Sparkles className="h-4 w-4" />
                               )}
-                              {regeneratingStepImage === index ? "Generating..." : "Generate"}
+                              {regeneratingStepImage === index
+                                ? "Generating..."
+                                : "Generate"}
                             </Button>
                           </>
                         )}
@@ -2317,14 +2602,19 @@ export default function ActivityForm({
                           variant="outline"
                           size="sm"
                           onClick={() => handleRegenerateStepImage(index)}
-                          disabled={regeneratingStepImage === index || !instruction.text.trim()}
+                          disabled={
+                            regeneratingStepImage === index ||
+                            !instruction.text.trim()
+                          }
                         >
                           {regeneratingStepImage === index ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <Sparkles className="h-4 w-4" />
                           )}
-                          {regeneratingStepImage === index ? "Generating..." : "Generate"}
+                          {regeneratingStepImage === index
+                            ? "Generating..."
+                            : "Generate"}
                         </Button>
                       </>
                     ) : null}
@@ -2379,8 +2669,8 @@ export default function ActivityForm({
       )}
 
       {/* Quick Add Dialog */}
-      <Dialog 
-        open={quickAddDialogOpen} 
+      <Dialog
+        open={quickAddDialogOpen}
         onOpenChange={(open) => {
           setQuickAddDialogOpen(open);
           // Clean up state when dialog is closed (but keep collection ID for the activity)
@@ -2391,7 +2681,8 @@ export default function ActivityForm({
             setStorageLocation("");
             // Don't reset activityCollectionId here - it's valid for the whole activity
           }
-        }}>
+        }}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
@@ -2416,11 +2707,17 @@ export default function ActivityForm({
                     You've successfully added the first material!
                   </p>
                   <p className="text-sm text-gray-600">
-                    {remainingMaterials.filter(m => !m.isExisting).length} new material
-                    {remainingMaterials.filter(m => !m.isExisting).length !== 1 ? "s" : ""} to create
-                    {remainingMaterials.filter(m => m.isExisting).length > 0 && 
-                      ` and ${remainingMaterials.filter(m => m.isExisting).length} existing material${remainingMaterials.filter(m => m.isExisting).length !== 1 ? "s" : ""} to add to collection`
-                    }. How would you like to proceed?
+                    {remainingMaterials.filter((m) => !m.isExisting).length} new
+                    material
+                    {remainingMaterials.filter((m) => !m.isExisting).length !==
+                    1
+                      ? "s"
+                      : ""}{" "}
+                    to create
+                    {remainingMaterials.filter((m) => m.isExisting).length >
+                      0 &&
+                      ` and ${remainingMaterials.filter((m) => m.isExisting).length} existing material${remainingMaterials.filter((m) => m.isExisting).length !== 1 ? "s" : ""} to add to collection`}
+                    . How would you like to proceed?
                   </p>
                   {currentLocation && (
                     <p className="text-xs text-blue-700 mt-2">
@@ -2460,7 +2757,9 @@ export default function ActivityForm({
                       setStorageLocation("");
                       // Set initial values for editable fields
                       setEditableMaterialName(remainingMaterials[0].name || "");
-                      setEditableMaterialQuantity(remainingMaterials[0].quantity || "");
+                      setEditableMaterialQuantity(
+                        remainingMaterials[0].quantity || "",
+                      );
                     }}
                     disabled={processingQuickAdd}
                     className="w-full"
@@ -2500,7 +2799,9 @@ export default function ActivityForm({
                       </span>
                     </div>
                     <p className="text-xs text-blue-700">
-                      This material is already in your library. Would you like to select it for this activity and add it to the collection?
+                      This material is already in your library. Would you like
+                      to select it for this activity and add it to the
+                      collection?
                     </p>
                     {currentQuickAddMaterial.existingMaterialCategory && (
                       <div className="flex gap-2 text-xs">
@@ -2516,11 +2817,18 @@ export default function ActivityForm({
                   <div className="bg-gray-50 p-3 rounded-md space-y-3">
                     {/* Editable Material Name */}
                     <div className="space-y-1">
-                      <Label htmlFor="material-name" className="text-xs font-medium">Material Name</Label>
+                      <Label
+                        htmlFor="material-name"
+                        className="text-xs font-medium"
+                      >
+                        Material Name
+                      </Label>
                       <Input
                         id="material-name"
                         value={editableMaterialName}
-                        onChange={(e) => setEditableMaterialName(e.target.value)}
+                        onChange={(e) =>
+                          setEditableMaterialName(e.target.value)
+                        }
                         placeholder="Enter material name"
                         className="h-8 text-sm"
                       />
@@ -2528,11 +2836,18 @@ export default function ActivityForm({
 
                     {/* Editable Quantity */}
                     <div className="space-y-1">
-                      <Label htmlFor="material-quantity" className="text-xs font-medium">Quantity</Label>
+                      <Label
+                        htmlFor="material-quantity"
+                        className="text-xs font-medium"
+                      >
+                        Quantity
+                      </Label>
                       <Input
                         id="material-quantity"
                         value={editableMaterialQuantity}
-                        onChange={(e) => setEditableMaterialQuantity(e.target.value)}
+                        onChange={(e) =>
+                          setEditableMaterialQuantity(e.target.value)
+                        }
                         placeholder="e.g., 10 pieces, 1 box, Multiple cards"
                         className="h-8 text-sm"
                       />
@@ -2567,7 +2882,11 @@ export default function ActivityForm({
                       }}
                     />
                     <p className="text-xs text-gray-500">
-                      Where will this material be stored {currentLocation ? `at ${currentLocation.name}` : "in your facility"}?
+                      Where will this material be stored{" "}
+                      {currentLocation
+                        ? `at ${currentLocation.name}`
+                        : "in your facility"}
+                      ?
                     </p>
                   </div>
                 </>
@@ -2599,10 +2918,19 @@ export default function ActivityForm({
                 <Button
                   type="button"
                   onClick={handleQuickAddSubmit}
-                  disabled={processingQuickAdd || (!currentQuickAddMaterial.isExisting && (!storageLocation.trim() || !editableMaterialName.trim()))}
+                  disabled={
+                    processingQuickAdd ||
+                    (!currentQuickAddMaterial.isExisting &&
+                      (!storageLocation.trim() || !editableMaterialName.trim()))
+                  }
                 >
-                  {processingQuickAdd ? (currentQuickAddMaterial.isExisting ? "Selecting..." : "Adding...") : 
-                   (currentQuickAddMaterial.isExisting ? "Select Material" : "Add Material")}
+                  {processingQuickAdd
+                    ? currentQuickAddMaterial.isExisting
+                      ? "Selecting..."
+                      : "Adding..."
+                    : currentQuickAddMaterial.isExisting
+                      ? "Select Material"
+                      : "Add Material"}
                 </Button>
               </DialogFooter>
             </div>
@@ -2611,7 +2939,10 @@ export default function ActivityForm({
       </Dialog>
 
       {/* Image Expansion Dialog */}
-      <Dialog open={!!expandedImageUrl} onOpenChange={(open) => !open && setExpandedImageUrl(null)}>
+      <Dialog
+        open={!!expandedImageUrl}
+        onOpenChange={(open) => !open && setExpandedImageUrl(null)}
+      >
         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
           <DialogHeader className="p-4 pb-2">
             <DialogTitle>{expandedImageTitle}</DialogTitle>
@@ -2645,14 +2976,14 @@ export default function ActivityForm({
                 controls
                 autoPlay
                 className="max-w-full max-h-full"
-                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                style={{ width: "100%", height: "100%", objectFit: "contain" }}
               >
                 Your browser does not support the video tag.
               </video>
             )}
           </div>
           <DialogFooter className="p-4 pt-2">
-            <Button 
+            <Button
               onClick={() => {
                 setShowVideoModal(false);
                 if (videoRef.current) {
@@ -2665,7 +2996,6 @@ export default function ActivityForm({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </form>
   );
 }
