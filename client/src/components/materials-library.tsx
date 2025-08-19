@@ -197,15 +197,17 @@ export default function MaterialsLibrary() {
                     Add New Material
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col">
                   <DialogHeader>
                     <DialogTitle>Add New Material</DialogTitle>
                   </DialogHeader>
-                  <MaterialForm 
-                    onSuccess={() => setIsCreateDialogOpen(false)}
-                    onCancel={() => setIsCreateDialogOpen(false)}
-                    selectedLocationId={selectedLocationId}
-                  />
+                  <div className="overflow-y-auto flex-1">
+                    <MaterialForm 
+                      onSuccess={() => setIsCreateDialogOpen(false)}
+                      onCancel={() => setIsCreateDialogOpen(false)}
+                      selectedLocationId={selectedLocationId}
+                    />
+                  </div>
                 </DialogContent>
               </Dialog>
             </div>
@@ -387,16 +389,18 @@ export default function MaterialsLibrary() {
       {/* Edit Material Dialog */}
       {editingMaterial && (
         <Dialog open={!!editingMaterial} onOpenChange={() => setEditingMaterial(null)}>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>Edit Material</DialogTitle>
             </DialogHeader>
-            <MaterialForm 
-              material={editingMaterial}
-              onSuccess={() => setEditingMaterial(null)}
-              onCancel={() => setEditingMaterial(null)}
-              selectedLocationId={selectedLocationId}
-            />
+            <div className="overflow-y-auto flex-1">
+              <MaterialForm 
+                material={editingMaterial}
+                onSuccess={() => setEditingMaterial(null)}
+                onCancel={() => setEditingMaterial(null)}
+                selectedLocationId={selectedLocationId}
+              />
+            </div>
           </DialogContent>
         </Dialog>
       )}
