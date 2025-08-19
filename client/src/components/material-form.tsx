@@ -39,7 +39,7 @@ function SimpleUploadButton({ onFileSelect, children, className }: any) {
     </label>
   );
 }
-import { Camera, X } from "lucide-react";
+import { Camera, X, Sparkles, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface MaterialFormProps {
@@ -64,6 +64,7 @@ export default function MaterialForm({
   );
   const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
   const [photoUrl, setPhotoUrl] = useState<string>(material?.photoUrl || "");
+  const [generatingImage, setGeneratingImage] = useState(false);
 
   const {
     register,
@@ -211,6 +212,61 @@ export default function MaterialForm({
 
   const handlePhotoSelect = (file: File) => {
     uploadPhotoMutation.mutate(file);
+  };
+
+  const handleGenerateImage = async () => {
+    const materialName = control._formValues.name;
+    const materialDescription = control._formValues.description;
+    
+    if (!materialName && !materialDescription) {
+      toast({
+        title: "Please provide material details",
+        description: "Add a name or description for the material before generating an image.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingImage(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await fetch("/api/materials/generate-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ 
+          name: materialName,
+          description: materialDescription,
+          // Create a detailed prompt for material image generation
+          prompt: `Educational material or supply: ${materialName || ""}. ${materialDescription || ""}. Show the actual physical item clearly, suitable for a childcare classroom inventory.` 
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to generate image");
+      }
+
+      const result = await response.json();
+      setPhotoUrl(result.url);
+      setValue("photoUrl", result.url);
+      
+      toast({
+        title: "Image generated successfully",
+        description: "An AI-generated image has been created for your material.",
+      });
+    } catch (error) {
+      console.error("Image generation failed:", error);
+      toast({
+        title: "Failed to generate image",
+        description: error instanceof Error ? error.message : "Please try again or upload an image manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingImage(false);
+    }
   };
 
   const handleAgeGroupToggle = (ageGroupId: string) => {
@@ -447,13 +503,33 @@ export default function MaterialForm({
               <Camera className="h-8 w-8 text-gray-400" />
             </div>
           )}
-          <SimpleUploadButton
-            onFileSelect={handlePhotoSelect}
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-sky-blue text-white hover:bg-sky-blue/90 h-10 px-4 py-2 cursor-pointer"
-          >
-            <Camera className="h-4 w-4 mr-2" />
-            {photoUrl ? "Change Photo" : "Add Photo"}
-          </SimpleUploadButton>
+          <div className="flex gap-2">
+            <SimpleUploadButton
+              onFileSelect={handlePhotoSelect}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-sky-blue text-white hover:bg-sky-blue/90 h-10 px-4 py-2 cursor-pointer"
+            >
+              <Camera className="h-4 w-4 mr-2" />
+              {photoUrl ? "Change Photo" : "Add Photo"}
+            </SimpleUploadButton>
+            <Button
+              type="button"
+              onClick={handleGenerateImage}
+              disabled={generatingImage}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
+            >
+              {generatingImage ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  AI Generate
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 

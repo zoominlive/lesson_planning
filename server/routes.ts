@@ -762,6 +762,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate AI image for material
+  app.post('/api/materials/generate-image', async (req: AuthenticatedRequest, res) => {
+    try {
+      const { name, description, prompt } = req.body;
+      
+      // Check if image generation service is initialized
+      if (!imagePromptGenerationService) {
+        console.error('Image generation service not initialized');
+        return res.status(503).json({ 
+          error: 'Image generation service is not available. Please ensure OPENAI_API_KEY is configured.' 
+        });
+      }
+      
+      // Use the imagePromptGenerationService to generate material image
+      const materialName = name || prompt?.split('.')[0] || 'Material';
+      const materialDescription = description || prompt || '';
+      
+      const result = await imagePromptGenerationService.generateActivityImage({
+        type: 'material',
+        activityTitle: materialName,
+        activityDescription: `Educational classroom material or supply: ${materialDescription}. Show the actual physical item clearly, suitable for a childcare classroom inventory.`,
+        // Don't include age group or category for materials
+      });
+      
+      if (!result.url) {
+        return res.status(500).json({ error: 'Failed to generate image' });
+      }
+      
+      // Save the generated image locally
+      const imageResponse = await fetch(result.url);
+      const buffer = await imageResponse.arrayBuffer();
+      
+      // Generate a unique filename
+      const timestamp = Date.now();
+      const uniqueId = crypto.randomUUID().substring(0, 8);
+      const filename = `ai_generated_material_${timestamp}_${uniqueId}.png`;
+      const imagePath = path.join(
+        process.cwd(),
+        "public",
+        "materials",
+        "images",
+        filename
+      );
+      
+      // Ensure directory exists
+      const dir = path.dirname(imagePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      // Save the image
+      fs.writeFileSync(imagePath, Buffer.from(buffer));
+      
+      const localUrl = `/api/materials/images/${filename}`;
+      console.log("[ImagePromptGeneration] Material image saved locally:", localUrl);
+      
+      res.json({ url: localUrl, prompt: result.prompt });
+    } catch (error) {
+      console.error('Material image generation error:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to generate image. Please try again later.' 
+      });
+    }
+  });
+
   // Activities routes
   app.get("/api/activities", async (req: AuthenticatedRequest, res) => {
     try {
