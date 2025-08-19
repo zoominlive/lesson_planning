@@ -1516,6 +1516,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get completed activity records with filters
+  app.get("/api/activity-records/completed", async (req: AuthenticatedRequest, res) => {
+    try {
+      // Check user role - only directors and assistant directors can view completed activities
+      const role = req.role?.toLowerCase();
+      if (role !== 'director' && role !== 'assistant_director' && role !== 'admin' && role !== 'superadmin') {
+        return res.status(403).json({ error: "Insufficient permissions to view completed activities" });
+      }
+
+      const { locationId, roomId, dateFrom, dateTo, minRating, materialsUsed } = req.query;
+      
+      // Validate location access if locationId is provided
+      if (locationId) {
+        const accessCheck = await validateLocationAccess(req, locationId as string);
+        if (!accessCheck.allowed) {
+          return res.status(403).json({ error: accessCheck.message });
+        }
+      }
+      
+      // Parse filters
+      const filters = {
+        locationId: locationId as string | undefined,
+        roomId: roomId as string | undefined,
+        dateFrom: dateFrom ? new Date(dateFrom as string) : undefined,
+        dateTo: dateTo ? new Date(dateTo as string) : undefined,
+        minRating: minRating ? parseInt(minRating as string) : undefined,
+        materialsUsed: materialsUsed === undefined ? undefined : materialsUsed === 'true'
+      };
+      
+      const completedRecords = await storage.getCompletedActivityRecords(filters);
+      
+      // Calculate statistics
+      const stats = {
+        totalActivities: completedRecords.length,
+        averageRating: completedRecords.reduce((acc, r) => acc + (r.rating || 0), 0) / (completedRecords.filter(r => r.rating).length || 1),
+        materialsUsedCount: completedRecords.filter(r => r.materialsUsed === true).length,
+        materialsNotUsedCount: completedRecords.filter(r => r.materialsUsed === false).length,
+        materialsUsageRate: completedRecords.filter(r => r.materialsUsed === true).length / (completedRecords.filter(r => r.materialsUsed !== null).length || 1) * 100,
+        ratingDistribution: {
+          1: completedRecords.filter(r => r.rating === 1).length,
+          2: completedRecords.filter(r => r.rating === 2).length,
+          3: completedRecords.filter(r => r.rating === 3).length,
+          4: completedRecords.filter(r => r.rating === 4).length,
+          5: completedRecords.filter(r => r.rating === 5).length,
+        }
+      };
+      
+      res.json({
+        records: completedRecords,
+        stats
+      });
+    } catch (error) {
+      console.error('Error fetching completed activity records:', error);
+      res.status(500).json({ error: "Failed to fetch completed activity records" });
+    }
+  });
+
+  // Export completed activity records to CSV
+  app.get("/api/activity-records/export", async (req: AuthenticatedRequest, res) => {
+    try {
+      // Check user role
+      const role = req.role?.toLowerCase();
+      if (role !== 'director' && role !== 'assistant_director' && role !== 'admin' && role !== 'superadmin') {
+        return res.status(403).json({ error: "Insufficient permissions to export activity records" });
+      }
+
+      const { locationId, roomId, dateFrom, dateTo, minRating, materialsUsed } = req.query;
+      
+      // Parse filters
+      const filters = {
+        locationId: locationId as string | undefined,
+        roomId: roomId as string | undefined,
+        dateFrom: dateFrom ? new Date(dateFrom as string) : undefined,
+        dateTo: dateTo ? new Date(dateTo as string) : undefined,
+        minRating: minRating ? parseInt(minRating as string) : undefined,
+        materialsUsed: materialsUsed === undefined ? undefined : materialsUsed === 'true'
+      };
+      
+      const completedRecords = await storage.getCompletedActivityRecords(filters);
+      
+      // Convert to CSV format
+      const csvHeader = [
+        'Activity Title',
+        'Room',
+        'Location',
+        'Teacher',
+        'Completed Date',
+        'Week Start',
+        'Day of Week',
+        'Time Slot',
+        'Rating',
+        'Materials Used',
+        'Notes',
+        'Rating Feedback',
+        'Material Feedback'
+      ].join(',');
+      
+      const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+      const timeSlotNames = ['Morning', 'Mid-Morning', 'Afternoon', 'Late Afternoon', 'Evening'];
+      
+      const csvRows = completedRecords.map(record => {
+        const completedDate = record.completedAt ? new Date(record.completedAt).toLocaleDateString() : '';
+        const weekStart = record.weekStart ? new Date(record.weekStart).toLocaleDateString() : '';
+        const dayOfWeek = dayNames[record.dayOfWeek] || '';
+        const timeSlot = timeSlotNames[record.timeSlot] || '';
+        
+        return [
+          `"${record.activityTitle || ''}"`,
+          `"${record.roomName || ''}"`,
+          `"${record.locationName || ''}"`,
+          `"${record.teacherName || ''}"`,
+          completedDate,
+          weekStart,
+          dayOfWeek,
+          timeSlot,
+          record.rating || '',
+          record.materialsUsed === true ? 'Yes' : record.materialsUsed === false ? 'No' : '',
+          `"${(record.notes || '').replace(/"/g, '""')}"`,
+          `"${(record.ratingFeedback || '').replace(/"/g, '""')}"`,
+          `"${(record.materialFeedback || '').replace(/"/g, '""')}"`
+        ].join(',');
+      });
+      
+      const csv = [csvHeader, ...csvRows].join('\n');
+      
+      // Set headers for CSV download
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="completed-activities-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csv);
+    } catch (error) {
+      console.error('Error exporting activity records:', error);
+      res.status(500).json({ error: "Failed to export activity records" });
+    }
+  });
+
   // Lesson Plans routes
   app.get("/api/lesson-plans", async (req: AuthenticatedRequest, res) => {
     try {

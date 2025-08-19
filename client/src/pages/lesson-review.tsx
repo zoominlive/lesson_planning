@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Clock, User, MapPin, Home, CheckCircle, XCircle, AlertCircle, FileText, ChevronRight, BookOpen, Filter } from "lucide-react";
+import { Calendar, Clock, User, MapPin, Home, CheckCircle, XCircle, AlertCircle, FileText, ChevronRight, BookOpen, Filter, ClipboardCheck, Activity } from "lucide-react";
 import { format, startOfWeek, addWeeks, subWeeks, addDays } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getUserInfo } from "@/lib/auth";
@@ -17,6 +17,7 @@ import { useLocation } from "wouter";
 import type { LessonPlan, User as UserType, Location, Room } from "@shared/schema";
 import WeeklyCalendar from "@/components/weekly-calendar";
 import { NavigationTabs } from "@/components/navigation-tabs";
+import { CompletedActivities } from "@/components/completed-activities";
 
 interface LessonPlanWithDetails extends LessonPlan {
   teacher?: UserType;
@@ -318,25 +319,39 @@ export function LessonReview() {
   return (
     <div className="container mx-auto p-3 max-w-7xl">
       <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Lesson Plan Review</h1>
-        <p className="text-sm text-gray-600">Review and approve submitted lesson plans</p>
+        <h1 className="text-2xl font-bold text-gray-900">Reviews & Feedback</h1>
+        <p className="text-sm text-gray-600">Review lesson plans and view completed activity feedback</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-        <TabsList className="mb-3">
-          <TabsTrigger value="submitted" className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
-            Pending ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "submitted").length})
+      <Tabs defaultValue="lesson-reviews" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="lesson-reviews" className="flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4" />
+            Lesson Reviews
           </TabsTrigger>
-          <TabsTrigger value="approved" className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4" />
-            Approved ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "approved").length})
-          </TabsTrigger>
-          <TabsTrigger value="rejected" className="flex items-center gap-2">
-            <XCircle className="h-4 w-4" />
-            Returned ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "rejected").length})
+          <TabsTrigger value="completed-activities" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Completed Activities
           </TabsTrigger>
         </TabsList>
+
+        {/* Lesson Reviews Tab */}
+        <TabsContent value="lesson-reviews" className="space-y-4">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+            <TabsList className="mb-3">
+              <TabsTrigger value="submitted" className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Pending ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "submitted").length})
+              </TabsTrigger>
+              <TabsTrigger value="approved" className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Approved ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "approved").length})
+              </TabsTrigger>
+              <TabsTrigger value="rejected" className="flex items-center gap-2">
+                <XCircle className="h-4 w-4" />
+                Returned ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "rejected").length})
+              </TabsTrigger>
+            </TabsList>
 
         {/* Filter Controls */}
         <div className="flex gap-3 mb-4 p-3 bg-gray-50 rounded-lg border">
@@ -470,10 +485,15 @@ export function LessonReview() {
               ))}
             </Accordion>
           )}
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+        
+        {/* Completed Activities Tab */}
+        <TabsContent value="completed-activities">
+          <CompletedActivities />
         </TabsContent>
       </Tabs>
-
-
     </div>
   );
 }
