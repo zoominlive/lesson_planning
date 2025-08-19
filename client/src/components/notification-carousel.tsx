@@ -10,7 +10,7 @@ import type { Notification, LessonPlan } from "@shared/schema";
 
 interface NotificationCarouselProps {
   currentWeekDate: Date;
-  onWeekChange: (date: Date) => void;
+  onWeekChange: (date: Date, lessonPlanId?: string) => void;
 }
 
 export function NotificationCarousel({ currentWeekDate, onWeekChange }: NotificationCarouselProps) {
@@ -78,7 +78,8 @@ export function NotificationCarousel({ currentWeekDate, onWeekChange }: Notifica
   const handleNavigateToWeek = () => {
     if (currentNotification.weekStart) {
       const weekStart = new Date(currentNotification.weekStart);
-      onWeekChange(weekStart);
+      // Pass the lesson plan ID if available to ensure the correct plan's activities are loaded
+      onWeekChange(weekStart, currentNotification.lessonPlanId || undefined);
     }
   };
 

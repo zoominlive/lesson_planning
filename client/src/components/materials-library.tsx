@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Check, Package, FolderOpen } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Plus, Edit, Trash2, Package, FolderOpen, Sparkles } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import MaterialForm from "./material-form";
@@ -14,6 +15,7 @@ import CollectionsManager from "./collections-manager";
 import type { Material } from "@shared/schema";
 
 export default function MaterialsLibrary() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [ageGroupFilter, setAgeGroupFilter] = useState("all");
   const [selectedCollectionId, setSelectedCollectionId] = useState("all");
@@ -21,6 +23,9 @@ export default function MaterialsLibrary() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCollectionsDialogOpen, setIsCollectionsDialogOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState("");
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [expandedImage, setExpandedImage] = useState<{url: string, name: string} | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<Material | null>(null);
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
     queryKey: ["/api/materials", selectedLocationId],
@@ -114,9 +119,33 @@ export default function MaterialsLibrary() {
     setEditingMaterial(material);
   };
 
-  const handleUse = (material: Material) => {
-    // TODO: Implement material usage tracking
-    console.log("Use material:", material.name);
+  const handleDelete = (material: Material) => {
+    setDeleteConfirmation(material);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmation) return;
+    
+    try {
+      await apiRequest("DELETE", `/api/materials/${deleteConfirmation.id}`);
+      queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
+      toast({
+        title: "Material deleted",
+        description: `"${deleteConfirmation.name}" has been deleted successfully.`,
+      });
+      setDeleteConfirmation(null);
+    } catch (error) {
+      console.error("Failed to delete material:", error);
+      toast({
+        title: "Failed to delete material",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleImageError = (materialId: string) => {
+    setFailedImages(prev => new Set(prev).add(materialId));
   };
 
   // Calculate statistics
@@ -173,15 +202,17 @@ export default function MaterialsLibrary() {
                     Add New Material
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col">
                   <DialogHeader>
                     <DialogTitle>Add New Material</DialogTitle>
                   </DialogHeader>
-                  <MaterialForm 
-                    onSuccess={() => setIsCreateDialogOpen(false)}
-                    onCancel={() => setIsCreateDialogOpen(false)}
-                    selectedLocationId={selectedLocationId}
-                  />
+                  <div className="overflow-y-auto flex-1">
+                    <MaterialForm 
+                      onSuccess={() => setIsCreateDialogOpen(false)}
+                      onCancel={() => setIsCreateDialogOpen(false)}
+                      selectedLocationId={selectedLocationId}
+                    />
+                  </div>
                 </DialogContent>
               </Dialog>
             </div>
@@ -274,20 +305,28 @@ export default function MaterialsLibrary() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {filteredMaterials.map((material) => (
-            <Card key={material.id} className="material-shadow overflow-hidden material-shadow-hover">
-              <div className="relative h-40 bg-gradient-to-br from-turquoise to-sky-blue">
-                {material.photoUrl ? (
+            <Card key={material.id} className="material-shadow overflow-hidden material-shadow-hover flex flex-col">
+              <div className="relative h-40 bg-gradient-to-br from-turquoise to-sky-blue flex-shrink-0">
+                {material.photoUrl && !failedImages.has(material.id) ? (
                   <img 
                     src={material.photoUrl} 
                     alt={material.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                    onError={() => handleImageError(material.id)}
+                    onClick={() => setExpandedImage({url: material.photoUrl || '', name: material.name})}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white">
-                    <Package className="h-12 w-12" />
+                  <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-purple-100 to-pink-100">
+                    <Package className="h-10 w-10 mb-2 text-purple-600" />
+                    <p className="text-sm font-medium text-center text-gray-700">
+                      No image available
+                    </p>
+                    <p className="text-xs text-gray-600 text-center mt-1">
+                      Click Edit to add or generate with AI
+                    </p>
                   </div>
                 )}
-                {material.photoUrl && (
+                {material.photoUrl && !failedImages.has(material.id) && (
                   <div className="absolute top-2 right-2">
                     <Badge variant="secondary" className="bg-white/80 text-gray-700">
                       Photo
@@ -296,7 +335,7 @@ export default function MaterialsLibrary() {
                 )}
               </div>
               
-              <CardContent className="p-4">
+              <CardContent className="p-4 flex flex-col flex-grow">
                 <h3 className="font-bold text-charcoal mb-2" data-testid={`material-name-${material.id}`}>
                   {material.name}
                 </h3>
@@ -304,7 +343,7 @@ export default function MaterialsLibrary() {
                   {material.description}
                 </p>
                 
-                <div className="space-y-2 mb-3">
+                <div className="space-y-2 mb-3 flex-grow">
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-500">Age Groups:</span>
                     <span className="font-medium text-right" data-testid={`material-age-groups-${material.id}`}>
@@ -325,7 +364,7 @@ export default function MaterialsLibrary() {
                   </div>
                 </div>
                 
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 mt-auto">
                   <Button 
                     variant="outline"
                     size="sm"
@@ -340,11 +379,11 @@ export default function MaterialsLibrary() {
                     variant="outline"
                     size="sm"
                     className="flex-1"
-                    onClick={() => handleUse(material)}
-                    data-testid={`button-use-material-${material.id}`}
+                    onClick={() => handleDelete(material)}
+                    data-testid={`button-delete-material-${material.id}`}
                   >
-                    <Check className="mr-1 h-3 w-3" />
-                    Use
+                    <Trash2 className="mr-1 h-3 w-3" />
+                    Delete
                   </Button>
                 </div>
               </CardContent>
@@ -353,50 +392,70 @@ export default function MaterialsLibrary() {
         </div>
       )}
 
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="material-shadow text-center">
-          <CardContent className="p-6">
-            <div className="text-3xl font-bold text-coral-red mb-2" data-testid="stat-total-materials">
-              {totalMaterials}
-            </div>
-            <div className="text-gray-600">Total Materials</div>
-          </CardContent>
-        </Card>
-        <Card className="material-shadow text-center">
-          <CardContent className="p-6">
-            <div className="text-3xl font-bold text-mint-green mb-2" data-testid="stat-locations">
-              {locationsCount}
-            </div>
-            <div className="text-gray-600">Locations</div>
-          </CardContent>
-        </Card>
-        <Card className="material-shadow text-center">
-          <CardContent className="p-6">
-            <div className="text-3xl font-bold text-sky-blue mb-2" data-testid="stat-with-photos">
-              {materials.filter(m => m.photoUrl).length}
-            </div>
-            <div className="text-gray-600">With Photos</div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Edit Material Dialog */}
       {editingMaterial && (
         <Dialog open={!!editingMaterial} onOpenChange={() => setEditingMaterial(null)}>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>Edit Material</DialogTitle>
             </DialogHeader>
-            <MaterialForm 
-              material={editingMaterial}
-              onSuccess={() => setEditingMaterial(null)}
-              onCancel={() => setEditingMaterial(null)}
-              selectedLocationId={selectedLocationId}
-            />
+            <div className="overflow-y-auto flex-1">
+              <MaterialForm 
+                material={editingMaterial}
+                onSuccess={() => setEditingMaterial(null)}
+                onCancel={() => setEditingMaterial(null)}
+                selectedLocationId={selectedLocationId}
+              />
+            </div>
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Image Expansion Dialog */}
+      {expandedImage && (
+        <Dialog open={!!expandedImage} onOpenChange={() => setExpandedImage(null)}>
+          <DialogContent className="max-w-3xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle>{expandedImage.name}</DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center justify-center p-4">
+              <img
+                src={expandedImage.url}
+                alt={expandedImage.name}
+                className="max-w-full max-h-[70vh] object-contain rounded-lg"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirmation} onOpenChange={() => setDeleteConfirmation(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Material</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{deleteConfirmation?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteConfirmation(null)}
+              data-testid="button-cancel-delete"
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete}
+              data-testid="button-confirm-delete"
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -64,7 +64,7 @@ import {
   activityRecords
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, isNull, inArray } from "drizzle-orm";
+import { eq, and, sql, isNull, inArray, or } from "drizzle-orm";
 
 // Re-importing schema to use it within the class
 import * as schema from "@shared/schema";
@@ -431,6 +431,15 @@ export class DatabaseStorage implements IStorage {
     const conditions = [];
     if (this.tenantId) conditions.push(eq(materials.tenantId, this.tenantId));
     
+    // Filter out soft-deleted materials
+    conditions.push(
+      or(
+        eq(materials.status, 'active'),
+        isNull(materials.status)
+      )
+    );
+    conditions.push(isNull(materials.deletedAt));
+    
     return await this.db.select().from(materials).where(conditions.length ? and(...conditions) : undefined);
   }
 
@@ -441,6 +450,15 @@ export class DatabaseStorage implements IStorage {
     
     // For multi-location materials, check if locationId is included in locationIds array
     conditions.push(sql`${materials.locationIds}::jsonb ? ${locationId}`); 
+    
+    // Filter out soft-deleted materials
+    conditions.push(
+      or(
+        eq(materials.status, 'active'),
+        isNull(materials.status)
+      )
+    );
+    conditions.push(isNull(materials.deletedAt));
     
     return await this.db.select().from(materials).where(and(...conditions));
   }
@@ -486,8 +504,18 @@ export class DatabaseStorage implements IStorage {
     const conditions = [eq(materials.id, id)];
     if (this.tenantId) conditions.push(eq(materials.tenantId, this.tenantId));
     
-    const result = await this.db.delete(materials).where(and(...conditions));
-    return (result.rowCount ?? 0) > 0;
+    // Soft delete by updating status and deletedAt
+    const [material] = await this.db
+      .update(materials)
+      .set({ 
+        status: 'deleted',
+        deletedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(and(...conditions))
+      .returning();
+    
+    return !!material;
   }
 
   // Material Collections

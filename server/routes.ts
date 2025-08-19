@@ -16,6 +16,9 @@ import {
 import { materialStorage } from "./materialStorage";
 import { activityStorage } from "./activityStorage";
 import { perplexityService } from "./perplexityService";
+import { openAIService } from "./openAiService";
+import { imagePromptGenerationService } from "./imagePromptGenerationService";
+import { promptValidationService } from "./promptValidationService";
 import { milestoneStorage } from "./milestoneStorage";
 import multer from "multer";
 import path from "path";
@@ -70,7 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/materials/images/:filename', async (req, res) => {
     try {
       const filename = req.params.filename;
-      const imagePath = path.join(process.cwd(), 'public', 'materials-images', filename);
+      const imagePath = path.join(process.cwd(), 'public', 'materials', 'images', filename);
       
       // Check if file exists in public directory first
       if (fs.existsSync(imagePath)) {
@@ -639,6 +642,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add materials to a collection
+  app.post("/api/material-collections/:id/materials", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { materialIds } = req.body;
+      
+      console.log('[POST /api/material-collections/:id/materials] Adding materials to collection:', id, materialIds);
+      
+      if (!Array.isArray(materialIds)) {
+        return res.status(400).json({ error: "materialIds must be an array" });
+      }
+      
+      // Add each material to the collection
+      const results = [];
+      for (const materialId of materialIds) {
+        try {
+          const item = await storage.addMaterialToCollection(materialId, id);
+          results.push(item);
+        } catch (error) {
+          // Skip if material is already in collection (duplicate key error)
+          console.log(`Material ${materialId} may already be in collection ${id}:`, error);
+        }
+      }
+      
+      res.json({ success: true, added: results.length });
+    } catch (error) {
+      console.error('[POST /api/material-collections/:id/materials] Error:', error);
+      res.status(500).json({ error: "Failed to add materials to collection" });
+    }
+  });
+
   // Get collections for a material
   app.get("/api/materials/:id/collections", async (req: AuthenticatedRequest, res) => {
     try {
@@ -725,6 +759,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error setting material photo:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Generate AI image for material
+  app.post('/api/materials/generate-image', async (req: AuthenticatedRequest, res) => {
+    try {
+      const { name, description, prompt } = req.body;
+      
+      // Check if OPENAI_API_KEY is available
+      if (!process.env.OPENAI_API_KEY) {
+        console.error('OpenAI API key not configured');
+        return res.status(503).json({ 
+          error: 'Image generation service is not available. Please ensure OPENAI_API_KEY is configured.' 
+        });
+      }
+      
+      // For materials, we want simple product shots on white backgrounds
+      const materialName = name || prompt?.split('.')[0] || 'Material';
+      const materialDescription = description || '';
+      
+      // Create a simple, direct prompt for clean product photography
+      const imagePrompt = `High-quality product photography of ${materialName}${materialDescription ? `, ${materialDescription}` : ''}. Professional studio lighting, pure white background, crisp and clear, centered composition, no shadows, commercial product shot style. Show only the item itself, no hands or people.`;
+      
+      console.log('[Material Image Generation] Using direct prompt:', imagePrompt);
+      
+      // Generate image directly with OpenAI API
+      const response = await fetch(
+        "https://api.openai.com/v1/images/generations",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "dall-e-3",
+            prompt: imagePrompt,
+            size: "1024x1024",
+            quality: "hd",
+            n: 1,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[Material Image Generation] Failed:", errorText);
+        throw new Error(`Image generation failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const imageUrl = data.data[0].url;
+      
+      if (!imageUrl) {
+        return res.status(500).json({ error: 'Failed to generate image' });
+      }
+      
+      // Save the generated image locally
+      const imageResponse = await fetch(imageUrl);
+      const buffer = await imageResponse.arrayBuffer();
+      
+      // Generate a unique filename
+      const timestamp = Date.now();
+      const uniqueId = crypto.randomUUID().substring(0, 8);
+      const filename = `ai_generated_material_${timestamp}_${uniqueId}.png`;
+      const imagePath = path.join(
+        process.cwd(),
+        "public",
+        "materials",
+        "images",
+        filename
+      );
+      
+      // Ensure directory exists
+      const dir = path.dirname(imagePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      // Save the image
+      fs.writeFileSync(imagePath, Buffer.from(buffer));
+      
+      const localUrl = `/api/materials/images/${filename}`;
+      console.log("[Material Image Generation] Image saved locally:", localUrl);
+      
+      res.json({ url: localUrl, prompt: imagePrompt });
+    } catch (error) {
+      console.error('Material image generation error:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to generate image. Please try again later.' 
+      });
     }
   });
 
@@ -886,12 +1011,182 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate step image using AI
+  app.post('/api/activities/generate-step-image', async (req: AuthenticatedRequest, res) => {
+    try {
+      const { activityTitle, activityDescription, stepNumber, stepText, ageGroup, category, spaceRequired } = req.body;
+      
+      if (!stepText || !stepNumber) {
+        return res.status(400).json({ error: 'Step text and number are required' });
+      }
+
+      // Check if services are available
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(503).json({ 
+          error: 'Image generation service is not available. Please check your OpenAI API key configuration.' 
+        });
+      }
+
+      // Use the new imagePromptGenerationService for step images
+      const result = await imagePromptGenerationService.generateActivityImage({
+        type: 'step',
+        activityTitle: activityTitle || 'Activity',
+        activityDescription: activityDescription || '',
+        stepNumber,
+        stepText,
+        ageGroup,
+        category,
+        spaceRequired
+      });
+      
+      if (!result.url) {
+        return res.status(500).json({ error: 'Failed to generate step image' });
+      }
+      
+      // Save the generated image locally
+      const imageResponse = await fetch(result.url);
+      const buffer = await imageResponse.arrayBuffer();
+      
+      // Generate a unique filename
+      const timestamp = Date.now();
+      const uniqueId = crypto.randomUUID().substring(0, 8);
+      const filename = `ai_generated_${timestamp}_${uniqueId}.png`;
+      const imagePath = path.join(
+        process.cwd(),
+        "public",
+        "activity-images",
+        "images",
+        filename
+      );
+      
+      // Ensure directory exists
+      const dir = path.dirname(imagePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      // Save the image
+      fs.writeFileSync(imagePath, Buffer.from(buffer));
+      
+      const localUrl = `/api/activities/images/${filename}`;
+      console.log("[ImagePromptGeneration] Step image saved locally:", localUrl);
+      
+      res.json({ url: localUrl, prompt: result.prompt });
+    } catch (error) {
+      console.error('Step image generation error:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to generate step image. Please try again later.' 
+      });
+    }
+  });
+
+  // Generate activity image using AI
+
+  app.post('/api/activities/generate-image', async (req: AuthenticatedRequest, res) => {
+    try {
+      const { prompt, title, description, spaceRequired, ageGroup, category } = req.body;
+      
+      if (!prompt && (!title || !description)) {
+        return res.status(400).json({ error: 'Either prompt or both title and description are required' });
+      }
+
+      // Check if services are available
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(503).json({ 
+          error: 'Image generation service is not available. Please check your OpenAI API key configuration.' 
+        });
+      }
+
+      // Use the new imagePromptGenerationService
+      const activityTitle = title || prompt?.split('.')[0] || 'Activity';
+      const activityDescription = description || prompt || '';
+      
+      const result = await imagePromptGenerationService.generateActivityImage({
+        type: 'activity',
+        activityTitle,
+        activityDescription,
+        ageGroup,
+        category,
+        spaceRequired
+      });
+      
+      if (!result.url) {
+        return res.status(500).json({ error: 'Failed to generate image' });
+      }
+      
+      // Save the generated image locally
+      const imageResponse = await fetch(result.url);
+      const buffer = await imageResponse.arrayBuffer();
+      
+      // Generate a unique filename
+      const timestamp = Date.now();
+      const uniqueId = crypto.randomUUID().substring(0, 8);
+      const filename = `ai_generated_${timestamp}_${uniqueId}.png`;
+      const imagePath = path.join(
+        process.cwd(),
+        "public",
+        "activity-images",
+        "images",
+        filename
+      );
+      
+      // Ensure directory exists
+      const dir = path.dirname(imagePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      // Save the image
+      fs.writeFileSync(imagePath, Buffer.from(buffer));
+      
+      const localUrl = `/api/activities/images/${filename}`;
+      console.log("[ImagePromptGeneration] Image saved locally:", localUrl);
+      
+      res.json({ url: localUrl, prompt: result.prompt });
+    } catch (error) {
+      console.error('Activity image generation error:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to generate image. Please try again later.' 
+      });
+    }
+  });
+
   // Generate activity using AI
   app.post('/api/activities/generate', async (req: AuthenticatedRequest, res) => {
-    const { ageGroupId, ageGroupName, ageRange, category, isQuiet, isIndoor, locationId } = req.body;
+    const { ageGroupId, ageGroupName, ageRange, category, isQuiet, isIndoor, locationId, activityType, focusMaterial } = req.body;
     
     if (!ageGroupName || !category || isQuiet === undefined || isIndoor === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Validate user inputs for safety and appropriateness
+    if (activityType || focusMaterial) {
+      console.log('[AI Generation] Validating user inputs:', { activityType, focusMaterial });
+      
+      try {
+        const validationResult = await promptValidationService.validateActivityInputs(
+          activityType,
+          focusMaterial
+        );
+        
+        // Block if validation returns false (inappropriate content detected)
+        if (!validationResult.isValid) {
+          console.log('[AI Generation] Validation failed:', validationResult.reason);
+          return res.status(400).json({ 
+            error: 'The requested activity type or material is not appropriate for early childhood education.',
+            reason: validationResult.reason || 'Content does not meet safety guidelines for children ages 0-5.'
+          });
+        }
+        
+        console.log('[AI Generation] Validation passed');
+      } catch (validationError) {
+        // If validation service fails, block the request for safety
+        console.error('[AI Generation] Validation service error:', validationError);
+        return res.status(503).json({ 
+          error: 'Content validation service is temporarily unavailable. Please try again later or remove the activity type and focus material fields.',
+          reason: 'Unable to verify content safety at this time.'
+        });
+      }
     }
 
     // Fetch existing activities to avoid duplicates
@@ -915,7 +1210,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isQuiet,
           isIndoor,
           ageRange: ageRange || { start: 2, end: 5 },
-          existingActivities: existingActivityInfo
+          existingActivities: existingActivityInfo,
+          activityType: activityType,
+          focusMaterial: focusMaterial
         });
 
         // Check if the generation failed
@@ -1359,16 +1656,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/scheduled-activities/:roomId", async (req: AuthenticatedRequest, res) => {
     try {
       const { roomId } = req.params;
-      const { weekStart, locationId } = req.query;
+      const { weekStart, locationId, lessonPlanId } = req.query;
       
-      console.log('[GET /api/scheduled-activities] Params:', { roomId, weekStart, locationId });
+      console.log('[GET /api/scheduled-activities] Params:', { roomId, weekStart, locationId, lessonPlanId });
       
       // Get all scheduled activities for this room
       const allScheduledActivities = await storage.getAllScheduledActivities();
       
       // Filter lesson plans by week, location, and room if weekStart is provided
       let lessonPlanIds: string[] = [];
-      if (weekStart && locationId) {
+      
+      // If a specific lessonPlanId is provided (e.g., when revising a rejected plan), use it directly
+      if (lessonPlanId) {
+        lessonPlanIds = [lessonPlanId as string];
+        console.log('[GET /api/scheduled-activities] Using specific lesson plan ID:', lessonPlanId);
+      } else if (weekStart && locationId) {
         // Get tenant settings to determine current schedule type for this location
         const orgSettings = await storage.getTenantSettings();
         let currentScheduleType: 'time-based' | 'position-based' = 'time-based'; // default

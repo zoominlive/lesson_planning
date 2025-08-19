@@ -1,30 +1,15 @@
 # Overview
-This project is a comprehensive lesson planning application for early childhood educators, designed to streamline the creation and management of weekly lesson plans. It supports managing activities, materials, and developmental milestones, and facilitates structured weekly schedules aligned with educational objectives. The application features a multi-tenant and multi-location architecture, ensuring data isolation and secure access for various educational organizations and their facilities. Its business vision is to provide a robust, scalable platform that simplifies lesson planning, thereby enhancing educational quality and efficiency in early childhood settings. Key capabilities include a tablet-friendly review workflow, consistent week display, enhanced visual content for educational materials, a persistent notification system for lesson plan feedback, and a mobile-optimized parent view for approved lesson plans. The system also incorporates AI for activity generation with duplicate prevention and robust permission management for lesson plan approvals.
-
-## Recent Changes (August 2025)
-- **Mobile Component Architecture**: Organized parent view components into `/client/src/components/mobile/` directory structure to reflect mobile webview integration purpose
-- **Parent View Enhancements**: Implemented stunning Instagram-like design with collapsible "How it works" sections, full-width material display, and proper developmental milestone naming
-- **Data Display Fixes**: Corrected server-side data mapping for materials, milestones, and categories with proper field name mapping from database to frontend
-- **Material Collections System**: Implemented complete material collections feature with many-to-many relationships, allowing materials to be organized into collections for easier browsing and filtering
-  - Database schema: Added `material_collections` and `material_collection_items` tables
-  - Backend API: Full CRUD operations for collections and material-collection associations  
-  - UI enhancements: Collection selection in material forms and filtering in materials library
-- **AI Activity Generation Improvements**:
-  - Fixed description textarea to auto-expand for better visibility of AI-generated content
-  - Ensured all AI-generated fields (objectives, safety considerations, etc.) are properly saved to database
-  - Improved Quick Add materials visual feedback to show when materials have been added
-  - Cleaned up console.log statements from production code
-  - Fixed TypeScript issues with Set iteration and null/undefined type handling
+This project is a comprehensive lesson planning application for early childhood educators. Its primary purpose is to streamline the creation and management of weekly lesson plans, supporting activities, materials, and developmental milestones, and facilitating structured weekly schedules aligned with educational objectives. The application features a multi-tenant and multi-location architecture, ensuring data isolation and secure access for various educational organizations. The business vision is to provide a robust, scalable platform that simplifies lesson planning, thereby enhancing educational quality and efficiency in early childhood settings. Key capabilities include a tablet-friendly review workflow, consistent week display, enhanced visual content, a persistent notification system for lesson plan feedback, and a mobile-optimized parent view for approved lesson plans. The system also incorporates AI for activity generation with duplicate prevention, AI-powered material image generation, soft delete functionality for materials, and robust permission management for lesson plan approvals.
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
 
 # System Architecture
 ## Frontend Architecture
-The frontend is built with React 18 and TypeScript, using a component-based architecture. Styling is handled with Tailwind CSS, leveraging a custom childcare-themed design system, and Shadcn/ui for components (built on Radix UI). TanStack Query manages server state, Wouter is used for routing, and React Hook Form with Zod handles form management and validation. Vite is employed for development and optimized builds. The UI/UX prioritizes a cohesive design system with a custom color palette, consistent typography, and accessible components.
+The frontend is built with React 18 and TypeScript, utilizing a component-based architecture. Styling is managed with Tailwind CSS, a custom childcare-themed design system, and Shadcn/ui for components (built on Radix UI). TanStack Query handles server state, Wouter is used for routing, and React Hook Form with Zod manages forms and validation. Vite is employed for development and optimized builds. The UI/UX prioritizes a cohesive design system with a custom color palette, consistent typography, and accessible components.
 
 ## Backend Architecture
-The backend follows a RESTful API pattern built with Node.js and Express.js. It utilizes Drizzle ORM with PostgreSQL for type-safe database operations and Zod schemas for consistent data validation. An abstract storage interface provides flexibility for data persistence. The API design emphasizes standard CRUD operations, centralized error handling, and structured logging.
+The backend follows a RESTful API pattern built with Node.js and Express.js. It uses Drizzle ORM with PostgreSQL for type-safe database operations and Zod schemas for data validation. An abstract storage interface provides flexibility for data persistence. The API design emphasizes standard CRUD operations, centralized error handling, and structured logging.
 
 ## Data Storage Solutions
 A PostgreSQL database, specifically Neon Database, serves as the primary data store. Drizzle ORM facilitates database interactions and schema management. The architecture supports multi-tenancy and multi-location data isolation using UUID primary keys and `tenantId`/`locationId` foreign keys across relevant tables. All lesson plan entities require both `tenantId` and `locationId` for proper data isolation, with API endpoints filtering data based on authenticated tenant and authorized locations. Core data models include Users, Milestones, Materials, Activities, Lesson Plans, Scheduled Activities, and Settings (Locations, Rooms, Categories, Age Groups). Lesson plans are shared across all teachers for the same tenant, location, room, schedule type, and week.
@@ -42,6 +27,10 @@ Vite is used for frontend development (HMR, TypeScript checking) and optimizatio
 ## Database Services
 - **Neon Database**: Serverless PostgreSQL hosting.
 - **Drizzle ORM**: Type-safe database operations.
+
+## AI and Image Generation Services
+- **Perplexity AI**: Used for prompt generation service and content safety validation.
+- **OpenAI DALL-E 3**: Used for AI image generation.
 
 ## UI and Component Libraries
 - **React**: Frontend UI library.

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -29,10 +30,17 @@ export default function AiActivityGenerator({
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isQuiet, setIsQuiet] = useState<boolean | null>(null);
   const [isIndoor, setIsIndoor] = useState<boolean | null>(null);
+  const [activityType, setActivityType] = useState<string>("");
+  const [focusMaterial, setFocusMaterial] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationMessage, setGenerationMessage] = useState("");
   const [retryCount, setRetryCount] = useState(0);
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
+  const [errorModal, setErrorModal] = useState<{open: boolean, title: string, message: string}>({
+    open: false,
+    title: "",
+    message: ""
+  });
 
   const handleGenerate = async () => {
     if (!selectedAgeGroup || !selectedCategory || isQuiet === null || isIndoor === null) {
@@ -67,34 +75,56 @@ export default function AiActivityGenerator({
           category: selectedCategory,
           isQuiet,
           isIndoor,
-          locationId
+          locationId,
+          activityType: (activityType && activityType !== 'none') ? activityType : undefined,
+          focusMaterial: focusMaterial || undefined
         })
       });
 
       const result = await response.json();
 
       if (!response.ok) {
+        setIsGenerating(false);
+        
         // Check if the error is retryable or not
         if (response.status === 503) {
           // Service unavailable - AI failed after retries
-          toast({
+          setErrorModal({
+            open: true,
             title: "AI Service Temporarily Unavailable",
-            description: result.error || "The AI is having trouble generating activities right now. Please try again later or create an activity manually.",
-            variant: "destructive"
+            message: result.error || "The AI is having trouble generating activities right now. Please try again later or create an activity manually."
           });
         } else if (response.status === 500 && result.retryable) {
           // Server error but retryable
-          toast({
+          setErrorModal({
+            open: true,
             title: "Generation Failed",
-            description: "There was an issue generating the activity. Please try again in a moment.",
-            variant: "destructive"
+            message: "There was an issue generating the activity. Please try again in a moment."
+          });
+        } else if (response.status === 400 && result.reason) {
+          // Validation error from content safety check
+          // Go back to step 5 where user can edit activity type and focus material
+          setStep(5);
+          // Show error in a toast so they understand what needs to be changed
+          toast({
+            title: "Content Not Appropriate",
+            description: result.reason || result.error || "The requested content is not appropriate for early childhood education. Please modify your activity type or focus material.",
+            variant: "destructive",
+            duration: 10000 // Show for 10 seconds so they have time to read it
+          });
+        } else if (response.status === 503 && result.reason && result.reason.includes('validation')) {
+          // Validation service unavailable
+          setErrorModal({
+            open: true,
+            title: "Safety Check Unavailable",
+            message: "Unable to verify content safety at this time. Please try again later or remove the activity type and focus material fields."
           });
         } else {
           // Other errors
-          toast({
+          setErrorModal({
+            open: true,
             title: "Generation Failed",
-            description: result.error || "Unable to generate activity. Please try again.",
-            variant: "destructive"
+            message: result.error || "Unable to generate activity. Please try again."
           });
         }
         return;
@@ -103,10 +133,11 @@ export default function AiActivityGenerator({
       // Check if the generation succeeded
       if (result.title === "Activity Generation Failed") {
         // This shouldn't happen anymore with backend retry, but just in case
-        toast({
+        setIsGenerating(false);
+        setErrorModal({
+          open: true,
           title: "Generation Issue",
-          description: "The AI couldn't generate a proper activity. Please try again or create one manually.",
-          variant: "destructive"
+          message: "The AI couldn't generate a proper activity. Please try again or create one manually."
         });
         return;
       }
@@ -131,6 +162,9 @@ export default function AiActivityGenerator({
       setSelectedAgeGroup("");
       setSelectedCategory("");
       setIsQuiet(null);
+      setIsIndoor(null);
+      setActivityType("");
+      setFocusMaterial("");
       setGenerationMessage("");
       onOpenChange(false);
       
@@ -140,10 +174,10 @@ export default function AiActivityGenerator({
       });
     } catch (error) {
       console.error('Error generating activity:', error);
-      toast({
+      setErrorModal({
+        open: true,
         title: "Connection Error",
-        description: "Unable to connect to the server. Please check your connection and try again.",
-        variant: "destructive"
+        message: "Unable to connect to the server. Please check your connection and try again."
       });
     } finally {
       setIsGenerating(false);
@@ -180,8 +214,9 @@ export default function AiActivityGenerator({
       });
       return;
     }
+    // Step 5 is optional, so no validation needed
     
-    if (step < 4) {
+    if (step < 5) {
       setStep(step + 1);
     } else {
       handleGenerate();
@@ -208,6 +243,8 @@ export default function AiActivityGenerator({
     setSelectedCategory("");
     setIsQuiet(null);
     setIsIndoor(null);
+    setActivityType("");
+    setFocusMaterial("");
     setGenerationMessage("");
     onOpenChange(false);
   };
@@ -246,29 +283,36 @@ export default function AiActivityGenerator({
         <div className="mt-6">
           {/* Progress indicators */}
           <div className="flex justify-between mb-8">
-            {[1, 2, 3, 4].map((num) => (
+            {[1, 2, 3, 4, 5].map((num) => (
               <div
                 key={num}
-                className={`flex items-center ${num < 4 ? 'flex-1' : ''}`}
+                className={`flex items-center ${num < 5 ? 'flex-1' : ''}`}
               >
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                    step === num
-                      ? 'bg-gradient-to-r from-coral-red to-turquoise text-gray-900 shadow-lg ring-2 ring-coral-red/50'
-                      : step > num
-                      ? 'bg-gradient-to-r from-coral-red to-turquoise text-gray-900 opacity-60'
-                      : 'bg-gray-200 text-gray-500'
-                  }`}
-                >
-                  {step > num ? (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  ) : (
-                    num
+                <div className="relative">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all bg-gradient-to-r from-coral-red to-turquoise shadow-lg ring-2 ring-coral-red/50 text-[#1c1919]"
+                  >
+                    {num}
+                  </div>
+                  
+                  {/* Show checkmark badge for completed steps */}
+                  {step > num && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                      <svg 
+                        className="w-3 h-3 text-white" 
+                        fill="currentColor" 
+                        viewBox="0 0 20 20"
+                      >
+                        <path 
+                          fillRule="evenodd" 
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
+                          clipRule="evenodd" 
+                        />
+                      </svg>
+                    </div>
                   )}
                 </div>
-                {num < 4 && (
+                {num < 5 && (
                   <div
                     className={`flex-1 h-1 mx-2 transition-all ${
                       step > num ? 'bg-gradient-to-r from-coral-red to-turquoise' : 'bg-gray-200'
@@ -294,7 +338,7 @@ export default function AiActivityGenerator({
                   <SelectContent>
                     {ageGroups.map((ageGroup) => (
                       <SelectItem key={ageGroup.id} value={ageGroup.id}>
-                        {ageGroup.name} ({ageGroup.ageRangeStart}-{ageGroup.ageRangeEnd} years)
+                        {ageGroup.name} ({ageGroup.description})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -408,6 +452,50 @@ export default function AiActivityGenerator({
                 </div>
               </div>
             )}
+
+            {step === 5 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Any specific preferences? (Optional)</h3>
+                <p className="text-sm text-gray-600">
+                  Help us create a more targeted activity by specifying a type or material focus.
+                </p>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Activity Type</label>
+                    <Select value={activityType} onValueChange={setActivityType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select an activity type (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No preference</SelectItem>
+                        <SelectItem value="game">Game</SelectItem>
+                        <SelectItem value="song">Song/Music</SelectItem>
+                        <SelectItem value="sensory">Sensory Activity</SelectItem>
+                        <SelectItem value="seated">Seated/Table Activity</SelectItem>
+                        <SelectItem value="art">Art & Craft</SelectItem>
+                        <SelectItem value="story">Story/Drama</SelectItem>
+                        <SelectItem value="movement">Movement/Dance</SelectItem>
+                        <SelectItem value="science">Science/Discovery</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Focus Material</label>
+                    <Input
+                      type="text"
+                      placeholder="e.g., blocks, paint, playdough, water (optional)"
+                      value={focusMaterial}
+                      onChange={(e) => setFocusMaterial(e.target.value)}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Specify a material you'd like the activity to use or focus on
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action buttons */}
@@ -429,7 +517,7 @@ export default function AiActivityGenerator({
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {generationMessage || "Generating..."}
                 </>
-              ) : step === 4 ? (
+              ) : step === 5 ? (
                 <>
                   <Wand2 className="mr-2 h-4 w-4" />
                   Generate Activity
@@ -445,7 +533,6 @@ export default function AiActivityGenerator({
         </div>
         </DialogContent>
       </Dialog>
-
       {/* Exit Confirmation Dialog */}
       <AlertDialog open={showExitConfirmation} onOpenChange={setShowExitConfirmation}>
         <AlertDialogContent>
@@ -467,6 +554,25 @@ export default function AiActivityGenerator({
               className="bg-red-600 hover:bg-red-700"
             >
               Cancel Generation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* Error Modal */}
+      <AlertDialog open={errorModal.open} onOpenChange={(open) => setErrorModal({...errorModal, open})}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{errorModal.title}</AlertDialogTitle>
+            <AlertDialogDescription className="whitespace-pre-wrap">
+              {errorModal.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction 
+              onClick={() => setErrorModal({...errorModal, open: false})}
+              className="bg-gradient-to-r from-coral-red to-turquoise text-white"
+            >
+              OK
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

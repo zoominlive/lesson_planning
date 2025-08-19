@@ -36,7 +36,7 @@ import "react-day-picker/dist/style.css";
 interface CalendarControlsProps {
   currentWeekDate: Date;
   selectedRoom: string;
-  onWeekChange: (date: Date) => void;
+  onWeekChange: (date: Date, lessonPlanId?: string) => void;
   onRoomChange: (room: string) => void;
   onSubmitToSupervisor: () => void;
   onLocationChange?: (locationId: string) => void;
@@ -101,18 +101,21 @@ export function CalendarControls({
 
   const handlePreviousWeek = () => {
     const newDate = subWeeks(currentWeekDate, 1);
-    onWeekChange(newDate);
+    // Explicitly pass undefined as second param to clear targetLessonPlanId
+    onWeekChange(newDate, undefined);
   };
 
   const handleNextWeek = () => {
     const newDate = addWeeks(currentWeekDate, 1);
-    onWeekChange(newDate);
+    // Explicitly pass undefined as second param to clear targetLessonPlanId
+    onWeekChange(newDate, undefined);
   };
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       const weekStart = startOfWeek(date, { weekStartsOn: 1 }); // Start on Monday
-      onWeekChange(weekStart);
+      // Explicitly pass undefined as second param to clear targetLessonPlanId
+      onWeekChange(weekStart, undefined);
       setIsDatePickerOpen(false);
     }
   };
@@ -266,7 +269,7 @@ export function CalendarControls({
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
-                    className="bg-slate-600 hover:bg-slate-700 text-white hover:shadow-lg transition-all duration-300"
+                    className="bg-[#34a7eb] hover:bg-purple-600 text-white hover:shadow-lg transition-all duration-300"
                     data-testid="button-withdraw-approved"
                   >
                     <RotateCcw className="mr-2 h-4 w-4" />
@@ -285,7 +288,7 @@ export function CalendarControls({
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={onWithdrawFromReview}
-                      className="bg-slate-600 hover:bg-slate-700"
+                      className="bg-[#34a7eb] hover:bg-purple-600"
                     >
                       Withdraw to Draft
                     </AlertDialogAction>

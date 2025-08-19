@@ -108,6 +108,10 @@ export const materials = pgTable("materials", {
   ageGroups: json("age_groups").$type<string[]>().notNull().default([]), // Multi-select age groups for safety
   location: text("location").notNull(), // Storage location within the facility
   photoUrl: text("photo_url"), // URL to uploaded photo
+  status: text("status").notNull().default("active"), // active or deleted
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at"), // Soft delete timestamp
 });
 
 // Material Collections - for organizing materials into groups

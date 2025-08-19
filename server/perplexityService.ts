@@ -38,6 +38,8 @@ export class PerplexityService {
     isIndoor: boolean;
     ageRange: { start: number; end: number };
     existingActivities?: Array<{ title: string; description: string }>;
+    activityType?: string;
+    focusMaterial?: string;
   }): Promise<any> {
     const quietDescription = params.isQuiet
       ? "This should be a quiet, calm activity suitable for quiet time, nap preparation, or low-energy periods."
@@ -46,6 +48,31 @@ export class PerplexityService {
     const locationDescription = params.isIndoor
       ? "This activity should be designed for indoor spaces like classrooms or indoor play areas."
       : "This activity should be designed for outdoor spaces like playgrounds, gardens, or outdoor areas.";
+
+    // Add activity type preference if specified
+    let activityTypeDescription = "";
+    if (params.activityType && params.activityType !== "") {
+      const typeDescriptions: Record<string, string> = {
+        "game": "This should be a fun, interactive game that engages children through play.",
+        "song": "This should involve music, singing, or rhythmic activities.",
+        "sensory": "This should be a sensory exploration activity that engages multiple senses.",
+        "seated": "This should be a calm, seated activity suitable for table work or circle time.",
+        "art": "This should be an art or craft activity that encourages creativity and fine motor skills.",
+        "story": "This should involve storytelling, drama, or imaginative play.",
+        "movement": "This should be an active movement or dance activity that gets children moving.",
+        "science": "This should be a science or discovery activity that encourages exploration and learning."
+      };
+      activityTypeDescription = typeDescriptions[params.activityType] || "";
+      if (activityTypeDescription) {
+        activityTypeDescription = `\n\nActivity Type Preference: ${activityTypeDescription}`;
+      }
+    }
+
+    // Add material focus if specified
+    let materialFocusDescription = "";
+    if (params.focusMaterial && params.focusMaterial.trim() !== "") {
+      materialFocusDescription = `\n\nMaterial Focus: Please incorporate "${params.focusMaterial}" as a key material or element in this activity.`;
+    }
 
     // Create a list of existing activities to avoid duplicates
     let existingActivitiesContext = "";
@@ -61,7 +88,7 @@ ${activityList}
 Create something unique and different from the above activities. Do not repeat similar concepts, themes, or approaches.`;
     }
 
-    const prompt = `Create a comprehensive educational activity for ${params.ageGroup} children (${params.ageRange.start}-${params.ageRange.end} years old) in the category of ${params.category}. ${quietDescription} ${locationDescription}${existingActivitiesContext}
+    const prompt = `Create a comprehensive educational activity for ${params.ageGroup} children (${params.ageRange.start}-${params.ageRange.end} years old) in the category of ${params.category}. ${quietDescription} ${locationDescription}${activityTypeDescription}${materialFocusDescription}${existingActivitiesContext}
 
 Please generate a complete activity with the following structure. Return ONLY valid JSON:
 {
@@ -236,8 +263,54 @@ Ensure the activity is:
             const parsedActivity = this.parseMaterialsFromActivity(secondAttempt);
             return parsedActivity;
           } catch (e2) {
-            // If still failing, try one more approach - remove problematic quotes altogether
-            console.log('[PerplexityService] Second parse attempt failed, removing problematic quotes');
+            // If still failing, check if JSON is incomplete and try to fix it
+            console.log('[PerplexityService] Second parse attempt failed, checking for incomplete JSON');
+            
+            // Count opening and closing brackets/braces
+            const openBraces = (cleanedContent.match(/\{/g) || []).length;
+            const closeBraces = (cleanedContent.match(/\}/g) || []).length;
+            const openBrackets = (cleanedContent.match(/\[/g) || []).length;
+            const closeBrackets = (cleanedContent.match(/\]/g) || []).length;
+            
+            // If JSON appears truncated (missing closing brackets/braces), attempt to fix
+            if (openBraces > closeBraces || openBrackets > closeBrackets) {
+              console.log('[PerplexityService] JSON appears truncated, attempting to fix...');
+              
+              // Add missing closing brackets/braces
+              let fixedContent = cleanedContent;
+              
+              // First, ensure any incomplete string is closed
+              const lastQuoteIndex = fixedContent.lastIndexOf('"');
+              const secondLastQuoteIndex = fixedContent.lastIndexOf('"', lastQuoteIndex - 1);
+              if (lastQuoteIndex > secondLastQuoteIndex + 1) {
+                // Likely an unclosed string, close it
+                fixedContent += '"';
+              }
+              
+              // Add missing brackets
+              for (let i = 0; i < openBrackets - closeBrackets; i++) {
+                fixedContent += ']';
+              }
+              
+              // Add missing braces
+              for (let i = 0; i < openBraces - closeBraces; i++) {
+                fixedContent += '}';
+              }
+              
+              try {
+                const truncatedAttempt = JSON.parse(fixedContent);
+                console.log('[PerplexityService] Successfully fixed and parsed truncated JSON');
+                
+                // Extract and format materials from the activity
+                const parsedActivity = this.parseMaterialsFromActivity(truncatedAttempt);
+                return parsedActivity;
+              } catch (truncError) {
+                console.log('[PerplexityService] Failed to fix truncated JSON, trying final fallback');
+              }
+            }
+            
+            // Final attempt - remove problematic quotes altogether
+            console.log('[PerplexityService] Trying final approach - removing problematic quotes');
             
             // Replace strings that have quotes at the beginning followed by text
             cleanedContent = cleanedContent.replace(/"'([^:]+)':\s*([^"]*?)"/g, '"$1 - $2"');
@@ -823,6 +896,12 @@ Ensure the activity is:
       ...activity,
       suggestedMaterials: suggestedMaterials.slice(0, 8) // Limit to 8 most important materials
     };
+  }
+
+  // Image generation has been moved to OpenAIService
+  // This method is kept for backward compatibility but should not be used directly
+  async generateActivityImage(prompt: string): Promise<string> {
+    throw new Error('Image generation has been moved to OpenAIService. Please use openAIService.generateActivityImage() instead.');
   }
 }
 
