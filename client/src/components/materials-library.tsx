@@ -21,6 +21,7 @@ export default function MaterialsLibrary() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCollectionsDialogOpen, setIsCollectionsDialogOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState("");
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
     queryKey: ["/api/materials", selectedLocationId],
@@ -117,6 +118,10 @@ export default function MaterialsLibrary() {
   const handleUse = (material: Material) => {
     // TODO: Implement material usage tracking
     console.log("Use material:", material.name);
+  };
+
+  const handleImageError = (materialId: string) => {
+    setFailedImages(prev => new Set(prev).add(materialId));
   };
 
   // Calculate statistics
@@ -276,11 +281,12 @@ export default function MaterialsLibrary() {
           {filteredMaterials.map((material) => (
             <Card key={material.id} className="material-shadow overflow-hidden material-shadow-hover">
               <div className="relative h-40 bg-gradient-to-br from-turquoise to-sky-blue">
-                {material.photoUrl ? (
+                {material.photoUrl && !failedImages.has(material.id) ? (
                   <img 
                     src={material.photoUrl} 
                     alt={material.name}
                     className="w-full h-full object-cover"
+                    onError={() => handleImageError(material.id)}
                   />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-white p-4">
@@ -293,7 +299,7 @@ export default function MaterialsLibrary() {
                     </p>
                   </div>
                 )}
-                {material.photoUrl && (
+                {material.photoUrl && !failedImages.has(material.id) && (
                   <div className="absolute top-2 right-2">
                     <Badge variant="secondary" className="bg-white/80 text-gray-700">
                       Photo
