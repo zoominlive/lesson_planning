@@ -265,7 +265,8 @@
 .rdp-soft-design .rdp-caption {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  position: relative;
   padding: 0.5rem 0.75rem;
   background: linear-gradient(135deg, var(--sky-blue), var(--turquoise));
   color: white;
@@ -273,6 +274,15 @@
   margin-bottom: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.025em;
+}
+
+.rdp-soft-design .rdp-nav {
+  position: absolute;
+  inset: 0;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.5rem;
 }
 
 .rdp-soft-design .rdp-caption_label {
@@ -287,10 +297,11 @@
   border-radius: 0.375rem;
   width: 32px;
   height: 32px;
-  display: flex;
+  display: inline-flex !important;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  position: relative !important;
 }
 
 .rdp-soft-design .rdp-nav_button:hover:not([disabled]) {
