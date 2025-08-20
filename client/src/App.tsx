@@ -12,6 +12,7 @@ import ParentView from "@/components/mobile/parent-view";
 import NotFound from "@/pages/not-found";
 import { TokenSwitcher } from "@/components/token-switcher";
 import { RoleBasedRouteGuard } from "@/components/role-based-route-guard";
+import { GuidedWalkthrough } from "@/components/guided-walkthrough";
 import { useEffect } from "react";
 
 function Router() {
@@ -86,6 +87,7 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
+        <GuidedWalkthrough />
         <TokenSwitcher />
       </TooltipProvider>
     </QueryClientProvider>
