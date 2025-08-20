@@ -5,18 +5,22 @@ import { storage } from '../storage';
 export function checkPermission(resource: string, action: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userInfo = (req as any).user;
-      if (!userInfo) {
+      // Get user info from authenticated request
+      const userId = (req as any).userId;
+      const role = (req as any).role;
+      const tenantId = (req as any).tenantId;
+      
+      if (!userId || !role) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
       
       // Check if user has permission
       const hasPermission = await storage.checkUserPermission(
-        userInfo.userId,
-        userInfo.role,
+        userId,
+        role,
         resource,
         action,
-        (req as any).tenantId
+        tenantId
       );
 
       if (!hasPermission.hasPermission) {
