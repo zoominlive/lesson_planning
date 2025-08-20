@@ -83,7 +83,7 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
   };
 
   // Load settings from database
-  const { data: dbSettings, isLoading } = useQuery({
+  const { data: dbSettings, isLoading } = useQuery<OrganizationSettings & { locations?: Array<{ id: string; name: string; }> }>({
     queryKey: ['/api/organization-settings'],
   });
 
@@ -108,13 +108,24 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
       });
       
       // Set default values for the settings panels
+      // For position-based settings, check if any existing position-based locations have a specific slotsPerDay
+      let positionSlots = dbSettings.defaultSlotsPerDay || 8;
+      const positionBasedLocations = filteredLocations.filter((loc: any) => 
+        dbSettings.locationSettings?.[loc.id]?.scheduleType === 'position-based'
+      );
+      if (positionBasedLocations.length > 0) {
+        // Use the slotsPerDay from the first position-based location found
+        const firstPositionLocation = positionBasedLocations[0];
+        positionSlots = dbSettings.locationSettings[firstPositionLocation.id]?.slotsPerDay || positionSlots;
+      }
+      
       setTimeBasedSettings({
         startTime: dbSettings.defaultStartTime || '06:00',
         endTime: dbSettings.defaultEndTime || '18:00'
       });
       
       setPositionBasedSettings({
-        slotsPerDay: dbSettings.defaultSlotsPerDay || 8
+        slotsPerDay: positionSlots
       });
       
       // Update localStorage for each permitted location's settings
