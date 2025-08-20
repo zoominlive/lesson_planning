@@ -40,6 +40,9 @@ export class PerplexityService {
     existingActivities?: Array<{ title: string; description: string }>;
     activityType?: string;
     focusMaterial?: string;
+    milestoneTitle?: string;
+    milestoneDescription?: string;
+    milestoneCategory?: string;
   }): Promise<any> {
     const quietDescription = params.isQuiet
       ? "This should be a quiet, calm activity suitable for quiet time, nap preparation, or low-energy periods."
@@ -74,6 +77,18 @@ export class PerplexityService {
       materialFocusDescription = `\n\nMaterial Focus: Please incorporate "${params.focusMaterial}" as a key material or element in this activity.`;
     }
 
+    // Add milestone targeting if specified
+    let milestoneDescription = "";
+    if (params.milestoneTitle && params.milestoneDescription) {
+      milestoneDescription = `\n\nDevelopmental Milestone Target:
+This activity should be specifically designed to help children achieve the following developmental milestone:
+- Milestone: "${params.milestoneTitle}"
+- Description: "${params.milestoneDescription}"
+- Category: ${params.milestoneCategory || 'General'}
+
+The activity should directly contribute to this milestone's achievement through appropriate challenges and skill-building opportunities. Please explain HOW this activity helps achieve this milestone in the description.`;
+    }
+
     // Create a list of existing activities to avoid duplicates
     let existingActivitiesContext = "";
     if (params.existingActivities && params.existingActivities.length > 0) {
@@ -88,12 +103,12 @@ ${activityList}
 Create something unique and different from the above activities. Do not repeat similar concepts, themes, or approaches.`;
     }
 
-    const prompt = `Create a comprehensive educational activity for ${params.ageGroup} children (${params.ageRange.start}-${params.ageRange.end} years old) in the category of ${params.category}. ${quietDescription} ${locationDescription}${activityTypeDescription}${materialFocusDescription}${existingActivitiesContext}
+    const prompt = `Create a comprehensive educational activity for ${params.ageGroup} children (${params.ageRange.start}-${params.ageRange.end} years old) in the category of ${params.category}. ${quietDescription} ${locationDescription}${activityTypeDescription}${materialFocusDescription}${milestoneDescription}${existingActivitiesContext}
 
 Please generate a complete activity with the following structure. Return ONLY valid JSON:
 {
   "title": "[Create an engaging, creative title for the activity]",
-  "description": "[Write a detailed 2-3 sentence description explaining what children will do and the educational benefits]",
+  "description": "[Write a detailed 2-3 sentence description explaining what children will do and the educational benefits${params.milestoneTitle ? '. IMPORTANT: Include how this activity specifically helps achieve the targeted milestone' : ''}]",
   "duration": [appropriate duration in minutes for the age group, typically 15-45],
   "instructions": [
     {"text": "[First step - be specific and clear]"},

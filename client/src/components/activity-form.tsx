@@ -70,9 +70,15 @@ export default function ActivityForm({
     activity?.ageGroupIds ||
       (initialData?.selectedAgeGroupId ? [initialData.selectedAgeGroupId] : []),
   );
-  const [selectedMilestones, setSelectedMilestones] = useState<string[]>(
-    activity?.milestoneIds || [],
-  );
+  const [selectedMilestones, setSelectedMilestones] = useState<string[]>(() => {
+    // Start with existing milestones if editing
+    const milestones = activity?.milestoneIds || [];
+    // Add targeted milestone from AI generation if provided
+    if (initialData?.targetedMilestoneId && !milestones.includes(initialData.targetedMilestoneId)) {
+      return [initialData.targetedMilestoneId, ...milestones];
+    }
+    return milestones;
+  });
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>(
     activity?.materialIds || [],
   );
@@ -1328,16 +1334,27 @@ export default function ActivityForm({
   );
 
   // Filter milestones based on selected filters
-  const filteredMilestones = milestones.filter((milestone: any) => {
-    const categoryMatch =
-      milestoneCategoryFilter === "all" ||
-      milestone.category === milestoneCategoryFilter;
-    const ageGroupMatch =
-      milestoneAgeGroupFilter === "all" ||
-      (milestone.ageGroupIds &&
-        milestone.ageGroupIds.includes(milestoneAgeGroupFilter));
-    return categoryMatch && ageGroupMatch;
-  });
+  const filteredMilestones = milestones
+    .filter((milestone: any) => {
+      const categoryMatch =
+        milestoneCategoryFilter === "all" ||
+        milestone.category === milestoneCategoryFilter;
+      const ageGroupMatch =
+        milestoneAgeGroupFilter === "all" ||
+        (milestone.ageGroupIds &&
+          milestone.ageGroupIds.includes(milestoneAgeGroupFilter));
+      return categoryMatch && ageGroupMatch;
+    })
+    .sort((a: any, b: any) => {
+      // Sort targeted milestone to the top
+      const targetedId = initialData?.targetedMilestoneId;
+      if (targetedId) {
+        if (a.id === targetedId) return -1;
+        if (b.id === targetedId) return 1;
+      }
+      // Keep original order for others
+      return 0;
+    });
 
   // Get unique categories from milestones
   const milestoneCategories: string[] = Array.from(
