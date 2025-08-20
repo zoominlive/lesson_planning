@@ -421,7 +421,7 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
         <div className="grid grid-cols-[1fr,auto,1fr] gap-4">
           {/* Time-Based Column */}
           <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3 min-h-[200px]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-blue-600" />
@@ -566,7 +566,7 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
 
           {/* Position-Based Column */}
           <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3 min-h-[200px]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Grid3x3 className="h-5 w-5 text-green-600" />
