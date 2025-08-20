@@ -186,18 +186,27 @@ export function initializeIframeAuth() {
     return;
   }
   
+  // Only use default token in development
+  const isProduction = window.location.hostname.includes('.replit.app') || 
+                       window.location.hostname.includes('.repl.co') ||
+                       !window.location.hostname.includes('localhost');
+  
   // Default admin token for development (signed with 'dev-secret-key')
   // Token includes locations as ["Main Campus", "Third Location"] instead of UUIDs
   const defaultToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRJZCI6IjdjYjZjMjhkLTE2NGMtNDlmYS1iNDYxLWRmYzQ3YThhM2ZlZCIsInVzZXJJZCI6ImU1YjdmMGRlLWM4NjgtNGU0MC1hMGJkLWUxNTkzN2NiMzA5NyIsInVzZXJGaXJzdE5hbWUiOiJBZG1pbiIsInVzZXJMYXN0TmFtZSI6IlVzZXIiLCJ1c2VybmFtZSI6ImFkbWluQGV4YW1wbGUuY29tIiwicm9sZSI6IkFkbWluIiwibG9jYXRpb25zIjpbIk1haW4gQ2FtcHVzIiwiVGhpcmQgTG9jYXRpb24iXSwiaWF0IjoxNzU0ODAzMDM0fQ.atm0PWAUeYKXddW1eT-wodxP5H3eYdW0B7e98NtU1yk';
   
-  // If no token or invalid token, set default
-  if (!currentToken) {
-    console.log('No token found, setting default admin token');
+  // If no token or invalid token, set default ONLY in development
+  if (!currentToken && !isProduction) {
+    console.log('No token found in development, setting default admin token');
     setAuthToken(defaultToken);
     // Don't mark as manually set
     localStorage.removeItem('tokenManuallySet');
     // Reload to apply the new token
     setTimeout(() => window.location.reload(), 100);
+    return;
+  } else if (!currentToken && isProduction) {
+    console.log('No auth token found in production. Waiting for token via URL parameter or postMessage.');
+    // In production, don't set a default token - wait for proper authentication
     return;
   }
   
