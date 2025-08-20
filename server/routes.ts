@@ -1466,24 +1466,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Analyze completed activities using AI
   app.post("/api/activity-review/analyze", async (req: AuthenticatedRequest, res) => {
+    console.log("Activity review analyze endpoint called");
+    console.log("User role:", req.role);
+    console.log("Request body keys:", Object.keys(req.body || {}));
+    
     try {
       // Check user role - only directors and assistant directors can analyze activities
       const role = req.role?.toLowerCase();
       if (role !== 'director' && role !== 'assistant_director' && role !== 'admin' && role !== 'superadmin') {
+        console.log("Permission denied for role:", role);
         return res.status(403).json({ error: "Insufficient permissions to analyze activities" });
       }
 
       const { prompt, activities, stats } = req.body;
       
       if (!prompt || !activities) {
+        console.log("Missing data - prompt:", !!prompt, "activities:", !!activities);
         return res.status(400).json({ error: "Missing required analysis data" });
       }
+
+      console.log("Activities count:", activities?.length || 0);
+      console.log("Prompt length:", prompt?.length || 0);
 
       // Use OpenAI to analyze the activities
       const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
       if (!OPENAI_API_KEY) {
+        console.log("OpenAI API key not configured");
         return res.status(500).json({ error: "AI service not configured" });
       }
+
+      console.log("Starting OpenAI API call...");
 
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -1510,24 +1522,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!response.ok) {
-        console.error("OpenAI API error:", await response.text());
+        const errorText = await response.text();
+        console.error("OpenAI API error:", errorText);
         return res.status(500).json({ error: "Failed to analyze activities" });
       }
 
+      console.log("OpenAI API call successful");
       const aiResponse = await response.json();
       const analysisText = aiResponse.choices[0].message.content;
       let analysis;
       
       try {
         analysis = JSON.parse(analysisText);
+        console.log("Analysis parsed successfully");
       } catch (parseError) {
         console.error("Failed to parse AI response:", parseError);
+        console.error("Raw AI response:", analysisText);
         return res.status(500).json({ error: "Invalid analysis format received" });
       }
 
       // Add timestamp to the analysis
       analysis.generatedAt = new Date().toISOString();
 
+      console.log("Sending analysis response to client");
       res.json({ analysis });
     } catch (error) {
       console.error("Activity analysis error:", error);
