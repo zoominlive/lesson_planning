@@ -129,13 +129,13 @@ export function CalendarControls({
   return (
     <Card className="material-shadow">
       <CardContent className="p-3">
-        <div className="flex flex-wrap justify-between items-center gap-3">
-          <div className="flex items-center space-x-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="flex flex-row items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={handlePreviousWeek}
-              className="bg-gradient-to-r from-mint-green/20 to-sky-blue/20 hover:from-mint-green/30 hover:to-sky-blue/30 border-2 border-mint-green/30 hover:border-mint-green/40 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105"
+              className="flex-shrink-0 bg-gradient-to-r from-mint-green/20 to-sky-blue/20 hover:from-mint-green/30 hover:to-sky-blue/30 border-2 border-mint-green/30 hover:border-mint-green/40 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105"
               data-testid="button-previous-week"
             >
               <ChevronLeft className="h-4 w-4 text-turquoise" />
@@ -145,7 +145,7 @@ export function CalendarControls({
                 <Button
                   variant="ghost"
                   className={cn(
-                    "min-w-[240px] h-10 px-3 bg-gradient-to-r from-sky-blue/10 to-mint-green/10 hover:from-sky-blue/20 hover:to-mint-green/20 border-2 border-sky-blue/20 hover:border-sky-blue/30 transition-all duration-300 shadow-sm hover:shadow-md",
+                    "min-w-[200px] sm:min-w-[240px] h-10 px-3 bg-gradient-to-r from-sky-blue/10 to-mint-green/10 hover:from-sky-blue/20 hover:to-mint-green/20 border-2 border-sky-blue/20 hover:border-sky-blue/30 transition-all duration-300 shadow-sm hover:shadow-md",
                     !currentWeekDate && "text-muted-foreground"
                   )}
                   data-testid="button-week-picker"
@@ -195,7 +195,7 @@ export function CalendarControls({
               variant="ghost"
               size="icon"
               onClick={handleNextWeek}
-              className="bg-gradient-to-r from-mint-green/20 to-sky-blue/20 hover:from-mint-green/30 hover:to-sky-blue/30 border-2 border-mint-green/30 hover:border-mint-green/40 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105"
+              className="flex-shrink-0 bg-gradient-to-r from-mint-green/20 to-sky-blue/20 hover:from-mint-green/30 hover:to-sky-blue/30 border-2 border-mint-green/30 hover:border-mint-green/40 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105"
               data-testid="button-next-week"
             >
               <ChevronRight className="h-4 w-4 text-turquoise" />
