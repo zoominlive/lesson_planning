@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { DBStorage } from '../storage';
+import { storage } from '../storage';
 
 // Middleware to check permissions for specific actions
 export function checkPermission(resource: string, action: string) {
@@ -9,8 +9,6 @@ export function checkPermission(resource: string, action: string) {
       if (!userInfo) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
-
-      const storage = new DBStorage((req as any).tenantId);
       
       // Check if user has permission
       const hasPermission = await storage.checkUserPermission(
@@ -46,10 +44,8 @@ export async function userRequiresApproval(
   role: string,
   tenantId: string
 ): Promise<boolean> {
-  const storage = new DBStorage(tenantId);
-  
   // Get organization-specific overrides
-  const override = await storage.getOrganizationPermissionOverride(tenantId, permissionName);
+  const override = await storage.getTenantPermissionOverride(tenantId, permissionName);
   
   if (override) {
     // Check if role requires approval based on organization settings

@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Sparkles, Edit, List, Trash2, Play, Package, Clock, Users } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getUserAuthorizedLocations } from "@/lib/auth";
+import { hasPermission } from "@/lib/permission-utils";
 import ActivityForm from "./activity-form";
 import ActivityCreationChoice from "./activity-creation-choice";
 import AiActivityGenerator from "./ai-activity-generator";
@@ -185,14 +186,16 @@ export default function ActivityLibrary() {
             <h2 className="text-2xl font-bold text-charcoal" data-testid="activities-title">
               Activity Library
             </h2>
-            <Button 
-              className="bg-gradient-to-r from-coral-red to-turquoise text-white hover:shadow-lg transition-all duration-300"
-              data-testid="button-create-activity"
-              onClick={() => setShowCreationChoice(true)}
-            >
-              <Sparkles className="mr-2 h-4 w-4" />
-              Create New Activity
-            </Button>
+            {hasPermission('activity.create') && (
+              <Button 
+                className="bg-gradient-to-r from-coral-red to-turquoise text-white hover:shadow-lg transition-all duration-300"
+                data-testid="button-create-activity"
+                onClick={() => setShowCreationChoice(true)}
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Create New Activity
+              </Button>
+            )}
 
             {/* Creation Choice Dialog */}
             <ActivityCreationChoice
@@ -491,26 +494,30 @@ export default function ActivityLibrary() {
                 </div>
                 
                 <div className="flex space-x-2 mt-4">
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => handleEdit(activity)}
-                    data-testid={`button-edit-${activity.id}`}
-                  >
-                    <Edit className="mr-1 h-3 w-3" />
-                    Edit
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 hover:bg-red-50 hover:text-red-600 hover:border-red-300"
-                    onClick={() => handleDelete(activity)}
-                    data-testid={`button-delete-${activity.id}`}
-                  >
-                    <Trash2 className="mr-1 h-3 w-3" />
-                    Delete
-                  </Button>
+                  {hasPermission('activity.update') && (
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleEdit(activity)}
+                      data-testid={`button-edit-${activity.id}`}
+                    >
+                      <Edit className="mr-1 h-3 w-3" />
+                      Edit
+                    </Button>
+                  )}
+                  {hasPermission('activity.delete') && (
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 hover:bg-red-50 hover:text-red-600 hover:border-red-300"
+                      onClick={() => handleDelete(activity)}
+                      data-testid={`button-delete-${activity.id}`}
+                    >
+                      <Trash2 className="mr-1 h-3 w-3" />
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
