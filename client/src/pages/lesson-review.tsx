@@ -323,7 +323,7 @@ export function LessonReview() {
         <p className="text-sm text-gray-600">Review lesson plans and view completed activity feedback</p>
       </div>
 
-      <Tabs defaultValue="lesson-reviews" className="space-y-4">
+      <Tabs defaultValue="lesson-reviews" className="space-y-2">
         <TabsList className="grid w-full grid-cols-2 max-w-md">
           <TabsTrigger value="lesson-reviews" className="flex items-center gap-2">
             <ClipboardCheck className="h-4 w-4" />
@@ -336,9 +336,9 @@ export function LessonReview() {
         </TabsList>
 
         {/* Lesson Reviews Tab */}
-        <TabsContent value="lesson-reviews" className="space-y-4">
+        <TabsContent value="lesson-reviews" className="space-y-2">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-            <TabsList className="mb-3">
+            <TabsList className="mb-2">
               <TabsTrigger value="submitted" className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />
                 Pending ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "submitted").length})
@@ -354,7 +354,7 @@ export function LessonReview() {
             </TabsList>
 
         {/* Filter Controls */}
-        <div className="flex gap-3 mb-4 p-3 bg-gray-50 rounded-lg border">
+        <div className="flex gap-3 mb-2 p-3 bg-gray-50 rounded-lg border">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-gray-500" />
             <span className="text-sm font-medium text-gray-700">Filters:</span>
