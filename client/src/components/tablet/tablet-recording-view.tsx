@@ -466,7 +466,6 @@ export function TabletRecordingView({
           </Button>
         </div>
       </div>
-
       {/* Activities List */}
       <div className="space-y-2">
         {isLoading ? (
@@ -496,7 +495,7 @@ export function TabletRecordingView({
           </div>
         ) : showingFullWeek ? (
           // Show activities grouped by day for approved plans with grid layout
-          <div className="space-y-6">
+          (<div className="space-y-6">
             {activitiesByDay.map(({ day, dayName, activities }) => {
               if (activities.length === 0) return null;
               
@@ -509,7 +508,6 @@ export function TabletRecordingView({
                     </h3>
                     <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent" />
                   </div>
-                  
                   <div className="grid grid-cols-2 gap-4">
                     {activities.map((scheduled) => {
                       const isExpanded = expandedActivity === scheduled.id;
@@ -525,512 +523,512 @@ export function TabletRecordingView({
                               : 'bg-white border-gray-200'
                           } ${isExpanded ? 'col-span-2' : ''}`}
                         >
-                        <div className="relative">
-                          {/* Category Color Bar */}
-                          <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-lg ${
-                            scheduled.activity?.category === 'Art & Creativity' ? 'bg-gradient-to-r from-pink-400 to-rose-400' :
-                            scheduled.activity?.category === 'Physical Development' ? 'bg-gradient-to-r from-blue-400 to-sky-400' :
-                            scheduled.activity?.category === 'Social Development' ? 'bg-gradient-to-r from-green-400 to-emerald-400' :
-                            scheduled.activity?.category === 'Cognitive Development' ? 'bg-gradient-to-r from-purple-400 to-violet-400' :
-                            'bg-gradient-to-r from-gray-400 to-slate-400'
-                          }`} />
-                          
-                          <div className={`px-4 pt-4 ${isExpanded ? 'pb-2' : 'pb-4'}`}>
-                            {/* Enhanced Header Row */}
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1">
-                                {/* Title and Checkbox Row */}
-                                <div className="flex items-start justify-between mb-3">
-                                  <h3 className={`font-bold text-lg text-gray-900 ${isCompleted ? 'line-through opacity-60' : ''}`}>
-                                    {scheduled.activity?.title}
-                                  </h3>
-                                  <Checkbox
-                                    checked={isCompleted}
-                                    onCheckedChange={() => handleMarkComplete(scheduled.id)}
-                                    className="h-5 w-5 mt-1"
-                                    data-testid={`complete-activity-${scheduled.id}`}
-                                  />
-                                </div>
-
-                                {/* All Tags in Single Row */}
-                                <div className="flex flex-wrap items-center gap-2 mb-2">
-                                  {scheduleType === 'time-based' && (
-                                    <div className="flex items-center gap-1.5 bg-gradient-to-r from-blue-50 to-sky-50 border border-blue-200 rounded-lg px-3 py-1.5">
-                                      <Clock className="h-4 w-4 text-blue-600" />
-                                      <span className="text-sm font-semibold text-blue-700">
-                                        {getTimeLabel(scheduled.timeSlot)}
-                                      </span>
-                                    </div>
-                                  )}
-                                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg px-3 py-1.5">
-                                    <span className="text-sm font-semibold text-amber-700">
-                                      {scheduled.activity?.duration || 30} minutes
-                                    </span>
-                                  </div>
-                                  <span className={`text-sm font-semibold px-3 py-1.5 rounded-lg ${
-                                    scheduled.activity?.category === 'Art & Creativity' ? 'bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 border border-pink-200' :
-                                    scheduled.activity?.category === 'Physical Development' ? 'bg-gradient-to-r from-blue-100 to-sky-100 text-blue-700 border border-blue-200' :
-                                    scheduled.activity?.category === 'Social Development' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200' :
-                                    scheduled.activity?.category === 'Cognitive Development' ? 'bg-gradient-to-r from-purple-100 to-violet-100 text-purple-700 border border-purple-200' :
-                                    'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border border-gray-200'
-                                  }`}>
-                                    {scheduled.activity?.category}
-                                  </span>
-                                  {scheduled.activity?.ageGroups && scheduled.activity.ageGroups.length > 0 && (
-                                    <>
-                                      {scheduled.activity.ageGroups.map((ag: any, index: number) => (
-                                        <div key={ag.id} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm ${
-                                          ag.name.toLowerCase().includes('infant') ? 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border border-purple-200' :
-                                          ag.name.toLowerCase().includes('toddler') ? 'bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 border border-teal-200' :
-                                          ag.name.toLowerCase().includes('preschool') ? 'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700 border border-orange-200' :
-                                          'bg-gradient-to-r from-green-100 to-lime-100 text-green-700 border border-green-200'
-                                        }`}>
-                                          <Users className="h-4 w-4" />
-                                          <span>{ag.name}</span>
-                                        </div>
-                                      ))}
-                                    </>
-                                  )}
-                                  {(scheduled.activity?.minChildren || scheduled.activity?.maxChildren) && (
-                                    <div className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-100 to-blue-100 border border-indigo-200 rounded-lg px-3 py-1.5">
-                                      <Users className="h-4 w-4 text-indigo-600" />
-                                      <span className="text-sm font-semibold text-indigo-700">
-                                        {scheduled.activity?.minChildren && scheduled.activity?.maxChildren 
-                                          ? `${scheduled.activity.minChildren}-${scheduled.activity.maxChildren} children`
-                                          : scheduled.activity?.minChildren 
-                                          ? `Min ${scheduled.activity.minChildren} children`
-                                          : `Max ${scheduled.activity.maxChildren} children`
-                                        }
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Description Preview */}
-                                {!isExpanded && scheduled.activity?.description && (
-                                  <p className="text-sm text-gray-600 line-clamp-2 mt-2">
-                                    {scheduled.activity.description}
-                                  </p>
-                                )}
-
-                                {/* Quick Info Pills */}
-                                {!isExpanded && (
-                                  <div className="flex flex-wrap gap-2 mt-2">
-                                    {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
-                                      <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 rounded-full px-2 py-1">
-                                        <Scissors className="h-3 w-3" />
-                                        <span>{scheduled.activity.materials.length} materials</span>
-                                      </div>
-                                    )}
-                                    {scheduled.activity?.milestones && scheduled.activity.milestones.length > 0 && (
-                                      <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 rounded-full px-2 py-1">
-                                        <Target className="h-3 w-3" />
-                                        <span>{scheduled.activity.milestones.length} milestones</span>
-                                      </div>
-                                    )}
-                                    {scheduled.activity?.steps && scheduled.activity.steps.length > 0 && (
-                                      <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 rounded-full px-2 py-1">
-                                        <ListChecks className="h-3 w-3" />
-                                        <span>{scheduled.activity.steps.length} steps</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
+                          <div className="relative">
+                            {/* Category Color Bar */}
+                            <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-lg ${
+                              scheduled.activity?.category === 'Art & Creativity' ? 'bg-gradient-to-r from-pink-400 to-rose-400' :
+                              scheduled.activity?.category === 'Physical Development' ? 'bg-gradient-to-r from-blue-400 to-sky-400' :
+                              scheduled.activity?.category === 'Social Development' ? 'bg-gradient-to-r from-green-400 to-emerald-400' :
+                              scheduled.activity?.category === 'Cognitive Development' ? 'bg-gradient-to-r from-purple-400 to-violet-400' :
+                              'bg-gradient-to-r from-gray-400 to-slate-400'
+                            }`} />
                             
-                            {/* Expand/Collapse Button */}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setExpandedActivity(isExpanded ? null : scheduled.id)}
-                              className={`w-full justify-center gap-2 hover:bg-gray-50 ${isExpanded ? 'mt-1' : 'mt-2'}`}
-                            >
-                              {isExpanded ? (
-                                <>
-                                  <ChevronUp className="h-4 w-4" />
-                                  Show Less
-                                </>
-                              ) : (
-                                <>
-                                  <ChevronDown className="h-4 w-4" />
-                                  Show Details & Record
-                                </>
-                              )}
-                            </Button>
-                          </div>
+                            <div className={`px-4 pt-4 ${isExpanded ? 'pb-2' : 'pb-4'}`}>
+                              {/* Enhanced Header Row */}
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1">
+                                  {/* Title and Checkbox Row */}
+                                  <div className="flex items-start justify-between mb-3">
+                                    <h3 className={`font-bold text-lg text-gray-900 ${isCompleted ? 'line-through opacity-60' : ''}`}>
+                                      {scheduled.activity?.title}
+                                    </h3>
+                                    <Checkbox
+                                      checked={isCompleted}
+                                      onCheckedChange={() => handleMarkComplete(scheduled.id)}
+                                      className="h-5 w-5 mt-1"
+                                      data-testid={`complete-activity-${scheduled.id}`}
+                                    />
+                                  </div>
 
-                          {/* Expanded Content - Beautiful Tablet Layout */}
-                          {isExpanded && (
-                            <div className="mt-2 pt-3 border-t-2 border-gray-100">
-                              {/* Hero Image Section */}
-                              {scheduled.activity?.activityImage && (
-                                <div className="mb-4 rounded-xl overflow-hidden shadow-md">
-                                  <img 
-                                    src={scheduled.activity.activityImage} 
-                                    alt={scheduled.activity.title}
-                                    className="w-full h-48 object-cover"
-                                  />
-                                </div>
-                              )}
-                              
-                              {/* Main Content Grid - 2 Columns for Overview and Milestones */}
-                              <div className="grid grid-cols-2 gap-4 mb-4">
-                                {/* Left Column */}
-                                <div className="space-y-4">
-                                  {/* Description Card */}
-                                  {scheduled.activity?.description && (
-                                    <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-4 border border-blue-200 shadow-sm">
-                                      <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg flex items-center justify-center">
-                                          <FileText className="h-4 w-4 text-white" />
-                                        </div>
-                                        <h4 className="text-sm font-bold text-gray-800">Activity Overview</h4>
+                                  {/* All Tags in Single Row */}
+                                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                                    {scheduleType === 'time-based' && (
+                                      <div className="flex items-center gap-1.5 bg-gradient-to-r from-blue-50 to-sky-50 border border-blue-200 rounded-lg px-3 py-1.5">
+                                        <Clock className="h-4 w-4 text-blue-600" />
+                                        <span className="text-sm font-semibold text-blue-700">
+                                          {getTimeLabel(scheduled.timeSlot)}
+                                        </span>
                                       </div>
-                                      <p className="text-sm text-gray-600 leading-relaxed">
-                                        {scheduled.activity.description}
-                                      </p>
+                                    )}
+                                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg px-3 py-1.5">
+                                      <span className="text-sm font-semibold text-amber-700">
+                                        {scheduled.activity?.duration || 30} minutes
+                                      </span>
                                     </div>
-                                  )}
-                                </div>
-                                
-                                {/* Right Column */}
-                                <div className="space-y-4">
-                                  {/* Milestones Card */}
-                                  {scheduled.activity?.milestones && scheduled.activity.milestones.length > 0 && (
-                                    <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl p-4 border border-purple-200 shadow-sm">
-                                      <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-500 rounded-lg flex items-center justify-center">
-                                          <Target className="h-4 w-4 text-white" />
-                                        </div>
-                                        <h4 className="text-sm font-bold text-gray-800">Developmental Milestones</h4>
-                                      </div>
-                                      <div className="space-y-3">
-                                        {scheduled.activity.milestones.map((milestone: any) => (
-                                          <div key={milestone.id} className="flex gap-3 bg-white p-3 rounded-lg border border-purple-100">
-                                            {milestone.imageUrl && (
-                                              <img 
-                                                src={milestone.imageUrl} 
-                                                alt={milestone.title}
-                                                className="w-14 h-14 object-cover rounded-lg shadow-sm"
-                                              />
-                                            )}
-                                            <div className="flex-1">
-                                              <p className="text-sm font-semibold text-gray-700">{milestone.title}</p>
-                                              {milestone.description && (
-                                                <p className="text-xs text-gray-500 mt-1">{milestone.description}</p>
-                                              )}
-                                              <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-xs mt-2">
-                                                {milestone.category}
-                                              </Badge>
-                                            </div>
+                                    <span className={`text-sm font-semibold px-3 py-1.5 rounded-lg ${
+                                      scheduled.activity?.category === 'Art & Creativity' ? 'bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 border border-pink-200' :
+                                      scheduled.activity?.category === 'Physical Development' ? 'bg-gradient-to-r from-blue-100 to-sky-100 text-blue-700 border border-blue-200' :
+                                      scheduled.activity?.category === 'Social Development' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200' :
+                                      scheduled.activity?.category === 'Cognitive Development' ? 'bg-gradient-to-r from-purple-100 to-violet-100 text-purple-700 border border-purple-200' :
+                                      'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border border-gray-200'
+                                    }`}>
+                                      {scheduled.activity?.category}
+                                    </span>
+                                    {scheduled.activity?.ageGroups && scheduled.activity.ageGroups.length > 0 && (
+                                      <>
+                                        {scheduled.activity.ageGroups.map((ag: any, index: number) => (
+                                          <div key={ag.id} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm ${
+                                            ag.name.toLowerCase().includes('infant') ? 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border border-purple-200' :
+                                            ag.name.toLowerCase().includes('toddler') ? 'bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 border border-teal-200' :
+                                            ag.name.toLowerCase().includes('preschool') ? 'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700 border border-orange-200' :
+                                            'bg-gradient-to-r from-green-100 to-lime-100 text-green-700 border border-green-200'
+                                          }`}>
+                                            <Users className="h-4 w-4" />
+                                            <span>{ag.name}</span>
                                           </div>
                                         ))}
+                                      </>
+                                    )}
+                                    {(scheduled.activity?.minChildren || scheduled.activity?.maxChildren) && (
+                                      <div className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-100 to-blue-100 border border-indigo-200 rounded-lg px-3 py-1.5">
+                                        <Users className="h-4 w-4 text-indigo-600" />
+                                        <span className="text-sm font-semibold text-indigo-700">
+                                          {scheduled.activity?.minChildren && scheduled.activity?.maxChildren 
+                                            ? `${scheduled.activity.minChildren}-${scheduled.activity.maxChildren} children`
+                                            : scheduled.activity?.minChildren 
+                                            ? `Min ${scheduled.activity.minChildren} children`
+                                            : `Max ${scheduled.activity.maxChildren} children`
+                                          }
+                                        </span>
                                       </div>
+                                    )}
+                                  </div>
+
+                                  {/* Description Preview */}
+                                  {!isExpanded && scheduled.activity?.description && (
+                                    <p className="text-sm text-gray-600 line-clamp-2 mt-2">
+                                      {scheduled.activity.description}
+                                    </p>
+                                  )}
+
+                                  {/* Quick Info Pills */}
+                                  {!isExpanded && (
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                      {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
+                                        <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 rounded-full px-2 py-1">
+                                          <Scissors className="h-3 w-3" />
+                                          <span>{scheduled.activity.materials.length} materials</span>
+                                        </div>
+                                      )}
+                                      {scheduled.activity?.milestones && scheduled.activity.milestones.length > 0 && (
+                                        <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 rounded-full px-2 py-1">
+                                          <Target className="h-3 w-3" />
+                                          <span>{scheduled.activity.milestones.length} milestones</span>
+                                        </div>
+                                      )}
+                                      {scheduled.activity?.steps && scheduled.activity.steps.length > 0 && (
+                                        <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 rounded-full px-2 py-1">
+                                          <ListChecks className="h-3 w-3" />
+                                          <span>{scheduled.activity.steps.length} steps</span>
+                                        </div>
+                                      )}
                                     </div>
-                              )}
+                                  )}
                                 </div>
                               </div>
                               
-                              {/* Materials Card - Enhanced Beautiful Design */}
-                              {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
-                                <div className="bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 rounded-xl p-4 border-2 border-teal-300 shadow-lg mb-4">
-                                  <div className="flex items-center gap-2 mb-4">
-                                    <div className="w-10 h-10 bg-gradient-to-br from-teal-400 via-cyan-400 to-blue-400 rounded-xl flex items-center justify-center shadow-md animate-pulse">
-                                      <Scissors className="h-5 w-5 text-white" />
-                                    </div>
-                                    <h4 className="text-base font-bold text-gray-800">
-                                      🎨 Required Materials ({scheduled.activity.materials.length})
-                                    </h4>
+                              {/* Expand/Collapse Button */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setExpandedActivity(isExpanded ? null : scheduled.id)}
+                                className={`w-full justify-center gap-2 hover:bg-gray-50 ${isExpanded ? 'mt-1' : 'mt-2'}`}
+                              >
+                                {isExpanded ? (
+                                  <>
+                                    <ChevronUp className="h-4 w-4" />
+                                    Show Less
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown className="h-4 w-4" />
+                                    Show Details & Record
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+
+                            {/* Expanded Content - Beautiful Tablet Layout */}
+                            {isExpanded && (
+                              <div className="mt-2 pt-3 border-t-2 border-gray-100">
+                                {/* Hero Image Section */}
+                                {scheduled.activity?.activityImage && (
+                                  <div className="mb-4 rounded-xl overflow-hidden shadow-md">
+                                    <img 
+                                      src={scheduled.activity.activityImage} 
+                                      alt={scheduled.activity.title}
+                                      className="w-full h-48 object-cover"
+                                    />
                                   </div>
-                                  <div className="space-y-3">
-                                    {scheduled.activity.materials.map((material: any, idx: number) => (
-                                      <div key={material.id} className="relative overflow-hidden bg-gradient-to-r from-white via-teal-50/30 to-white p-4 rounded-xl border-2 border-teal-200 shadow-md hover:shadow-xl transition-all transform hover:scale-[1.02]">
-                                        {/* Decorative corner ribbon */}
-                                        <div className="absolute top-0 right-0 w-16 h-16">
-                                          <div className="absolute transform rotate-45 bg-gradient-to-r from-yellow-400 to-orange-400 text-white text-xs font-bold py-1 right-[-28px] top-[8px] w-[100px] text-center shadow-sm">
-                                            #{idx + 1}
+                                )}
+                                
+                                {/* Main Content Grid - 2 Columns for Overview and Milestones */}
+                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                  {/* Left Column */}
+                                  <div className="space-y-4">
+                                    {/* Description Card */}
+                                    {scheduled.activity?.description && (
+                                      <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-4 border border-blue-200 shadow-sm">
+                                        <div className="flex items-center gap-2 mb-3">
+                                          <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg flex items-center justify-center">
+                                            <FileText className="h-4 w-4 text-white" />
                                           </div>
+                                          <h4 className="text-sm font-bold text-gray-800">Activity Overview</h4>
                                         </div>
-                                        
-                                        <div className="flex gap-4">
-                                          {/* Material Image with fallback */}
-                                          <div className="flex-shrink-0">
-                                            {material.photoUrl ? (
-                                              <img 
-                                                src={material.photoUrl} 
-                                                alt={material.name}
-                                                className="w-24 h-24 object-cover rounded-xl shadow-md border-2 border-white"
-                                                onError={(e) => {
-                                                  e.currentTarget.style.display = 'none';
-                                                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                                }}
-                                              />
-                                            ) : null}
-                                            <div className={`${material.photoUrl ? 'hidden' : ''} w-24 h-24 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-xl shadow-md border-2 border-white flex items-center justify-center`}>
-                                              <Scissors className="h-10 w-10 text-teal-500" />
+                                        <p className="text-sm text-gray-600 leading-relaxed">
+                                          {scheduled.activity.description}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Right Column */}
+                                  <div className="space-y-4">
+                                    {/* Milestones Card */}
+                                    {scheduled.activity?.milestones && scheduled.activity.milestones.length > 0 && (
+                                      <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl p-4 border border-purple-200 shadow-sm">
+                                        <div className="flex items-center gap-2 mb-3">
+                                          <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-500 rounded-lg flex items-center justify-center">
+                                            <Target className="h-4 w-4 text-white" />
+                                          </div>
+                                          <h4 className="text-sm font-bold text-gray-800">Developmental Milestones</h4>
+                                        </div>
+                                        <div className="space-y-3">
+                                          {scheduled.activity.milestones.map((milestone: any) => (
+                                            <div key={milestone.id} className="flex gap-3 bg-white p-3 rounded-lg border border-purple-100">
+                                              {milestone.imageUrl && (
+                                                <img 
+                                                  src={milestone.imageUrl} 
+                                                  alt={milestone.title}
+                                                  className="w-14 h-14 object-cover rounded-lg shadow-sm"
+                                                />
+                                              )}
+                                              <div className="flex-1">
+                                                <p className="text-sm font-semibold text-gray-700">{milestone.title}</p>
+                                                {milestone.description && (
+                                                  <p className="text-xs text-gray-500 mt-1">{milestone.description}</p>
+                                                )}
+                                                <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-xs mt-2">
+                                                  {milestone.category}
+                                                </Badge>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                )}
+                                  </div>
+                                </div>
+                                
+                                {/* Materials Card - Enhanced Beautiful Design */}
+                                {scheduled.activity?.materials && scheduled.activity.materials.length > 0 && (
+                                  <div className="bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 rounded-xl p-4 border-2 border-teal-300 shadow-lg mb-4">
+                                    <div className="flex items-center gap-2 mb-4">
+                                      <div className="w-10 h-10 bg-gradient-to-br from-teal-400 via-cyan-400 to-blue-400 rounded-xl flex items-center justify-center shadow-md animate-pulse">
+                                        <Scissors className="h-5 w-5 text-white" />
+                                      </div>
+                                      <h4 className="text-base font-bold text-gray-800">
+                                        🎨 Required Materials ({scheduled.activity.materials.length})
+                                      </h4>
+                                    </div>
+                                    <div className="space-y-3">
+                                      {scheduled.activity.materials.map((material: any, idx: number) => (
+                                        <div key={material.id} className="relative overflow-hidden bg-gradient-to-r from-white via-teal-50/30 to-white p-4 rounded-xl border-2 border-teal-200 shadow-md hover:shadow-xl transition-all transform hover:scale-[1.02]">
+                                          {/* Decorative corner ribbon */}
+                                          <div className="absolute top-0 right-0 w-16 h-16">
+                                            <div className="absolute transform rotate-45 bg-gradient-to-r from-yellow-400 to-orange-400 text-white text-xs font-bold py-1 right-[-28px] top-[8px] w-[100px] text-center shadow-sm">
+                                              #{idx + 1}
                                             </div>
                                           </div>
                                           
-                                          <div className="flex-1">
-                                            {/* Material Name with emoji */}
-                                            <p className="text-base font-bold text-gray-800 mb-2 flex items-center gap-2">
-                                              <span className="text-xl">📦</span>
-                                              {material.name}
-                                            </p>
-                                            
-                                            {/* Description in a colorful box */}
-                                            {material.description && (
-                                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-2 mb-2 border border-blue-200">
-                                                <p className="text-xs text-gray-700 italic">{material.description}</p>
+                                          <div className="flex gap-4">
+                                            {/* Material Image with fallback */}
+                                            <div className="flex-shrink-0">
+                                              {material.photoUrl ? (
+                                                <img 
+                                                  src={material.photoUrl} 
+                                                  alt={material.name}
+                                                  className="w-24 h-24 object-cover rounded-xl shadow-md border-2 border-white"
+                                                  onError={(e) => {
+                                                    e.currentTarget.style.display = 'none';
+                                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                  }}
+                                                />
+                                              ) : null}
+                                              <div className={`${material.photoUrl ? 'hidden' : ''} w-24 h-24 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-xl shadow-md border-2 border-white flex items-center justify-center`}>
+                                                <Scissors className="h-10 w-10 text-teal-500" />
                                               </div>
-                                            )}
+                                            </div>
                                             
-                                            {/* Storage Location with icon */}
-                                            {material.location && (
-                                              <div className="flex items-center gap-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg px-3 py-1.5 mb-2 border border-amber-200">
-                                                <span className="text-base">📍</span>
-                                                <span className="text-xs font-semibold text-amber-800">Location:</span>
-                                                <span className="text-xs text-amber-700">{material.location}</span>
-                                              </div>
-                                            )}
-                                            
-                                            {/* Age Groups with colorful badges */}
-                                            {material.ageGroups && material.ageGroups.length > 0 && (
-                                              <div className="mt-2">
-                                                <div className="flex flex-wrap items-center gap-1.5">
-                                                  <div className="flex items-center gap-1 text-xs font-bold text-gray-700">
-                                                    <span className="text-base">👶</span>
-                                                    <span>Suitable for:</span>
-                                                  </div>
-                                                  {typeof material.ageGroups === 'string' ? (
-                                                    /* If ageGroups is a string array */
-                                                    <div className="px-3 py-1 bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700 border border-purple-300 rounded-full text-xs font-bold shadow-sm">
-                                                      {material.ageGroups}
-                                                    </div>
-                                                  ) : Array.isArray(material.ageGroups) ? (
-                                                    /* If ageGroups is an array */
-                                                    material.ageGroups.map((ag: any, agIdx: number) => {
-                                                      const ageText = typeof ag === 'string' ? getAgeGroupName(ag) : (ag.name || ag.description || 'Unknown');
-                                                      const colors = [
-                                                        'from-purple-100 to-pink-100 text-purple-700 border-purple-300',
-                                                        'from-blue-100 to-cyan-100 text-blue-700 border-blue-300',
-                                                        'from-green-100 to-emerald-100 text-green-700 border-green-300',
-                                                        'from-orange-100 to-amber-100 text-orange-700 border-orange-300',
-                                                      ];
-                                                      const colorClass = colors[agIdx % colors.length];
-                                                      
-                                                      return (
-                                                        <div key={typeof ag === 'string' ? ag : (ag.id || agIdx)} className={`px-3 py-1 bg-gradient-to-r ${colorClass} rounded-full text-xs font-bold shadow-sm transform hover:scale-105 transition-transform`}>
-                                                          {ageText}
-                                                        </div>
-                                                      );
-                                                    })
-                                                  ) : null}
+                                            <div className="flex-1">
+                                              {/* Material Name with emoji */}
+                                              <p className="text-base font-bold text-gray-800 mb-2 flex items-center gap-2">
+                                                <span className="text-xl">📦</span>
+                                                {material.name}
+                                              </p>
+                                              
+                                              {/* Description in a colorful box */}
+                                              {material.description && (
+                                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-2 mb-2 border border-blue-200">
+                                                  <p className="text-xs text-gray-700 italic">{material.description}</p>
                                                 </div>
-                                              </div>
-                                            )}
+                                              )}
+                                              
+                                              {/* Storage Location with icon */}
+                                              {material.location && (
+                                                <div className="flex items-center gap-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg px-3 py-1.5 mb-2 border border-amber-200">
+                                                  <span className="text-base">📍</span>
+                                                  <span className="text-xs font-semibold text-amber-800">Location:</span>
+                                                  <span className="text-xs text-amber-700">{material.location}</span>
+                                                </div>
+                                              )}
+                                              
+                                              {/* Age Groups with colorful badges */}
+                                              {material.ageGroups && material.ageGroups.length > 0 && (
+                                                <div className="mt-2">
+                                                  <div className="flex flex-wrap items-center gap-1.5">
+                                                    <div className="flex items-center gap-1 text-xs font-bold text-gray-700">
+                                                      <span className="text-base">👶</span>
+                                                      <span>Suitable for:</span>
+                                                    </div>
+                                                    {typeof material.ageGroups === 'string' ? (
+                                                      /* If ageGroups is a string array */
+                                                      (<div className="px-3 py-1 bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700 border border-purple-300 rounded-full text-xs font-bold shadow-sm">
+                                                        {material.ageGroups}
+                                                      </div>)
+                                                    ) : Array.isArray(material.ageGroups) ? (
+                                                      /* If ageGroups is an array */
+                                                      (material.ageGroups.map((ag: any, agIdx: number) => {
+                                                        const ageText = typeof ag === 'string' ? getAgeGroupName(ag) : (ag.name || ag.description || 'Unknown');
+                                                        const colors = [
+                                                          'from-purple-100 to-pink-100 text-purple-700 border-purple-300',
+                                                          'from-blue-100 to-cyan-100 text-blue-700 border-blue-300',
+                                                          'from-green-100 to-emerald-100 text-green-700 border-green-300',
+                                                          'from-orange-100 to-amber-100 text-orange-700 border-orange-300',
+                                                        ];
+                                                        const colorClass = colors[agIdx % colors.length];
+                                                        
+                                                        return (
+                                                          <div key={typeof ag === 'string' ? ag : (ag.id || agIdx)} className={`px-3 py-1 bg-gradient-to-r ${colorClass} rounded-full text-xs font-bold shadow-sm transform hover:scale-105 transition-transform`}>
+                                                            {ageText}
+                                                          </div>
+                                                        );
+                                                      }))
+                                                    ) : null}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Activity Steps Card - Full Width */}
-                              {scheduled.activity?.steps && scheduled.activity.steps.length > 0 && (
-                                <div className="bg-gradient-to-br from-orange-50 to-white rounded-xl p-4 border border-orange-200 shadow-sm mb-4">
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg flex items-center justify-center">
-                                      <ListChecks className="h-4 w-4 text-white" />
-                                    </div>
-                                    <h4 className="text-sm font-bold text-gray-800">Activity Steps</h4>
-                                  </div>
-                                  <ol className="space-y-3">
-                                    {scheduled.activity.steps.map((step: any, index: number) => (
-                                      <li key={index} className="flex gap-3">
-                                        <span className="flex-shrink-0 w-7 h-7 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-sm font-bold">
-                                          {index + 1}
-                                        </span>
-                                        <div className="flex-1">
-                                          <p className="text-sm text-gray-700 font-medium">
-                                            {step.instruction || step.text || step.description || 'No instruction available'}
-                                          </p>
-                                          {step.imageUrl && (
-                                            <img 
-                                              src={step.imageUrl} 
-                                              alt={`Step ${index + 1}`}
-                                              className="mt-2 rounded-lg w-full max-h-32 object-cover shadow-sm"
-                                            />
-                                          )}
-                                        </div>
-                                      </li>
-                                    ))}
-                                  </ol>
-                                </div>
-                              )}
-                              
-                              {/* Bottom Section - Materials and Recording */}
-                              <div className="mt-4 space-y-4">
-                                {/* Video Link */}
-                                {scheduled.activity?.videoUrl && (
-                                  <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-4 border border-blue-200 shadow-sm">
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg flex items-center justify-center">
-                                          <Play className="h-4 w-4 text-white" />
-                                        </div>
-                                        <h4 className="text-sm font-bold text-gray-800">Video Tutorial</h4>
-                                      </div>
-                                      <a 
-                                        href={scheduled.activity.videoUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
-                                      >
-                                        <Play className="h-4 w-4" />
-                                        Watch Video
-                                      </a>
+                                      ))}
                                     </div>
                                   </div>
                                 )}
 
-                              
-                                {/* Enhanced Activity Teaching Card */}
-                                <div className="bg-gradient-to-br from-yellow-50 to-white rounded-xl p-4 border border-yellow-200 shadow-sm">
-                                  <div className="flex items-center gap-2 mb-4">
-                                    <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center">
-                                      <Edit3 className="h-4 w-4 text-white" />
-                                    </div>
-                                    <h4 className="text-sm font-bold text-gray-800">Activity Teaching</h4>
-                                  </div>
-                                  
-                                  <div className="space-y-4">
-                                    {/* Activity Notes */}
-                                    <div>
-                                      <Label htmlFor={`notes-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
-                                        Activity Notes
-                                      </Label>
-                                      <Textarea
-                                        id={`notes-${scheduled.id}`}
-                                        placeholder="How did the activity go? Any observations or adjustments made?"
-                                        value={record?.notes || ''}
-                                        onChange={(e) => handleNotesChange(scheduled.id, e.target.value)}
-                                        className="min-h-[80px] text-sm bg-white"
-                                        data-testid={`notes-${scheduled.id}`}
-                                      />
-                                    </div>
-
-                                    {/* Materials Usage Questions */}
-                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                                      <Label className="text-sm font-semibold text-gray-700 mb-2 block">
-                                        Did you use the suggested materials?
-                                      </Label>
-                                      <div className="flex items-center gap-3 mb-3">
-                                        <Button
-                                          type="button"
-                                          variant={record?.materialsUsed === true ? "default" : "outline"}
-                                          size="sm"
-                                          onClick={() => handleMaterialsToggle(scheduled.id)}
-                                          className="text-xs"
-                                        >
-                                          Yes
-                                        </Button>
-                                        <Button
-                                          type="button"
-                                          variant={record?.materialsUsed === false ? "default" : "outline"}
-                                          size="sm"
-                                          onClick={() => handleMaterialsToggle(scheduled.id)}
-                                          className="text-xs"
-                                        >
-                                          No
-                                        </Button>
+                                {/* Activity Steps Card - Full Width */}
+                                {scheduled.activity?.steps && scheduled.activity.steps.length > 0 && (
+                                  <div className="bg-gradient-to-br from-orange-50 to-white rounded-xl p-4 border border-orange-200 shadow-sm mb-4">
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg flex items-center justify-center">
+                                        <ListChecks className="h-4 w-4 text-white" />
                                       </div>
-                                      
+                                      <h4 className="text-sm font-bold text-gray-800">Activity Steps</h4>
+                                    </div>
+                                    <ol className="space-y-3">
+                                      {scheduled.activity.steps.map((step: any, index: number) => (
+                                        <li key={index} className="flex gap-3">
+                                          <span className="flex-shrink-0 w-7 h-7 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-sm font-bold">
+                                            {index + 1}
+                                          </span>
+                                          <div className="flex-1">
+                                            <p className="text-sm text-gray-700 font-medium">
+                                              {step.instruction || step.text || step.description || 'No instruction available'}
+                                            </p>
+                                            {step.imageUrl && (
+                                              <img 
+                                                src={step.imageUrl} 
+                                                alt={`Step ${index + 1}`}
+                                                className="mt-2 rounded-lg w-full max-h-32 object-cover shadow-sm"
+                                              />
+                                            )}
+                                          </div>
+                                        </li>
+                                      ))}
+                                    </ol>
+                                  </div>
+                                )}
+                                
+                                {/* Bottom Section - Materials and Recording */}
+                                <div className="mt-4 space-y-4">
+                                  {/* Video Link */}
+                                  {scheduled.activity?.videoUrl && (
+                                    <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-4 border border-blue-200 shadow-sm">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg flex items-center justify-center">
+                                            <Play className="h-4 w-4 text-white" />
+                                          </div>
+                                          <h4 className="text-sm font-bold text-gray-800">Video Tutorial</h4>
+                                        </div>
+                                        <a 
+                                          href={scheduled.activity.videoUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                                        >
+                                          <Play className="h-4 w-4" />
+                                          Watch Video
+                                        </a>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                
+                                  {/* Enhanced Activity Teaching Card */}
+                                  <div className="bg-gradient-to-br from-yellow-50 to-white rounded-xl p-4 border border-yellow-200 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-4">
+                                      <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center">
+                                        <Edit3 className="h-4 w-4 text-white" />
+                                      </div>
+                                      <h4 className="text-sm font-bold text-gray-800">Activity Feedback</h4>
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                      {/* Activity Notes */}
                                       <div>
-                                        <Label htmlFor={`material-feedback-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
-                                          Material Feedback
+                                        <Label htmlFor={`notes-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
+                                          Activity Notes
                                         </Label>
                                         <Textarea
-                                          id={`material-feedback-${scheduled.id}`}
-                                          placeholder="How were the materials? Any suggestions for improvement or substitutions?"
-                                          value={record?.materialFeedback || ''}
-                                          onChange={(e) => handleMaterialFeedbackChange(scheduled.id, e.target.value)}
-                                          className="min-h-[60px] text-sm bg-white"
+                                          id={`notes-${scheduled.id}`}
+                                          placeholder="How did the activity go? Any observations or adjustments made?"
+                                          value={record?.notes || ''}
+                                          onChange={(e) => handleNotesChange(scheduled.id, e.target.value)}
+                                          className="min-h-[80px] text-sm bg-white"
+                                          data-testid={`notes-${scheduled.id}`}
                                         />
                                       </div>
-                                    </div>
 
-                                    {/* Activity Rating */}
-                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                      <Label className="text-sm font-semibold text-gray-700 mb-2 block">
-                                        How would you rate this activity?
-                                      </Label>
-                                      <div className="mb-3">
-                                        <StarRating 
-                                          activityId={scheduled.id}
-                                          rating={record?.rating || 0}
-                                          onRatingChange={handleRatingChange}
-                                        />
-                                      </div>
-                                      
-                                      {record?.rating > 0 && (
+                                      {/* Materials Usage Questions */}
+                                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                        <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                                          Did you use the suggested materials?
+                                        </Label>
+                                        <div className="flex items-center gap-3 mb-3">
+                                          <Button
+                                            type="button"
+                                            variant={record?.materialsUsed === true ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() => handleMaterialsToggle(scheduled.id)}
+                                            className="text-xs"
+                                          >
+                                            Yes
+                                          </Button>
+                                          <Button
+                                            type="button"
+                                            variant={record?.materialsUsed === false ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() => handleMaterialsToggle(scheduled.id)}
+                                            className="text-xs"
+                                          >
+                                            No
+                                          </Button>
+                                        </div>
+                                        
                                         <div>
-                                          <Label htmlFor={`rating-feedback-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
-                                            Rating Feedback (Optional)
+                                          <Label htmlFor={`material-feedback-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
+                                            Material Feedback
                                           </Label>
                                           <Textarea
-                                            id={`rating-feedback-${scheduled.id}`}
-                                            placeholder="What made this activity great or how could it be improved?"
-                                            value={record?.ratingFeedback || ''}
-                                            onChange={(e) => handleRatingFeedbackChange(scheduled.id, e.target.value)}
+                                            id={`material-feedback-${scheduled.id}`}
+                                            placeholder="How were the materials? Any suggestions for improvement or substitutions?"
+                                            value={record?.materialFeedback || ''}
+                                            onChange={(e) => handleMaterialFeedbackChange(scheduled.id, e.target.value)}
                                             className="min-h-[60px] text-sm bg-white"
                                           />
                                         </div>
-                                      )}
-                                    </div>
+                                      </div>
 
-                                    {/* Complete Activity Button */}
-                                    <Button
-                                      onClick={() => handleMarkComplete(scheduled.id)}
-                                      disabled={record?.completed || false}
-                                      className={`w-full ${
-                                        record?.completed 
-                                          ? 'bg-green-600 text-white cursor-not-allowed' 
-                                          : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
-                                      }`}
-                                      size="lg"
-                                    >
-                                      {record?.completed ? (
-                                        <>
-                                          <CheckCircle2 className="h-5 w-5 mr-2" />
-                                          Activity Completed
-                                        </>
-                                      ) : (
-                                        <>
-                                          <CheckCircle2 className="h-5 w-5 mr-2" />
-                                          Mark Activity as Complete
-                                        </>
-                                      )}
-                                    </Button>
+                                      {/* Activity Rating */}
+                                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                        <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                                          How would you rate this activity?
+                                        </Label>
+                                        <div className="mb-3">
+                                          <StarRating 
+                                            activityId={scheduled.id}
+                                            rating={record?.rating || 0}
+                                            onRatingChange={handleRatingChange}
+                                          />
+                                        </div>
+                                        
+                                        {record?.rating > 0 && (
+                                          <div>
+                                            <Label htmlFor={`rating-feedback-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
+                                              Rating Feedback (Optional)
+                                            </Label>
+                                            <Textarea
+                                              id={`rating-feedback-${scheduled.id}`}
+                                              placeholder="What made this activity great or how could it be improved?"
+                                              value={record?.ratingFeedback || ''}
+                                              onChange={(e) => handleRatingFeedbackChange(scheduled.id, e.target.value)}
+                                              className="min-h-[60px] text-sm bg-white"
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Complete Activity Button */}
+                                      <Button
+                                        onClick={() => handleMarkComplete(scheduled.id)}
+                                        disabled={record?.completed || false}
+                                        className={`w-full ${
+                                          record?.completed 
+                                            ? 'bg-green-600 text-white cursor-not-allowed' 
+                                            : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
+                                        }`}
+                                        size="lg"
+                                      >
+                                        {record?.completed ? (
+                                          <>
+                                            <CheckCircle2 className="h-5 w-5 mr-2" />
+                                            Activity Completed
+                                          </>
+                                        ) : (
+                                          <>
+                                            <CheckCircle2 className="h-5 w-5 mr-2" />
+                                            Mark Activity as Complete
+                                          </>
+                                        )}
+                                      </Button>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
+                      );
                   })}
                   </div>
                 </div>
               );
             })}
-          </div>
+          </div>)
         ) : (
           // Show regular single day activities in grid layout
-          <div className="grid grid-cols-2 gap-4">
+          (<div className="grid grid-cols-2 gap-4">
             {sortedActivities.map((scheduled) => {
               const isExpanded = expandedActivity === scheduled.id;
               const record = activityRecords[scheduled.id];
@@ -1549,10 +1547,9 @@ export function TabletRecordingView({
               </div>
             );
           })}
-          </div>
+          </div>)
         )}
       </div>
-
     </div>
   );
 }
