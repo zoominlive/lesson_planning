@@ -576,7 +576,11 @@ export function CompletedActivities() {
                     <div className="flex items-center gap-4">
                       <StarRating rating={record.rating} />
                       {record.materialsUsed !== null && (
-                        <Badge variant={record.materialsUsed ? "default" : "secondary"}>
+                        <Badge 
+                          className={record.materialsUsed 
+                            ? "bg-green-100 text-green-800 border-green-300" 
+                            : "bg-orange-100 text-orange-800 border-orange-300"}
+                        >
                           Materials: {record.materialsUsed ? "Used" : "Not Used"}
                         </Badge>
                       )}
