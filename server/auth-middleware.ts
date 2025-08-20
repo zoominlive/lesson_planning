@@ -33,8 +33,8 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
 
     let verified: any;
 
-    // In development mode, use a simple secret for JWT verification
-    if (process.env.NODE_ENV === 'development') {
+    // In development mode OR when explicitly using dev JWT secret, use a simple secret for JWT verification
+    if (process.env.NODE_ENV === 'development' || process.env.USE_DEV_JWT_SECRET === 'true') {
       try {
         verified = jwt.verify(token, 'dev-secret-key') as any;
       } catch (devErr) {
