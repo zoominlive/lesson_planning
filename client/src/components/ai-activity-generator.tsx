@@ -118,14 +118,14 @@ export default function AiActivityGenerator({
           setErrorModal({
             open: true,
             title: "AI Service Temporarily Unavailable",
-            message: result.error || "The AI is having trouble generating activities right now. Please try again later or create an activity manually."
+            message: "The AI is having trouble generating activities right now.\n\nPlease click 'Try Again' to retry generation, or adjust your options and try again."
           });
         } else if (response.status === 500 && result.retryable) {
           // Server error but retryable
           setErrorModal({
             open: true,
-            title: "Generation Failed",
-            message: "There was an issue generating the activity. Please try again in a moment."
+            title: "Generation Failed - Please Retry",
+            message: "There was an issue generating the activity.\n\nPlease click 'Try Again' to retry generation, or adjust your options and try again."
           });
         } else if (response.status === 400 && result.reason) {
           // Validation error from content safety check
@@ -143,14 +143,14 @@ export default function AiActivityGenerator({
           setErrorModal({
             open: true,
             title: "Safety Check Unavailable",
-            message: "Unable to verify content safety at this time. Please try again later or remove the activity type and focus material fields."
+            message: "Unable to verify content safety at this time.\n\nPlease click 'Try Again' to retry, or remove the activity type and focus material fields and try again."
           });
         } else {
           // Other errors
           setErrorModal({
             open: true,
-            title: "Generation Failed",
-            message: result.error || "Unable to generate activity. Please try again."
+            title: "Generation Failed - Please Retry",
+            message: (result.error || "Unable to generate activity") + "\n\nPlease click 'Try Again' to retry generation."
           });
         }
         return;
@@ -162,8 +162,8 @@ export default function AiActivityGenerator({
         setIsGenerating(false);
         setErrorModal({
           open: true,
-          title: "Generation Issue",
-          message: "The AI couldn't generate a proper activity. Please try again or create one manually."
+          title: "Generation Issue - Please Retry",
+          message: "The AI couldn't generate a proper activity.\n\nPlease click 'Try Again' to retry generation, or adjust your options and try again."
         });
         return;
       }
@@ -204,7 +204,7 @@ export default function AiActivityGenerator({
       setErrorModal({
         open: true,
         title: "Connection Error",
-        message: "Unable to connect to the server. Please check your connection and try again."
+        message: "Unable to connect to the server.\n\nPlease check your connection and click 'Try Again' to retry generation."
       });
     } finally {
       setIsGenerating(false);
@@ -632,7 +632,7 @@ export default function AiActivityGenerator({
               onClick={() => setErrorModal({...errorModal, open: false})}
               className="bg-gradient-to-r from-coral-red to-turquoise text-white"
             >
-              OK
+              Try Again
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
