@@ -659,7 +659,7 @@ export function CompletedActivities() {
                         <TooltipTrigger asChild>
                           <Info className="h-4 w-4 text-purple-500 cursor-help" />
                         </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
+                        <TooltipContent side="left" align="start" className="max-w-xs z-50">
                           <div className="space-y-2">
                             <p className="font-semibold">Score Calculation:</p>
                             <ul className="text-sm space-y-1">
