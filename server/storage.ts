@@ -917,7 +917,7 @@ export class DatabaseStorage implements IStorage {
       .from(activityRecords)
       .innerJoin(scheduledActivities, eq(activityRecords.scheduledActivityId, scheduledActivities.id))
       .innerJoin(activities, eq(scheduledActivities.activityId, activities.id))
-      .innerJoin(users, eq(activityRecords.userId, users.id))
+      .innerJoin(users, eq(activityRecords.userId, users.userId))
       .innerJoin(lessonPlans, eq(scheduledActivities.lessonPlanId, lessonPlans.id))
       .innerJoin(rooms, eq(scheduledActivities.roomId, rooms.id))
       .innerJoin(locations, eq(scheduledActivities.locationId, locations.id))
