@@ -602,7 +602,7 @@ export function CompletedActivities() {
                     <div className="space-y-3">
                       {record.notes && (
                         <div>
-                          <h5 className="font-medium mb-1">Teaching Notes</h5>
+                          <h5 className="font-medium mb-1">Educational Outcomes Feedback</h5>
                           <p className="text-sm text-gray-600">{record.notes}</p>
                         </div>
                       )}
