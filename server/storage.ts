@@ -219,6 +219,14 @@ export interface IStorage {
   createActivityRecord(activityRecord: InsertActivityRecord): Promise<ActivityRecord>;
   updateActivityRecord(id: string, updates: Partial<InsertActivityRecord>): Promise<ActivityRecord | undefined>;
   deleteActivityRecord(id: string): Promise<boolean>;
+  getCompletedActivityRecords(filters: {
+    locationId?: string;
+    roomId?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+    minRating?: number;
+    materialsUsed?: boolean;
+  }): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -252,6 +260,28 @@ export class DatabaseStorage implements IStorage {
     
     const [user] = await this.db.select().from(users).where(and(...conditions));
     return user || undefined;
+  }
+
+  async getUsers(locationId?: string): Promise<User[]> {
+    const conditions: any[] = [];
+    
+    // Filter by tenant
+    if (this.tenantId) {
+      conditions.push(eq(users.tenantId, this.tenantId));
+    }
+    
+    // Filter by location if specified
+    if (locationId && locationId !== 'all') {
+      conditions.push(sql`${users.locations}::jsonb @> ${JSON.stringify([locationId])}::jsonb`);
+    }
+    
+    const allUsers = await this.db
+      .select()
+      .from(users)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(users.firstName, users.lastName);
+    
+    return allUsers;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -821,6 +851,110 @@ export class DatabaseStorage implements IStorage {
     
     const result = await this.db.delete(activityRecords).where(and(...conditions));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async getCompletedActivityRecords(filters: {
+    locationId?: string;
+    roomId?: string;
+    teacherId?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+    minRating?: number;
+    exactRating?: number;
+    materialsUsed?: boolean;
+  }): Promise<any[]> {
+    const { locationId, roomId, teacherId, dateFrom, dateTo, minRating, exactRating, materialsUsed } = filters;
+    
+    // Build conditions for filtering
+    const conditions: any[] = [
+      eq(activityRecords.completed, true),
+    ];
+    
+    if (this.tenantId) {
+      conditions.push(eq(activityRecords.tenantId, this.tenantId));
+    }
+    
+    if (exactRating) {
+      conditions.push(eq(activityRecords.rating, exactRating));
+    } else if (minRating) {
+      conditions.push(sql`${activityRecords.rating} >= ${minRating}`);
+    }
+    
+    if (materialsUsed !== undefined) {
+      conditions.push(eq(activityRecords.materialsUsed, materialsUsed));
+    }
+    
+    if (dateFrom) {
+      conditions.push(sql`${activityRecords.completedAt} >= ${dateFrom}`);
+    }
+    
+    if (dateTo) {
+      conditions.push(sql`${activityRecords.completedAt} <= ${dateTo}`);
+    }
+    
+    // Add location and room filters to conditions if provided
+    if (locationId) {
+      conditions.push(eq(locations.id, locationId));
+    }
+    
+    if (roomId) {
+      conditions.push(eq(rooms.id, roomId));
+    }
+    
+    if (teacherId) {
+      conditions.push(eq(activityRecords.userId, teacherId));
+    }
+    
+    // Perform the join query with all necessary tables
+    const result = await this.db
+      .select({
+        // Activity record fields
+        id: activityRecords.id,
+        rating: activityRecords.rating,
+        ratingFeedback: activityRecords.ratingFeedback,
+        notes: activityRecords.notes,
+        materialsUsed: activityRecords.materialsUsed,
+        materialFeedback: activityRecords.materialFeedback,
+        completedAt: activityRecords.completedAt,
+        
+        // Scheduled activity fields
+        dayOfWeek: scheduledActivities.dayOfWeek,
+        timeSlot: scheduledActivities.timeSlot,
+        
+        // Activity details
+        activityId: activities.id,
+        activityTitle: activities.title,
+        activityDescription: activities.description,
+        
+        // User (teacher) details
+        userId: users.id,
+        teacherName: sql`${users.firstName} || ' ' || ${users.lastName}`,
+        teacherUsername: users.username,
+        
+        // Room details
+        roomId: rooms.id,
+        roomName: rooms.name,
+        
+        // Location details
+        locationId: locations.id,
+        locationName: locations.name,
+        
+        // Lesson plan details
+        lessonPlanId: lessonPlans.id,
+        weekStart: lessonPlans.weekStart,
+        scheduleType: lessonPlans.scheduleType,
+      })
+      .from(activityRecords)
+      .innerJoin(scheduledActivities, eq(activityRecords.scheduledActivityId, scheduledActivities.id))
+      .innerJoin(activities, eq(scheduledActivities.activityId, activities.id))
+      .innerJoin(users, eq(activityRecords.userId, users.userId))
+      .innerJoin(lessonPlans, eq(scheduledActivities.lessonPlanId, lessonPlans.id))
+      .innerJoin(rooms, eq(scheduledActivities.roomId, rooms.id))
+      .innerJoin(locations, eq(scheduledActivities.locationId, locations.id))
+      .where(and(...conditions))
+      .orderBy(sql`${activityRecords.completedAt} DESC`);
+    
+    return result;
   }
 
   // Lesson Plans
