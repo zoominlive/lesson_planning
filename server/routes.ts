@@ -1561,7 +1561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Insufficient permissions to view completed activities" });
       }
 
-      const { locationId, roomId, dateFrom, dateTo, minRating, exactRating, materialsUsed } = req.query;
+      const { locationId, roomId, teacherId, dateFrom, dateTo, minRating, exactRating, materialsUsed } = req.query;
       
       // Validate location access if locationId is provided
       if (locationId) {
@@ -1575,6 +1575,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filters = {
         locationId: locationId as string | undefined,
         roomId: roomId as string | undefined,
+        teacherId: teacherId as string | undefined,
         dateFrom: dateFrom ? new Date(dateFrom as string) : undefined,
         dateTo: dateTo ? new Date(dateTo as string) : undefined,
         minRating: minRating ? parseInt(minRating as string) : undefined,

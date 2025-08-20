@@ -834,13 +834,14 @@ export class DatabaseStorage implements IStorage {
   async getCompletedActivityRecords(filters: {
     locationId?: string;
     roomId?: string;
+    teacherId?: string;
     dateFrom?: Date;
     dateTo?: Date;
     minRating?: number;
     exactRating?: number;
     materialsUsed?: boolean;
   }): Promise<any[]> {
-    const { locationId, roomId, dateFrom, dateTo, minRating, exactRating, materialsUsed } = filters;
+    const { locationId, roomId, teacherId, dateFrom, dateTo, minRating, exactRating, materialsUsed } = filters;
     
     // Build conditions for filtering
     const conditions: any[] = [
@@ -876,6 +877,10 @@ export class DatabaseStorage implements IStorage {
     
     if (roomId) {
       conditions.push(eq(rooms.id, roomId));
+    }
+    
+    if (teacherId) {
+      conditions.push(eq(activityRecords.userId, teacherId));
     }
     
     // Perform the join query with all necessary tables

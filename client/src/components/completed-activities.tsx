@@ -63,6 +63,7 @@ export function CompletedActivities() {
   const [filters, setFilters] = useState<{
     locationId: string;
     roomId: string;
+    teacherId: string;
     dateFrom: Date;
     dateTo: Date;
     minRating: string;
@@ -71,6 +72,7 @@ export function CompletedActivities() {
   }>({
     locationId: "all",
     roomId: "all",
+    teacherId: "all",
     dateFrom: subDays(new Date(), 30),
     dateTo: new Date(),
     minRating: "all",
@@ -92,12 +94,18 @@ export function CompletedActivities() {
     enabled: !!filters.locationId && filters.locationId !== "all",
   });
 
+  // Fetch teachers (users) from the database
+  const { data: teachers = [] } = useQuery<any[]>({
+    queryKey: ["/api/users"],
+  });
+
   // Fetch completed activities
   const { data: completedData, isLoading } = useQuery({
     queryKey: [
       "/api/activity-records/completed",
       filters.locationId,
       filters.roomId,
+      filters.teacherId,
       filters.dateFrom?.toISOString(),
       filters.dateTo?.toISOString(),
       filters.minRating,
@@ -110,6 +118,7 @@ export function CompletedActivities() {
       
       if (filters.locationId && filters.locationId !== "all") params.append("locationId", filters.locationId);
       if (filters.roomId && filters.roomId !== "all") params.append("roomId", filters.roomId);
+      if (filters.teacherId && filters.teacherId !== "all") params.append("teacherId", filters.teacherId);
       if (filters.dateFrom) params.append("dateFrom", filters.dateFrom.toISOString());
       if (filters.dateTo) params.append("dateTo", filters.dateTo.toISOString());
       if (filters.exactRating) {
@@ -468,6 +477,27 @@ export function CompletedActivities() {
                 </Select>
               </div>
               
+              {/* Teacher */}
+              <div className="space-y-2">
+                <Label>Teacher</Label>
+                <Select
+                  value={filters.teacherId}
+                  onValueChange={(value) => setFilters({ ...filters, teacherId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Teachers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Teachers</SelectItem>
+                    {teachers.map((teacher: any) => (
+                      <SelectItem key={teacher.user_id} value={teacher.user_id}>
+                        {teacher.fullName || teacher.username}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
               {/* Minimum Rating */}
               <div className="space-y-2">
                 <Label>Minimum Rating</Label>
@@ -515,6 +545,7 @@ export function CompletedActivities() {
                 onClick={() => setFilters({
                   locationId: "all",
                   roomId: "all",
+                  teacherId: "all",
                   dateFrom: subDays(new Date(), 30),
                   dateTo: new Date(),
                   minRating: "all",
