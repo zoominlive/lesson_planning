@@ -117,12 +117,15 @@ export function GuidedWalkthrough() {
     const hasSeenWalkthrough = localStorage.getItem("hasSeenWalkthrough");
     const selectedLocation = localStorage.getItem("selectedLocation");
     
+    console.log("GuidedWalkthrough mounted - hasSeenWalkthrough:", hasSeenWalkthrough, "selectedLocation:", selectedLocation);
+    console.log("isActive state:", isActive);
+    
     // Auto-start for first-time users in Third Location
     // Third Location is used because it has no data, simulating a fresh start
     if (!hasSeenWalkthrough && selectedLocation === "Third Location") {
       setTimeout(() => setIsActive(true), 1500);
     }
-  }, []);
+  }, [isActive]);
 
   // Update highlight box when step changes
   useEffect(() => {
@@ -192,32 +195,34 @@ export function GuidedWalkthrough() {
   };
 
   const startWalkthrough = () => {
-    // Switch to Third Location for demo (which has no data)
-    const locations = JSON.parse(localStorage.getItem("allLocationNames") || "[]");
-    const thirdLocation = locations.find((loc: string) => loc === "Third Location");
-    
-    if (thirdLocation) {
-      localStorage.setItem("selectedLocation", "Third Location");
-      // Trigger a reload to apply the location change
-      window.location.reload();
-    } else {
-      // If Third Location doesn't exist, just start the tour with current location
-      setIsActive(true);
-      setCurrentStep(0);
-    }
+    // Just start the walkthrough without location switching
+    console.log("Starting walkthrough!");
+    setIsActive(true);
+    setCurrentStep(0);
   };
 
   if (!isActive) {
     // Show start button in the corner
+    console.log("Rendering Take a Tour button");
     return (
-      <Button
-        onClick={startWalkthrough}
-        className="fixed bottom-4 right-4 z-50 bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-all"
-        data-testid="button-start-walkthrough"
+      <div 
+        className="fixed bottom-6 right-6"
+        style={{ 
+          zIndex: 99999,
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px'
+        }}
       >
-        <Sparkles className="mr-2 h-4 w-4" />
-        Take a Tour
-      </Button>
+        <Button
+          onClick={startWalkthrough}
+          className="bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-all text-lg px-6 py-3 font-semibold animate-pulse"
+          data-testid="button-start-walkthrough"
+        >
+          <Sparkles className="mr-2 h-5 w-5" />
+          Take a Tour
+        </Button>
+      </div>
     );
   }
 
