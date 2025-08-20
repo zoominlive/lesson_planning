@@ -83,7 +83,7 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
   };
 
   // Load settings from database
-  const { data: dbSettings, isLoading } = useQuery({
+  const { data: dbSettings, isLoading } = useQuery<OrganizationSettings & { locations?: Array<{ id: string; name: string; }> }>({
     queryKey: ['/api/organization-settings'],
   });
 
@@ -108,13 +108,24 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
       });
       
       // Set default values for the settings panels
+      // For position-based settings, check if any existing position-based locations have a specific slotsPerDay
+      let positionSlots = dbSettings.defaultSlotsPerDay || 8;
+      const positionBasedLocations = filteredLocations.filter((loc: any) => 
+        dbSettings.locationSettings?.[loc.id]?.scheduleType === 'position-based'
+      );
+      if (positionBasedLocations.length > 0) {
+        // Use the slotsPerDay from the first position-based location found
+        const firstPositionLocation = positionBasedLocations[0];
+        positionSlots = dbSettings.locationSettings[firstPositionLocation.id]?.slotsPerDay || positionSlots;
+      }
+      
       setTimeBasedSettings({
         startTime: dbSettings.defaultStartTime || '06:00',
         endTime: dbSettings.defaultEndTime || '18:00'
       });
       
       setPositionBasedSettings({
-        slotsPerDay: dbSettings.defaultSlotsPerDay || 8
+        slotsPerDay: positionSlots
       });
       
       // Update localStorage for each permitted location's settings
@@ -410,7 +421,7 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
         <div className="grid grid-cols-[1fr,auto,1fr] gap-4">
           {/* Time-Based Column */}
           <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3 min-h-[200px]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-blue-600" />
@@ -555,7 +566,7 @@ export function GeneralSettings({ tenantId }: GeneralSettingsProps) {
 
           {/* Position-Based Column */}
           <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3 min-h-[200px]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Grid3x3 className="h-5 w-5 text-green-600" />

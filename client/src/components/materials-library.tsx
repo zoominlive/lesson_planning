@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Plus, Edit, Trash2, Package, FolderOpen, Sparkles } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getUserAuthorizedLocations } from "@/lib/auth";
+import { hasPermission } from "@/lib/permission-utils";
 import MaterialForm from "./material-form";
 import CollectionsManager from "./collections-manager";
 import type { Material } from "@shared/schema";
@@ -192,29 +193,31 @@ export default function MaterialsLibrary() {
                 </DialogContent>
               </Dialog>
               
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button 
-                    className="bg-gradient-to-r from-turquoise to-sky-blue text-white hover:shadow-lg transition-all duration-300"
-                    data-testid="button-add-material"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add New Material
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col">
-                  <DialogHeader>
-                    <DialogTitle>Add New Material</DialogTitle>
-                  </DialogHeader>
-                  <div className="overflow-y-auto flex-1">
-                    <MaterialForm 
-                      onSuccess={() => setIsCreateDialogOpen(false)}
-                      onCancel={() => setIsCreateDialogOpen(false)}
-                      selectedLocationId={selectedLocationId}
-                    />
-                  </div>
-                </DialogContent>
-              </Dialog>
+              {hasPermission('material.create') && (
+                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      className="bg-gradient-to-r from-turquoise to-sky-blue text-white hover:shadow-lg transition-all duration-300"
+                      data-testid="button-add-material"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add New Material
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col">
+                    <DialogHeader>
+                      <DialogTitle>Add New Material</DialogTitle>
+                    </DialogHeader>
+                    <div className="overflow-y-auto flex-1">
+                      <MaterialForm 
+                        onSuccess={() => setIsCreateDialogOpen(false)}
+                        onCancel={() => setIsCreateDialogOpen(false)}
+                        selectedLocationId={selectedLocationId}
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
           </div>
           
@@ -365,26 +368,30 @@ export default function MaterialsLibrary() {
                 </div>
                 
                 <div className="flex space-x-2 mt-auto">
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => handleEdit(material)}
-                    data-testid={`button-edit-material-${material.id}`}
-                  >
-                    <Edit className="mr-1 h-3 w-3" />
-                    Edit
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => handleDelete(material)}
-                    data-testid={`button-delete-material-${material.id}`}
-                  >
-                    <Trash2 className="mr-1 h-3 w-3" />
-                    Delete
-                  </Button>
+                  {hasPermission('material.update') && (
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleEdit(material)}
+                      data-testid={`button-edit-material-${material.id}`}
+                    >
+                      <Edit className="mr-1 h-3 w-3" />
+                      Edit
+                    </Button>
+                  )}
+                  {hasPermission('material.delete') && (
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleDelete(material)}
+                      data-testid={`button-delete-material-${material.id}`}
+                    >
+                      <Trash2 className="mr-1 h-3 w-3" />
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

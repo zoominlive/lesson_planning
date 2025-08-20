@@ -9,6 +9,7 @@ import {
   getUserAuthorizedLocationIds 
 } from "./auth-middleware";
 import { redirectToAuthorizedView, checkViewAccess } from "./middleware/view-access-control";
+import { checkPermission } from "./middleware/permission-checker";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -404,7 +405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/materials", async (req: AuthenticatedRequest, res) => {
+  app.post("/api/materials", checkPermission('material', 'create'), async (req: AuthenticatedRequest, res) => {
     try {
       console.log('[POST /api/materials] Request body:', req.body);
       console.log('[POST /api/materials] Request tenantId:', req.tenantId);
@@ -441,7 +442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/materials/:id", async (req: AuthenticatedRequest, res) => {
+  app.put("/api/materials/:id", checkPermission('material', 'update'), async (req: AuthenticatedRequest, res) => {
     console.log('[PUT /api/materials] Starting update for ID:', req.params.id);
     console.log('[PUT /api/materials] Request body:', req.body);
     console.log('[PUT /api/materials] Auth info:', { tenantId: req.tenantId, userId: req.userId });
@@ -497,7 +498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/materials/:id", async (req: AuthenticatedRequest, res) => {
+  app.delete("/api/materials/:id", checkPermission('material', 'delete'), async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       
@@ -900,7 +901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/activities", async (req: AuthenticatedRequest, res) => {
+  app.post("/api/activities", checkPermission('activity', 'create'), async (req: AuthenticatedRequest, res) => {
     console.log('[POST /api/activities] Request body:', req.body);
     console.log('[POST /api/activities] Authenticated tenant:', req.tenantId);
     
@@ -936,7 +937,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/activities/:id", async (req: AuthenticatedRequest, res) => {
+  app.put("/api/activities/:id", checkPermission('activity', 'update'), async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const data = insertActivitySchema.partial().parse(req.body);
@@ -968,7 +969,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/activities/:id", async (req: AuthenticatedRequest, res) => {
+  app.delete("/api/activities/:id", checkPermission('activity', 'delete'), async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       
