@@ -240,7 +240,6 @@ export function CompletedActivities() {
           </CardContent>
         </Card>
       </div>
-
       {/* Filters */}
       <Card>
         <CardHeader>
@@ -420,7 +419,6 @@ export function CompletedActivities() {
           </CardContent>
         )}
       </Card>
-
       {/* Activity Records */}
       {isLoading ? (
         <div className="text-center py-8">Loading completed activities...</div>
@@ -490,7 +488,7 @@ export function CompletedActivities() {
                       
                       {record.ratingFeedback && (
                         <div>
-                          <h5 className="font-medium mb-1">Rating Feedback</h5>
+                          <h5 className="font-medium mb-1">Activity Feedback</h5>
                           <p className="text-sm text-gray-600">{record.ratingFeedback}</p>
                         </div>
                       )}
