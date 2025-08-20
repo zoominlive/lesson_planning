@@ -1168,7 +1168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Generate activity using AI
   app.post('/api/activities/generate', async (req: AuthenticatedRequest, res) => {
-    const { ageGroupId, ageGroupName, ageRange, category, isQuiet, isIndoor, locationId, activityType, focusMaterial } = req.body;
+    const { ageGroupId, ageGroupName, ageRange, category, isQuiet, isIndoor, locationId, activityType, focusMaterial, milestoneId, milestoneTitle, milestoneDescription, milestoneCategory } = req.body;
     
     if (!ageGroupName || !category || isQuiet === undefined || isIndoor === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -1227,7 +1227,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ageRange: ageRange || { start: 2, end: 5 },
           existingActivities: existingActivityInfo,
           activityType: activityType,
-          focusMaterial: focusMaterial
+          focusMaterial: focusMaterial,
+          milestoneTitle: milestoneTitle,
+          milestoneDescription: milestoneDescription,
+          milestoneCategory: milestoneCategory
         });
 
         // Check if the generation failed
@@ -1333,7 +1336,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })),
           variations: generatedActivity.variations,
           imagePrompt: generatedActivity.imagePrompt,
-          suggestedMaterials: validatedMaterials.length > 0 ? validatedMaterials : (generatedActivity.suggestedMaterials || [])
+          suggestedMaterials: validatedMaterials.length > 0 ? validatedMaterials : (generatedActivity.suggestedMaterials || []),
+          // Include milestone information if provided
+          targetedMilestoneId: milestoneId || null,
+          targetedMilestoneTitle: milestoneTitle || null,
+          targetedMilestoneDescription: milestoneDescription || null,
+          targetedMilestoneCategory: milestoneCategory || null
         };
 
         res.json(transformedActivity);

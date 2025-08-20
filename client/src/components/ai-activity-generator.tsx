@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Wand2, Loader2, Sparkles, ChevronRight } from "lucide-react";
+import { Wand2, Loader2, Sparkles, ChevronRight, Trophy } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface AiActivityGeneratorProps {
   open: boolean;
@@ -32,6 +34,7 @@ export default function AiActivityGenerator({
   const [isIndoor, setIsIndoor] = useState<boolean | null>(null);
   const [activityType, setActivityType] = useState<string>("");
   const [focusMaterial, setFocusMaterial] = useState<string>("");
+  const [selectedMilestone, setSelectedMilestone] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationMessage, setGenerationMessage] = useState("");
   const [retryCount, setRetryCount] = useState(0);
@@ -40,6 +43,24 @@ export default function AiActivityGenerator({
     open: false,
     title: "",
     message: ""
+  });
+
+  // Fetch milestones based on location
+  const { data: milestones = [] } = useQuery({
+    queryKey: ["/api/milestones", locationId],
+    queryFn: locationId 
+      ? async () => {
+          const data = await apiRequest("GET", `/api/milestones?locationId=${locationId}`);
+          return data;
+        }
+      : undefined,
+    enabled: !!locationId && open,
+  });
+
+  // Filter milestones based on selected age group
+  const filteredMilestones = milestones.filter((milestone: any) => {
+    if (!selectedAgeGroup || !milestone.ageGroupIds) return false;
+    return milestone.ageGroupIds.includes(selectedAgeGroup);
   });
 
   const handleGenerate = async () => {
@@ -56,6 +77,7 @@ export default function AiActivityGenerator({
     setRetryCount(0);
     setGenerationMessage("Generating your activity...");
     const ageGroup = ageGroups.find(ag => ag.id === selectedAgeGroup);
+    const milestone = selectedMilestone ? milestones.find((m: any) => m.id === selectedMilestone) : null;
     
     try {
       const token = localStorage.getItem('authToken');
@@ -77,7 +99,11 @@ export default function AiActivityGenerator({
           isIndoor,
           locationId,
           activityType: (activityType && activityType !== 'none') ? activityType : undefined,
-          focusMaterial: focusMaterial || undefined
+          focusMaterial: focusMaterial || undefined,
+          milestoneId: selectedMilestone || undefined,
+          milestoneTitle: milestone?.title || undefined,
+          milestoneDescription: milestone?.description || undefined,
+          milestoneCategory: milestone?.category || undefined
         })
       });
 
@@ -165,6 +191,7 @@ export default function AiActivityGenerator({
       setIsIndoor(null);
       setActivityType("");
       setFocusMaterial("");
+      setSelectedMilestone("");
       setGenerationMessage("");
       onOpenChange(false);
       
@@ -245,6 +272,7 @@ export default function AiActivityGenerator({
     setIsIndoor(null);
     setActivityType("");
     setFocusMaterial("");
+    setSelectedMilestone("");
     setGenerationMessage("");
     onOpenChange(false);
   };
@@ -457,10 +485,42 @@ export default function AiActivityGenerator({
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Any specific preferences? (Optional)</h3>
                 <p className="text-sm text-gray-600">
-                  Help us create a more targeted activity by specifying a type or material focus.
+                  Help us create a more targeted activity by specifying a milestone, type, or material focus.
                 </p>
                 
                 <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block flex items-center">
+                      <Trophy className="h-4 w-4 mr-1 text-purple-600" />
+                      Target Milestone
+                    </label>
+                    <Select value={selectedMilestone} onValueChange={setSelectedMilestone}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a milestone to target (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No specific milestone</SelectItem>
+                        {filteredMilestones.length > 0 ? (
+                          filteredMilestones.map((milestone: any) => (
+                            <SelectItem key={milestone.id} value={milestone.id}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{milestone.title}</span>
+                                <span className="text-xs text-gray-500">{milestone.category}</span>
+                              </div>
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="" disabled>
+                            No milestones available for selected age group
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Generate an activity designed to help achieve this developmental milestone
+                    </p>
+                  </div>
+
                   <div>
                     <label className="text-sm font-medium mb-2 block">Activity Type</label>
                     <Select value={activityType} onValueChange={setActivityType}>
