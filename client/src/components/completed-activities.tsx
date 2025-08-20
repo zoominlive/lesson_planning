@@ -203,23 +203,23 @@ export function CompletedActivities() {
   const timeSlotNames = ["Morning", "Mid-Morning", "Afternoon", "Late Afternoon", "Evening"];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-1 pt-3">
             <CardTitle className="text-sm font-medium text-gray-600">Total Activities</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-3">
             <div className="text-2xl font-bold">{stats.totalActivities}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-1 pt-3">
             <CardTitle className="text-sm font-medium text-gray-600">Average Rating</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-3">
             <div className="flex items-center gap-2">
               <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
               <span className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</span>
@@ -228,10 +228,10 @@ export function CompletedActivities() {
         </Card>
         
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-1 pt-3">
             <CardTitle className="text-sm font-medium text-gray-600">Materials Usage</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-3">
             <div className="text-2xl font-bold">{stats.materialsUsageRate.toFixed(0)}%</div>
             <p className="text-xs text-gray-500 mt-1">
               {stats.materialsUsedCount} used / {stats.materialsNotUsedCount} not used
@@ -240,10 +240,10 @@ export function CompletedActivities() {
         </Card>
         
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-1 pt-3">
             <CardTitle className="text-sm font-medium text-gray-600">Rating Distribution</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-3">
             <div className="flex items-center gap-2">
               {[5, 4, 3, 2, 1].map((rating) => {
                 const count = stats.ratingDistribution[rating as keyof typeof stats.ratingDistribution];
@@ -483,9 +483,9 @@ export function CompletedActivities() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-2">
           <h3 className="text-lg font-semibold">Completed Activities ({records.length})</h3>
-          <Accordion type="multiple" className="space-y-2">
+          <Accordion type="multiple" className="space-y-1">
             {records.map((record) => (
               <AccordionItem key={record.id} value={record.id} className="border rounded-lg">
                 <AccordionTrigger className="px-4 hover:no-underline">
