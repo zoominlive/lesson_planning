@@ -213,6 +213,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get teachers for the current tenant and optional location
+  app.get("/api/users", async (req: AuthenticatedRequest, res) => {
+    try {
+      const { locationId } = req.query;
+      
+      // Get teachers filtered by role and tenant (and optionally location)
+      const teachers = await storage.getTeachers(locationId as string);
+      
+      res.json(teachers);
+    } catch (error) {
+      console.error('Error fetching teachers:', error);
+      res.status(500).json({ error: "Failed to fetch teachers" });
+    }
+  });
+
   // Milestones routes
   app.get("/api/milestones", async (req: AuthenticatedRequest, res) => {
     try {

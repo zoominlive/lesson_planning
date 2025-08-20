@@ -96,7 +96,25 @@ export function CompletedActivities() {
 
   // Fetch teachers (users) from the database
   const { data: teachers = [] } = useQuery<any[]>({
-    queryKey: ["/api/users"],
+    queryKey: ["/api/users", filters.locationId],
+    queryFn: async () => {
+      const token = getAuthToken();
+      const params = new URLSearchParams();
+      
+      // Pass locationId to filter teachers by location
+      if (filters.locationId && filters.locationId !== "all") {
+        params.append("locationId", filters.locationId);
+      }
+      
+      const response = await fetch(`/api/users?${params}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) throw new Error("Failed to fetch teachers");
+      return response.json();
+    },
   });
 
   // Fetch completed activities

@@ -262,6 +262,31 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getTeachers(locationId?: string): Promise<User[]> {
+    const conditions: any[] = [];
+    
+    // Filter by tenant
+    if (this.tenantId) {
+      conditions.push(eq(users.tenantId, this.tenantId));
+    }
+    
+    // Filter by role (case-insensitive)
+    conditions.push(sql`LOWER(${users.role}) = 'teacher'`);
+    
+    // Filter by location if specified
+    if (locationId && locationId !== 'all') {
+      conditions.push(sql`${users.locations}::jsonb @> ${JSON.stringify([locationId])}::jsonb`);
+    }
+    
+    const teachers = await this.db
+      .select()
+      .from(users)
+      .where(and(...conditions))
+      .orderBy(users.firstName, users.lastName);
+    
+    return teachers;
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     if (!this.tenantId && !insertUser.tenantId) {
       throw new Error('Tenant ID is required to create a user');
