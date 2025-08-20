@@ -31,7 +31,7 @@ export function NavigationTabs({ children, defaultTab = "calendar" }: Navigation
               data-testid="tab-calendar"
             >
               <Calendar className="mr-2 h-4 w-4" />
-              Weekly Calendar
+              Calendar
             </TabsTrigger>
             <TabsTrigger 
               value="activities" 
