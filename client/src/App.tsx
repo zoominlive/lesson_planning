@@ -9,7 +9,6 @@ import LessonPlanner from "@/pages/lesson-planner";
 import TabletPlanner from "@/pages/tablet-planner";
 import { Settings } from "@/pages/Settings";
 import ParentView from "@/components/mobile/parent-view";
-import LessonReview from "@/pages/lesson-review";
 import NotFound from "@/pages/not-found";
 import { TokenSwitcher } from "@/components/token-switcher";
 import { RoleBasedRouteGuard } from "@/components/role-based-route-guard";
@@ -34,7 +33,6 @@ function Router() {
         <Route path="/tablet" component={TabletPlanner} />
         <Route path="/parent" component={ParentView} />
         <Route path="/settings" component={Settings} />
-        <Route path="/lesson-review" component={LessonReview} />
         <Route path="/review" component={ReviewRedirect} />
         <Route component={NotFound} />
       </Switch>

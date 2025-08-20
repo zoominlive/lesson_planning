@@ -20,6 +20,10 @@ interface ActivityReviewRequest {
   };
   totalActivities: number;
   averageRating: number;
+  userFilter?: {
+    userId: string;
+    userName: string;
+  };
 }
 
 interface ActivityReviewAnalysis {
@@ -97,13 +101,29 @@ export class ActivityReviewService {
       a => a.ratingFeedback || a.notes || a.materialFeedback
     );
 
-    return `
+    // Build the base prompt
+    let prompt = `
 Analyze the following completed childcare activities and their feedback to identify patterns, concerns, and areas for improvement.
 
 Overview:
 - Total Activities: ${request.totalActivities}
 - Average Rating: ${request.averageRating.toFixed(2)}/5
-- Date Range: ${request.dateRange.from.toLocaleDateString()} to ${request.dateRange.to.toLocaleDateString()}
+- Date Range: ${request.dateRange.from.toLocaleDateString()} to ${request.dateRange.to.toLocaleDateString()}`;
+
+    // Add teacher-specific context if a user filter is applied
+    if (request.userFilter) {
+      prompt += `
+- Teacher Filter Applied: ${request.userFilter.userName}
+
+IMPORTANT: All activities in this analysis were completed by ${request.userFilter.userName}. 
+Please pay special attention to:
+- Any patterns in the feedback that may be related to this teacher's specific teaching style or approach
+- Consistent strengths or areas for improvement across their activities
+- Teacher-specific recommendations that could enhance their performance
+- Whether the feedback patterns suggest any teacher-related factors affecting activity outcomes`;
+    }
+
+    prompt += `
 
 Activities with Feedback (${activitiesWithFeedback.length}):
 ${activitiesWithFeedback.map(activity => `
@@ -118,13 +138,31 @@ Material Feedback: ${activity.materialFeedback || 'None'}
 `).join('\n---\n')}
 
 Please analyze this data and provide:
-1. Key concerns related to activities, materials, or children's outcomes
-2. Specific recommendations to address these concerns
+1. Key concerns related to activities, materials, or children's outcomes`;
+
+    if (request.userFilter) {
+      prompt += ` (including any teacher-specific patterns for ${request.userFilter.userName})`;
+    }
+
+    prompt += `
+2. Specific recommendations to address these concerns`;
+
+    if (request.userFilter) {
+      prompt += ` (include teacher-specific suggestions for ${request.userFilter.userName} if patterns are identified)`;
+    }
+
+    prompt += `
 3. Positive highlights to celebrate
 4. An overall effectiveness score (0-100)
 
-Focus on practical, actionable insights that teachers and administrators can implement.
-`;
+Focus on practical, actionable insights that teachers and administrators can implement.`;
+
+    if (request.userFilter) {
+      prompt += `
+Remember to consider teacher-specific factors since all activities were conducted by ${request.userFilter.userName}.`;
+    }
+
+    return prompt;
   }
 }
 
