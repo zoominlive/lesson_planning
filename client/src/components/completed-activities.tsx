@@ -180,6 +180,20 @@ export function CompletedActivities() {
     setIsAnalyzing(true);
     
     try {
+      // Build the userFilter if a specific teacher is selected
+      let userFilter = undefined;
+      if (filters.teacherId && filters.teacherId !== "all") {
+        const selectedTeacher = teachers.find((t: any) => t.userId === filters.teacherId);
+        if (selectedTeacher) {
+          userFilter = {
+            userId: filters.teacherId,
+            userName: selectedTeacher.firstName && selectedTeacher.lastName 
+              ? `${selectedTeacher.firstName} ${selectedTeacher.lastName}` 
+              : selectedTeacher.username
+          };
+        }
+      }
+      
       const analysis = await activityReviewService.analyzeActivities({
         activities: records.map(r => ({
           id: r.id,
@@ -200,6 +214,7 @@ export function CompletedActivities() {
         },
         totalActivities: stats.totalActivities,
         averageRating: stats.averageRating,
+        userFilter: userFilter,
       });
       
       setAIAnalysis(analysis);
