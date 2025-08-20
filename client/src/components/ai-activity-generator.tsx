@@ -77,7 +77,7 @@ export default function AiActivityGenerator({
     setRetryCount(0);
     setGenerationMessage("Generating your activity...");
     const ageGroup = ageGroups.find(ag => ag.id === selectedAgeGroup);
-    const milestone = selectedMilestone ? milestones.find((m: any) => m.id === selectedMilestone) : null;
+    const milestone = selectedMilestone && selectedMilestone !== "none" ? milestones.find((m: any) => m.id === selectedMilestone) : null;
     
     try {
       const token = localStorage.getItem('authToken');
@@ -100,7 +100,7 @@ export default function AiActivityGenerator({
           locationId,
           activityType: (activityType && activityType !== 'none') ? activityType : undefined,
           focusMaterial: focusMaterial || undefined,
-          milestoneId: selectedMilestone || undefined,
+          milestoneId: (selectedMilestone && selectedMilestone !== 'none') ? selectedMilestone : undefined,
           milestoneTitle: milestone?.title || undefined,
           milestoneDescription: milestone?.description || undefined,
           milestoneCategory: milestone?.category || undefined
@@ -499,7 +499,7 @@ export default function AiActivityGenerator({
                         <SelectValue placeholder="Select a milestone to target (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No specific milestone</SelectItem>
+                        <SelectItem value="none">No specific milestone</SelectItem>
                         {filteredMilestones.length > 0 ? (
                           filteredMilestones.map((milestone: any) => (
                             <SelectItem key={milestone.id} value={milestone.id}>
@@ -510,7 +510,7 @@ export default function AiActivityGenerator({
                             </SelectItem>
                           ))
                         ) : (
-                          <SelectItem value="" disabled>
+                          <SelectItem value="no-milestones" disabled>
                             No milestones available for selected age group
                           </SelectItem>
                         )}
