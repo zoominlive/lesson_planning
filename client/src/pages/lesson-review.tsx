@@ -324,12 +324,18 @@ export function LessonReview() {
       </div>
 
       <Tabs defaultValue="lesson-reviews" className="space-y-2">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="lesson-reviews" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-2 max-w-md bg-gray-100">
+          <TabsTrigger 
+            value="lesson-reviews" 
+            className="flex items-center gap-2 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 data-[state=active]:border-blue-300"
+          >
             <ClipboardCheck className="h-4 w-4" />
             Lesson Reviews
           </TabsTrigger>
-          <TabsTrigger value="completed-activities" className="flex items-center gap-2">
+          <TabsTrigger 
+            value="completed-activities" 
+            className="flex items-center gap-2 data-[state=active]:bg-green-100 data-[state=active]:text-green-700 data-[state=active]:border-green-300"
+          >
             <Activity className="h-4 w-4" />
             Completed Activities
           </TabsTrigger>
@@ -337,21 +343,22 @@ export function LessonReview() {
 
         {/* Lesson Reviews Tab */}
         <TabsContent value="lesson-reviews" className="space-y-2">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-            <TabsList className="mb-2">
-              <TabsTrigger value="submitted" className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" />
-                Pending ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "submitted").length})
-              </TabsTrigger>
-              <TabsTrigger value="approved" className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
-                Approved ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "approved").length})
-              </TabsTrigger>
-              <TabsTrigger value="rejected" className="flex items-center gap-2">
-                <XCircle className="h-4 w-4" />
-                Returned ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "rejected").length})
-              </TabsTrigger>
-            </TabsList>
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+              <TabsList className="mb-2 bg-white">
+                <TabsTrigger value="submitted" className="flex items-center gap-2 data-[state=active]:bg-yellow-100 data-[state=active]:text-yellow-700">
+                  <AlertCircle className="h-4 w-4" />
+                  Pending ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "submitted").length})
+                </TabsTrigger>
+                <TabsTrigger value="approved" className="flex items-center gap-2 data-[state=active]:bg-green-100 data-[state=active]:text-green-700">
+                  <CheckCircle className="h-4 w-4" />
+                  Approved ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "approved").length})
+                </TabsTrigger>
+                <TabsTrigger value="rejected" className="flex items-center gap-2 data-[state=active]:bg-red-100 data-[state=active]:text-red-700">
+                  <XCircle className="h-4 w-4" />
+                  Returned ({enrichedPlans.filter((p: LessonPlanWithDetails) => p.status === "rejected").length})
+                </TabsTrigger>
+              </TabsList>
 
         {/* Filter Controls */}
         <div className="flex gap-3 mb-2 p-3 bg-gray-50 rounded-lg border">
@@ -487,11 +494,14 @@ export function LessonReview() {
           )}
             </TabsContent>
           </Tabs>
+          </div>
         </TabsContent>
         
         {/* Completed Activities Tab */}
         <TabsContent value="completed-activities">
-          <CompletedActivities />
+          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <CompletedActivities />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
