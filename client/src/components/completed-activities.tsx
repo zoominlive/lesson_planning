@@ -244,29 +244,34 @@ export function CompletedActivities() {
             <CardTitle className="text-sm font-medium text-gray-600">Rating Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-stretch gap-2">
+            <div className="flex items-center gap-1.5">
               {[5, 4, 3, 2, 1].map((rating) => {
                 const count = stats.ratingDistribution[rating as keyof typeof stats.ratingDistribution];
-                const maxCount = Math.max(...Object.values(stats.ratingDistribution));
-                const height = maxCount > 0 ? (count / maxCount) * 60 : 0;
+                const isSelected = filters.exactRating === rating;
                 
                 return (
                   <button
                     key={rating}
-                    className="flex flex-col items-center justify-end flex-1 group cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors"
-                    onClick={() => setFilters({ ...filters, minRating: rating.toString(), exactRating: rating })}
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-xs",
+                      "hover:bg-amber-50 hover:border-amber-300",
+                      isSelected 
+                        ? "bg-amber-100 border border-amber-400" 
+                        : "bg-gray-50 border border-gray-200"
+                    )}
+                    onClick={() => {
+                      if (isSelected) {
+                        setFilters({ ...filters, minRating: "all", exactRating: undefined });
+                      } else {
+                        setFilters({ ...filters, minRating: rating.toString(), exactRating: rating });
+                      }
+                    }}
                     title={`Filter by ${rating} star rating`}
                   >
-                    <div 
-                      className="w-full bg-gradient-to-t from-amber-400 to-amber-300 rounded-t-sm transition-all group-hover:from-amber-500 group-hover:to-amber-400"
-                      style={{ height: `${height}px`, minHeight: count > 0 ? '4px' : '0px' }}
-                    />
-                    <div className="text-lg font-bold mt-1 text-gray-700 group-hover:text-amber-600">
-                      {count}
-                    </div>
-                    <div className="flex items-center text-xs text-gray-500 group-hover:text-amber-600 mt-1">
-                      <span className="font-medium">{rating}</span>
-                      <svg className="w-3 h-3 ml-0.5 fill-current" viewBox="0 0 20 20">
+                    <span className="font-bold text-gray-700">{count}</span>
+                    <div className="flex items-center">
+                      <span className="text-gray-600">{rating}</span>
+                      <svg className="w-3 h-3 text-amber-400 fill-current ml-0.5" viewBox="0 0 20 20">
                         <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
                       </svg>
                     </div>
