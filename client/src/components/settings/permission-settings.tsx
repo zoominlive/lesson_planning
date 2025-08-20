@@ -34,14 +34,14 @@ const PERMISSION_GROUPS = {
     { name: 'lesson_plan.copy', description: 'Copy lesson plans to other rooms' },
   ],
   'Activities': [
-    { name: 'activity.create', description: 'Create new activities' },
-    { name: 'activity.update', description: 'Edit existing activities' },
-    { name: 'activity.delete', description: 'Delete activities' },
+    { name: 'activity.create', description: 'Create new activities', isSimplePermission: true },
+    { name: 'activity.update', description: 'Edit existing activities', isSimplePermission: true },
+    { name: 'activity.delete', description: 'Delete activities', isSimplePermission: true },
   ],
   'Materials': [
-    { name: 'material.create', description: 'Create new materials' },
-    { name: 'material.update', description: 'Edit existing materials' },
-    { name: 'material.delete', description: 'Delete materials' },
+    { name: 'material.create', description: 'Create new materials', isSimplePermission: true },
+    { name: 'material.update', description: 'Edit existing materials', isSimplePermission: true },
+    { name: 'material.delete', description: 'Delete materials', isSimplePermission: true },
   ],
   'Settings': [
     { name: 'settings.access', description: 'Access Settings Page', isSettingsPermission: true },
@@ -313,6 +313,41 @@ export default function PermissionSettings() {
                                     checked={override?.autoApproveRoles?.includes(role.id) || false}
                                     onCheckedChange={() => handleRoleToggle(permission.name, role.id, 'autoApprove')}
                                     data-testid={`switch-copy-access-${role.id}`}
+                                  />
+                                  <Label htmlFor={`${permission.name}-${role.id}-access`} className="text-sm">
+                                    {role.name}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  }
+                  
+                  // For simple permissions (Activities/Materials), only show which roles have access
+                  if (permission.isSimplePermission) {
+                    return (
+                      <Card key={permission.name} className="p-4">
+                        <div className="mb-4">
+                          <h4 className="font-semibold">{permission.description}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Select which roles have this permission
+                          </p>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">Roles with Permission</Label>
+                            <div className="grid grid-cols-2 gap-3">
+                              {ROLES.filter(r => r.id !== 'superadmin').map(role => (
+                                <div key={role.id} className="flex items-center space-x-2">
+                                  <Switch
+                                    id={`${permission.name}-${role.id}-access`}
+                                    checked={override?.autoApproveRoles?.includes(role.id) || false}
+                                    onCheckedChange={() => handleRoleToggle(permission.name, role.id, 'autoApprove')}
+                                    data-testid={`switch-${permission.name.replace('.', '-')}-${role.id}`}
                                   />
                                   <Label htmlFor={`${permission.name}-${role.id}-access`} className="text-sm">
                                     {role.name}
