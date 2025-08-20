@@ -129,3 +129,42 @@ Focus on practical, actionable insights that teachers and administrators can imp
 }
 
 export const activityReviewService = ActivityReviewService.getInstance();
+
+export const calculateOverallScore = (activities: any[]): number => {
+  if (activities.length === 0) return 0;
+  
+  let totalScore = 0;
+  let weightedCount = 0;
+  
+  // Calculate weighted score based on multiple factors
+  activities.forEach((activity) => {
+    // Educational Outcomes weight (35%)
+    const educationalRating = activity.record?.educationalRating || activity.record?.rating || 0;
+    const educationalScore = educationalRating * 20; // Convert 1-5 to 0-100
+    
+    // Activity rating weight (25%)
+    const ratingScore = (activity.record?.rating || 0) * 20; // Convert 1-5 to 0-100
+    
+    // Feedback sentiment weight (25%)
+    let sentimentScore = 50; // Neutral baseline
+    const feedback = (activity.record?.notes || '') + ' ' + (activity.record?.ratingFeedback || '');
+    if (feedback.toLowerCase().includes('excellent') || feedback.toLowerCase().includes('loved') || feedback.toLowerCase().includes('great') || feedback.toLowerCase().includes('met')) {
+      sentimentScore = 90;
+    } else if (feedback.toLowerCase().includes('good') || feedback.toLowerCase().includes('enjoyed')) {
+      sentimentScore = 70;
+    } else if (feedback.toLowerCase().includes('difficult') || feedback.toLowerCase().includes('struggled') || feedback.toLowerCase().includes('lost interest') || feedback.toLowerCase().includes('not met')) {
+      sentimentScore = 30;
+    }
+    
+    // Material effectiveness weight (15%)
+    const materialScore = activity.record?.materialsUsed ? 85 : 40;
+    
+    // Calculate weighted average for this activity
+    const activityScore = (educationalScore * 0.35) + (ratingScore * 0.25) + (sentimentScore * 0.25) + (materialScore * 0.15);
+    
+    totalScore += activityScore;
+    weightedCount++;
+  });
+  
+  return Math.round(totalScore / weightedCount);
+};

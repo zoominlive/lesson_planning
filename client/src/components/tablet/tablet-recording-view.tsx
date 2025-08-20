@@ -28,6 +28,7 @@ interface ActivityRecord {
   materialFeedback: string;
   rating: number;
   ratingFeedback: string;
+  educationalRating: number;
 }
 
 export function TabletRecordingView({
@@ -226,6 +227,7 @@ export function TabletRecordingView({
       materialFeedback: record?.materialFeedback || '',
       rating: record?.rating || 0,
       ratingFeedback: record?.ratingFeedback || '',
+      educationalRating: record?.educationalRating || 0,
     };
     
     setActivityRecords(prev => ({
@@ -242,6 +244,7 @@ export function TabletRecordingView({
       materialFeedback: updatedRecord.materialFeedback,
       rating: updatedRecord.rating,
       ratingFeedback: updatedRecord.ratingFeedback,
+      educationalRating: updatedRecord.educationalRating,
     });
   };
 
@@ -258,6 +261,7 @@ export function TabletRecordingView({
         materialFeedback: prev[activityId]?.materialFeedback || '',
         rating: prev[activityId]?.rating || 0,
         ratingFeedback: prev[activityId]?.ratingFeedback || '',
+        educationalRating: prev[activityId]?.educationalRating || 0,
       }
     }));
   };
@@ -275,6 +279,7 @@ export function TabletRecordingView({
         materialFeedback: prev[activityId]?.materialFeedback || '',
         rating: prev[activityId]?.rating || 0,
         ratingFeedback: prev[activityId]?.ratingFeedback || '',
+        educationalRating: prev[activityId]?.educationalRating || 0,
       }
     }));
   };
@@ -292,6 +297,7 @@ export function TabletRecordingView({
         materialFeedback: prev[activityId]?.materialFeedback || '',
         rating: prev[activityId]?.rating || 0,
         ratingFeedback: prev[activityId]?.ratingFeedback || '',
+        educationalRating: prev[activityId]?.educationalRating || 0,
       }
     }));
   };
@@ -309,6 +315,7 @@ export function TabletRecordingView({
         materialNotes: prev[activityId]?.materialNotes || '',
         rating: prev[activityId]?.rating || 0,
         ratingFeedback: prev[activityId]?.ratingFeedback || '',
+        educationalRating: prev[activityId]?.educationalRating || 0,
       }
     }));
   };
@@ -326,6 +333,7 @@ export function TabletRecordingView({
         materialNotes: prev[activityId]?.materialNotes || '',
         materialFeedback: prev[activityId]?.materialFeedback || '',
         ratingFeedback: prev[activityId]?.ratingFeedback || '',
+        educationalRating: prev[activityId]?.educationalRating || 0,
       }
     }));
   };
@@ -343,6 +351,25 @@ export function TabletRecordingView({
         materialNotes: prev[activityId]?.materialNotes || '',
         materialFeedback: prev[activityId]?.materialFeedback || '',
         rating: prev[activityId]?.rating || 0,
+        educationalRating: prev[activityId]?.educationalRating || 0,
+      }
+    }));
+  };
+
+  const handleEducationalRatingChange = (activityId: string, educationalRating: number) => {
+    setActivityRecords(prev => ({
+      ...prev,
+      [activityId]: {
+        ...prev[activityId],
+        scheduledActivityId: activityId,
+        educationalRating,
+        completed: prev[activityId]?.completed || false,
+        notes: prev[activityId]?.notes || '',
+        materialsUsed: prev[activityId]?.materialsUsed || false,
+        materialNotes: prev[activityId]?.materialNotes || '',
+        materialFeedback: prev[activityId]?.materialFeedback || '',
+        rating: prev[activityId]?.rating || 0,
+        ratingFeedback: prev[activityId]?.ratingFeedback || '',
       }
     }));
   };
@@ -905,14 +932,21 @@ export function TabletRecordingView({
                                     </div>
                                     
                                     <div className="space-y-4">
-                                      {/* Activity Notes */}
-                                      <div>
-                                        <Label htmlFor={`notes-${scheduled.id}`} className="text-xs font-semibold text-gray-600 mb-1">
-                                          Activity Notes
+                                      {/* Educational Outcome */}
+                                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                        <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                                          Educational Outcome
                                         </Label>
+                                        <div className="mb-3">
+                                          <StarRating 
+                                            activityId={`edu-${scheduled.id}`}
+                                            rating={record?.educationalRating || 0}
+                                            onRatingChange={(id, rating) => handleEducationalRatingChange(scheduled.id, rating)}
+                                          />
+                                        </div>
                                         <Textarea
                                           id={`notes-${scheduled.id}`}
-                                          placeholder="How did the activity go? Any observations or adjustments made?"
+                                          placeholder="Were expected educational outcomes met? Any observations or adjustments made?"
                                           value={record?.notes || ''}
                                           onChange={(e) => handleNotesChange(scheduled.id, e.target.value)}
                                           className="min-h-[80px] text-sm bg-white"
@@ -923,7 +957,7 @@ export function TabletRecordingView({
                                       {/* Materials Usage Questions */}
                                       <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
                                         <Label className="text-sm font-semibold text-gray-700 mb-2 block">
-                                          Did you use the suggested materials?
+                                          Were the suggested materials effective?
                                         </Label>
                                         <div className="flex items-center gap-3 mb-3">
                                           <Button

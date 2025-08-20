@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Download, Star, Users, TrendingUp, Package, Filter, ChevronDown, Sparkles } from "lucide-react";
+import { CalendarIcon, Download, Star, Users, TrendingUp, Package, Filter, ChevronDown, Sparkles, Info } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -645,7 +646,28 @@ export function CompletedActivities() {
               <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border border-purple-200">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-lg">Overall Effectiveness Score</h3>
-                  <span className="text-3xl font-bold text-purple-600">{aiAnalysis.overallScore}/100</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-3xl font-bold text-purple-600">{aiAnalysis.overallScore}/100</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-purple-500 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <div className="space-y-2">
+                            <p className="font-semibold">Score Calculation:</p>
+                            <ul className="text-sm space-y-1">
+                              <li>• Educational Outcomes: 35%</li>
+                              <li>• Activity Rating: 25%</li>
+                              <li>• Feedback Sentiment: 25%</li>
+                              <li>• Material Effectiveness: 15%</li>
+                            </ul>
+                            <p className="text-xs text-gray-500 pt-2">Score reflects comprehensive analysis of activity success, child engagement, and learning outcomes.</p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </div>
                 <p className="text-gray-700">{aiAnalysis.summary}</p>
               </div>
