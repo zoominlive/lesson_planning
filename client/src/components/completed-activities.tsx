@@ -713,9 +713,9 @@ export function CompletedActivities() {
                         </Badge>
                         <Badge 
                           className={
-                            concern.severity === "high" 
+                            concern.severity?.toLowerCase() === "high" 
                               ? "bg-red-100 text-red-800 border-red-300" 
-                              : concern.severity === "medium"
+                              : concern.severity?.toLowerCase() === "medium"
                               ? "bg-orange-100 text-orange-800 border-orange-300"
                               : "bg-green-100 text-green-800 border-green-300"
                           }
@@ -744,9 +744,9 @@ export function CompletedActivities() {
                         <h4 className="font-semibold text-blue-900">{rec.title}</h4>
                         <Badge 
                           className={
-                            rec.priority === "high" 
+                            rec.priority?.toLowerCase() === "high" 
                               ? "bg-red-100 text-red-800 border-red-300" 
-                              : rec.priority === "medium"
+                              : rec.priority?.toLowerCase() === "medium"
                               ? "bg-orange-100 text-orange-800 border-orange-300"
                               : "bg-green-100 text-green-800 border-green-300"
                           }
