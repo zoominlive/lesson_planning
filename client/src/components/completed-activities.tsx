@@ -508,8 +508,10 @@ export function CompletedActivities() {
                   <SelectContent>
                     <SelectItem value="all">All Users</SelectItem>
                     {teachers.map((teacher: any) => (
-                      <SelectItem key={teacher.user_id} value={teacher.user_id}>
-                        {teacher.fullName || teacher.username}
+                      <SelectItem key={teacher.userId} value={teacher.userId}>
+                        {teacher.firstName && teacher.lastName 
+                          ? `${teacher.firstName} ${teacher.lastName}` 
+                          : teacher.username}
                       </SelectItem>
                     ))}
                   </SelectContent>
