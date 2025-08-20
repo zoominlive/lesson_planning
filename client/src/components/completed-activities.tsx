@@ -117,7 +117,42 @@ export function CompletedActivities() {
     },
   });
 
-  // Fetch completed activities
+  // Fetch overall stats without rating filter for the rating distribution display
+  const { data: overallStats } = useQuery({
+    queryKey: [
+      "/api/activity-records/completed",
+      "stats-only",
+      filters.locationId,
+      filters.roomId,
+      filters.teacherId,
+      filters.dateFrom?.toISOString(),
+      filters.dateTo?.toISOString(),
+      filters.materialsUsed,
+    ],
+    queryFn: async () => {
+      const token = getAuthToken();
+      const params = new URLSearchParams();
+      
+      // Include all filters EXCEPT rating filters for overall stats
+      if (filters.locationId && filters.locationId !== "all") params.append("locationId", filters.locationId);
+      if (filters.roomId && filters.roomId !== "all") params.append("roomId", filters.roomId);
+      if (filters.teacherId && filters.teacherId !== "all") params.append("teacherId", filters.teacherId);
+      if (filters.dateFrom) params.append("dateFrom", filters.dateFrom.toISOString());
+      if (filters.dateTo) params.append("dateTo", filters.dateTo.toISOString());
+      if (filters.materialsUsed && filters.materialsUsed !== "all") params.append("materialsUsed", filters.materialsUsed);
+      
+      const response = await fetch(`/api/activity-records/completed?${params}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) throw new Error("Failed to fetch overall stats");
+      return response.json();
+    },
+  });
+
+  // Fetch completed activities with filters
   const { data: completedData, isLoading } = useQuery({
     queryKey: [
       "/api/activity-records/completed",
@@ -166,6 +201,9 @@ export function CompletedActivities() {
     materialsUsageRate: 0,
     ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
   };
+  
+  // Use unfiltered stats for rating distribution display
+  const unfilteredRatingDistribution = overallStats?.stats?.ratingDistribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
   const handleAIReview = async () => {
     if (records.length === 0) {
@@ -343,7 +381,7 @@ export function CompletedActivities() {
           <CardContent className="pb-3">
             <div className="flex items-center gap-2">
               {[5, 4, 3, 2, 1].map((rating) => {
-                const count = stats.ratingDistribution[rating as keyof typeof stats.ratingDistribution];
+                const count = unfilteredRatingDistribution[rating as keyof typeof unfilteredRatingDistribution];
                 const isSelected = filters.exactRating === rating;
                 
                 return (
