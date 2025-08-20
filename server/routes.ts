@@ -1473,7 +1473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Insufficient permissions to view completed activities" });
       }
 
-      const { locationId, roomId, dateFrom, dateTo, minRating, materialsUsed } = req.query;
+      const { locationId, roomId, dateFrom, dateTo, minRating, exactRating, materialsUsed } = req.query;
       
       // Validate location access if locationId is provided
       if (locationId) {
@@ -1490,6 +1490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dateFrom: dateFrom ? new Date(dateFrom as string) : undefined,
         dateTo: dateTo ? new Date(dateTo as string) : undefined,
         minRating: minRating ? parseInt(minRating as string) : undefined,
+        exactRating: exactRating ? parseInt(exactRating as string) : undefined,
         materialsUsed: materialsUsed === undefined ? undefined : materialsUsed === 'true'
       };
       
@@ -1530,7 +1531,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Insufficient permissions to export activity records" });
       }
 
-      const { locationId, roomId, dateFrom, dateTo, minRating, materialsUsed } = req.query;
+      const { locationId, roomId, dateFrom, dateTo, minRating, exactRating, materialsUsed } = req.query;
       
       // Parse filters
       const filters = {
@@ -1539,6 +1540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dateFrom: dateFrom ? new Date(dateFrom as string) : undefined,
         dateTo: dateTo ? new Date(dateTo as string) : undefined,
         minRating: minRating ? parseInt(minRating as string) : undefined,
+        exactRating: exactRating ? parseInt(exactRating as string) : undefined,
         materialsUsed: materialsUsed === undefined ? undefined : materialsUsed === 'true'
       };
       
@@ -1652,7 +1654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Insufficient permissions to view completed activities" });
       }
 
-      const { locationId, roomId, dateFrom, dateTo, minRating, materialsUsed } = req.query;
+      const { locationId, roomId, dateFrom, dateTo, minRating, exactRating, materialsUsed } = req.query;
       
       // Validate location access if locationId is provided
       if (locationId) {
@@ -1669,6 +1671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dateFrom: dateFrom ? new Date(dateFrom as string) : undefined,
         dateTo: dateTo ? new Date(dateTo as string) : undefined,
         minRating: minRating ? parseInt(minRating as string) : undefined,
+        exactRating: exactRating ? parseInt(exactRating as string) : undefined,
         materialsUsed: materialsUsed === undefined ? undefined : materialsUsed === 'true'
       };
       
@@ -1709,7 +1712,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Insufficient permissions to export activity records" });
       }
 
-      const { locationId, roomId, dateFrom, dateTo, minRating, materialsUsed } = req.query;
+      const { locationId, roomId, dateFrom, dateTo, minRating, exactRating, materialsUsed } = req.query;
       
       // Parse filters
       const filters = {
@@ -1718,6 +1721,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dateFrom: dateFrom ? new Date(dateFrom as string) : undefined,
         dateTo: dateTo ? new Date(dateTo as string) : undefined,
         minRating: minRating ? parseInt(minRating as string) : undefined,
+        exactRating: exactRating ? parseInt(exactRating as string) : undefined,
         materialsUsed: materialsUsed === undefined ? undefined : materialsUsed === 'true'
       };
       

@@ -57,7 +57,15 @@ interface ActivityStats {
 
 export function CompletedActivities() {
   const { toast } = useToast();
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<{
+    locationId: string;
+    roomId: string;
+    dateFrom: Date;
+    dateTo: Date;
+    minRating: string;
+    materialsUsed: string;
+    exactRating?: number;
+  }>({
     locationId: "all",
     roomId: "all",
     dateFrom: subDays(new Date(), 30),
@@ -88,6 +96,7 @@ export function CompletedActivities() {
       filters.dateTo?.toISOString(),
       filters.minRating,
       filters.materialsUsed,
+      filters.exactRating,
     ],
     queryFn: async () => {
       const token = getAuthToken();
@@ -97,7 +106,11 @@ export function CompletedActivities() {
       if (filters.roomId && filters.roomId !== "all") params.append("roomId", filters.roomId);
       if (filters.dateFrom) params.append("dateFrom", filters.dateFrom.toISOString());
       if (filters.dateTo) params.append("dateTo", filters.dateTo.toISOString());
-      if (filters.minRating && filters.minRating !== "all") params.append("minRating", filters.minRating);
+      if (filters.exactRating) {
+        params.append("exactRating", filters.exactRating.toString());
+      } else if (filters.minRating && filters.minRating !== "all") {
+        params.append("minRating", filters.minRating);
+      }
       if (filters.materialsUsed && filters.materialsUsed !== "all") params.append("materialsUsed", filters.materialsUsed);
       
       const response = await fetch(`/api/activity-records/completed?${params}`, {
@@ -130,7 +143,11 @@ export function CompletedActivities() {
       if (filters.roomId && filters.roomId !== "all") params.append("roomId", filters.roomId);
       if (filters.dateFrom) params.append("dateFrom", filters.dateFrom.toISOString());
       if (filters.dateTo) params.append("dateTo", filters.dateTo.toISOString());
-      if (filters.minRating && filters.minRating !== "all") params.append("minRating", filters.minRating);
+      if (filters.exactRating) {
+        params.append("exactRating", filters.exactRating.toString());
+      } else if (filters.minRating && filters.minRating !== "all") {
+        params.append("minRating", filters.minRating);
+      }
       if (filters.materialsUsed && filters.materialsUsed !== "all") params.append("materialsUsed", filters.materialsUsed);
       
       const response = await fetch(`/api/activity-records/export?${params}`, {
@@ -227,16 +244,47 @@ export function CompletedActivities() {
             <CardTitle className="text-sm font-medium text-gray-600">Rating Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-1">
-              {[5, 4, 3, 2, 1].map((rating) => (
-                <div key={rating} className="flex flex-col items-center">
-                  <div className="text-xs text-gray-500">{rating}★</div>
-                  <div className="text-sm font-semibold">
-                    {stats.ratingDistribution[rating as keyof typeof stats.ratingDistribution]}
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-stretch gap-2">
+              {[5, 4, 3, 2, 1].map((rating) => {
+                const count = stats.ratingDistribution[rating as keyof typeof stats.ratingDistribution];
+                const maxCount = Math.max(...Object.values(stats.ratingDistribution));
+                const height = maxCount > 0 ? (count / maxCount) * 60 : 0;
+                
+                return (
+                  <button
+                    key={rating}
+                    className="flex flex-col items-center justify-end flex-1 group cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors"
+                    onClick={() => setFilters({ ...filters, minRating: rating.toString(), exactRating: rating })}
+                    title={`Filter by ${rating} star rating`}
+                  >
+                    <div 
+                      className="w-full bg-gradient-to-t from-amber-400 to-amber-300 rounded-t-sm transition-all group-hover:from-amber-500 group-hover:to-amber-400"
+                      style={{ height: `${height}px`, minHeight: count > 0 ? '4px' : '0px' }}
+                    />
+                    <div className="text-lg font-bold mt-1 text-gray-700 group-hover:text-amber-600">
+                      {count}
+                    </div>
+                    <div className="flex items-center text-xs text-gray-500 group-hover:text-amber-600 mt-1">
+                      <span className="font-medium">{rating}</span>
+                      <svg className="w-3 h-3 ml-0.5 fill-current" viewBox="0 0 20 20">
+                        <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+                      </svg>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
+            {filters.exactRating && (
+              <div className="mt-2 text-xs text-amber-600 font-medium text-center">
+                Showing only {filters.exactRating}-star activities
+                <button 
+                  className="ml-2 text-gray-500 hover:text-gray-700"
+                  onClick={() => setFilters({ ...filters, minRating: "all", exactRating: undefined })}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -411,6 +459,7 @@ export function CompletedActivities() {
                   dateTo: new Date(),
                   minRating: "all",
                   materialsUsed: "all",
+                  exactRating: undefined,
                 })}
               >
                 Clear Filters

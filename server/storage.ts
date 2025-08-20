@@ -837,9 +837,10 @@ export class DatabaseStorage implements IStorage {
     dateFrom?: Date;
     dateTo?: Date;
     minRating?: number;
+    exactRating?: number;
     materialsUsed?: boolean;
   }): Promise<any[]> {
-    const { locationId, roomId, dateFrom, dateTo, minRating, materialsUsed } = filters;
+    const { locationId, roomId, dateFrom, dateTo, minRating, exactRating, materialsUsed } = filters;
     
     // Build conditions for filtering
     const conditions: any[] = [
@@ -850,7 +851,9 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(activityRecords.tenantId, this.tenantId));
     }
     
-    if (minRating) {
+    if (exactRating) {
+      conditions.push(eq(activityRecords.rating, exactRating));
+    } else if (minRating) {
       conditions.push(sql`${activityRecords.rating} >= ${minRating}`);
     }
     
