@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Clock, Users, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Save, Play, Image, Scissors, Target, ListChecks, Edit3, FileText, Star } from "lucide-react";
+import { Clock, Users, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Save, Play, Image, Scissors, Target, ListChecks, Edit3, FileText, Star, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 
 interface TabletRecordingViewProps {
@@ -896,10 +896,10 @@ export function TabletRecordingView({
 
                                 
                                   {/* Enhanced Activity Teaching Card */}
-                                  <div className="bg-gradient-to-br from-yellow-50 to-white rounded-xl p-4 border border-yellow-200 shadow-sm">
+                                  <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-4 border border-blue-200 shadow-sm">
                                     <div className="flex items-center gap-2 mb-4">
-                                      <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center">
-                                        <Edit3 className="h-4 w-4 text-white" />
+                                      <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg flex items-center justify-center">
+                                        <MessageSquare className="h-4 w-4 text-white" />
                                       </div>
                                       <h4 className="text-sm font-bold text-gray-800">Activity Feedback</h4>
                                     </div>
@@ -921,7 +921,7 @@ export function TabletRecordingView({
                                       </div>
 
                                       {/* Materials Usage Questions */}
-                                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
                                         <Label className="text-sm font-semibold text-gray-700 mb-2 block">
                                           Did you use the suggested materials?
                                         </Label>
