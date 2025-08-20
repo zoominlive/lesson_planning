@@ -711,7 +711,17 @@ export function CompletedActivities() {
                         <Badge variant={concern.severity === "high" ? "destructive" : concern.severity === "medium" ? "default" : "secondary"}>
                           {concern.category === "activity" ? "Activity" : concern.category === "materials" ? "Materials" : "Outcomes"}
                         </Badge>
-                        <Badge variant="outline">{concern.severity} priority</Badge>
+                        <Badge 
+                          className={
+                            concern.severity === "high" 
+                              ? "bg-red-100 text-red-800 border-red-300" 
+                              : concern.severity === "medium"
+                              ? "bg-orange-100 text-orange-800 border-orange-300"
+                              : "bg-green-100 text-green-800 border-green-300"
+                          }
+                        >
+                          {concern.severity} priority
+                        </Badge>
                       </div>
                       <p className="text-gray-700 mb-2">{concern.concern}</p>
                       {concern.affectedActivities && concern.affectedActivities.length > 0 && (
@@ -732,7 +742,15 @@ export function CompletedActivities() {
                     <div key={index} className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                       <div className="flex items-start justify-between mb-2">
                         <h4 className="font-semibold text-blue-900">{rec.title}</h4>
-                        <Badge variant={rec.priority === "high" ? "destructive" : rec.priority === "medium" ? "default" : "secondary"}>
+                        <Badge 
+                          className={
+                            rec.priority === "high" 
+                              ? "bg-red-100 text-red-800 border-red-300" 
+                              : rec.priority === "medium"
+                              ? "bg-orange-100 text-orange-800 border-orange-300"
+                              : "bg-green-100 text-green-800 border-green-300"
+                          }
+                        >
                           {rec.priority} priority
                         </Badge>
                       </div>
