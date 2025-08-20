@@ -9,11 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Download, Star, Users, TrendingUp, Package, Filter, ChevronDown } from "lucide-react";
+import { CalendarIcon, Download, Star, Users, TrendingUp, Package, Filter, ChevronDown, Sparkles } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { format, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthToken } from "@/lib/auth";
+import { activityReviewService } from "@/services/activityReviewService";
 
 interface CompletedActivityRecord {
   id: string;
@@ -74,6 +76,9 @@ export function CompletedActivities() {
     materialsUsed: "all",
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [showAIReview, setShowAIReview] = useState(false);
+  const [aiAnalysis, setAIAnalysis] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Fetch locations
   const { data: locations = [] } = useQuery<any[]>({
@@ -132,6 +137,55 @@ export function CompletedActivities() {
     materialsNotUsedCount: 0,
     materialsUsageRate: 0,
     ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+  };
+
+  const handleAIReview = async () => {
+    if (records.length === 0) {
+      toast({
+        title: "No activities to review",
+        description: "Please select filters that return some completed activities.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    
+    try {
+      const analysis = await activityReviewService.analyzeActivities({
+        activities: records.map(r => ({
+          id: r.id,
+          title: r.activityTitle,
+          description: r.activityDescription,
+          rating: r.rating,
+          ratingFeedback: r.ratingFeedback,
+          notes: r.notes,
+          materialsUsed: r.materialsUsed,
+          materialFeedback: r.materialFeedback,
+          teacherName: r.teacherName,
+          roomName: r.roomName,
+          completedAt: r.completedAt,
+        })),
+        dateRange: {
+          from: filters.dateFrom,
+          to: filters.dateTo,
+        },
+        totalActivities: stats.totalActivities,
+        averageRating: stats.averageRating,
+      });
+      
+      setAIAnalysis(analysis);
+      setShowAIReview(true);
+    } catch (error) {
+      console.error("Failed to analyze activities:", error);
+      toast({
+        title: "Analysis failed",
+        description: "Failed to analyze activities. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleExport = async () => {
@@ -469,6 +523,16 @@ export function CompletedActivities() {
               >
                 Clear Filters
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAIReview}
+                disabled={isAnalyzing || records.length === 0}
+                className="bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border-purple-300"
+              >
+                <Sparkles className="mr-2 h-4 w-4 text-purple-600" />
+                AI Review
+              </Button>
             </div>
           </CardContent>
         )}
@@ -561,6 +625,116 @@ export function CompletedActivities() {
           </Accordion>
         </div>
       )}
+
+      {/* AI Review Modal */}
+      <Dialog open={showAIReview} onOpenChange={setShowAIReview}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-600" />
+              AI Activity Analysis
+            </DialogTitle>
+            <DialogDescription>
+              Analysis of {stats.totalActivities} activities from {format(filters.dateFrom, "MMM d, yyyy")} to {format(filters.dateTo, "MMM d, yyyy")}
+            </DialogDescription>
+          </DialogHeader>
+
+          {aiAnalysis && (
+            <div className="space-y-6 mt-4">
+              {/* Overall Score */}
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border border-purple-200">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-lg">Overall Effectiveness Score</h3>
+                  <span className="text-3xl font-bold text-purple-600">{aiAnalysis.overallScore}/100</span>
+                </div>
+                <p className="text-gray-700">{aiAnalysis.summary}</p>
+              </div>
+
+              {/* Positive Highlights */}
+              {aiAnalysis.positiveHighlights && aiAnalysis.positiveHighlights.length > 0 && (
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <h3 className="font-semibold text-lg mb-2 text-green-800">✨ Positive Highlights</h3>
+                  <ul className="space-y-2">
+                    {aiAnalysis.positiveHighlights.map((highlight: string, index: number) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <Star className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span className="text-gray-700">{highlight}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Activity Concerns */}
+              {aiAnalysis.activityConcerns && aiAnalysis.activityConcerns.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Identified Concerns</h3>
+                  {aiAnalysis.activityConcerns.map((concern: any, index: number) => (
+                    <div 
+                      key={index} 
+                      className={cn(
+                        "p-4 rounded-lg border",
+                        concern.severity === "high" && "bg-red-50 border-red-300",
+                        concern.severity === "medium" && "bg-yellow-50 border-yellow-300",
+                        concern.severity === "low" && "bg-blue-50 border-blue-300"
+                      )}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <Badge variant={concern.severity === "high" ? "destructive" : concern.severity === "medium" ? "default" : "secondary"}>
+                          {concern.category === "activity" ? "Activity" : concern.category === "materials" ? "Materials" : "Outcomes"}
+                        </Badge>
+                        <Badge variant="outline">{concern.severity} priority</Badge>
+                      </div>
+                      <p className="text-gray-700 mb-2">{concern.concern}</p>
+                      {concern.affectedActivities && concern.affectedActivities.length > 0 && (
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium">Affected activities:</span> {concern.affectedActivities.join(", ")}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Recommendations */}
+              {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Recommendations</h3>
+                  {aiAnalysis.recommendations.map((rec: any, index: number) => (
+                    <div key={index} className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-semibold text-blue-900">{rec.title}</h4>
+                        <Badge variant={rec.priority === "high" ? "destructive" : rec.priority === "medium" ? "default" : "secondary"}>
+                          {rec.priority} priority
+                        </Badge>
+                      </div>
+                      <p className="text-gray-700 mb-3">{rec.description}</p>
+                      {rec.actionItems && rec.actionItems.length > 0 && (
+                        <div>
+                          <p className="font-medium text-sm mb-1">Action Items:</p>
+                          <ul className="space-y-1">
+                            {rec.actionItems.map((item: string, itemIndex: number) => (
+                              <li key={itemIndex} className="text-sm text-gray-600 flex items-start gap-2">
+                                <span className="text-blue-600">•</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Generated timestamp */}
+              <div className="text-xs text-gray-500 text-center pt-4 border-t">
+                Analysis generated on {aiAnalysis.generatedAt && format(new Date(aiAnalysis.generatedAt), "MMM d, yyyy 'at' h:mm a")}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

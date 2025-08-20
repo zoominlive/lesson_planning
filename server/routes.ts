@@ -1464,6 +1464,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Analyze completed activities using AI
+  app.post("/api/activity-review/analyze", async (req: AuthenticatedRequest, res) => {
+    try {
+      // Check user role - only directors and assistant directors can analyze activities
+      const role = req.role?.toLowerCase();
+      if (role !== 'director' && role !== 'assistant_director' && role !== 'admin' && role !== 'superadmin') {
+        return res.status(403).json({ error: "Insufficient permissions to analyze activities" });
+      }
+
+      const { prompt, activities, stats } = req.body;
+      
+      if (!prompt || !activities) {
+        return res.status(400).json({ error: "Missing required analysis data" });
+      }
+
+      // Use OpenAI to analyze the activities
+      const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+      if (!OPENAI_API_KEY) {
+        return res.status(500).json({ error: "AI service not configured" });
+      }
+
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "You are an expert early childhood education consultant analyzing activity feedback to identify patterns, concerns, and provide actionable recommendations. Respond with a JSON object containing: summary (string), activityConcerns (array of objects with category, concern, affectedActivities, and severity), recommendations (array of objects with title, description, priority, and actionItems), positiveHighlights (array of strings), and overallScore (number 0-100)."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+          max_tokens: 2000
+        })
+      });
+
+      if (!response.ok) {
+        console.error("OpenAI API error:", await response.text());
+        return res.status(500).json({ error: "Failed to analyze activities" });
+      }
+
+      const aiResponse = await response.json();
+      const analysisText = aiResponse.choices[0].message.content;
+      let analysis;
+      
+      try {
+        analysis = JSON.parse(analysisText);
+      } catch (parseError) {
+        console.error("Failed to parse AI response:", parseError);
+        return res.status(500).json({ error: "Invalid analysis format received" });
+      }
+
+      // Add timestamp to the analysis
+      analysis.generatedAt = new Date().toISOString();
+
+      res.json({ analysis });
+    } catch (error) {
+      console.error("Activity analysis error:", error);
+      res.status(500).json({ error: "Failed to analyze activities" });
+    }
+  });
+
   // Get completed activity records with filters - MUST BE BEFORE /:id route
   app.get("/api/activity-records/completed", async (req: AuthenticatedRequest, res) => {
     try {
