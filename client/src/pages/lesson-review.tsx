@@ -507,3 +507,5 @@ export function LessonReview() {
     </div>
   );
 }
+
+export default LessonReview;
