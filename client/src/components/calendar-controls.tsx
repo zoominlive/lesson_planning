@@ -128,9 +128,9 @@ export function CalendarControls({
 
   return (
     <Card className="material-shadow">
-      <CardContent className="p-6">
-        <div className="flex flex-wrap justify-between items-center gap-4">
-          <div className="flex items-center space-x-4">
+      <CardContent className="p-3">
+        <div className="flex flex-wrap justify-between items-center gap-3">
+          <div className="flex items-center space-x-2">
             <Button
               variant="ghost"
               size="icon"
@@ -145,22 +145,19 @@ export function CalendarControls({
                 <Button
                   variant="ghost"
                   className={cn(
-                    "min-w-[280px] h-auto py-3 px-4 bg-gradient-to-r from-sky-blue/10 to-mint-green/10 hover:from-sky-blue/20 hover:to-mint-green/20 border-2 border-sky-blue/20 hover:border-sky-blue/30 transition-all duration-300 shadow-sm hover:shadow-md",
+                    "min-w-[240px] h-10 px-3 bg-gradient-to-r from-sky-blue/10 to-mint-green/10 hover:from-sky-blue/20 hover:to-mint-green/20 border-2 border-sky-blue/20 hover:border-sky-blue/30 transition-all duration-300 shadow-sm hover:shadow-md",
                     !currentWeekDate && "text-muted-foreground"
                   )}
                   data-testid="button-week-picker"
                 >
-                  <div className="flex items-center justify-center w-full">
-                    <Calendar className="mr-3 h-5 w-5 text-turquoise" />
-                    <div className="text-center flex-1">
-                      <h2
-                        className="text-lg font-bold text-charcoal"
-                        data-testid="current-week"
-                      >
-                        {formatWeekRange(currentWeekDate)}
-                      </h2>
-                      <p className="text-xs text-gray-500 mt-0.5">Click to select week</p>
-                    </div>
+                  <div className="flex items-center justify-center gap-2">
+                    <Calendar className="h-4 w-4 text-turquoise" />
+                    <span
+                      className="text-sm font-semibold text-charcoal"
+                      data-testid="current-week"
+                    >
+                      {formatWeekRange(currentWeekDate)}
+                    </span>
                   </div>
                 </Button>
               </PopoverTrigger>
