@@ -524,16 +524,6 @@ export function CompletedActivities() {
               >
                 Clear Filters
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleAIReview}
-                disabled={isAnalyzing || records.length === 0}
-                className="bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border-purple-300"
-              >
-                <Sparkles className="mr-2 h-4 w-4 text-purple-600" />
-                AI Review
-              </Button>
             </div>
           </CardContent>
         )}
@@ -549,7 +539,19 @@ export function CompletedActivities() {
         </Card>
       ) : (
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Completed Activities ({records.length})</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Completed Activities ({records.length})</h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAIReview}
+              disabled={isAnalyzing || records.length === 0}
+              className="bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border-purple-300"
+            >
+              <Sparkles className="mr-2 h-4 w-4 text-purple-600" />
+              AI Review
+            </Button>
+          </div>
           <Accordion type="multiple" className="space-y-1">
             {records.map((record) => (
               <AccordionItem key={record.id} value={record.id} className="border rounded-lg">
