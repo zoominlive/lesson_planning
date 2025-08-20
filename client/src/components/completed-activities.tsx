@@ -244,7 +244,7 @@ export function CompletedActivities() {
             <CardTitle className="text-sm font-medium text-gray-600">Rating Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               {[5, 4, 3, 2, 1].map((rating) => {
                 const count = stats.ratingDistribution[rating as keyof typeof stats.ratingDistribution];
                 const isSelected = filters.exactRating === rating;
@@ -253,7 +253,7 @@ export function CompletedActivities() {
                   <button
                     key={rating}
                     className={cn(
-                      "flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-xs",
+                      "flex flex-col items-center justify-center px-2.5 py-1.5 rounded-md transition-colors min-w-[40px]",
                       "hover:bg-amber-50 hover:border-amber-300",
                       isSelected 
                         ? "bg-amber-100 border border-amber-400" 
@@ -268,13 +268,13 @@ export function CompletedActivities() {
                     }}
                     title={`Filter by ${rating} star rating`}
                   >
-                    <span className="font-bold text-gray-700">{count}</span>
-                    <div className="flex items-center">
+                    <div className="flex items-center text-xs">
                       <span className="text-gray-600">{rating}</span>
                       <svg className="w-3 h-3 text-amber-400 fill-current ml-0.5" viewBox="0 0 20 20">
                         <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
                       </svg>
                     </div>
+                    <span className="font-bold text-gray-700 text-sm mt-0.5">{count}</span>
                   </button>
                 );
               })}
