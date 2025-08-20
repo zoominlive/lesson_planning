@@ -495,18 +495,18 @@ export function CompletedActivities() {
                 </Select>
               </div>
               
-              {/* Teacher */}
+              {/* User */}
               <div className="space-y-2">
-                <Label>Teacher</Label>
+                <Label>User</Label>
                 <Select
                   value={filters.teacherId}
                   onValueChange={(value) => setFilters({ ...filters, teacherId: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="All Teachers" />
+                    <SelectValue placeholder="All Users" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Teachers</SelectItem>
+                    <SelectItem value="all">All Users</SelectItem>
                     {teachers.map((teacher: any) => (
                       <SelectItem key={teacher.user_id} value={teacher.user_id}>
                         {teacher.fullName || teacher.username}

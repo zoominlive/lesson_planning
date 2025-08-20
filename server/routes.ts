@@ -213,18 +213,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get teachers for the current tenant and optional location
+  // Get all users for the current tenant and optional location
   app.get("/api/users", async (req: AuthenticatedRequest, res) => {
     try {
       const { locationId } = req.query;
       
-      // Get teachers filtered by role and tenant (and optionally location)
-      const teachers = await storage.getTeachers(locationId as string);
+      // Get all users filtered by tenant (and optionally location)
+      const users = await storage.getUsers(locationId as string);
       
-      res.json(teachers);
+      res.json(users);
     } catch (error) {
-      console.error('Error fetching teachers:', error);
-      res.status(500).json({ error: "Failed to fetch teachers" });
+      console.error('Error fetching users:', error);
+      res.status(500).json({ error: "Failed to fetch users" });
     }
   });
 
