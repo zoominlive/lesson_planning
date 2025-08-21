@@ -935,6 +935,195 @@
                         "description": "Category management for activities, materials, and milestones (Admin only)"
                 },
                 {
+                        "name": "AI Features",
+                        "item": [
+                                {
+                                        "name": "Generate Activity with AI",
+                                        "request": {
+                                                "method": "POST",
+                                                "header": [],
+                                                "body": {
+                                                        "mode": "raw",
+                                                        "raw": "{\n  \"ageGroupId\": \"{{age_group_id}}\",\n  \"milestoneId\": \"{{milestone_id}}\",\n  \"category\": \"Physical\",\n  \"prompt\": \"Create a fun outdoor activity for toddlers to develop gross motor skills\"\n}",
+                                                        "options": {
+                                                                "raw": {
+                                                                        "language": "json"
+                                                                }
+                                                        }
+                                                },
+                                                "url": {
+                                                        "raw": "{{base_url}}/api/activities/generate",
+                                                        "host": [
+                                                                "{{base_url}}"
+                                                        ],
+                                                        "path": [
+                                                                "api",
+                                                                "activities",
+                                                                "generate"
+                                                        ]
+                                                }
+                                        },
+                                        "response": []
+                                },
+                                {
+                                        "name": "Generate Activity Image",
+                                        "request": {
+                                                "method": "POST",
+                                                "header": [],
+                                                "body": {
+                                                        "mode": "raw",
+                                                        "raw": "{\n  \"activityTitle\": \"Rainbow Parachute Play\",\n  \"description\": \"Children work together to move a colorful parachute up and down\",\n  \"ageGroup\": \"Toddler\"\n}",
+                                                        "options": {
+                                                                "raw": {
+                                                                        "language": "json"
+                                                                }
+                                                        }
+                                                },
+                                                "url": {
+                                                        "raw": "{{base_url}}/api/activities/generate-image",
+                                                        "host": [
+                                                                "{{base_url}}"
+                                                        ],
+                                                        "path": [
+                                                                "api",
+                                                                "activities",
+                                                                "generate-image"
+                                                        ]
+                                                }
+                                        },
+                                        "response": []
+                                },
+                                {
+                                        "name": "Generate Step Image",
+                                        "request": {
+                                                "method": "POST",
+                                                "header": [],
+                                                "body": {
+                                                        "mode": "raw",
+                                                        "raw": "{\n  \"stepDescription\": \"Place colorful blocks in a row on the floor\",\n  \"activityContext\": \"Block sorting activity for fine motor development\"\n}",
+                                                        "options": {
+                                                                "raw": {
+                                                                        "language": "json"
+                                                                }
+                                                        }
+                                                },
+                                                "url": {
+                                                        "raw": "{{base_url}}/api/activities/generate-step-image",
+                                                        "host": [
+                                                                "{{base_url}}"
+                                                        ],
+                                                        "path": [
+                                                                "api",
+                                                                "activities",
+                                                                "generate-step-image"
+                                                        ]
+                                                }
+                                        },
+                                        "response": []
+                                },
+                                {
+                                        "name": "Generate Material Image",
+                                        "request": {
+                                                "method": "POST",
+                                                "header": [],
+                                                "body": {
+                                                        "mode": "raw",
+                                                        "raw": "{\n  \"materialName\": \"Wooden Building Blocks\",\n  \"description\": \"Set of colorful wooden blocks in various shapes\"\n}",
+                                                        "options": {
+                                                                "raw": {
+                                                                        "language": "json"
+                                                                }
+                                                        }
+                                                },
+                                                "url": {
+                                                        "raw": "{{base_url}}/api/materials/generate-image",
+                                                        "host": [
+                                                                "{{base_url}}"
+                                                        ],
+                                                        "path": [
+                                                                "api",
+                                                                "materials",
+                                                                "generate-image"
+                                                        ]
+                                                }
+                                        },
+                                        "response": []
+                                }
+                        ],
+                        "description": "AI-powered content generation endpoints for activities, images, and materials"
+                },
+                {
+                        "name": "File Uploads",
+                        "item": [
+                                {
+                                        "name": "Upload Activity File",
+                                        "request": {
+                                                "method": "POST",
+                                                "header": [],
+                                                "body": {
+                                                        "mode": "formdata",
+                                                        "formdata": [
+                                                                {
+                                                                        "key": "file",
+                                                                        "type": "file",
+                                                                        "src": []
+                                                                },
+                                                                {
+                                                                        "key": "activityId",
+                                                                        "value": "{{activity_id}}",
+                                                                        "type": "text"
+                                                                }
+                                                        ]
+                                                },
+                                                "url": {
+                                                        "raw": "{{base_url}}/api/activities/upload",
+                                                        "host": [
+                                                                "{{base_url}}"
+                                                        ],
+                                                        "path": [
+                                                                "api",
+                                                                "activities",
+                                                                "upload"
+                                                        ]
+                                                }
+                                        },
+                                        "response": []
+                                }
+                        ],
+                        "description": "File upload endpoints for activities, materials, and media"
+                },
+                {
+                        "name": "Parent API",
+                        "item": [
+                                {
+                                        "name": "Get Parent Lesson Plans",
+                                        "request": {
+                                                "method": "GET",
+                                                "header": [],
+                                                "url": {
+                                                        "raw": "{{base_url}}/api/parent/lesson-plans?roomId={{room_id}}",
+                                                        "host": [
+                                                                "{{base_url}}"
+                                                        ],
+                                                        "path": [
+                                                                "api",
+                                                                "parent",
+                                                                "lesson-plans"
+                                                        ],
+                                                        "query": [
+                                                                {
+                                                                        "key": "roomId",
+                                                                        "value": "{{room_id}}"
+                                                                }
+                                                        ]
+                                                }
+                                        },
+                                        "response": []
+                                }
+                        ],
+                        "description": "Parent-facing API endpoints for viewing approved lesson plans"
+                },
+                {
                         "name": "Settings - Age Groups",
                         "item": [
                                 {

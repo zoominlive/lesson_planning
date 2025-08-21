@@ -5,8 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1754455318221,
-      "tag": "0000_exotic_true_believers",
+      "when": 1755750211619,
+      "tag": "0000_baseline_migration_existing_database",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1755750246179,
+      "tag": "0001_add_migration_test_table",
       "breakpoints": true
     }
   ]
