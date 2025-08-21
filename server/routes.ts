@@ -511,7 +511,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const milestone = await storage.updateMilestone(id, data);
       res.json(milestone);
     } catch (error) {
-      res.status(400).json({ error: "Invalid milestone data" });
+      console.error("[PUT /api/milestones] Update error:", error);
+      res.status(400).json({ 
+        error: "Invalid milestone data",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
