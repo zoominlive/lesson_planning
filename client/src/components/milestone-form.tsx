@@ -100,13 +100,7 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await fetch(`/api/milestones/${milestone!.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Failed to update milestone");
-      return response.json();
+      return apiRequest("PUT", `/api/milestones/${milestone!.id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/milestones"] });
