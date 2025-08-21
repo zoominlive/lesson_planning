@@ -289,9 +289,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate AI image for milestone
+  app.post('/api/milestones/generate-image', async (req: AuthenticatedRequest, res) => {
+    try {
+      const { name, description, prompt } = req.body;
+      
+      // Check if OPENAI_API_KEY is available
+      if (!process.env.OPENAI_API_KEY) {
+        console.error('OpenAI API key not configured');
+        return res.status(503).json({ 
+          error: 'Image generation service is not available. Please ensure OPENAI_API_KEY is configured.' 
+        });
+      }
+      
+      // For milestones, we want developmental progress visualization
+      const milestoneName = name || prompt?.split('.')[0] || 'Milestone';
+      const milestoneDescription = description || '';
+      
+      // Create a prompt for milestone visualization
+      const imagePrompt = `Educational developmental milestone illustration showing ${milestoneName}${milestoneDescription ? `, ${milestoneDescription}` : ''}. Bright, child-friendly illustration style, colorful and engaging, simple clean design, educational poster style. Show a child demonstrating or achieving this developmental milestone in a safe, positive environment.`;
+      
+      console.log('[Milestone Image Generation] Using prompt:', imagePrompt);
+      
+      // Generate image directly with OpenAI API
+      const response = await fetch(
+        "https://api.openai.com/v1/images/generations",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "dall-e-3",
+            prompt: imagePrompt,
+            size: "1024x1024",
+            quality: "hd",
+            n: 1,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[Milestone Image Generation] Failed:", errorText);
+        throw new Error(`Image generation failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const imageUrl = data.data[0].url;
+      
+      if (!imageUrl) {
+        return res.status(500).json({ error: 'Failed to generate image' });
+      }
+      
+      // Download the generated image
+      const imageResponse = await fetch(imageUrl);
+      const buffer = await imageResponse.arrayBuffer();
+      
+      // Convert to base64 for temporary display
+      const base64Image = Buffer.from(buffer).toString('base64');
+      const dataUrl = `data:image/png;base64,${base64Image}`;
+      
+      console.log("[Milestone Image Generation] Generated image, returning as base64");
+      
+      // Return the image as base64 data URL (not saved to S3 yet)
+      res.json({ 
+        url: dataUrl,
+        isTemporary: true,
+        prompt: imagePrompt 
+      });
+    } catch (error) {
+      console.error('Milestone image generation error:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to generate image. Please try again later.' 
+      });
+    }
+  });
+
   app.post("/api/milestones", async (req: AuthenticatedRequest, res) => {
     try {
-      const data = insertMilestoneSchema.parse(req.body);
+      // Check if imageUrl is a base64 image (temporary image from AI generation)
+      let finalImageUrl = req.body.imageUrl;
+      let s3Key = req.body.s3Key;
+      
+      if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
+        // Extract base64 data from data URL
+        const base64Match = finalImageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (base64Match) {
+          const imageFormat = base64Match[1];
+          const base64Data = base64Match[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Generate filename for S3
+          const timestamp = Date.now();
+          const uniqueId = crypto.randomUUID().substring(0, 8);
+          const filename = `ai_generated_milestone_${timestamp}_${uniqueId}.${imageFormat}`;
+          
+          // Upload to S3
+          const s3Result = await s3Service.uploadImage({
+            tenantId: req.tenantId || '7cb6c28d-164c-49fa-b461-dfc47a8a3fed',
+            type: 'milestone',
+            originalName: filename,
+            buffer: buffer,
+          });
+          
+          console.log("[POST /api/milestones] Uploaded base64 image to S3:", s3Result.key);
+          
+          // Generate signed URL for the uploaded image
+          finalImageUrl = await s3Service.getSignedUrl({
+            key: s3Result.key,
+            operation: 'get',
+            expiresIn: 3600,
+          });
+          
+          s3Key = s3Result.key;
+        }
+      }
+      
+      const dataWithImages = {
+        ...req.body,
+        imageUrl: finalImageUrl,
+        s3Key: s3Key,
+      };
+      
+      const data = insertMilestoneSchema.parse(dataWithImages);
       
       // Validate that user has access to all locations they're creating the milestone in
       if (data.locationIds && data.locationIds.length > 0) {
@@ -314,7 +436,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/milestones/:id", async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
-      const data = insertMilestoneSchema.partial().parse(req.body);
+      
+      // Check if imageUrl is a base64 image (temporary image from AI generation)
+      let finalImageUrl = req.body.imageUrl;
+      let s3Key = req.body.s3Key;
+      
+      if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
+        // Extract base64 data from data URL
+        const base64Match = finalImageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (base64Match) {
+          const imageFormat = base64Match[1];
+          const base64Data = base64Match[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Generate filename for S3
+          const timestamp = Date.now();
+          const uniqueId = crypto.randomUUID().substring(0, 8);
+          const filename = `ai_generated_milestone_${timestamp}_${uniqueId}.${imageFormat}`;
+          
+          // Upload to S3
+          const s3Result = await s3Service.uploadImage({
+            tenantId: req.tenantId || '7cb6c28d-164c-49fa-b461-dfc47a8a3fed',
+            type: 'milestone',
+            originalName: filename,
+            id: id,
+            buffer: buffer,
+          });
+          
+          console.log("[PUT /api/milestones] Uploaded base64 image to S3:", s3Result.key);
+          
+          // Generate signed URL for the uploaded image
+          finalImageUrl = await s3Service.getSignedUrl({
+            key: s3Result.key,
+            operation: 'get',
+            expiresIn: 3600,
+          });
+          
+          s3Key = s3Result.key;
+        }
+      }
+      
+      const dataWithImages = {
+        ...req.body,
+        imageUrl: finalImageUrl,
+        s3Key: s3Key,
+      };
+      
+      const data = insertMilestoneSchema.partial().parse(dataWithImages);
       
       // Get existing milestone to check location access
       const existing = await storage.getMilestone(id);
@@ -977,9 +1145,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('[POST /api/activities] Authenticated tenant:', req.tenantId);
     
     try {
+      // Check if photoUrl is a base64 image (temporary image from AI generation)
+      let finalPhotoUrl = req.body.photoUrl;
+      let s3PhotoKey = req.body.s3PhotoKey;
+      
+      if (finalPhotoUrl && finalPhotoUrl.startsWith('data:image')) {
+        // Extract base64 data from data URL
+        const base64Match = finalPhotoUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (base64Match) {
+          const imageFormat = base64Match[1];
+          const base64Data = base64Match[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Generate filename for S3
+          const timestamp = Date.now();
+          const uniqueId = crypto.randomUUID().substring(0, 8);
+          const filename = `ai_generated_activity_${timestamp}_${uniqueId}.${imageFormat}`;
+          
+          // Upload to S3
+          const s3Result = await s3Service.uploadImage({
+            tenantId: req.tenantId || '7cb6c28d-164c-49fa-b461-dfc47a8a3fed',
+            type: 'activity',
+            originalName: filename,
+            buffer: buffer,
+          });
+          
+          console.log("[POST /api/activities] Uploaded base64 image to S3:", s3Result.key);
+          
+          // Generate signed URL for the uploaded image
+          finalPhotoUrl = await s3Service.getSignedUrl({
+            key: s3Result.key,
+            operation: 'get',
+            expiresIn: 3600,
+          });
+          
+          s3PhotoKey = s3Result.key;
+        }
+      }
+      
       // Add tenantId from authenticated context to the request body
       const dataWithTenant = {
         ...req.body,
+        photoUrl: finalPhotoUrl,
+        s3PhotoKey: s3PhotoKey,
         tenantId: req.tenantId
       };
       
@@ -1011,7 +1219,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/activities/:id", checkPermission('activity', 'update'), async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
-      const data = insertActivitySchema.partial().parse(req.body);
+      
+      // Check if photoUrl is a base64 image (temporary image from AI generation)
+      let finalPhotoUrl = req.body.photoUrl;
+      let s3PhotoKey = req.body.s3PhotoKey;
+      
+      if (finalPhotoUrl && finalPhotoUrl.startsWith('data:image')) {
+        // Extract base64 data from data URL
+        const base64Match = finalPhotoUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (base64Match) {
+          const imageFormat = base64Match[1];
+          const base64Data = base64Match[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Generate filename for S3
+          const timestamp = Date.now();
+          const uniqueId = crypto.randomUUID().substring(0, 8);
+          const filename = `ai_generated_activity_${timestamp}_${uniqueId}.${imageFormat}`;
+          
+          // Upload to S3
+          const s3Result = await s3Service.uploadImage({
+            tenantId: req.tenantId || '7cb6c28d-164c-49fa-b461-dfc47a8a3fed',
+            type: 'activity',
+            originalName: filename,
+            id: id,
+            buffer: buffer,
+          });
+          
+          console.log("[PUT /api/activities] Uploaded base64 image to S3:", s3Result.key);
+          
+          // Generate signed URL for the uploaded image
+          finalPhotoUrl = await s3Service.getSignedUrl({
+            key: s3Result.key,
+            operation: 'get',
+            expiresIn: 3600,
+          });
+          
+          s3PhotoKey = s3Result.key;
+        }
+      }
+      
+      const dataWithImages = {
+        ...req.body,
+        photoUrl: finalPhotoUrl,
+        s3PhotoKey: s3PhotoKey,
+      };
+      
+      const data = insertActivitySchema.partial().parse(dataWithImages);
       
       // Get existing activity to check location access
       const existing = await storage.getActivity(id);
@@ -1201,35 +1455,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Failed to generate image' });
       }
       
-      // Save the generated image locally
+      // Download the generated image
       const imageResponse = await fetch(result.url);
       const buffer = await imageResponse.arrayBuffer();
       
-      // Generate a unique filename
-      const timestamp = Date.now();
-      const uniqueId = crypto.randomUUID().substring(0, 8);
-      const filename = `ai_generated_${timestamp}_${uniqueId}.png`;
-      const imagePath = path.join(
-        process.cwd(),
-        "public",
-        "activity-images",
-        "images",
-        filename
-      );
+      // Convert to base64 for temporary display
+      const base64Image = Buffer.from(buffer).toString('base64');
+      const dataUrl = `data:image/png;base64,${base64Image}`;
       
-      // Ensure directory exists
-      const dir = path.dirname(imagePath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
+      console.log("[Activity Image Generation] Generated image, returning as base64");
       
-      // Save the image
-      fs.writeFileSync(imagePath, Buffer.from(buffer));
-      
-      const localUrl = `/api/activities/images/${filename}`;
-      console.log("[ImagePromptGeneration] Image saved locally:", localUrl);
-      
-      res.json({ url: localUrl, prompt: result.prompt });
+      // Return the image as base64 data URL (not saved to S3 or locally yet)
+      res.json({ 
+        url: dataUrl,
+        isTemporary: true,
+        prompt: result.prompt 
+      });
     } catch (error) {
       console.error('Activity image generation error:', error);
       res.status(500).json({ 
