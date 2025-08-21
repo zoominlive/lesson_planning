@@ -92,6 +92,7 @@ export const milestones = pgTable("milestones", {
   ageGroupIds: json("age_group_ids").$type<string[]>().notNull().default([]), // Multi-select age groups
   learningObjective: text("learning_objective").notNull(),
   imageUrl: text("image_url"),
+  s3Key: text("s3_key"), // S3 key for image storage
   status: text("status").notNull().default("active"), // active, disabled
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -108,6 +109,7 @@ export const materials = pgTable("materials", {
   ageGroups: json("age_groups").$type<string[]>().notNull().default([]), // Multi-select age groups for safety
   location: text("location").notNull(), // Storage location within the facility
   photoUrl: text("photo_url"), // URL to uploaded photo
+  s3Key: text("s3_key"), // S3 key for photo storage
   status: text("status").notNull().default("active"), // active or deleted
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -153,6 +155,8 @@ export const activities = pgTable("activities", {
   instructions: json("instructions").$type<InstructionStep[]>().notNull().default([]),
   videoUrl: text("video_url"),
   imageUrl: text("image_url"),
+  s3ImageKey: text("s3_image_key"), // S3 key for main image
+  s3VideoKey: text("s3_video_key"), // S3 key for video
   category: text("category").notNull(),
   // AI-generated fields
   objectives: json("objectives").$type<string[]>().default([]), // Learning objectives

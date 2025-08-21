@@ -21,6 +21,7 @@ import { openAIService } from "./services/openAiService";
 import { imagePromptGenerationService } from "./services/imagePromptGenerationService";
 import { promptValidationService } from "./services/promptValidationService";
 import { milestoneStorage } from "./milestoneStorage";
+import s3Routes from "./routes/s3Routes";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -3559,6 +3560,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to check permission" });
     }
   });
+
+  // Register S3 routes
+  app.use(s3Routes);
 
   const httpServer = createServer(app);
   return httpServer;

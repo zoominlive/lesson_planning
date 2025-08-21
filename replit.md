@@ -2,6 +2,14 @@
 
 This is a comprehensive lesson planning application designed specifically for early childhood educators. The system enables teachers to create, manage, and organize weekly lesson plans with activities aligned to developmental milestones. It features a multi-tenant architecture supporting multiple organizations, each with their own locations and rooms. The application is designed for iframe integration with secure JWT authentication and includes tablet-optimized views for mobile WebView embedding.
 
+## Recent Changes (January 2025)
+- **AWS S3 Integration**: Migrated from local file storage to AWS S3 for scalable cloud storage
+  - Added S3Service for upload, download, and signed URL generation
+  - Created S3MigrationService for seamless transition of existing images
+  - Implemented SignedUrlService for secure temporary access to S3 resources
+  - Database schema updated with S3 key fields alongside existing URL fields for gradual migration
+  - Added S3 API routes for migration management and signed URL generation
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -39,9 +47,17 @@ Complete data isolation between organizations using tenant ID filtering. Each te
 - **Anthropic Claude API**: Content generation for activities and educational materials
 - **Perplexity AI**: Additional AI capabilities for content enhancement
 
+## Cloud Storage Services
+- **AWS S3**: Primary cloud storage for images and media files
+  - Bucket: duploservices-dev-activities-748544146453
+  - Region: us-east-1
+  - File Types: Activity images/videos, Material photos, Milestone images
+  - Folder Structure: `<bucket>/<tenant_id>/<type>/<filename>`
+  - Security: Signed URLs with configurable expiration
+
 ## Authentication & File Storage
 - **JWT (jsonwebtoken)**: Token-based authentication for iframe integration
-- **Local File Storage**: Activity images and videos stored in public directory
+- **Local File Storage**: Legacy activity images and videos stored in public directory (being migrated to S3)
 - **Replit Object Storage**: File upload capabilities for development environment
 
 ## UI Component Libraries
