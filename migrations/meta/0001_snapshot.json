@@ -1,6 +1,6 @@
 {
-  "id": "6ccc95f5-a5a8-4872-b730-82b50bd55721",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "432eef7d-bf22-4c34-98f4-13b6c7cd299e",
+  "prevId": "6ccc95f5-a5a8-4872-b730-82b50bd55721",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1318,6 +1318,39 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.migration_test": {
+      "name": "migration_test",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "test_message": {
+          "name": "test_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},

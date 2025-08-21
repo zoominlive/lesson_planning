@@ -68,28 +68,32 @@ cat migrations/XXXX_add_lesson_plan_status.sql
 ./scripts/db.sh migrate
 ```
 
-## Testing the Migration System
+## Current Status - Hybrid Approach
 
-We've tested the migration workflow with a demonstration:
+**The Situation:**
+Your database was created with `push`, so migrations have compatibility issues with existing tables.
 
-1. **Created test table** - Added `test_table` to schema
-2. **Generated migration** - Used `./scripts/db.sh generate`  
-3. **Applied changes** - Verified table creation and data insertion
-4. **Removed table** - Cleaned up schema and dropped table
-5. **Verified removal** - Confirmed table no longer exists
+**What Works:**
+- Migration infrastructure is properly installed
+- Baseline migration generated capturing all 21 existing tables
+- Future incremental migrations will work once baseline conflicts are resolved
 
-## Migration vs Push - When to Use Each
+**Recommended Approach:**
+1. **Development**: Use `./scripts/db.sh push` for schema changes
+2. **Production Deployment**: Use migration files generated from dev changes
+3. **Future**: New projects can use full migration workflow from start
 
-**Use Migrations (Recommended):**
-- Production deployments
-- Team collaboration
-- When you need rollback capability
-- For tracked change history
+## Migration vs Push - Current Reality
 
-**Use Push (Development Only):**
-- Quick local testing
-- Rapid prototyping
-- When migration conflicts arise during development
+**Use Push (Current):**
+- All schema changes in development
+- Reliable with your existing database
+- Avoids baseline conflicts
+
+**Use Migrations (Future):**
+- New databases from scratch
+- When you need production deployment tracking
+- After resolving existing database baseline
 
 ## Legacy Support
 
