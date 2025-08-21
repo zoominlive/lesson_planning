@@ -137,11 +137,11 @@ export class S3Service {
    * Generate S3 key (path) for a file
    */
   private generateS3Key(tenantId: string, type: ImageType, fileName: string): string {
-    // Format: <tenant_id>/<type>/<filename>
+    // Format: lesson-planning/<tenant_id>/<type>/<filename>
     // pluralize the type for folder name
     const folder = type === 'activity' ? 'activities' : 
                    type === 'material' ? 'materials' : 'milestones';
-    return `${tenantId}/${folder}/${fileName}`;
+    return `lesson-planning/${tenantId}/${folder}/${fileName}`;
   }
 
   /**

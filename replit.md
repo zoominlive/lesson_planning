@@ -50,9 +50,9 @@ Complete data isolation between organizations using tenant ID filtering. Each te
 ## Cloud Storage Services
 - **AWS S3**: Primary cloud storage for images and media files
   - Bucket: duploservices-dev-activities-748544146453
-  - Region: us-east-1
+  - Region: ca-central-1
   - File Types: Activity images/videos, Material photos, Milestone images
-  - Folder Structure: `<bucket>/<tenant_id>/<type>/<filename>`
+  - Folder Structure: `<bucket>/lesson-planning/<tenant_id>/<type>/<filename>`
   - Security: Signed URLs with configurable expiration
 
 ## Authentication & File Storage
