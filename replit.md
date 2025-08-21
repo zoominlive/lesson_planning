@@ -9,6 +9,9 @@ This is a comprehensive lesson planning application designed specifically for ea
   - Implemented SignedUrlService for secure temporary access to S3 resources
   - Database schema updated with S3 key fields alongside existing URL fields for gradual migration
   - Added S3 API routes for migration management and signed URL generation
+- **Permission System Fix**: Fixed milestone CRUD operations authentication
+  - Added missing checkPermission middleware to milestone routes (create, update, delete)
+  - Ensures proper authorization for milestone management operations
 
 # User Preferences
 

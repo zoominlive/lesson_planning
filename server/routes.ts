@@ -367,7 +367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/milestones", async (req: AuthenticatedRequest, res) => {
+  app.post("/api/milestones", checkPermission('milestone', 'create'), async (req: AuthenticatedRequest, res) => {
     try {
       // Check if imageUrl is a base64 image (temporary image from AI generation)
       let finalImageUrl = req.body.imageUrl;
@@ -433,7 +433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/milestones/:id", async (req: AuthenticatedRequest, res) => {
+  app.put("/api/milestones/:id", checkPermission('milestone', 'update'), async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       
@@ -515,7 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/milestones/:id", async (req: AuthenticatedRequest, res) => {
+  app.delete("/api/milestones/:id", checkPermission('milestone', 'delete'), async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       
