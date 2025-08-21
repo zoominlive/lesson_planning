@@ -2,7 +2,6 @@ import { Router } from "express";
 import type { Request, Response } from "express";
 import { s3Service } from "../services/s3Service";
 import { signedUrlService } from "../services/signedUrlService";
-import { s3MigrationService } from "../services/s3MigrationService";
 import type { AuthenticatedRequest } from "../middleware/auth-middleware";
 
 const router = Router();
