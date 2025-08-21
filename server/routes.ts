@@ -97,18 +97,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Serve material images from object storage (public access for display in UI)
+  // Serve material images - redirect to S3 signed URLs
   app.get('/api/materials/images/:filename', async (req, res) => {
     try {
       const filename = req.params.filename;
+      
+      // Try to find a material with this image filename
+      const materials = await storage.getMaterials();
+      const material = materials.find(m => 
+        m.photoUrl?.includes(filename) || 
+        m.s3Key?.includes(filename)
+      );
+      
+      if (material && material.s3Key) {
+        // Generate a signed URL for the S3 object
+        const signedUrl = await s3Service.getSignedUrl({
+          key: material.s3Key,
+          operation: 'get',
+          expiresIn: 3600,
+        });
+        
+        // Redirect to the signed URL
+        return res.redirect(signedUrl);
+      }
+      
+      // Fallback: check if file exists in public directory (for legacy images)
       const imagePath = path.join(process.cwd(), 'public', 'materials', 'images', filename);
       
-      // Check if file exists in public directory first
       if (fs.existsSync(imagePath)) {
         res.sendFile(imagePath);
       } else {
-        // Fallback to object storage if not in public directory
-        await materialStorage.downloadMaterialImage(filename, res);
+        res.status(404).json({ error: 'Image not found' });
       }
     } catch (error) {
       console.error('Error serving material image:', error);
@@ -646,7 +665,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      res.json(materials);
+      // Generate fresh S3 signed URLs for materials with S3 keys
+      const materialsWithFreshUrls = await Promise.all(
+        materials.map(async (material) => {
+          if (material.s3Key) {
+            try {
+              // Keep the API route format for consistency
+              return {
+                ...material,
+                photoUrl: material.photoUrl // Keep original URL format, the /api/materials/images/:filename route will handle S3 redirect
+              };
+            } catch (error) {
+              console.error(`Failed to process material ${material.id}:`, error);
+              return material;
+            }
+          }
+          return material;
+        })
+      );
+      
+      res.json(materialsWithFreshUrls);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch materials" });
     }
