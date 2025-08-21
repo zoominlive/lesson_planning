@@ -51,7 +51,7 @@ export class S3Service {
     this.bucketName = this.parseBucketName(config.bucketUri);
     
     // Extract region from URI if not provided
-    const region = config.region || this.parseRegion(config.bucketUri) || 'us-east-1';
+    const region = config.region || this.parseRegion(config.bucketUri) || 'ca-central-1';
     
     this.s3Client = new S3Client({
       region,
