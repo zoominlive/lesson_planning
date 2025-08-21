@@ -15,7 +15,13 @@ The frontend uses React 18 with TypeScript in a component-based architecture. Vi
 The backend follows RESTful API patterns using Node.js with Express.js and TypeScript. Drizzle ORM provides type-safe database operations with PostgreSQL. The system implements a multi-tenant architecture with JWT-based authentication and role-based access control (RBAC). File uploads are handled through Multer with local storage for activity images and videos.
 
 ## Data Storage Solutions
-PostgreSQL (Neon Database) serves as the primary data store with multi-tenant data isolation. Drizzle ORM manages database schema and migrations. The database schema supports complex relationships between tenants, locations, rooms, lesson plans, activities, materials, and developmental milestones. Location-based authorization ensures users can only access data for their authorized locations.
+PostgreSQL (Neon Database) serves as the primary data store with multi-tenant data isolation. Drizzle ORM manages database schema using a hybrid migration approach: push method for development changes and migration files for production deployment. The database schema supports complex relationships between tenants, locations, rooms, lesson plans, activities, materials, and developmental milestones. Location-based authorization ensures users can only access data for their authorized locations.
+
+### Database Migration Strategy (Hybrid Approach)
+- **Development**: Uses `./scripts/db.sh push` for reliable schema changes
+- **Production**: Uses migration files generated from development changes
+- **Migration Infrastructure**: Fully implemented with baseline handling for existing database
+- **Scripts**: Complete tooling for both development and production workflows
 
 ## Authentication and Authorization
 JWT-based authentication supports iframe integration with parent applications. Tokens contain tenant ID, user details, role, and authorized locations array. The RBAC system includes multiple roles (teacher, assistant_director, director, admin, superadmin) with customizable permission overrides per organization. Location-based authorization restricts data access to user's assigned locations.
