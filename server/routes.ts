@@ -7,7 +7,7 @@ import {
   authenticateToken,
   validateLocationAccess,
   getUserAuthorizedLocationIds 
-} from "./auth-middleware";
+} from "./middleware/auth-middleware";
 import { redirectToAuthorizedView, checkViewAccess } from "./middleware/view-access-control";
 import { checkPermission } from "./middleware/permission-checker";
 import {
@@ -16,10 +16,10 @@ import {
 } from "./objectStorage";
 import { materialStorage } from "./materialStorage";
 import { activityStorage } from "./activityStorage";
-import { perplexityService } from "./perplexityService";
-import { openAIService } from "./openAiService";
-import { imagePromptGenerationService } from "./imagePromptGenerationService";
-import { promptValidationService } from "./promptValidationService";
+import { perplexityService } from "./services/perplexityService";
+import { openAIService } from "./services/openAiService";
+import { imagePromptGenerationService } from "./services/imagePromptGenerationService";
+import { promptValidationService } from "./services/promptValidationService";
 import { milestoneStorage } from "./milestoneStorage";
 import multer from "multer";
 import path from "path";
