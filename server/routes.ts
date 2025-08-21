@@ -407,10 +407,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Remove tenantId from body if present - use authenticated tenantId instead  
+      const { tenantId: bodyTenantId, ...bodyWithoutTenant } = req.body;
+      
       const dataWithImages = {
-        ...req.body,
+        ...bodyWithoutTenant,
         imageUrl: finalImageUrl,
         s3Key: s3Key,
+        tenantId: req.tenantId // Use the authenticated tenant ID
       };
       
       const data = insertMilestoneSchema.parse(dataWithImages);
@@ -476,10 +480,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Remove tenantId from body if present - use authenticated tenantId instead
+      const { tenantId: bodyTenantId, ...bodyWithoutTenant } = req.body;
+      
       const dataWithImages = {
-        ...req.body,
+        ...bodyWithoutTenant,
         imageUrl: finalImageUrl,
         s3Key: s3Key,
+        tenantId: req.tenantId // Use the authenticated tenant ID
       };
       
       const data = insertMilestoneSchema.partial().parse(dataWithImages);
