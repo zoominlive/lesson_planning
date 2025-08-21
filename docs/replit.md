@@ -4,6 +4,10 @@ This project is a comprehensive lesson planning application for early childhood 
 # User Preferences
 Preferred communication style: Simple, everyday language.
 
+# Recent Changes (August 2025)
+- **Production Cleanup Completed**: Removed 16 test/development files and organized documentation into docs/ folder
+- **UI Component Optimization Phase 1**: Removed 4 unused UI components with external dependencies (carousel, chart, input-otp, command) and eliminated 41 total packages, achieving significant bundle size reduction from 608 to 567 packages
+
 # System Architecture
 ## Frontend Architecture
 The frontend is built with React 18 and TypeScript, utilizing a component-based architecture. Styling is managed with Tailwind CSS, a custom childcare-themed design system, and Shadcn/ui for components (built on Radix UI). TanStack Query handles server state, Wouter is used for routing, and React Hook Form with Zod manages forms and validation. Vite is employed for development and optimized builds. The UI/UX prioritizes a cohesive design system with a custom color palette, consistent typography, and accessible components.
