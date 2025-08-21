@@ -276,13 +276,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Tenant ID not found" });
       }
 
-      const imageUrl = await milestoneStorage.uploadMilestoneImage(
-        tenantId,
-        req.file.buffer,
-        req.file.originalname
-      );
+      // Upload to S3 instead of local storage
+      const s3Result = await s3Service.uploadImage({
+        tenantId: tenantId,
+        type: 'milestone',
+        originalName: req.file.originalname,
+        buffer: req.file.buffer,
+      });
 
-      res.json({ imageUrl });
+      console.log("[POST /api/milestones/upload-image] Uploaded to S3:", s3Result.key);
+
+      // Generate signed URL for the uploaded image
+      const signedUrl = await s3Service.getSignedUrl({
+        key: s3Result.key,
+        operation: 'get',
+        expiresIn: 3600,
+      });
+
+      res.json({ 
+        imageUrl: signedUrl,
+        s3Key: s3Result.key
+      });
     } catch (error) {
       console.error('Error uploading milestone image:', error);
       res.status(500).json({ error: "Failed to upload image" });

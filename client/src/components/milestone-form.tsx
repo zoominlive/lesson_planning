@@ -26,6 +26,7 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
     milestone?.ageGroupIds || []
   );
   const [imageUrl, setImageUrl] = useState<string>(milestone?.imageUrl || "");
+  const [s3Key, setS3Key] = useState<string>(milestone?.s3Key || "");
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -128,6 +129,9 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
       if (!response.ok) throw new Error('Failed to upload image');
       const data = await response.json();
       setImageUrl(data.imageUrl);
+      if (data.s3Key) {
+        setS3Key(data.s3Key);
+      }
     } catch (error) {
       console.error('Error uploading image:', error);
     } finally {
@@ -141,6 +145,7 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
       locationIds: selectedLocationIds,
       ageGroupIds: selectedAgeGroupIds,
       imageUrl,
+      s3Key,
     };
 
     if (milestone) {
