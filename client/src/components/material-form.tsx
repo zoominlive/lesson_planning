@@ -69,6 +69,7 @@ export default function MaterialForm({
   );
   const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
   const [photoUrl, setPhotoUrl] = useState<string>(material?.photoUrl || "");
+  const [s3PhotoKey, setS3PhotoKey] = useState<string>(material?.s3Key || "");
   const [generatingImage, setGeneratingImage] = useState(false);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [imageLoadError, setImageLoadError] = useState(false);
@@ -89,6 +90,7 @@ export default function MaterialForm({
       locationIds: material?.locationIds || [selectedLocationId],
       tenantId: "", // Will be set by backend
       photoUrl: material?.photoUrl || "",
+      s3Key: material?.s3Key || "",
     },
   });
 
@@ -262,8 +264,10 @@ export default function MaterialForm({
       }
 
       const result = await response.json();
-      setPhotoUrl(result.url);
+      setPhotoUrl(result.url); // This is the signed URL for display
+      setS3PhotoKey(result.s3Key); // Store the S3 key for saving
       setValue("photoUrl", result.url);
+      setValue("s3Key", result.s3Key);
       setImageLoadError(false); // Reset error state when new image is generated
       
       toast({
@@ -312,6 +316,7 @@ export default function MaterialForm({
       ageGroups: selectedAgeGroups,
       locationIds: selectedLocations,
       photoUrl,
+      s3Key: s3PhotoKey, // Include the S3 key when saving
     };
 
     if (material) {

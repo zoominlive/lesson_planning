@@ -22,6 +22,8 @@ import { imagePromptGenerationService } from "./services/imagePromptGenerationSe
 import { promptValidationService } from "./services/promptValidationService";
 import { milestoneStorage } from "./milestoneStorage";
 import s3Routes from "./routes/s3Routes";
+import { s3Service } from "./services/s3Service";
+import { signedUrlService } from "./services/signedUrlService";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -833,35 +835,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Failed to generate image' });
       }
       
-      // Save the generated image locally
+      // Download the generated image
       const imageResponse = await fetch(imageUrl);
       const buffer = await imageResponse.arrayBuffer();
+      
+      // Get tenant ID for S3 upload
+      const tenantId = req.tenantId || '7cb6c28d-164c-49fa-b461-dfc47a8a3fed';
       
       // Generate a unique filename
       const timestamp = Date.now();
       const uniqueId = crypto.randomUUID().substring(0, 8);
       const filename = `ai_generated_material_${timestamp}_${uniqueId}.png`;
-      const imagePath = path.join(
-        process.cwd(),
-        "public",
-        "materials",
-        "images",
-        filename
-      );
       
-      // Ensure directory exists
-      const dir = path.dirname(imagePath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
+      // Upload to S3
+      const s3Result = await s3Service.uploadImage({
+        tenantId,
+        type: 'material',
+        originalName: filename,
+        buffer: Buffer.from(buffer),
+      });
       
-      // Save the image
-      fs.writeFileSync(imagePath, Buffer.from(buffer));
+      console.log("[Material Image Generation] Image uploaded to S3:", s3Result.key);
       
-      const localUrl = `/api/materials/images/${filename}`;
-      console.log("[Material Image Generation] Image saved locally:", localUrl);
+      // Generate a signed URL for immediate display
+      const signedUrl = await s3Service.getSignedUrl({
+        key: s3Result.key,
+        operation: 'get',
+        expiresIn: 3600, // 1 hour
+      });
       
-      res.json({ url: localUrl, prompt: imagePrompt });
+      // Return both the S3 key and signed URL
+      res.json({ 
+        url: signedUrl,
+        s3Key: s3Result.key,
+        prompt: imagePrompt 
+      });
     } catch (error) {
       console.error('Material image generation error:', error);
       res.status(500).json({ 
