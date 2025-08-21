@@ -416,9 +416,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Don't accept tenantId from body, use it from the authenticated request
       const { tenantId: bodyTenantId, ...bodyWithoutTenant } = req.body;
       
+      // Check if photoUrl is a base64 image (temporary image from AI generation)
+      let finalPhotoUrl = bodyWithoutTenant.photoUrl;
+      let s3Key = bodyWithoutTenant.s3Key;
+      
+      if (finalPhotoUrl && finalPhotoUrl.startsWith('data:image')) {
+        // Extract base64 data from data URL
+        const base64Match = finalPhotoUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (base64Match) {
+          const imageFormat = base64Match[1];
+          const base64Data = base64Match[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Generate filename for S3
+          const timestamp = Date.now();
+          const uniqueId = crypto.randomUUID().substring(0, 8);
+          const filename = `ai_generated_material_${timestamp}_${uniqueId}.${imageFormat}`;
+          
+          // Upload to S3
+          const s3Result = await s3Service.uploadImage({
+            tenantId: req.tenantId || '7cb6c28d-164c-49fa-b461-dfc47a8a3fed',
+            type: 'material',
+            originalName: filename,
+            buffer: buffer,
+          });
+          
+          console.log("[POST /api/materials] Uploaded base64 image to S3:", s3Result.key);
+          
+          // Generate signed URL for the uploaded image
+          finalPhotoUrl = await s3Service.getSignedUrl({
+            key: s3Result.key,
+            operation: 'get',
+            expiresIn: 3600,
+          });
+          
+          s3Key = s3Result.key;
+        }
+      }
+      
       // Add the tenantId from the authenticated request
       const materialDataWithTenant = {
         ...bodyWithoutTenant,
+        photoUrl: finalPhotoUrl,
+        s3Key: s3Key,
         tenantId: req.tenantId // Use the authenticated tenant ID
       };
       
@@ -455,9 +495,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Don't accept tenantId from body, use it from the authenticated request
       const { tenantId: bodyTenantId, ...bodyWithoutTenant } = req.body;
       
+      // Check if photoUrl is a base64 image (temporary image from AI generation)
+      let finalPhotoUrl = bodyWithoutTenant.photoUrl;
+      let s3Key = bodyWithoutTenant.s3Key;
+      
+      if (finalPhotoUrl && finalPhotoUrl.startsWith('data:image')) {
+        // Extract base64 data from data URL
+        const base64Match = finalPhotoUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (base64Match) {
+          const imageFormat = base64Match[1];
+          const base64Data = base64Match[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Generate filename for S3
+          const timestamp = Date.now();
+          const uniqueId = crypto.randomUUID().substring(0, 8);
+          const filename = `ai_generated_material_${timestamp}_${uniqueId}.${imageFormat}`;
+          
+          // Upload to S3
+          const s3Result = await s3Service.uploadImage({
+            tenantId: req.tenantId || '7cb6c28d-164c-49fa-b461-dfc47a8a3fed',
+            type: 'material',
+            originalName: filename,
+            id: id,
+            buffer: buffer,
+          });
+          
+          console.log("[PUT /api/materials] Uploaded base64 image to S3:", s3Result.key);
+          
+          // Generate signed URL for the uploaded image
+          finalPhotoUrl = await s3Service.getSignedUrl({
+            key: s3Result.key,
+            operation: 'get',
+            expiresIn: 3600,
+          });
+          
+          s3Key = s3Result.key;
+        }
+      }
+      
       // Add the tenantId from the authenticated request for partial updates
       const materialDataWithTenant = {
         ...bodyWithoutTenant,
+        photoUrl: finalPhotoUrl,
+        s3Key: s3Key,
         tenantId: req.tenantId // Use the authenticated tenant ID
       };
       
@@ -839,35 +920,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const imageResponse = await fetch(imageUrl);
       const buffer = await imageResponse.arrayBuffer();
       
-      // Get tenant ID for S3 upload
-      const tenantId = req.tenantId || '7cb6c28d-164c-49fa-b461-dfc47a8a3fed';
+      // Convert to base64 for temporary display
+      const base64Image = Buffer.from(buffer).toString('base64');
+      const dataUrl = `data:image/png;base64,${base64Image}`;
       
-      // Generate a unique filename
-      const timestamp = Date.now();
-      const uniqueId = crypto.randomUUID().substring(0, 8);
-      const filename = `ai_generated_material_${timestamp}_${uniqueId}.png`;
+      console.log("[Material Image Generation] Generated image, returning as base64");
       
-      // Upload to S3
-      const s3Result = await s3Service.uploadImage({
-        tenantId,
-        type: 'material',
-        originalName: filename,
-        buffer: Buffer.from(buffer),
-      });
-      
-      console.log("[Material Image Generation] Image uploaded to S3:", s3Result.key);
-      
-      // Generate a signed URL for immediate display
-      const signedUrl = await s3Service.getSignedUrl({
-        key: s3Result.key,
-        operation: 'get',
-        expiresIn: 3600, // 1 hour
-      });
-      
-      // Return both the S3 key and signed URL
+      // Return the image as base64 data URL (not saved to S3 yet)
       res.json({ 
-        url: signedUrl,
-        s3Key: s3Result.key,
+        url: dataUrl,
+        isTemporary: true,
         prompt: imagePrompt 
       });
     } catch (error) {

@@ -264,10 +264,10 @@ export default function MaterialForm({
       }
 
       const result = await response.json();
-      setPhotoUrl(result.url); // This is the signed URL for display
-      setS3PhotoKey(result.s3Key); // Store the S3 key for saving
+      setPhotoUrl(result.url); // This is now a base64 data URL for display
+      setS3PhotoKey(''); // Clear S3 key since we haven't uploaded yet
       setValue("photoUrl", result.url);
-      setValue("s3Key", result.s3Key);
+      setValue("s3Key", '');
       setImageLoadError(false); // Reset error state when new image is generated
       
       toast({
