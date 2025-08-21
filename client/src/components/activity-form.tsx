@@ -2581,6 +2581,7 @@ export default function ActivityForm({
                             >
                               Upload
                             </Button>
+                            {/* Generate button for step images - temporarily hidden
                             <Button
                               type="button"
                               variant="outline"
@@ -2597,6 +2598,7 @@ export default function ActivityForm({
                                 ? "Generating..."
                                 : "Generate"}
                             </Button>
+                            */}
                           </>
                         )}
                       </div>
@@ -2616,6 +2618,7 @@ export default function ActivityForm({
                             ? "Uploading..."
                             : "Add Image"}
                         </Button>
+                        {/* Generate button for step images - temporarily hidden
                         <Button
                           type="button"
                           variant="outline"
@@ -2635,6 +2638,7 @@ export default function ActivityForm({
                             ? "Generating..."
                             : "Generate"}
                         </Button>
+                        */}
                       </>
                     ) : null}
                     <input
