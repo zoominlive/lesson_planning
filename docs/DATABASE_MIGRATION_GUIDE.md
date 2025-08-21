@@ -68,6 +68,29 @@ cat migrations/XXXX_add_lesson_plan_status.sql
 ./scripts/db.sh migrate
 ```
 
+## Testing the Migration System
+
+We've tested the migration workflow with a demonstration:
+
+1. **Created test table** - Added `test_table` to schema
+2. **Generated migration** - Used `./scripts/db.sh generate`  
+3. **Applied changes** - Verified table creation and data insertion
+4. **Removed table** - Cleaned up schema and dropped table
+5. **Verified removal** - Confirmed table no longer exists
+
+## Migration vs Push - When to Use Each
+
+**Use Migrations (Recommended):**
+- Production deployments
+- Team collaboration
+- When you need rollback capability
+- For tracked change history
+
+**Use Push (Development Only):**
+- Quick local testing
+- Rapid prototyping
+- When migration conflicts arise during development
+
 ## Legacy Support
 
 The old `npm run db:push` command is still available for quick development testing, but should not be used for production changes.
