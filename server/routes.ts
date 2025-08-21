@@ -282,7 +282,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
       
-      res.json(milestones);
+      // Generate fresh S3 signed URLs for milestones with S3 keys
+      const milestonesWithFreshUrls = await Promise.all(
+        milestones.map(async (milestone) => {
+          if (milestone.s3Key) {
+            try {
+              // Generate a fresh signed URL for the S3 object
+              const signedUrl = await s3Service.getSignedUrl({
+                key: milestone.s3Key,
+                operation: 'get',
+                expiresIn: 3600, // 1 hour expiry
+              });
+              
+              // Return milestone with fresh URL
+              return {
+                ...milestone,
+                imageUrl: `/api/milestones/images/${milestone.tenantId}/milestones/${milestone.id}` // Use API route that will redirect to S3
+              };
+            } catch (error) {
+              console.error(`Failed to generate signed URL for milestone ${milestone.id}:`, error);
+              return milestone;
+            }
+          }
+          return milestone;
+        })
+      );
+      
+      res.json(milestonesWithFreshUrls);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch milestones" });
     }
