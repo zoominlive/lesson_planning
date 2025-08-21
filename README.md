@@ -56,8 +56,9 @@ A comprehensive web application designed for early childhood educators to stream
   - Educational content suggestions
   - Lesson plan optimization
 
-### Infrastructure
+### Infrastructure & Database
 - **PostgreSQL Database** hosted on Neon with connection pooling
+- **Hybrid Migration System**: Push method for development, migrations for production
 - **Local File Storage** for activity images and media
 - **Environment-based Configuration** for development/production
 - **Git Version Control** with automatic commit tracking
@@ -172,7 +173,11 @@ npm install
 
 3. **Set up the database**
 ```bash
+# For development (recommended)
 npm run db:push
+
+# For production deployment (use migrations)
+npm run db:migrate
 ```
 
 4. **Start development server**
@@ -302,8 +307,11 @@ npm run build
 # Start production server
 npm start
 
-# Push database schema changes
+# Database management (development)
 npm run db:push
+
+# Database migrations (production)
+npm run db:migrate
 ```
 
 ### Project Structure
