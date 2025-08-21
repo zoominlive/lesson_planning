@@ -1145,13 +1145,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('[POST /api/activities] Authenticated tenant:', req.tenantId);
     
     try {
-      // Check if photoUrl is a base64 image (temporary image from AI generation)
-      let finalPhotoUrl = req.body.photoUrl;
-      let s3PhotoKey = req.body.s3PhotoKey;
+      // Check if imageUrl is a base64 image (temporary image from AI generation)
+      let finalImageUrl = req.body.imageUrl;
+      let s3ImageKey = req.body.s3ImageKey;
       
-      if (finalPhotoUrl && finalPhotoUrl.startsWith('data:image')) {
+      if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
         // Extract base64 data from data URL
-        const base64Match = finalPhotoUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        const base64Match = finalImageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
         if (base64Match) {
           const imageFormat = base64Match[1];
           const base64Data = base64Match[2];
@@ -1173,21 +1173,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log("[POST /api/activities] Uploaded base64 image to S3:", s3Result.key);
           
           // Generate signed URL for the uploaded image
-          finalPhotoUrl = await s3Service.getSignedUrl({
+          finalImageUrl = await s3Service.getSignedUrl({
             key: s3Result.key,
             operation: 'get',
             expiresIn: 3600,
           });
           
-          s3PhotoKey = s3Result.key;
+          s3ImageKey = s3Result.key;
         }
       }
       
       // Add tenantId from authenticated context to the request body
       const dataWithTenant = {
         ...req.body,
-        photoUrl: finalPhotoUrl,
-        s3PhotoKey: s3PhotoKey,
+        imageUrl: finalImageUrl,
+        s3ImageKey: s3ImageKey,
         tenantId: req.tenantId
       };
       
@@ -1220,13 +1220,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       
-      // Check if photoUrl is a base64 image (temporary image from AI generation)
-      let finalPhotoUrl = req.body.photoUrl;
-      let s3PhotoKey = req.body.s3PhotoKey;
+      // Check if imageUrl is a base64 image (temporary image from AI generation)
+      let finalImageUrl = req.body.imageUrl;
+      let s3ImageKey = req.body.s3ImageKey;
       
-      if (finalPhotoUrl && finalPhotoUrl.startsWith('data:image')) {
+      if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
         // Extract base64 data from data URL
-        const base64Match = finalPhotoUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        const base64Match = finalImageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
         if (base64Match) {
           const imageFormat = base64Match[1];
           const base64Data = base64Match[2];
@@ -1249,20 +1249,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log("[PUT /api/activities] Uploaded base64 image to S3:", s3Result.key);
           
           // Generate signed URL for the uploaded image
-          finalPhotoUrl = await s3Service.getSignedUrl({
+          finalImageUrl = await s3Service.getSignedUrl({
             key: s3Result.key,
             operation: 'get',
             expiresIn: 3600,
           });
           
-          s3PhotoKey = s3Result.key;
+          s3ImageKey = s3Result.key;
         }
       }
       
       const dataWithImages = {
         ...req.body,
-        photoUrl: finalPhotoUrl,
-        s3PhotoKey: s3PhotoKey,
+        imageUrl: finalImageUrl,
+        s3ImageKey: s3ImageKey,
       };
       
       const data = insertActivitySchema.partial().parse(dataWithImages);
