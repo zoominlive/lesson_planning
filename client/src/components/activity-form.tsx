@@ -2498,6 +2498,7 @@ export default function ActivityForm({
             <h3 className="font-semibold text-lg">Step-by-step Instructions</h3>
             {!readOnly && (
               <div className="flex gap-2">
+                {/* Generate All Step Images button - temporarily hidden
                 <Button
                   type="button"
                   onClick={handleGenerateAllStepImages}
@@ -2523,6 +2524,7 @@ export default function ActivityForm({
                     </>
                   )}
                 </Button>
+                */}
                 <Button
                   type="button"
                   onClick={addInstruction}
