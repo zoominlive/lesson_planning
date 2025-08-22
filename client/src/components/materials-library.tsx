@@ -362,7 +362,7 @@ export default function MaterialsLibrary() {
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-500">Storage:</span>
                     <span className="font-medium" data-testid={`material-storage-${material.id}`}>
-                      {material.location}
+                      {material.s3Key ? 'Cloud Storage (S3)' : material.location || 'Local Storage'}
                     </span>
                   </div>
                 </div>

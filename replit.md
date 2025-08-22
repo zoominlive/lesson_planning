@@ -2,6 +2,30 @@
 
 This is a comprehensive lesson planning application designed specifically for early childhood educators. The system enables teachers to create, manage, and organize weekly lesson plans with activities aligned to developmental milestones. It features a multi-tenant architecture supporting multiple organizations, each with their own locations and rooms. The application is designed for iframe integration with secure JWT authentication and includes tablet-optimized views for mobile WebView embedding.
 
+## Recent Changes (January 2025)
+- **AWS S3 Integration**: Migrated from local file storage to AWS S3 for scalable cloud storage
+  - Added S3Service for upload, download, and signed URL generation
+  - Implemented SignedUrlService for secure temporary access to S3 resources
+  - Database schema updated with S3 key fields alongside existing URL fields
+  - Added S3 API routes for signed URL generation
+  - **All Image Migrations Complete**: Successfully migrated all images to S3
+    - Milestone images: 3 images migrated with 4 invalid URLs cleaned
+    - Material images: 16 images migrated with 3 missing images replaced
+    - Activity images: 13 images migrated with correct folder structure
+    - All image serving now uses S3 signed URLs with automatic redirect
+    - Fixed S3 folder structure issue (activities stored in correct /activities/ folder)
+  - **Complete Local Storage Removal** (January 22, 2025):
+    - Deleted all 183 local image files and directories
+    - Removed ActivityStorageService class completely
+    - Removed all local storage API endpoints
+    - Removed migration scripts and endpoints (no longer needed)
+    - Deleted attached_assets folder (migration source files)
+    - Removed S3MigrationService (migration complete)
+    - System now exclusively uses AWS S3 for all image storage
+- **Permission System Fix**: Fixed milestone CRUD operations authentication
+  - Added missing checkPermission middleware to milestone routes (create, update, delete)
+  - Ensures proper authorization for milestone management operations
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -39,9 +63,17 @@ Complete data isolation between organizations using tenant ID filtering. Each te
 - **Anthropic Claude API**: Content generation for activities and educational materials
 - **Perplexity AI**: Additional AI capabilities for content enhancement
 
+## Cloud Storage Services
+- **AWS S3**: Primary cloud storage for images and media files
+  - Bucket: duploservices-dev-activities-748544146453
+  - Region: ca-central-1
+  - File Types: Activity images/videos, Material photos, Milestone images
+  - Folder Structure: `<bucket>/lesson-planning/<tenant_id>/<type>/<filename>`
+  - Security: Signed URLs with configurable expiration
+
 ## Authentication & File Storage
 - **JWT (jsonwebtoken)**: Token-based authentication for iframe integration
-- **Local File Storage**: Activity images and videos stored in public directory
+- **Local File Storage**: Legacy activity images and videos stored in public directory (being migrated to S3)
 - **Replit Object Storage**: File upload capabilities for development environment
 
 ## UI Component Libraries

@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Edit, Link, Users, Heart, Brain, Activity, Trash2 } from "lucide-react";
 import { getUserAuthorizedLocations } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -178,9 +178,12 @@ export default function MilestonesLibrary() {
                   Add Milestone
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Add New Milestone</DialogTitle>
+                  <DialogDescription>
+                    Create a new developmental milestone for tracking
+                  </DialogDescription>
                 </DialogHeader>
                 <MilestoneForm 
                   onSuccess={() => setIsCreateDialogOpen(false)}
@@ -358,9 +361,12 @@ export default function MilestonesLibrary() {
       {/* Edit Milestone Dialog */}
       {editingMilestone && (
         <Dialog open={!!editingMilestone} onOpenChange={() => setEditingMilestone(null)}>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Milestone</DialogTitle>
+              <DialogDescription>
+                Update the milestone details below
+              </DialogDescription>
             </DialogHeader>
             <MilestoneForm 
               milestone={editingMilestone}

@@ -15,12 +15,15 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { materialStorage } from "./materialStorage";
-import { activityStorage } from "./activityStorage";
 import { perplexityService } from "./services/perplexityService";
 import { openAIService } from "./services/openAiService";
 import { imagePromptGenerationService } from "./services/imagePromptGenerationService";
 import { promptValidationService } from "./services/promptValidationService";
 import { milestoneStorage } from "./milestoneStorage";
+import s3Routes from "./routes/s3Routes";
+import { s3Service } from "./services/s3Service";
+import { signedUrlService } from "./services/signedUrlService";
+
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -49,20 +52,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const upload = multer({ storage: multer.memoryStorage() });
   
   // PUBLIC API ROUTES - No authentication required for these specific paths
-  // Serve milestone images from object storage (public access for display in UI)
+  // Serve milestone images - redirect to S3 signed URLs
   app.get('/api/milestones/images/*', async (req, res) => {
     try {
       const filePath = (req.params as any)['0'] || ''; // Gets everything after /api/milestones/images/
-      // Extract just the filename from the path (e.g., "express_feelings.png" from "tenantId/milestones/express_feelings.png")
-      const filename = filePath.split('/').pop() || '';
+      
+      // Extract milestone ID from the path if possible
+      const parts = filePath.split('/');
+      let milestoneId = null;
+      
+      // Try to find a milestone with this image URL or S3 key
+      const milestones = await storage.getMilestones();
+      const milestone = milestones.find(m => 
+        m.imageUrl?.includes(filePath) || 
+        m.s3Key?.includes(filePath) ||
+        m.imageUrl?.includes(parts[parts.length - 1]) // Check by filename
+      );
+      
+      if (milestone && milestone.s3Key) {
+        // Generate a signed URL for the S3 object
+        const signedUrl = await s3Service.getSignedUrl({
+          key: milestone.s3Key,
+          operation: 'get',
+          expiresIn: 3600,
+        });
+        
+        // Redirect to the signed URL
+        return res.redirect(signedUrl);
+      }
+      
+      // Fallback: check if file exists in public directory (for legacy images)
+      const filename = parts[parts.length - 1];
       const imagePath = path.join(process.cwd(), 'public', 'milestone-images', filename);
       
-      // Check if file exists in public directory first
       if (fs.existsSync(imagePath)) {
         res.sendFile(imagePath);
       } else {
-        // Fallback to object storage if not in public directory
-        await milestoneStorage.downloadMilestoneImage(filePath, res);
+        res.status(404).json({ error: 'Image not found' });
       }
     } catch (error) {
       console.error('Error serving milestone image:', error);
@@ -70,18 +96,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Serve material images from object storage (public access for display in UI)
+  // Serve material images from S3 - new format for S3-stored images
+  app.get('/api/materials/s3/:filename', async (req, res) => {
+    try {
+      const filename = req.params.filename;
+      
+      // Find material by S3 filename
+      const materials = await storage.getMaterials();
+      const material = materials.find(m => 
+        m.s3Key?.includes(filename)
+      );
+      
+      if (material && material.s3Key) {
+        // Generate a signed URL for the S3 object
+        const signedUrl = await s3Service.getSignedUrl({
+          key: material.s3Key,
+          operation: 'get',
+          expiresIn: 3600,
+        });
+        
+        // Redirect to the signed URL
+        return res.redirect(signedUrl);
+      }
+      
+      res.status(404).json({ error: 'Image not found in S3' });
+    } catch (error) {
+      console.error('Error serving material S3 image:', error);
+      res.status(500).json({ error: 'Failed to retrieve S3 image' });
+    }
+  });
+
+  // Legacy route for backward compatibility - redirect to S3 signed URLs
   app.get('/api/materials/images/:filename', async (req, res) => {
     try {
       const filename = req.params.filename;
+      
+      // Try to find a material with this image filename
+      const materials = await storage.getMaterials();
+      const material = materials.find(m => 
+        m.photoUrl?.includes(filename) || 
+        m.s3Key?.includes(filename)
+      );
+      
+      if (material && material.s3Key) {
+        // Generate a signed URL for the S3 object
+        const signedUrl = await s3Service.getSignedUrl({
+          key: material.s3Key,
+          operation: 'get',
+          expiresIn: 3600,
+        });
+        
+        // Redirect to the signed URL
+        return res.redirect(signedUrl);
+      }
+      
+      // Fallback: check if file exists in public directory (for legacy images)
       const imagePath = path.join(process.cwd(), 'public', 'materials', 'images', filename);
       
-      // Check if file exists in public directory first
       if (fs.existsSync(imagePath)) {
         res.sendFile(imagePath);
       } else {
-        // Fallback to object storage if not in public directory
-        await materialStorage.downloadMaterialImage(filename, res);
+        res.status(404).json({ error: 'Image not found' });
       }
     } catch (error) {
       console.error('Error serving material image:', error);
@@ -89,75 +164,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Serve activity images from local storage (public access)
-  app.get('/api/activities/images/:filename', async (req, res) => {
+  // Serve activity images from S3 - new format for S3-stored images
+  app.get('/api/activities/s3/:filename', async (req, res) => {
     try {
-      const imageBuffer = await activityStorage.downloadActivityImage(req.params.filename);
-      if (!imageBuffer) {
-        return res.status(404).json({ error: 'Image not found' });
+      const filename = req.params.filename;
+      
+      // Find activity by S3 filename
+      const activities = await storage.getActivities();
+      const activity = activities.find(a => 
+        a.s3ImageKey?.includes(filename)
+      );
+      
+      if (activity && activity.s3ImageKey) {
+        // Generate a signed URL for the S3 object
+        const signedUrl = await s3Service.getSignedUrl({
+          key: activity.s3ImageKey,
+          operation: 'get',
+          expiresIn: 3600,
+        });
+        
+        // Redirect to the signed URL
+        return res.redirect(signedUrl);
       }
       
-      // Determine content type based on file extension
-      const ext = path.extname(req.params.filename).toLowerCase();
-      let contentType = 'image/jpeg';
-      if (ext === '.png') contentType = 'image/png';
-      else if (ext === '.gif') contentType = 'image/gif';
-      else if (ext === '.webp') contentType = 'image/webp';
+      res.status(404).json({ error: 'Image not found in S3' });
+    } catch (error) {
+      console.error('Error serving activity S3 image:', error);
+      res.status(500).json({ error: 'Failed to retrieve S3 image' });
+    }
+  });
+
+  // Legacy route - redirect to S3 for all activity images
+  app.get('/api/activities/images/:filename', async (req, res) => {
+    try {
+      // Check if this activity exists and has S3 storage
+      const activities = await storage.getActivities();
+      const activity = activities.find(a => 
+        a.imageUrl?.includes(req.params.filename) || 
+        a.s3ImageKey?.includes(req.params.filename)
+      );
       
-      res.set('Content-Type', contentType);
-      res.set('Cache-Control', 'public, max-age=3600');
-      res.send(imageBuffer);
+      if (activity && activity.s3ImageKey) {
+        // Generate a signed URL for the S3 object
+        const signedUrl = await s3Service.getSignedUrl({
+          key: activity.s3ImageKey,
+          operation: 'get',
+          expiresIn: 3600,
+        });
+        
+        // Redirect to the signed URL
+        return res.redirect(signedUrl);
+      }
+      
+      // No local storage fallback - image not found
+      res.status(404).json({ error: 'Image not found' });
     } catch (error) {
       console.error('Error serving activity image:', error);
       res.status(500).json({ error: 'Failed to retrieve image' });
     }
   });
   
-  // Serve activity videos from local storage (public access)
+  // Videos are now stored in S3 - placeholder for future implementation
   app.get('/api/activities/videos/:filename', async (req, res) => {
-    try {
-      const videoBuffer = await activityStorage.downloadActivityVideo(req.params.filename);
-      if (!videoBuffer) {
-        return res.status(404).json({ error: 'Video not found' });
-      }
-      
-      // Determine content type based on file extension
-      const ext = path.extname(req.params.filename).toLowerCase();
-      let contentType = 'video/mp4';
-      if (ext === '.webm') contentType = 'video/webm';
-      else if (ext === '.ogg') contentType = 'video/ogg';
-      
-      res.set('Content-Type', contentType);
-      res.set('Cache-Control', 'public, max-age=3600');
-      res.send(videoBuffer);
-    } catch (error) {
-      console.error('Error serving activity video:', error);
-      res.status(500).json({ error: 'Failed to retrieve video' });
-    }
+    res.status(404).json({ error: 'Video storage has been migrated to S3' });
   });
   
-  // Serve instruction images from local storage (public access)
+  // Instructions are now stored in S3 - placeholder for future implementation
   app.get('/api/activities/instructions/:filename', async (req, res) => {
-    try {
-      const imageBuffer = await activityStorage.downloadInstructionImage(req.params.filename);
-      if (!imageBuffer) {
-        return res.status(404).json({ error: 'Image not found' });
-      }
-      
-      // Determine content type based on file extension
-      const ext = path.extname(req.params.filename).toLowerCase();
-      let contentType = 'image/jpeg';
-      if (ext === '.png') contentType = 'image/png';
-      else if (ext === '.gif') contentType = 'image/gif';
-      else if (ext === '.webp') contentType = 'image/webp';
-      
-      res.set('Content-Type', contentType);
-      res.set('Cache-Control', 'public, max-age=3600');
-      res.send(imageBuffer);
-    } catch (error) {
-      console.error('Error serving instruction image:', error);
-      res.status(500).json({ error: 'Failed to retrieve image' });
-    }
+    res.status(404).json({ error: 'Instruction storage has been migrated to S3' });
   });
   
   // Apply authentication middleware to all API routes EXCEPT the public ones above
@@ -255,7 +329,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
       
-      res.json(milestones);
+      // Generate fresh S3 signed URLs for milestones with S3 keys
+      const milestonesWithFreshUrls = await Promise.all(
+        milestones.map(async (milestone) => {
+          if (milestone.s3Key) {
+            try {
+              // Generate a fresh signed URL for the S3 object
+              const signedUrl = await s3Service.getSignedUrl({
+                key: milestone.s3Key,
+                operation: 'get',
+                expiresIn: 3600, // 1 hour expiry
+              });
+              
+              // Return milestone with fresh URL
+              return {
+                ...milestone,
+                imageUrl: `/api/milestones/images/${milestone.tenantId}/milestones/${milestone.id}` // Use API route that will redirect to S3
+              };
+            } catch (error) {
+              console.error(`Failed to generate signed URL for milestone ${milestone.id}:`, error);
+              return milestone;
+            }
+          }
+          return milestone;
+        })
+      );
+      
+      res.json(milestonesWithFreshUrls);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch milestones" });
     }
@@ -273,22 +373,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Tenant ID not found" });
       }
 
-      const imageUrl = await milestoneStorage.uploadMilestoneImage(
-        tenantId,
-        req.file.buffer,
-        req.file.originalname
-      );
+      // Upload to S3 instead of local storage
+      const s3Result = await s3Service.uploadImage({
+        tenantId: tenantId,
+        type: 'milestone',
+        originalName: req.file.originalname,
+        buffer: req.file.buffer,
+      });
 
-      res.json({ imageUrl });
+      console.log("[POST /api/milestones/upload-image] Uploaded to S3:", s3Result.key);
+
+      // Generate signed URL for the uploaded image
+      const signedUrl = await s3Service.getSignedUrl({
+        key: s3Result.key,
+        operation: 'get',
+        expiresIn: 3600,
+      });
+
+      res.json({ 
+        imageUrl: signedUrl,
+        s3Key: s3Result.key
+      });
     } catch (error) {
       console.error('Error uploading milestone image:', error);
       res.status(500).json({ error: "Failed to upload image" });
     }
   });
 
-  app.post("/api/milestones", async (req: AuthenticatedRequest, res) => {
+  // Generate AI image for milestone
+  app.post('/api/milestones/generate-image', async (req: AuthenticatedRequest, res) => {
     try {
-      const data = insertMilestoneSchema.parse(req.body);
+      const { title, description, prompt } = req.body;
+      
+      // Check if OPENAI_API_KEY is available
+      if (!process.env.OPENAI_API_KEY) {
+        console.error('OpenAI API key not configured');
+        return res.status(503).json({ 
+          error: 'Image generation service is not available. Please ensure OPENAI_API_KEY is configured.' 
+        });
+      }
+      
+      // For milestones, we want to match the activities style - realistic photos
+      const milestoneTitle = title || prompt?.split('.')[0] || 'Milestone';
+      const milestoneDescription = description || '';
+      
+      // Create a prompt that matches the activities style (realistic DSLR photos, no text)
+      const imagePrompt = `Ultra-realistic DSLR photograph of a cozy, normal-sized childcare classroom. Shows 6-8 YOUNG CHILDREN (ages 2-5 years old, toddlers and preschoolers) demonstrating the developmental milestone: ${milestoneTitle}${milestoneDescription ? ` - ${milestoneDescription}` : ''}. IMPORTANT: Children must be UNDER 6 years old - early childhood age only. Standard classroom with age-appropriate furniture for toddlers/preschoolers, normal-height windows, realistic proportions. NO TEXT OR LETTERS IN IMAGE. Sharp realistic textures, natural lighting, professional color grading. Shallow depth of field focusing on young children engaged in the milestone activity. Shot with 35mm lens for natural perspective. Warm, inviting early childhood classroom atmosphere.`;
+      
+      console.log('[Milestone Image Generation] Using prompt:', imagePrompt);
+      
+      // Generate image directly with OpenAI API
+      const response = await fetch(
+        "https://api.openai.com/v1/images/generations",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "dall-e-3",
+            prompt: imagePrompt,
+            size: "1024x1024",
+            quality: "hd",
+            n: 1,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[Milestone Image Generation] Failed:", errorText);
+        throw new Error(`Image generation failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const imageUrl = data.data[0].url;
+      
+      if (!imageUrl) {
+        return res.status(500).json({ error: 'Failed to generate image' });
+      }
+      
+      // Download the generated image
+      const imageResponse = await fetch(imageUrl);
+      const buffer = await imageResponse.arrayBuffer();
+      
+      // Convert to base64 for temporary display
+      const base64Image = Buffer.from(buffer).toString('base64');
+      const dataUrl = `data:image/png;base64,${base64Image}`;
+      
+      console.log("[Milestone Image Generation] Generated image, returning as base64");
+      
+      // Return the image as base64 data URL (not saved to S3 yet)
+      res.json({ 
+        url: dataUrl,
+        isTemporary: true,
+        prompt: imagePrompt 
+      });
+    } catch (error) {
+      console.error('Milestone image generation error:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to generate image. Please try again later.' 
+      });
+    }
+  });
+
+  app.post("/api/milestones", checkPermission('milestone', 'create'), async (req: AuthenticatedRequest, res) => {
+    try {
+      // Check if imageUrl is a base64 image (temporary image from AI generation)
+      let finalImageUrl = req.body.imageUrl;
+      let s3Key = req.body.s3Key;
+      
+      if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
+        // Extract base64 data from data URL
+        const base64Match = finalImageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (base64Match) {
+          const imageFormat = base64Match[1];
+          const base64Data = base64Match[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Generate filename for S3
+          const timestamp = Date.now();
+          const uniqueId = crypto.randomUUID().substring(0, 8);
+          const filename = `ai_generated_milestone_${timestamp}_${uniqueId}.${imageFormat}`;
+          
+          // Upload to S3
+          const s3Result = await s3Service.uploadImage({
+            tenantId: req.tenantId || '7cb6c28d-164c-49fa-b461-dfc47a8a3fed',
+            type: 'milestone',
+            originalName: filename,
+            buffer: buffer,
+          });
+          
+          console.log("[POST /api/milestones] Uploaded base64 image to S3:", s3Result.key);
+          
+          // Generate signed URL for the uploaded image
+          finalImageUrl = await s3Service.getSignedUrl({
+            key: s3Result.key,
+            operation: 'get',
+            expiresIn: 3600,
+          });
+          
+          s3Key = s3Result.key;
+        }
+      }
+      
+      // Remove tenantId from body if present - use authenticated tenantId instead  
+      const { tenantId: bodyTenantId, ...bodyWithoutTenant } = req.body;
+      
+      const dataWithImages = {
+        ...bodyWithoutTenant,
+        imageUrl: finalImageUrl,
+        s3Key: s3Key,
+        tenantId: req.tenantId // Use the authenticated tenant ID
+      };
+      
+      const data = insertMilestoneSchema.parse(dataWithImages);
       
       // Validate that user has access to all locations they're creating the milestone in
       if (data.locationIds && data.locationIds.length > 0) {
@@ -308,10 +548,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/milestones/:id", async (req: AuthenticatedRequest, res) => {
+  app.put("/api/milestones/:id", checkPermission('milestone', 'update'), async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
-      const data = insertMilestoneSchema.partial().parse(req.body);
+      
+      // Check if imageUrl is a base64 image (temporary image from AI generation)
+      let finalImageUrl = req.body.imageUrl;
+      let s3Key = req.body.s3Key;
+      
+      if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
+        // Extract base64 data from data URL
+        const base64Match = finalImageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (base64Match) {
+          const imageFormat = base64Match[1];
+          const base64Data = base64Match[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Generate filename for S3
+          const timestamp = Date.now();
+          const uniqueId = crypto.randomUUID().substring(0, 8);
+          const filename = `ai_generated_milestone_${timestamp}_${uniqueId}.${imageFormat}`;
+          
+          // Upload to S3
+          const s3Result = await s3Service.uploadImage({
+            tenantId: req.tenantId || '7cb6c28d-164c-49fa-b461-dfc47a8a3fed',
+            type: 'milestone',
+            originalName: filename,
+            id: id,
+            buffer: buffer,
+          });
+          
+          console.log("[PUT /api/milestones] Uploaded base64 image to S3:", s3Result.key);
+          
+          // Generate signed URL for the uploaded image
+          finalImageUrl = await s3Service.getSignedUrl({
+            key: s3Result.key,
+            operation: 'get',
+            expiresIn: 3600,
+          });
+          
+          s3Key = s3Result.key;
+        }
+      }
+      
+      // Remove tenantId from body if present - use authenticated tenantId instead
+      const { tenantId: bodyTenantId, ...bodyWithoutTenant } = req.body;
+      
+      const dataWithImages = {
+        ...bodyWithoutTenant,
+        imageUrl: finalImageUrl,
+        s3Key: s3Key,
+        tenantId: req.tenantId // Use the authenticated tenant ID
+      };
+      
+      const data = insertMilestoneSchema.partial().parse(dataWithImages);
       
       // Get existing milestone to check location access
       const existing = await storage.getMilestone(id);
@@ -340,11 +630,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const milestone = await storage.updateMilestone(id, data);
       res.json(milestone);
     } catch (error) {
-      res.status(400).json({ error: "Invalid milestone data" });
+      console.error("[PUT /api/milestones] Update error:", error);
+      res.status(400).json({ 
+        error: "Invalid milestone data",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
-  app.delete("/api/milestones/:id", async (req: AuthenticatedRequest, res) => {
+  app.delete("/api/milestones/:id", checkPermission('milestone', 'delete'), async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       
@@ -399,7 +693,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      res.json(materials);
+      // Generate fresh S3 signed URLs for materials with S3 keys
+      const materialsWithFreshUrls = await Promise.all(
+        materials.map(async (material) => {
+          if (material.s3Key) {
+            try {
+              // Keep the API route format for consistency
+              return {
+                ...material,
+                photoUrl: material.photoUrl // Keep original URL format, the /api/materials/images/:filename route will handle S3 redirect
+              };
+            } catch (error) {
+              console.error(`Failed to process material ${material.id}:`, error);
+              return material;
+            }
+          }
+          return material;
+        })
+      );
+      
+      res.json(materialsWithFreshUrls);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch materials" });
     }
@@ -413,9 +726,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Don't accept tenantId from body, use it from the authenticated request
       const { tenantId: bodyTenantId, ...bodyWithoutTenant } = req.body;
       
+      // Check if photoUrl is a base64 image (temporary image from AI generation)
+      let finalPhotoUrl = bodyWithoutTenant.photoUrl;
+      let s3Key = bodyWithoutTenant.s3Key;
+      
+      if (finalPhotoUrl && finalPhotoUrl.startsWith('data:image')) {
+        // Extract base64 data from data URL
+        const base64Match = finalPhotoUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (base64Match) {
+          const imageFormat = base64Match[1];
+          const base64Data = base64Match[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Generate filename for S3
+          const timestamp = Date.now();
+          const uniqueId = crypto.randomUUID().substring(0, 8);
+          const filename = `ai_generated_material_${timestamp}_${uniqueId}.${imageFormat}`;
+          
+          // Upload to S3
+          const s3Result = await s3Service.uploadImage({
+            tenantId: req.tenantId || '7cb6c28d-164c-49fa-b461-dfc47a8a3fed',
+            type: 'material',
+            originalName: filename,
+            buffer: buffer,
+          });
+          
+          console.log("[POST /api/materials] Uploaded base64 image to S3:", s3Result.key);
+          
+          // Generate signed URL for the uploaded image
+          finalPhotoUrl = await s3Service.getSignedUrl({
+            key: s3Result.key,
+            operation: 'get',
+            expiresIn: 3600,
+          });
+          
+          s3Key = s3Result.key;
+        }
+      }
+      
       // Add the tenantId from the authenticated request
       const materialDataWithTenant = {
         ...bodyWithoutTenant,
+        photoUrl: finalPhotoUrl,
+        s3Key: s3Key,
         tenantId: req.tenantId // Use the authenticated tenant ID
       };
       
@@ -452,9 +805,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Don't accept tenantId from body, use it from the authenticated request
       const { tenantId: bodyTenantId, ...bodyWithoutTenant } = req.body;
       
+      // Check if photoUrl is a base64 image (temporary image from AI generation)
+      let finalPhotoUrl = bodyWithoutTenant.photoUrl;
+      let s3Key = bodyWithoutTenant.s3Key;
+      
+      if (finalPhotoUrl && finalPhotoUrl.startsWith('data:image')) {
+        // Extract base64 data from data URL
+        const base64Match = finalPhotoUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (base64Match) {
+          const imageFormat = base64Match[1];
+          const base64Data = base64Match[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Generate filename for S3
+          const timestamp = Date.now();
+          const uniqueId = crypto.randomUUID().substring(0, 8);
+          const filename = `ai_generated_material_${timestamp}_${uniqueId}.${imageFormat}`;
+          
+          // Upload to S3
+          const s3Result = await s3Service.uploadImage({
+            tenantId: req.tenantId || '7cb6c28d-164c-49fa-b461-dfc47a8a3fed',
+            type: 'material',
+            originalName: filename,
+            id: id,
+            buffer: buffer,
+          });
+          
+          console.log("[PUT /api/materials] Uploaded base64 image to S3:", s3Result.key);
+          
+          // Generate signed URL for the uploaded image
+          finalPhotoUrl = await s3Service.getSignedUrl({
+            key: s3Result.key,
+            operation: 'get',
+            expiresIn: 3600,
+          });
+          
+          s3Key = s3Result.key;
+        }
+      }
+      
       // Add the tenantId from the authenticated request for partial updates
       const materialDataWithTenant = {
         ...bodyWithoutTenant,
+        photoUrl: finalPhotoUrl,
+        s3Key: s3Key,
         tenantId: req.tenantId // Use the authenticated tenant ID
       };
       
@@ -832,35 +1226,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Failed to generate image' });
       }
       
-      // Save the generated image locally
+      // Download the generated image
       const imageResponse = await fetch(imageUrl);
       const buffer = await imageResponse.arrayBuffer();
       
-      // Generate a unique filename
-      const timestamp = Date.now();
-      const uniqueId = crypto.randomUUID().substring(0, 8);
-      const filename = `ai_generated_material_${timestamp}_${uniqueId}.png`;
-      const imagePath = path.join(
-        process.cwd(),
-        "public",
-        "materials",
-        "images",
-        filename
-      );
+      // Convert to base64 for temporary display
+      const base64Image = Buffer.from(buffer).toString('base64');
+      const dataUrl = `data:image/png;base64,${base64Image}`;
       
-      // Ensure directory exists
-      const dir = path.dirname(imagePath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
+      console.log("[Material Image Generation] Generated image, returning as base64");
       
-      // Save the image
-      fs.writeFileSync(imagePath, Buffer.from(buffer));
-      
-      const localUrl = `/api/materials/images/${filename}`;
-      console.log("[Material Image Generation] Image saved locally:", localUrl);
-      
-      res.json({ url: localUrl, prompt: imagePrompt });
+      // Return the image as base64 data URL (not saved to S3 yet)
+      res.json({ 
+        url: dataUrl,
+        isTemporary: true,
+        prompt: imagePrompt 
+      });
     } catch (error) {
       console.error('Material image generation error:', error);
       res.status(500).json({ 
@@ -906,9 +1287,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('[POST /api/activities] Authenticated tenant:', req.tenantId);
     
     try {
+      // Check if imageUrl is a base64 image (temporary image from AI generation)
+      let finalImageUrl = req.body.imageUrl;
+      let s3ImageKey = req.body.s3ImageKey;
+      
+      if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
+        // Extract base64 data from data URL
+        const base64Match = finalImageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (base64Match) {
+          const imageFormat = base64Match[1];
+          const base64Data = base64Match[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Generate filename for S3
+          const timestamp = Date.now();
+          const uniqueId = crypto.randomUUID().substring(0, 8);
+          const filename = `ai_generated_activity_${timestamp}_${uniqueId}.${imageFormat}`;
+          
+          // Upload to S3
+          const s3Result = await s3Service.uploadImage({
+            tenantId: req.tenantId || '7cb6c28d-164c-49fa-b461-dfc47a8a3fed',
+            type: 'activity',
+            originalName: filename,
+            buffer: buffer,
+          });
+          
+          console.log("[POST /api/activities] Uploaded base64 image to S3:", s3Result.key);
+          
+          // Generate signed URL for the uploaded image
+          finalImageUrl = await s3Service.getSignedUrl({
+            key: s3Result.key,
+            operation: 'get',
+            expiresIn: 3600,
+          });
+          
+          s3ImageKey = s3Result.key;
+        }
+      }
+      
       // Add tenantId from authenticated context to the request body
       const dataWithTenant = {
         ...req.body,
+        imageUrl: finalImageUrl,
+        s3ImageKey: s3ImageKey,
         tenantId: req.tenantId
       };
       
@@ -940,7 +1361,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/activities/:id", checkPermission('activity', 'update'), async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
-      const data = insertActivitySchema.partial().parse(req.body);
+      
+      // Check if imageUrl is a base64 image (temporary image from AI generation)
+      let finalImageUrl = req.body.imageUrl;
+      let s3ImageKey = req.body.s3ImageKey;
+      
+      if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
+        // Extract base64 data from data URL
+        const base64Match = finalImageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (base64Match) {
+          const imageFormat = base64Match[1];
+          const base64Data = base64Match[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Generate filename for S3
+          const timestamp = Date.now();
+          const uniqueId = crypto.randomUUID().substring(0, 8);
+          const filename = `ai_generated_activity_${timestamp}_${uniqueId}.${imageFormat}`;
+          
+          // Upload to S3
+          const s3Result = await s3Service.uploadImage({
+            tenantId: req.tenantId || '7cb6c28d-164c-49fa-b461-dfc47a8a3fed',
+            type: 'activity',
+            originalName: filename,
+            id: id,
+            buffer: buffer,
+          });
+          
+          console.log("[PUT /api/activities] Uploaded base64 image to S3:", s3Result.key);
+          
+          // Generate signed URL for the uploaded image
+          finalImageUrl = await s3Service.getSignedUrl({
+            key: s3Result.key,
+            operation: 'get',
+            expiresIn: 3600,
+          });
+          
+          s3ImageKey = s3Result.key;
+        }
+      }
+      
+      const dataWithImages = {
+        ...req.body,
+        imageUrl: finalImageUrl,
+        s3ImageKey: s3ImageKey,
+      };
+      
+      const data = insertActivitySchema.partial().parse(dataWithImages);
       
       // Get existing activity to check location access
       const existing = await storage.getActivity(id);
@@ -992,7 +1459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Upload route for activity media
+  // Upload route for activity media - now uses S3
   app.post('/api/activities/upload', upload.single('file'), async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.file) {
@@ -1004,23 +1471,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'File type not specified' });
       }
       
-      let url: string;
+      // Upload to S3
+      const result = await s3Service.uploadImage({
+        tenantId: req.tenantId || '',
+        type: 'activity',
+        originalName: req.file.originalname,
+        buffer: req.file.buffer,
+        contentType: req.file.mimetype
+      });
       
-      switch(type) {
-        case 'image':
-          url = await activityStorage.uploadActivityImage(req.file.buffer, req.file.originalname);
-          break;
-        case 'video':
-          url = await activityStorage.uploadActivityVideo(req.file.buffer, req.file.originalname);
-          break;
-        case 'instruction':
-          url = await activityStorage.uploadInstructionImage(req.file.buffer, req.file.originalname);
-          break;
-        default:
-          return res.status(400).json({ error: 'Invalid file type' });
-      }
-      
-      res.json({ url });
+      res.json({ url: `/api/activities/s3/${result.fileName}` });
     } catch (error) {
       console.error('Activity upload error:', error);
       res.status(500).json({ error: 'Failed to upload file' });
@@ -1059,35 +1519,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Failed to generate step image' });
       }
       
-      // Save the generated image locally
-      const imageResponse = await fetch(result.url);
-      const buffer = await imageResponse.arrayBuffer();
-      
-      // Generate a unique filename
-      const timestamp = Date.now();
-      const uniqueId = crypto.randomUUID().substring(0, 8);
-      const filename = `ai_generated_${timestamp}_${uniqueId}.png`;
-      const imagePath = path.join(
-        process.cwd(),
-        "public",
-        "activity-images",
-        "images",
-        filename
-      );
-      
-      // Ensure directory exists
-      const dir = path.dirname(imagePath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      
-      // Save the image
-      fs.writeFileSync(imagePath, Buffer.from(buffer));
-      
-      const localUrl = `/api/activities/images/${filename}`;
-      console.log("[ImagePromptGeneration] Step image saved locally:", localUrl);
-      
-      res.json({ url: localUrl, prompt: result.prompt });
+      // Return the generated image URL directly (for display in frontend)
+      // Note: When saving the activity, the image will be uploaded to S3
+      res.json({ url: result.url, prompt: result.prompt });
     } catch (error) {
       console.error('Step image generation error:', error);
       res.status(500).json({ 
@@ -1130,35 +1564,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Failed to generate image' });
       }
       
-      // Save the generated image locally
+      // Download the generated image
       const imageResponse = await fetch(result.url);
       const buffer = await imageResponse.arrayBuffer();
       
-      // Generate a unique filename
-      const timestamp = Date.now();
-      const uniqueId = crypto.randomUUID().substring(0, 8);
-      const filename = `ai_generated_${timestamp}_${uniqueId}.png`;
-      const imagePath = path.join(
-        process.cwd(),
-        "public",
-        "activity-images",
-        "images",
-        filename
-      );
+      // Convert to base64 for temporary display
+      const base64Image = Buffer.from(buffer).toString('base64');
+      const dataUrl = `data:image/png;base64,${base64Image}`;
       
-      // Ensure directory exists
-      const dir = path.dirname(imagePath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
+      console.log("[Activity Image Generation] Generated image, returning as base64");
       
-      // Save the image
-      fs.writeFileSync(imagePath, Buffer.from(buffer));
-      
-      const localUrl = `/api/activities/images/${filename}`;
-      console.log("[ImagePromptGeneration] Image saved locally:", localUrl);
-      
-      res.json({ url: localUrl, prompt: result.prompt });
+      // Return the image as base64 data URL (not saved to S3 or locally yet)
+      res.json({ 
+        url: dataUrl,
+        isTemporary: true,
+        prompt: result.prompt 
+      });
     } catch (error) {
       console.error('Activity image generation error:', error);
       res.status(500).json({ 
@@ -1363,82 +1784,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve activity images
-  app.get('/api/activities/images/:fileName', async (req: AuthenticatedRequest, res) => {
-    try {
-      const { fileName } = req.params;
-      const imageBuffer = await activityStorage.downloadActivityImage(fileName);
-      
-      if (!imageBuffer) {
-        return res.status(404).json({ error: 'Image not found' });
-      }
-      
-      // Determine content type based on file extension
-      const ext = path.extname(fileName).toLowerCase();
-      let contentType = 'image/jpeg';
-      if (ext === '.png') contentType = 'image/png';
-      else if (ext === '.gif') contentType = 'image/gif';
-      else if (ext === '.webp') contentType = 'image/webp';
-      
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-      res.send(imageBuffer);
-    } catch (error) {
-      console.error('Error serving activity image:', error);
-      res.status(500).json({ error: 'Failed to retrieve image' });
-    }
-  });
-
-  // Serve activity videos
-  app.get('/api/activities/videos/:fileName', async (req: AuthenticatedRequest, res) => {
-    try {
-      const { fileName } = req.params;
-      const videoBuffer = await activityStorage.downloadActivityVideo(fileName);
-      
-      if (!videoBuffer) {
-        return res.status(404).json({ error: 'Video not found' });
-      }
-      
-      // Determine content type based on file extension
-      const ext = path.extname(fileName).toLowerCase();
-      let contentType = 'video/mp4';
-      if (ext === '.webm') contentType = 'video/webm';
-      else if (ext === '.ogg') contentType = 'video/ogg';
-      
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-      res.send(videoBuffer);
-    } catch (error) {
-      console.error('Error serving activity video:', error);
-      res.status(500).json({ error: 'Failed to retrieve video' });
-    }
-  });
-
-  // Serve instruction images
-  app.get('/api/activities/instructions/:fileName', async (req: AuthenticatedRequest, res) => {
-    try {
-      const { fileName } = req.params;
-      const imageBuffer = await activityStorage.downloadInstructionImage(fileName);
-      
-      if (!imageBuffer) {
-        return res.status(404).json({ error: 'Instruction image not found' });
-      }
-      
-      // Determine content type based on file extension
-      const ext = path.extname(fileName).toLowerCase();
-      let contentType = 'image/jpeg';
-      if (ext === '.png') contentType = 'image/png';
-      else if (ext === '.gif') contentType = 'image/gif';
-      else if (ext === '.webp') contentType = 'image/webp';
-      
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-      res.send(imageBuffer);
-    } catch (error) {
-      console.error('Error serving instruction image:', error);
-      res.status(500).json({ error: 'Failed to retrieve instruction image' });
-    }
-  });
+  // Note: Activity image routes moved to public section above
 
   // Activity Records routes
   app.post("/api/activity-records", async (req: AuthenticatedRequest, res) => {
@@ -3559,6 +3905,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to check permission" });
     }
   });
+
+  // Register S3 routes
+  app.use(s3Routes);
+  
+
 
   const httpServer = createServer(app);
   return httpServer;

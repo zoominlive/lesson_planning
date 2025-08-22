@@ -10,6 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { insertMilestoneSchema, type Milestone } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useEffect, useRef } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { Sparkles, Loader2 } from "lucide-react";
 
 interface MilestoneFormProps {
   milestone?: Milestone;
@@ -19,6 +21,7 @@ interface MilestoneFormProps {
 }
 
 export default function MilestoneForm({ milestone, onSuccess, onCancel, selectedLocationId }: MilestoneFormProps) {
+  const { toast } = useToast();
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>(
     milestone?.locationIds || (selectedLocationId ? [selectedLocationId] : [])
   );
@@ -26,10 +29,12 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
     milestone?.ageGroupIds || []
   );
   const [imageUrl, setImageUrl] = useState<string>(milestone?.imageUrl || "");
+  const [s3Key, setS3Key] = useState<string>(milestone?.s3Key || "");
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm({
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
     resolver: zodResolver(insertMilestoneSchema.omit({ locationIds: true, ageGroupIds: true })),
     defaultValues: {
       title: milestone?.title || "",
@@ -39,6 +44,10 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
       tenantId: "", // Will be set by backend
     },
   });
+
+  // Watch form values for image generation
+  const milestoneTitle = watch("title");
+  const milestoneDescription = watch("description");
 
   // Fetch all authorized locations
   const { data: locations = [] } = useQuery({
@@ -100,13 +109,7 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await fetch(`/api/milestones/${milestone!.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Failed to update milestone");
-      return response.json();
+      return apiRequest("PUT", `/api/milestones/${milestone!.id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/milestones"] });
@@ -134,10 +137,63 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
       if (!response.ok) throw new Error('Failed to upload image');
       const data = await response.json();
       setImageUrl(data.imageUrl);
+      if (data.s3Key) {
+        setS3Key(data.s3Key);
+      }
     } catch (error) {
       console.error('Error uploading image:', error);
     } finally {
       setUploadingImage(false);
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    if (!milestoneTitle || !milestoneDescription) {
+      toast({
+        title: "Missing information",
+        description: "Please enter a milestone title and description before generating an image.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingImage(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await fetch("/api/milestones/generate-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ 
+          title: milestoneTitle,
+          description: milestoneDescription,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to generate image");
+      }
+
+      const result = await response.json();
+      setImageUrl(result.url); // This is now a base64 data URL for display
+      setS3Key(''); // Clear S3 key since we haven't uploaded yet
+      
+      toast({
+        title: "Image generated successfully",
+        description: "Click 'Update Milestone' or 'Add Milestone' to save the image to your milestone.",
+      });
+    } catch (error) {
+      console.error("Image generation failed:", error);
+      toast({
+        title: "Failed to generate image",
+        description: error instanceof Error ? error.message : "Please try again or upload an image manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingImage(false);
     }
   };
 
@@ -147,6 +203,7 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
       locationIds: selectedLocationIds,
       ageGroupIds: selectedAgeGroupIds,
       imageUrl,
+      s3Key,
     };
 
     if (milestone) {
@@ -310,6 +367,27 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
             >
               {uploadingImage ? "Uploading..." : imageUrl ? "Change Image" : "Upload Image"}
             </Button>
+            
+            <Button
+              type="button"
+              onClick={handleGenerateImage}
+              disabled={generatingImage}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
+              data-testid="button-generate-image"
+            >
+              {generatingImage ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  AI Generate
+                </>
+              )}
+            </Button>
+            
             <span className="text-sm text-gray-500">
               Recommended: 400x300px, JPG or PNG
             </span>

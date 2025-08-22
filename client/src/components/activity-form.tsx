@@ -719,12 +719,29 @@ export default function ActivityForm({
         },
         body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error("Failed to update activity");
-      return response.json();
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to update activity: ${errorText}`);
+      }
+      
+      const result = await response.json();
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/activities"] });
+      toast({
+        title: "Activity updated",
+        description: "Your activity has been successfully updated.",
+      });
       onSuccess();
+    },
+    onError: (error) => {
+      toast({
+        title: "Update failed",
+        description: error instanceof Error ? error.message : "Failed to update activity",
+        variant: "destructive",
+      });
     },
   });
 
@@ -2498,6 +2515,7 @@ export default function ActivityForm({
             <h3 className="font-semibold text-lg">Step-by-step Instructions</h3>
             {!readOnly && (
               <div className="flex gap-2">
+                {/* Generate All Step Images button - temporarily hidden
                 <Button
                   type="button"
                   onClick={handleGenerateAllStepImages}
@@ -2523,6 +2541,7 @@ export default function ActivityForm({
                     </>
                   )}
                 </Button>
+                */}
                 <Button
                   type="button"
                   onClick={addInstruction}
@@ -2579,6 +2598,7 @@ export default function ActivityForm({
                             >
                               Upload
                             </Button>
+                            {/* Generate button for step images - temporarily hidden
                             <Button
                               type="button"
                               variant="outline"
@@ -2595,6 +2615,7 @@ export default function ActivityForm({
                                 ? "Generating..."
                                 : "Generate"}
                             </Button>
+                            */}
                           </>
                         )}
                       </div>
@@ -2614,6 +2635,7 @@ export default function ActivityForm({
                             ? "Uploading..."
                             : "Add Image"}
                         </Button>
+                        {/* Generate button for step images - temporarily hidden
                         <Button
                           type="button"
                           variant="outline"
@@ -2633,6 +2655,7 @@ export default function ActivityForm({
                             ? "Generating..."
                             : "Generate"}
                         </Button>
+                        */}
                       </>
                     ) : null}
                     <input

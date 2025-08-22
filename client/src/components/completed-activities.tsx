@@ -16,7 +16,7 @@ import { format, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthToken } from "@/lib/auth";
-import { activityReviewService } from "@/services/activityReviewService";
+
 
 interface CompletedActivityRecord {
   id: string;
@@ -232,30 +232,91 @@ export function CompletedActivities() {
         }
       }
       
-      const analysis = await activityReviewService.analyzeActivities({
-        activities: records.map(r => ({
-          id: r.id,
-          title: r.activityTitle,
-          description: r.activityDescription,
-          rating: r.rating,
-          ratingFeedback: r.ratingFeedback,
-          notes: r.notes,
-          materialsUsed: r.materialsUsed,
-          materialFeedback: r.materialFeedback,
-          teacherName: r.teacherName,
-          roomName: r.roomName,
-          completedAt: r.completedAt,
-        })),
-        dateRange: {
-          from: filters.dateFrom,
-          to: filters.dateTo,
+      // Build the analysis prompt for AI
+      const activitiesWithFeedback = records.filter(
+        a => a.ratingFeedback || a.notes || a.materialFeedback
+      );
+
+      let prompt = `
+Analyze the following completed childcare activities and their feedback to identify patterns, concerns, and areas for improvement.
+
+Overview:
+- Total Activities: ${stats.totalActivities}
+- Average Rating: ${stats.averageRating.toFixed(2)}/5
+- Date Range: ${filters.dateFrom.toLocaleDateString()} to ${filters.dateTo.toLocaleDateString()}`;
+
+      if (userFilter) {
+        prompt += `
+- Teacher Filter Applied: ${userFilter.userName}
+
+IMPORTANT: All activities in this analysis were completed by ${userFilter.userName}. 
+Please pay special attention to:
+- Any patterns in the feedback that may be related to this teacher's specific teaching style or approach
+- Consistent strengths or areas for improvement across their activities
+- Teacher-specific recommendations that could enhance their performance
+- Whether the feedback patterns suggest any teacher-related factors affecting activity outcomes`;
+      }
+
+      prompt += `
+
+Activities with Feedback (${activitiesWithFeedback.length}):
+${activitiesWithFeedback.map(activity => `
+Activity: ${activity.activityTitle}
+Rating: ${activity.rating || 'N/A'}/5
+Teacher: ${activity.teacherName}
+Room: ${activity.roomName}
+Materials Used: ${activity.materialsUsed === null ? 'Not specified' : activity.materialsUsed ? 'Yes' : 'No'}
+Activity Feedback: ${activity.ratingFeedback || 'None'}
+Teaching Notes: ${activity.notes || 'None'}
+Material Feedback: ${activity.materialFeedback || 'None'}
+`).join('\n---\n')}
+
+Please analyze this data and provide:
+1. Key concerns related to activities, materials, or children's outcomes${userFilter ? ` (including any teacher-specific patterns for ${userFilter.userName})` : ''}
+2. Specific recommendations to address these concerns${userFilter ? ` (include teacher-specific suggestions for ${userFilter.userName} if patterns are identified)` : ''}
+3. Positive highlights to celebrate
+4. An overall effectiveness score (0-100)
+
+Focus on practical, actionable insights that teachers and administrators can implement.${userFilter ? `
+Remember to consider teacher-specific factors since all activities were conducted by ${userFilter.userName}.` : ''}`;
+
+      const token = await getAuthToken();
+      const response = await fetch("/api/activity-review/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        totalActivities: stats.totalActivities,
-        averageRating: stats.averageRating,
-        userFilter: userFilter,
+        body: JSON.stringify({
+          prompt,
+          activities: records.map(r => ({
+            id: r.id,
+            title: r.activityTitle,
+            description: r.activityDescription,
+            rating: r.rating,
+            ratingFeedback: r.ratingFeedback,
+            notes: r.notes,
+            materialsUsed: r.materialsUsed,
+            materialFeedback: r.materialFeedback,
+            teacherName: r.teacherName,
+            roomName: r.roomName,
+            completedAt: r.completedAt,
+          })),
+          stats: {
+            totalActivities: stats.totalActivities,
+            averageRating: stats.averageRating,
+          }
+        }),
       });
-      
-      setAIAnalysis(analysis);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API Error:", errorText);
+        throw new Error(`Failed to analyze activities: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setAIAnalysis(data.analysis);
       setShowAIReview(true);
     } catch (error) {
       console.error("Failed to analyze activities:", error);
