@@ -368,13 +368,11 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
               {uploadingImage ? "Uploading..." : imageUrl ? "Change Image" : "Upload Image"}
             </Button>
             
-            {/* Temporarily hidden as requested by user */}
             <Button
               type="button"
               variant="outline"
               onClick={handleGenerateImage}
               disabled={generatingImage}
-              className="hidden"
               data-testid="button-generate-image"
             >
               {generatingImage ? (
