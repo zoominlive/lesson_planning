@@ -34,12 +34,12 @@ echo -e "\n${YELLOW}Checking database S3 keys...${NC}"
 # Check activities with S3 keys
 ACTIVITIES_WITH_S3=$(psql "$PRODUCTION_DATABASE_URL" -t -c "
     SELECT COUNT(*) FROM activities 
-    WHERE s3_key IS NOT NULL;
+    WHERE s3_image_key IS NOT NULL;
 " 2>/dev/null || echo "0")
 
 ACTIVITIES_WITHOUT_S3=$(psql "$PRODUCTION_DATABASE_URL" -t -c "
     SELECT COUNT(*) FROM activities 
-    WHERE image_url IS NOT NULL AND s3_key IS NULL;
+    WHERE image_url IS NOT NULL AND s3_image_key IS NULL;
 " 2>/dev/null || echo "0")
 
 echo "Activities with S3 keys: $ACTIVITIES_WITH_S3"
@@ -97,9 +97,9 @@ echo -e "\n${YELLOW}Sample S3 keys from database:${NC}"
 # Show sample S3 keys
 echo -e "\nSample activity S3 keys:"
 psql "$PRODUCTION_DATABASE_URL" -c "
-    SELECT title, s3_key 
+    SELECT title, s3_image_key 
     FROM activities 
-    WHERE s3_key IS NOT NULL 
+    WHERE s3_image_key IS NOT NULL 
     LIMIT 3;
 "
 
