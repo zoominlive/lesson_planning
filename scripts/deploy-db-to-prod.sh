@@ -21,14 +21,26 @@ echo -e "${YELLOW}========================================${NC}"
 if [ ! -f .env.production ]; then
     echo -e "${RED}Error: .env.production file not found${NC}"
     echo "Please create .env.production with your production DATABASE_URL"
+    echo "Copy .env.production.example to .env.production and fill in your credentials"
     exit 1
 fi
 
-# Load environment variables
-source .env  # Development database
-source .env.production  # Production database
+# Load production environment variables
+source .env.production
 
-# Extract database names from URLs
+# Development database URL is already in environment (Replit)
+# If not available, check for .env file
+if [ -z "$DATABASE_URL" ]; then
+    if [ -f .env ]; then
+        source .env
+    else
+        echo -e "${RED}Error: Development DATABASE_URL not found${NC}"
+        echo "DATABASE_URL environment variable is not set"
+        exit 1
+    fi
+fi
+
+# Extract database URLs
 DEV_DB_URL=${DATABASE_URL}
 PROD_DB_URL=${PRODUCTION_DATABASE_URL}
 
