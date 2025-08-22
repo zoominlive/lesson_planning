@@ -1361,8 +1361,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/activities/:id", checkPermission('activity', 'update'), async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
-      console.log("[PUT /api/activities/:id] Updating activity:", id);
-      console.log("[PUT /api/activities/:id] Request body keys:", Object.keys(req.body));
       
       // Check if imageUrl is a base64 image (temporary image from AI generation)
       let finalImageUrl = req.body.imageUrl;

@@ -711,7 +711,6 @@ export default function ActivityForm({
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
       const token = localStorage.getItem("authToken");
-      console.log("[Update Mutation] Sending data to API:", data);
       const response = await fetch(`/api/activities/${activity!.id}`, {
         method: "PUT",
         headers: {
@@ -723,12 +722,10 @@ export default function ActivityForm({
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("[Update Mutation] Update failed with error:", errorText);
         throw new Error(`Failed to update activity: ${errorText}`);
       }
       
       const result = await response.json();
-      console.log("[Update Mutation] Update successful, result:", result);
       return result;
     },
     onSuccess: () => {
@@ -740,7 +737,6 @@ export default function ActivityForm({
       onSuccess();
     },
     onError: (error) => {
-      console.error("[Update Mutation] Error:", error);
       toast({
         title: "Update failed",
         description: error instanceof Error ? error.message : "Failed to update activity",
@@ -1291,10 +1287,6 @@ export default function ActivityForm({
       messLevel: dataWithoutPrompt.messLevel || null,
       variations: dataWithoutPrompt.variations || [],
     };
-
-    console.log("[Activity Form] Submitting data:", formData);
-    console.log("[Activity Form] Activity ID:", activity?.id);
-    console.log("[Activity Form] Image URL:", activityImageUrl);
 
     if (activity) {
       updateMutation.mutate(formData);
