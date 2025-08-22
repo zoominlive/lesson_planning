@@ -15,7 +15,6 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { materialStorage } from "./materialStorage";
-import { activityStorage } from "./activityStorage";
 import { perplexityService } from "./services/perplexityService";
 import { openAIService } from "./services/openAiService";
 import { imagePromptGenerationService } from "./services/imagePromptGenerationService";
@@ -195,10 +194,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Legacy route for backward compatibility - serve from local storage or redirect to S3
+  // Legacy route - redirect to S3 for all activity images
   app.get('/api/activities/images/:filename', async (req, res) => {
     try {
-      // First check if this activity has been migrated to S3
+      // Check if this activity exists and has S3 storage
       const activities = await storage.getActivities();
       const activity = activities.find(a => 
         a.imageUrl?.includes(req.params.filename) || 
@@ -217,73 +216,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.redirect(signedUrl);
       }
       
-      // Fallback to local storage
-      const imageBuffer = await activityStorage.downloadActivityImage(req.params.filename);
-      if (!imageBuffer) {
-        return res.status(404).json({ error: 'Image not found' });
-      }
-      
-      // Determine content type based on file extension
-      const ext = path.extname(req.params.filename).toLowerCase();
-      let contentType = 'image/jpeg';
-      if (ext === '.png') contentType = 'image/png';
-      else if (ext === '.gif') contentType = 'image/gif';
-      else if (ext === '.webp') contentType = 'image/webp';
-      
-      res.set('Content-Type', contentType);
-      res.set('Cache-Control', 'public, max-age=3600');
-      res.send(imageBuffer);
+      // No local storage fallback - image not found
+      res.status(404).json({ error: 'Image not found' });
     } catch (error) {
       console.error('Error serving activity image:', error);
       res.status(500).json({ error: 'Failed to retrieve image' });
     }
   });
   
-  // Serve activity videos from local storage (public access)
+  // Videos are now stored in S3 - placeholder for future implementation
   app.get('/api/activities/videos/:filename', async (req, res) => {
-    try {
-      const videoBuffer = await activityStorage.downloadActivityVideo(req.params.filename);
-      if (!videoBuffer) {
-        return res.status(404).json({ error: 'Video not found' });
-      }
-      
-      // Determine content type based on file extension
-      const ext = path.extname(req.params.filename).toLowerCase();
-      let contentType = 'video/mp4';
-      if (ext === '.webm') contentType = 'video/webm';
-      else if (ext === '.ogg') contentType = 'video/ogg';
-      
-      res.set('Content-Type', contentType);
-      res.set('Cache-Control', 'public, max-age=3600');
-      res.send(videoBuffer);
-    } catch (error) {
-      console.error('Error serving activity video:', error);
-      res.status(500).json({ error: 'Failed to retrieve video' });
-    }
+    res.status(404).json({ error: 'Video storage has been migrated to S3' });
   });
   
-  // Serve instruction images from local storage (public access)
+  // Instructions are now stored in S3 - placeholder for future implementation
   app.get('/api/activities/instructions/:filename', async (req, res) => {
-    try {
-      const imageBuffer = await activityStorage.downloadInstructionImage(req.params.filename);
-      if (!imageBuffer) {
-        return res.status(404).json({ error: 'Image not found' });
-      }
-      
-      // Determine content type based on file extension
-      const ext = path.extname(req.params.filename).toLowerCase();
-      let contentType = 'image/jpeg';
-      if (ext === '.png') contentType = 'image/png';
-      else if (ext === '.gif') contentType = 'image/gif';
-      else if (ext === '.webp') contentType = 'image/webp';
-      
-      res.set('Content-Type', contentType);
-      res.set('Cache-Control', 'public, max-age=3600');
-      res.send(imageBuffer);
-    } catch (error) {
-      console.error('Error serving instruction image:', error);
-      res.status(500).json({ error: 'Failed to retrieve image' });
-    }
+    res.status(404).json({ error: 'Instruction storage has been migrated to S3' });
   });
   
   // Apply authentication middleware to all API routes EXCEPT the public ones above
@@ -1511,7 +1459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Upload route for activity media
+  // Upload route for activity media - now uses S3
   app.post('/api/activities/upload', upload.single('file'), async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.file) {
@@ -1523,23 +1471,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'File type not specified' });
       }
       
-      let url: string;
+      // Upload to S3
+      const result = await s3Service.uploadImage({
+        tenantId: req.tenantId || '',
+        type: 'activity',
+        originalName: req.file.originalname,
+        buffer: req.file.buffer,
+        contentType: req.file.mimetype
+      });
       
-      switch(type) {
-        case 'image':
-          url = await activityStorage.uploadActivityImage(req.file.buffer, req.file.originalname);
-          break;
-        case 'video':
-          url = await activityStorage.uploadActivityVideo(req.file.buffer, req.file.originalname);
-          break;
-        case 'instruction':
-          url = await activityStorage.uploadInstructionImage(req.file.buffer, req.file.originalname);
-          break;
-        default:
-          return res.status(400).json({ error: 'Invalid file type' });
-      }
-      
-      res.json({ url });
+      res.json({ url: `/api/activities/s3/${result.fileName}` });
     } catch (error) {
       console.error('Activity upload error:', error);
       res.status(500).json({ error: 'Failed to upload file' });
@@ -1578,35 +1519,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Failed to generate step image' });
       }
       
-      // Save the generated image locally
-      const imageResponse = await fetch(result.url);
-      const buffer = await imageResponse.arrayBuffer();
-      
-      // Generate a unique filename
-      const timestamp = Date.now();
-      const uniqueId = crypto.randomUUID().substring(0, 8);
-      const filename = `ai_generated_${timestamp}_${uniqueId}.png`;
-      const imagePath = path.join(
-        process.cwd(),
-        "public",
-        "activity-images",
-        "images",
-        filename
-      );
-      
-      // Ensure directory exists
-      const dir = path.dirname(imagePath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      
-      // Save the image
-      fs.writeFileSync(imagePath, Buffer.from(buffer));
-      
-      const localUrl = `/api/activities/images/${filename}`;
-      console.log("[ImagePromptGeneration] Step image saved locally:", localUrl);
-      
-      res.json({ url: localUrl, prompt: result.prompt });
+      // Return the generated image URL directly (for display in frontend)
+      // Note: When saving the activity, the image will be uploaded to S3
+      res.json({ url: result.url, prompt: result.prompt });
     } catch (error) {
       console.error('Step image generation error:', error);
       res.status(500).json({ 
@@ -1869,82 +1784,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve activity images
-  app.get('/api/activities/images/:fileName', async (req: AuthenticatedRequest, res) => {
-    try {
-      const { fileName } = req.params;
-      const imageBuffer = await activityStorage.downloadActivityImage(fileName);
-      
-      if (!imageBuffer) {
-        return res.status(404).json({ error: 'Image not found' });
-      }
-      
-      // Determine content type based on file extension
-      const ext = path.extname(fileName).toLowerCase();
-      let contentType = 'image/jpeg';
-      if (ext === '.png') contentType = 'image/png';
-      else if (ext === '.gif') contentType = 'image/gif';
-      else if (ext === '.webp') contentType = 'image/webp';
-      
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-      res.send(imageBuffer);
-    } catch (error) {
-      console.error('Error serving activity image:', error);
-      res.status(500).json({ error: 'Failed to retrieve image' });
-    }
-  });
-
-  // Serve activity videos
-  app.get('/api/activities/videos/:fileName', async (req: AuthenticatedRequest, res) => {
-    try {
-      const { fileName } = req.params;
-      const videoBuffer = await activityStorage.downloadActivityVideo(fileName);
-      
-      if (!videoBuffer) {
-        return res.status(404).json({ error: 'Video not found' });
-      }
-      
-      // Determine content type based on file extension
-      const ext = path.extname(fileName).toLowerCase();
-      let contentType = 'video/mp4';
-      if (ext === '.webm') contentType = 'video/webm';
-      else if (ext === '.ogg') contentType = 'video/ogg';
-      
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-      res.send(videoBuffer);
-    } catch (error) {
-      console.error('Error serving activity video:', error);
-      res.status(500).json({ error: 'Failed to retrieve video' });
-    }
-  });
-
-  // Serve instruction images
-  app.get('/api/activities/instructions/:fileName', async (req: AuthenticatedRequest, res) => {
-    try {
-      const { fileName } = req.params;
-      const imageBuffer = await activityStorage.downloadInstructionImage(fileName);
-      
-      if (!imageBuffer) {
-        return res.status(404).json({ error: 'Instruction image not found' });
-      }
-      
-      // Determine content type based on file extension
-      const ext = path.extname(fileName).toLowerCase();
-      let contentType = 'image/jpeg';
-      if (ext === '.png') contentType = 'image/png';
-      else if (ext === '.gif') contentType = 'image/gif';
-      else if (ext === '.webp') contentType = 'image/webp';
-      
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-      res.send(imageBuffer);
-    } catch (error) {
-      console.error('Error serving instruction image:', error);
-      res.status(500).json({ error: 'Failed to retrieve instruction image' });
-    }
-  });
+  // Note: Activity image routes moved to public section above
 
   // Activity Records routes
   app.post("/api/activity-records", async (req: AuthenticatedRequest, res) => {
