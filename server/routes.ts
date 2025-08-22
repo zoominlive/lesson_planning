@@ -418,7 +418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const milestoneDescription = description || '';
       
       // Create a prompt that matches the activities style (realistic DSLR photos, no text)
-      const imagePrompt = `Ultra-realistic DSLR photograph of a cozy, normal-sized childcare classroom. Shows 6-8 children demonstrating the developmental milestone: ${milestoneTitle}${milestoneDescription ? ` - ${milestoneDescription}` : ''}. Standard classroom with normal-height windows, realistic proportions. NO TEXT OR LETTERS IN IMAGE. Sharp realistic textures, natural lighting, professional color grading. Shallow depth of field focusing on children engaged in the milestone activity. Shot with 35mm lens for natural perspective. Warm, inviting atmosphere showing authentic childhood development moment.`;
+      const imagePrompt = `Ultra-realistic DSLR photograph of a cozy, normal-sized childcare classroom. Shows 6-8 YOUNG CHILDREN (ages 2-5 years old, toddlers and preschoolers) demonstrating the developmental milestone: ${milestoneTitle}${milestoneDescription ? ` - ${milestoneDescription}` : ''}. IMPORTANT: Children must be UNDER 6 years old - early childhood age only. Standard classroom with age-appropriate furniture for toddlers/preschoolers, normal-height windows, realistic proportions. NO TEXT OR LETTERS IN IMAGE. Sharp realistic textures, natural lighting, professional color grading. Shallow depth of field focusing on young children engaged in the milestone activity. Shot with 35mm lens for natural perspective. Warm, inviting early childhood classroom atmosphere.`;
       
       console.log('[Milestone Image Generation] Using prompt:', imagePrompt);
       
