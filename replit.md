@@ -21,6 +21,12 @@ This is a comprehensive lesson planning application designed specifically for ea
     - Preserved exact material-photo associations during migration
     - Updated database photoUrl field to use `/api/materials/s3/{filename}` format for clarity
     - Added dedicated S3 route handler for material images
+  - **Activity Images Migration Complete**: Successfully migrated all activity images to S3
+    - Migrated 13 activity images from local storage to S3 bucket
+    - Preserved exact activity-image associations during migration
+    - Updated database imageUrl field to use `/api/activities/s3/{filename}` format
+    - Added dedicated S3 route handler for activity images with automatic redirect
+    - Maintained backward compatibility with legacy local storage routes
 - **Permission System Fix**: Fixed milestone CRUD operations authentication
   - Added missing checkPermission middleware to milestone routes (create, update, delete)
   - Ensures proper authorization for milestone management operations

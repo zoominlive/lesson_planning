@@ -165,9 +165,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Serve activity images from local storage (public access)
+  // Serve activity images from S3 - new format for S3-stored images
+  app.get('/api/activities/s3/:filename', async (req, res) => {
+    try {
+      const filename = req.params.filename;
+      
+      // Find activity by S3 filename
+      const activities = await storage.getActivities();
+      const activity = activities.find(a => 
+        a.s3ImageKey?.includes(filename)
+      );
+      
+      if (activity && activity.s3ImageKey) {
+        // Generate a signed URL for the S3 object
+        const signedUrl = await s3Service.getSignedUrl({
+          key: activity.s3ImageKey,
+          operation: 'get',
+          expiresIn: 3600,
+        });
+        
+        // Redirect to the signed URL
+        return res.redirect(signedUrl);
+      }
+      
+      res.status(404).json({ error: 'Image not found in S3' });
+    } catch (error) {
+      console.error('Error serving activity S3 image:', error);
+      res.status(500).json({ error: 'Failed to retrieve S3 image' });
+    }
+  });
+
+  // Legacy route for backward compatibility - serve from local storage or redirect to S3
   app.get('/api/activities/images/:filename', async (req, res) => {
     try {
+      // First check if this activity has been migrated to S3
+      const activities = await storage.getActivities();
+      const activity = activities.find(a => 
+        a.imageUrl?.includes(req.params.filename) || 
+        a.s3ImageKey?.includes(req.params.filename)
+      );
+      
+      if (activity && activity.s3ImageKey) {
+        // Generate a signed URL for the S3 object
+        const signedUrl = await s3Service.getSignedUrl({
+          key: activity.s3ImageKey,
+          operation: 'get',
+          expiresIn: 3600,
+        });
+        
+        // Redirect to the signed URL
+        return res.redirect(signedUrl);
+      }
+      
+      // Fallback to local storage
       const imageBuffer = await activityStorage.downloadActivityImage(req.params.filename);
       if (!imageBuffer) {
         return res.status(404).json({ error: 'Image not found' });
