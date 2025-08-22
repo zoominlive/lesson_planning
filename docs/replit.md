@@ -5,6 +5,7 @@ This project is a comprehensive lesson planning application for early childhood 
 Preferred communication style: Simple, everyday language.
 
 # Recent Changes (August 2025)
+- **Deployment Readiness Improvements** (August 22, 2025): Added health check endpoints (/health, /ready, /api/health, /api/ready) for deployment monitoring and readiness probes. Removed reusePort option to prevent deployment issues. Moved port declaration to module scope for better initialization
 - **Production Cleanup Completed**: Removed 16 test/development files and organized documentation into docs/ folder
 - **UI Component Optimization Phase 1**: Removed 4 unused UI components with external dependencies (carousel, chart, input-otp, command) and eliminated 41 total packages, achieving significant bundle size reduction from 608 to 567 packages
 - **UI Component Optimization Phase 2**: Removed 7 additional large unused UI components (sidebar, menubar, navigation-menu, sheet, context-menu, hover-card, pagination) reducing codebase by ~50KB. Total cleanup: 11 components removed, 67% UI code reduction achieved

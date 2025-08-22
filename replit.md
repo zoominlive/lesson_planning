@@ -2,7 +2,12 @@
 
 This is a comprehensive lesson planning application designed specifically for early childhood educators. The system enables teachers to create, manage, and organize weekly lesson plans with activities aligned to developmental milestones. It features a multi-tenant architecture supporting multiple organizations, each with their own locations and rooms. The application is designed for iframe integration with secure JWT authentication and includes tablet-optimized views for mobile WebView embedding.
 
-## Recent Changes (January 2025)
+## Recent Changes (2025)
+- **Deployment Readiness Improvements** (August 22, 2025):
+  - Added health check endpoints (/health, /ready, /api/health, /api/ready) for deployment monitoring
+  - Implemented readiness probes for deployment health checks
+  - Removed reusePort option to prevent deployment initialization issues
+  - Moved port declaration to module scope for better initialization
 - **Production Deployment Scripts** (January 22, 2025):
   - Created automated deployment script for copying development database to production
   - Added verification script to check S3 migration status after deployment
