@@ -403,7 +403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate AI image for milestone
   app.post('/api/milestones/generate-image', async (req: AuthenticatedRequest, res) => {
     try {
-      const { name, description, prompt } = req.body;
+      const { title, description, prompt } = req.body;
       
       // Check if OPENAI_API_KEY is available
       if (!process.env.OPENAI_API_KEY) {
@@ -413,12 +413,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // For milestones, we want developmental progress visualization
-      const milestoneName = name || prompt?.split('.')[0] || 'Milestone';
+      // For milestones, we want to match the activities style - realistic photos
+      const milestoneTitle = title || prompt?.split('.')[0] || 'Milestone';
       const milestoneDescription = description || '';
       
-      // Create a prompt for milestone visualization
-      const imagePrompt = `Educational developmental milestone illustration showing ${milestoneName}${milestoneDescription ? `, ${milestoneDescription}` : ''}. Bright, child-friendly illustration style, colorful and engaging, simple clean design, educational poster style. Show a child demonstrating or achieving this developmental milestone in a safe, positive environment.`;
+      // Create a prompt that matches the activities style (realistic DSLR photos, no text)
+      const imagePrompt = `Ultra-realistic DSLR photograph of a cozy, normal-sized childcare classroom. Shows 6-8 children demonstrating the developmental milestone: ${milestoneTitle}${milestoneDescription ? ` - ${milestoneDescription}` : ''}. Standard classroom with normal-height windows, realistic proportions. NO TEXT OR LETTERS IN IMAGE. Sharp realistic textures, natural lighting, professional color grading. Shallow depth of field focusing on children engaged in the milestone activity. Shot with 35mm lens for natural perspective. Warm, inviting atmosphere showing authentic childhood development moment.`;
       
       console.log('[Milestone Image Generation] Using prompt:', imagePrompt);
       
