@@ -275,22 +275,9 @@ export default function MilestonesLibrary() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredMilestones.map((milestone) => (
             <Card key={milestone.id} className="material-shadow overflow-hidden hover:shadow-lg transition-shadow">
-              {/* Category Header */}
-              <div className={`bg-gradient-to-r ${getCategoryGradient(milestone.category)} text-white p-2`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    {getCategoryIcon(milestone.category)}
-                    <span className="ml-1.5 text-xs font-medium">{milestone.category}</span>
-                  </div>
-                  <span className="bg-white/20 text-white px-1.5 py-0.5 rounded text-xs" data-testid={`milestone-age-${milestone.id}`}>
-                    {getAgeGroupNames(milestone.ageGroupIds || [])}
-                  </span>
-                </div>
-              </div>
-              
               {/* Milestone Image */}
               <div 
-                className="w-full h-24 bg-gray-100" 
+                className="w-full h-48 bg-gray-100" 
                 style={{
                   background: milestone.imageUrl 
                     ? `url(${milestone.imageUrl}) center/cover`
@@ -298,7 +285,7 @@ export default function MilestonesLibrary() {
                 }}
               />
               
-              <CardContent className="p-3">
+              <div className="p-3">
                 <h4 className="font-medium text-charcoal text-sm mb-1 line-clamp-2" data-testid={`milestone-title-${milestone.id}`}>
                   {milestone.title}
                 </h4>
@@ -332,7 +319,7 @@ export default function MilestonesLibrary() {
                     </Button>
                   </div>
                 </div>
-              </CardContent>
+              </div>
             </Card>
           ))}
         </div>
