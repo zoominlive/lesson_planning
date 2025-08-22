@@ -290,7 +290,7 @@ export default function MilestonesLibrary() {
               
               {/* Milestone Image */}
               <div 
-                className="w-full h-32 bg-gray-100" 
+                className="w-full h-48 bg-gray-100" 
                 style={{
                   background: milestone.imageUrl 
                     ? `url(${milestone.imageUrl}) center/cover`
