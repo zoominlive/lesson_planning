@@ -3,6 +3,11 @@
 This is a comprehensive lesson planning application designed specifically for early childhood educators. The system enables teachers to create, manage, and organize weekly lesson plans with activities aligned to developmental milestones. It features a multi-tenant architecture supporting multiple organizations, each with their own locations and rooms. The application is designed for iframe integration with secure JWT authentication and includes tablet-optimized views for mobile WebView embedding.
 
 ## Recent Changes (January 2025)
+- **Production Deployment Scripts** (January 22, 2025):
+  - Created automated deployment script for copying development database to production
+  - Added verification script to check S3 migration status after deployment
+  - Database deployment strategy: Complete overwrite of production with development data
+  - Scripts location: `scripts/deploy-db-to-prod.sh` and `scripts/verify-s3-deployment.sh`
 - **AWS S3 Integration**: Migrated from local file storage to AWS S3 for scalable cloud storage
   - Added S3Service for upload, download, and signed URL generation
   - Implemented SignedUrlService for secure temporary access to S3 resources
