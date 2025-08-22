@@ -73,15 +73,41 @@ if [ "$CONFIRM" != "DEPLOY" ]; then
     exit 1
 fi
 
-echo -e "\n${YELLOW}Step 4: Dropping and recreating production database...${NC}"
-# Extract database name from URL
-PROD_DB_NAME=$(echo $PROD_DB_URL | sed -n 's/.*\/\([^?]*\).*/\1/p')
-PROD_CONNECTION=$(echo $PROD_DB_URL | sed "s/\/$PROD_DB_NAME/\/postgres/")
+echo -e "\n${YELLOW}Step 4: Clearing production database tables...${NC}"
+# Instead of dropping the entire database (which requires superuser privileges),
+# we'll drop all tables in the existing database
+psql "$PROD_DB_URL" << EOF
+-- Drop all tables in the current schema
+DO \$\$ 
+DECLARE 
+    r RECORD;
+BEGIN
+    -- Drop all tables
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') 
+    LOOP
+        EXECUTE 'DROP TABLE IF EXISTS public.' || quote_ident(r.tablename) || ' CASCADE';
+    END LOOP;
+    
+    -- Drop all sequences
+    FOR r IN (SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public')
+    LOOP
+        EXECUTE 'DROP SEQUENCE IF EXISTS public.' || quote_ident(r.sequence_name) || ' CASCADE';
+    END LOOP;
+    
+    -- Drop all types
+    FOR r IN (SELECT typname FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid WHERE n.nspname = 'public' AND t.typtype = 'e')
+    LOOP
+        EXECUTE 'DROP TYPE IF EXISTS public.' || quote_ident(r.typname) || ' CASCADE';
+    END LOOP;
+END \$\$;
+EOF
 
-# Drop and recreate database
-psql "$PROD_CONNECTION" -c "DROP DATABASE IF EXISTS \"$PROD_DB_NAME\";"
-psql "$PROD_CONNECTION" -c "CREATE DATABASE \"$PROD_DB_NAME\";"
-echo -e "${GREEN}✓ Production database recreated${NC}"
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Production database tables cleared${NC}"
+else
+    echo -e "${RED}Failed to clear production database tables${NC}"
+    exit 1
+fi
 
 echo -e "\n${YELLOW}Step 5: Restoring development data to production...${NC}"
 psql "$PROD_DB_URL" < "$DEV_EXPORT_FILE"
