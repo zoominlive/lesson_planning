@@ -370,9 +370,9 @@ export default function MilestoneForm({ milestone, onSuccess, onCancel, selected
             
             <Button
               type="button"
-              variant="outline"
               onClick={handleGenerateImage}
               disabled={generatingImage}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
               data-testid="button-generate-image"
             >
               {generatingImage ? (
