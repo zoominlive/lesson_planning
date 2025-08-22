@@ -23,7 +23,7 @@ import { milestoneStorage } from "./milestoneStorage";
 import s3Routes from "./routes/s3Routes";
 import { s3Service } from "./services/s3Service";
 import { signedUrlService } from "./services/signedUrlService";
-import { S3MigrationService } from "./services/s3MigrationService";
+
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -3909,43 +3909,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register S3 routes
   app.use(s3Routes);
   
-  // S3 Migration endpoints
-  const s3MigrationService = new S3MigrationService();
-  
-  // Migrate all milestone images to S3
-  app.post('/api/s3/migrate/milestones', authenticateToken, checkPermission('update', 'milestones'), async (req: AuthenticatedRequest, res) => {
-    try {
-      console.log('[POST /api/s3/migrate/milestones] Starting milestone migration...');
-      const results = await s3MigrationService.migrateMilestoneImages();
-      res.json({
-        success: true,
-        results
-      });
-    } catch (error) {
-      console.error('[POST /api/s3/migrate/milestones] Migration error:', error);
-      res.status(500).json({ 
-        success: false,
-        error: error instanceof Error ? error.message : 'Migration failed' 
-      });
-    }
-  });
-  
-  // Refresh milestone signed URLs
-  app.post('/api/s3/refresh/milestones', authenticateToken, async (req: AuthenticatedRequest, res) => {
-    try {
-      const results = await s3MigrationService.refreshAllMilestoneSignedUrls();
-      res.json({
-        success: true,
-        results
-      });
-    } catch (error) {
-      console.error('[POST /api/s3/refresh/milestones] Refresh error:', error);
-      res.status(500).json({ 
-        success: false,
-        error: error instanceof Error ? error.message : 'Refresh failed' 
-      });
-    }
-  });
+
 
   const httpServer = createServer(app);
   return httpServer;
