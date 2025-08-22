@@ -4,3 +4,12 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Environment files with sensitive data
+.env
+.env.production
+.env.local
+.env.*.local
+
+# Database backups (may contain sensitive data)
+database-backups/

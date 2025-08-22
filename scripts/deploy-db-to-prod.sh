@@ -17,32 +17,26 @@ echo -e "${YELLOW}Database Deployment Script${NC}"
 echo -e "${YELLOW}Development → Production${NC}"
 echo -e "${YELLOW}========================================${NC}"
 
-# Check if .env.production exists
-if [ ! -f .env.production ]; then
-    echo -e "${RED}Error: .env.production file not found${NC}"
-    echo "Please create .env.production with your production DATABASE_URL"
-    echo "Copy .env.production.example to .env.production and fill in your credentials"
+# Production secrets are now in Replit Secrets
+echo -e "${GREEN}Using production database from Replit Secrets${NC}"
+
+# Development database URL is already in environment (Replit)
+if [ -z "$DATABASE_URL" ]; then
+    echo -e "${RED}Error: Development DATABASE_URL not found${NC}"
+    echo "DATABASE_URL environment variable is not set"
     exit 1
 fi
 
-# Load production environment variables
-source .env.production
-
-# Development database URL is already in environment (Replit)
-# If not available, check for .env file
-if [ -z "$DATABASE_URL" ]; then
-    if [ -f .env ]; then
-        source .env
-    else
-        echo -e "${RED}Error: Development DATABASE_URL not found${NC}"
-        echo "DATABASE_URL environment variable is not set"
-        exit 1
-    fi
+# Production database URL should be in Replit secrets as PROD_DATABASE_URL
+if [ -z "$PROD_DATABASE_URL" ]; then
+    echo -e "${RED}Error: Production PROD_DATABASE_URL not found${NC}"
+    echo "Please add PROD_DATABASE_URL to Replit Secrets"
+    exit 1
 fi
 
 # Extract database URLs
 DEV_DB_URL=${DATABASE_URL}
-PROD_DB_URL=${PRODUCTION_DATABASE_URL}
+PROD_DB_URL=${PROD_DATABASE_URL}
 
 if [ -z "$DEV_DB_URL" ] || [ -z "$PROD_DB_URL" ]; then
     echo -e "${RED}Error: Database URLs not found in environment files${NC}"
@@ -133,4 +127,4 @@ echo "2. Verify environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
 echo "3. Restart the production server"
 echo "4. Test image loading with S3 signed URLs"
 echo -e "\n${YELLOW}Backup location:${NC} $PROD_BACKUP_FILE"
-echo -e "${YELLOW}To rollback:${NC} psql \$PRODUCTION_DATABASE_URL < $PROD_BACKUP_FILE"
+echo -e "${YELLOW}To rollback:${NC} psql \$PROD_DATABASE_URL < $PROD_BACKUP_FILE"
