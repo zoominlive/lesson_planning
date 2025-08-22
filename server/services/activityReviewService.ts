@@ -1,4 +1,4 @@
-import { getAuthToken } from "@/lib/auth";
+// Server-side service - no auth token needed as this runs on the backend
 
 interface ActivityReviewRequest {
   activities: Array<{
@@ -57,46 +57,21 @@ export class ActivityReviewService {
     return ActivityReviewService.instance;
   }
 
-  async analyzeActivities(request: ActivityReviewRequest): Promise<ActivityReviewAnalysis> {
-    const token = await getAuthToken();
-    
-    // Prepare the data for AI analysis
+  // Server-side method to build the analysis prompt
+  buildAnalysisRequest(request: ActivityReviewRequest): { prompt: string; activities: any[]; stats: any } {
     const analysisPrompt = this.buildAnalysisPrompt(request);
     
-    const response = await fetch("/api/activity-review/analyze", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        prompt: analysisPrompt,
-        activities: request.activities,
-        stats: {
-          totalActivities: request.totalActivities,
-          averageRating: request.averageRating,
-        }
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("API Error:", errorText);
-      throw new Error(`Failed to analyze activities: ${response.statusText}`);
-    }
-
-    const contentType = response.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      const text = await response.text();
-      console.error("Non-JSON response:", text);
-      throw new Error("Server returned non-JSON response");
-    }
-
-    const data = await response.json();
-    return data.analysis;
+    return {
+      prompt: analysisPrompt,
+      activities: request.activities,
+      stats: {
+        totalActivities: request.totalActivities,
+        averageRating: request.averageRating,
+      }
+    };
   }
 
-  private buildAnalysisPrompt(request: ActivityReviewRequest): string {
+  buildAnalysisPrompt(request: ActivityReviewRequest): string {
     const activitiesWithFeedback = request.activities.filter(
       a => a.ratingFeedback || a.notes || a.materialFeedback
     );
