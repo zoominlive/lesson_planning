@@ -19,6 +19,8 @@ This is a comprehensive lesson planning application designed specifically for ea
     - Fixed 3 materials with missing images using AI-generated placeholders
     - Updated material image serving to use S3 signed URLs with automatic redirect
     - Preserved exact material-photo associations during migration
+    - Updated database photoUrl field to use `/api/materials/s3/{filename}` format for clarity
+    - Added dedicated S3 route handler for material images
 - **Permission System Fix**: Fixed milestone CRUD operations authentication
   - Added missing checkPermission middleware to milestone routes (create, update, delete)
   - Ensures proper authorization for milestone management operations

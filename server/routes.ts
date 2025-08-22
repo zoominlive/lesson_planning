@@ -97,7 +97,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Serve material images - redirect to S3 signed URLs
+  // Serve material images from S3 - new format for S3-stored images
+  app.get('/api/materials/s3/:filename', async (req, res) => {
+    try {
+      const filename = req.params.filename;
+      
+      // Find material by S3 filename
+      const materials = await storage.getMaterials();
+      const material = materials.find(m => 
+        m.s3Key?.includes(filename)
+      );
+      
+      if (material && material.s3Key) {
+        // Generate a signed URL for the S3 object
+        const signedUrl = await s3Service.getSignedUrl({
+          key: material.s3Key,
+          operation: 'get',
+          expiresIn: 3600,
+        });
+        
+        // Redirect to the signed URL
+        return res.redirect(signedUrl);
+      }
+      
+      res.status(404).json({ error: 'Image not found in S3' });
+    } catch (error) {
+      console.error('Error serving material S3 image:', error);
+      res.status(500).json({ error: 'Failed to retrieve S3 image' });
+    }
+  });
+
+  // Legacy route for backward compatibility - redirect to S3 signed URLs
   app.get('/api/materials/images/:filename', async (req, res) => {
     try {
       const filename = req.params.filename;
