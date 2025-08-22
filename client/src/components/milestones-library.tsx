@@ -290,7 +290,7 @@ export default function MilestonesLibrary() {
               
               {/* Milestone Image */}
               <div 
-                className="w-full h-24 bg-gray-100" 
+                className="w-full h-32 bg-gray-100" 
                 style={{
                   background: milestone.imageUrl 
                     ? `url(${milestone.imageUrl}) center/cover`
@@ -298,7 +298,7 @@ export default function MilestonesLibrary() {
                 }}
               />
               
-              <CardContent className="p-3">
+              <div className="p-3">
                 <h4 className="font-medium text-charcoal text-sm mb-1 line-clamp-2" data-testid={`milestone-title-${milestone.id}`}>
                   {milestone.title}
                 </h4>
@@ -332,7 +332,7 @@ export default function MilestonesLibrary() {
                     </Button>
                   </div>
                 </div>
-              </CardContent>
+              </div>
             </Card>
           ))}
         </div>
