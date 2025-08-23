@@ -3,6 +3,13 @@
 This is a comprehensive lesson planning application designed specifically for early childhood educators. The system enables teachers to create, manage, and organize weekly lesson plans with activities aligned to developmental milestones. It features a multi-tenant architecture supporting multiple organizations, each with their own locations and rooms. The application is designed for iframe integration with secure JWT authentication and includes tablet-optimized views for mobile WebView embedding.
 
 ## Recent Changes (2025)
+- **Security Enhancement - Migrated to Replit Secrets** (August 23, 2025):
+  - Removed `.env.production` file containing exposed database credentials
+  - Migrated all production secrets to Replit's encrypted Secrets system
+  - Production database now uses `PROD_DATABASE_URL` from Replit Secrets
+  - Updated deployment scripts to use secure environment variables
+  - Added `.env` files to `.gitignore` to prevent credential leaks
+  - All sensitive data now properly secured, no credentials stored in files
 - **Deployment Readiness Improvements** (August 22, 2025):
   - Added health check endpoints (/health, /ready, /api/health, /api/ready) for deployment monitoring
   - Implemented readiness probes for deployment health checks

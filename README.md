@@ -141,22 +141,31 @@ Key entities:
 - JWT secret for authentication (128-character hex string)
 
 ### Environment Variables
-Create a `.env` file with:
+
+For **development**, create a `.env` file (never commit this file):
 ```env
-# Database
+# Development database (optional, if not using default)
 DATABASE_URL=postgresql://user:password@host/database
 
-# Authentication
+# Development mode
+NODE_ENV=development
+```
+
+For **production on Replit**, use the Secrets tab to add:
+```env
+# Production database (required)
+PROD_DATABASE_URL=postgresql://user:password@host/database?sslmode=require
+
+# Authentication (required)
 JWT_SECRET=your-128-character-hex-secret
 TENANT_ID=your-tenant-uuid
 
-# AI Services (Optional)
+# AI Services (optional)
 OPENAI_API_KEY=your-openai-api-key
 PERPLEXITY_API_KEY=your-perplexity-api-key
-
-# Development
-NODE_ENV=development
 ```
+
+**Important**: Never store production credentials in files. Always use Replit Secrets for sensitive data.
 
 ### Installation Steps
 
