@@ -4,10 +4,10 @@
 // import * as mysqlSchema from "@shared/mysql-schema";
 import dotenv from 'dotenv';
 
-// Load environment variables
+// Load environment variables from .env.local first
 dotenv.config({ path: '.env.local' });
 
-// Check DB_TYPE from environment
+// Check DB_TYPE from environment - allow runtime override
 const DB_TYPE = process.env.DB_TYPE || 'postgresql';
 
 console.log('[Storage] DB_TYPE set to:', DB_TYPE);
