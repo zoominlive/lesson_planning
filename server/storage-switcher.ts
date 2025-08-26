@@ -1,27 +1,15 @@
-// import mysql from 'mysql2/promise';
-// import { drizzle } from 'drizzle-orm/mysql2';
-// import { MySQLStorage } from './mysql-storage';
-// import * as mysqlSchema from "@shared/mysql-schema";
 import dotenv from 'dotenv';
 
 // Load environment variables from .env.local first
 dotenv.config({ path: '.env.local' });
 
-// Check DB_TYPE from environment - allow runtime override
-const DB_TYPE = process.env.DB_TYPE || 'postgresql';
+// Always use PostgreSQL
+const DB_TYPE = 'postgresql';
 
-console.log('[Storage] DB_TYPE set to:', DB_TYPE);
+console.log('[Storage] Using PostgreSQL storage');
 
 let storageInstance: any = null;
 let initPromise: Promise<any> | null = null;
-
-async function initMySQLStorage() {
-  console.log('[Storage] MySQL storage requested but MySQLStorage class not available.');
-  console.log('[Storage] Falling back to PostgreSQL storage...');
-  
-  // For now, use PostgreSQL storage until MySQL implementation is available
-  return await initPostgreSQLStorage();
-}
 
 async function initPostgreSQLStorage() {
   console.log('[Storage] Initializing PostgreSQL storage...');
@@ -32,18 +20,14 @@ async function initPostgreSQLStorage() {
   return storageInstance;
 }
 
-// Initialize the appropriate storage
+// Initialize the storage
 async function getStorageInstance() {
   if (storageInstance) {
     return storageInstance;
   }
   
   if (!initPromise) {
-    if (DB_TYPE === 'mysql') {
-      initPromise = initMySQLStorage();
-    } else {
-      initPromise = initPostgreSQLStorage();
-    }
+    initPromise = initPostgreSQLStorage();
   }
   
   return await initPromise;
@@ -74,11 +58,5 @@ export const storage = new Proxy({} as any, {
   }
 });
 
-// Initialize storage immediately when module loads
-if (DB_TYPE === 'mysql') {
-  console.log('[Storage] Starting MySQL storage initialization...');
-  getStorageInstance().catch(console.error);
-} else {
-  console.log('[Storage] Will use PostgreSQL storage');
-  // PostgreSQL will be initialized lazily when first accessed
-}
+// Initialize PostgreSQL storage when module loads
+console.log('[Storage] PostgreSQL storage will be initialized on first use');
