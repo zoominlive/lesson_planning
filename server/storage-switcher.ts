@@ -3,13 +3,25 @@ import dotenv from 'dotenv';
 // Load environment variables from .env.local first
 dotenv.config({ path: '.env.local' });
 
-// Always use PostgreSQL
-const DB_TYPE = 'postgresql';
+// Check DB_TYPE from environment
+const DB_TYPE = process.env.DB_TYPE || 'postgresql';
 
-console.log('[Storage] Using PostgreSQL storage');
+console.log('[Storage] DB_TYPE set to:', DB_TYPE);
 
 let storageInstance: any = null;
 let initPromise: Promise<any> | null = null;
+
+async function initMySQLStorage() {
+  console.log('[Storage] Initializing MySQL storage...');
+  const { MySQLStorage } = await import('./mysql-storage');
+  const { initMySQLDatabase } = await import('./mysql-db');
+  
+  const db = await initMySQLDatabase();
+  storageInstance = new MySQLStorage(db);
+  
+  console.log('[Storage] MySQL storage initialized');
+  return storageInstance;
+}
 
 async function initPostgreSQLStorage() {
   console.log('[Storage] Initializing PostgreSQL storage...');
@@ -20,14 +32,18 @@ async function initPostgreSQLStorage() {
   return storageInstance;
 }
 
-// Initialize the storage
+// Initialize the appropriate storage
 async function getStorageInstance() {
   if (storageInstance) {
     return storageInstance;
   }
   
   if (!initPromise) {
-    initPromise = initPostgreSQLStorage();
+    if (DB_TYPE === 'mysql') {
+      initPromise = initMySQLStorage();
+    } else {
+      initPromise = initPostgreSQLStorage();
+    }
   }
   
   return await initPromise;
@@ -58,5 +74,11 @@ export const storage = new Proxy({} as any, {
   }
 });
 
-// Initialize PostgreSQL storage when module loads
-console.log('[Storage] PostgreSQL storage will be initialized on first use');
+// Initialize storage immediately when module loads
+if (DB_TYPE === 'mysql') {
+  console.log('[Storage] Starting MySQL storage initialization...');
+  getStorageInstance().catch(console.error);
+} else {
+  console.log('[Storage] Will use PostgreSQL storage');
+  // PostgreSQL will be initialized lazily when first accessed
+}
