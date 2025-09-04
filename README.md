@@ -61,7 +61,7 @@ A comprehensive web application designed for early childhood educators to stream
 - **Hybrid Migration System**: Push method for development, migrations for production
 - **Local File Storage** for activity images and media
 - **Environment-based Configuration** for development/production
-- **Git Version Control** with automatic commit tracking
+- **Git Version Control** with automatic commit tracking and messaging
 
 ## System Architecture
 
