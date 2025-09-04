@@ -1,6 +1,6 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage-switcher";
+import { storage } from "./storage";
 import { 
   type AuthenticatedRequest, 
   generateDevelopmentToken, 
